@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSTUHub - Information Board</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">
+            CSTU<span>Hub</span>
+        </div>
+        <div class="search-container">
+            <input type="text" placeholder="ค้นหาโปรเจกต์, ผู้มีส่วนได้ส่วนเสีย, หรืออัปเดตต่างๆ...">
+            <button class="search-btn">Search</button>
+        </div>
+        <div class="auth-buttons">
+            <a href="#" class="signup-link">Sign up</a>
+            <a href="#" class="login-btn">Log in</a>
+        </div>
+    </nav>
+
+    <div class="sub-header container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('collaborator')" id="tabCollab">COLLABORATOR</button>
+            <button class="tab" onclick="switchTab('event')" id="tabEvent">EVENT & ACTIVITIES</button>
+        </div>
+        <div class="page-title">
+            <h1>Computer Science</h1>
+            <h2>Information Board</h2>
+        </div>
+    </div>
+
+    <main class="container">
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-content">
+            <div class="logo footer-logo">
+                CSTU<span>Hub</span>
+            </div>
+            <div class="footer-text">
+                Computer Science community information board. &copy; 2026 CSTUHub
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
