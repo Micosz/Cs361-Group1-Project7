@@ -463,32 +463,3 @@ main {
     font-size: 0.85rem;
     color: #adb5bd;
 }
-
-/* 7. Mobile Responsive */
-@media (max-width: 768px) {
-    .container { padding: 0 1rem; }
-    
-    .navbar { flex-wrap: wrap; padding: 1rem; gap: 1rem; }
-    .search-container { order: 3; width: 100%; max-width: 100%; }
-    
-    .hero-section { flex-direction: column; padding-top: 2rem; text-align: center; gap: 2rem; }
-    .hero-content { max-width: 100%; }
-    .hero-badges { justify-content: center; }
-    .hero-heading { font-size: 2.5rem; }
-    .hero-features li { justify-content: center; text-align: center; }
-    .hero-animation { height: 350px; transform: scale(0.9); }
-    
-    .sub-header { flex-direction: column; align-items: flex-start; gap: 1rem; margin-top: 1.5rem; margin-bottom: 1.5rem; scroll-margin-top: 120px; }
-    .page-title { text-align: left; }
-    .page-title h1 { font-size: 1.75rem; }
-    
-    .grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-    
-    .card { min-height: auto; }
-    .card-thumbnail { height: 120px; }
-    .card-content { padding: 1rem; }
-    .card-desc { font-size: 0.75rem; }
-    .card-footer { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-    
-    .footer-content { flex-direction: column; text-align: center; gap: 0.5rem; }
-}
