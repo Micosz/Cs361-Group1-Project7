@@ -70,3 +70,26 @@ main { flex: 1; }
 .footer-logo { color: white; font-size: 1.25rem; font-weight: 900; letter-spacing: -0.025em; }
 .footer-logo span { color: var(--tu-red); }
 .footer-text { font-size: 0.85rem; color: #adb5bd; }
+
+/*Main Content*/
+.mb-section { margin-bottom: 4rem; }
+
+.grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 1.5rem; }
+@media (min-width: 768px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+.card {
+    background-color: white; border: 1px solid var(--border-color); border-radius: 16px;
+    transition: all 0.3s ease; display: flex; flex-direction: column; overflow: hidden;
+    cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02); height: 100%; min-height: 350px;
+}
+.card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px -8px rgba(194,30,45,0.15); border-color: var(--tu-orange); }
+
+.card-thumbnail { height: 220px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.card-bg-red { background-color: var(--tu-red); }
+.card-bg-yellow { background-color: var(--tu-yellow); }
+.card-bg-orange { background-color: var(--tu-orange); }
+
+.card-content { padding: 1.5rem 1.25rem; display: flex; flex-direction: column; flex-grow: 1; }
+.card-desc { font-size: 0.85rem; color: var(--text-gray); margin-bottom: auto; }
+.card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem; }
+.author-name { font-size: 0.85rem; font-weight: 600; color: var(--text-gray); }
