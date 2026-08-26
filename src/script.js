@@ -1,4 +1,4 @@
-// ดึงข้อมูลจากไฟล์ JSON
+//ดึงข้อมูลจากไฟล์ JSON
 async function fetchPartnersData() {
     try {
         const response = await fetch('../src/partners.json'); // อย่าลืมเช็ค Path ตรงนี้ให้ตรงกับโฟลเดอร์งานอ้นนะ
@@ -10,18 +10,18 @@ async function fetchPartnersData() {
     }
 }
 
-// 1. ดึงข้อมูล Partner ทั้งหมดสำหรับหน้า Browse
+//1.ดึงข้อมูล Partner ทั้งหมดสำหรับหน้า Browse
 async function getPublicPartners() {
     return await fetchPartnersData();
 }
 
-// 2. ดึงข้อมูล Partner จาก ID สำหรับหน้า Detail
+//2.ดึงข้อมูล Partner จาก ID สำหรับหน้า Detail
 async function getPublicPartnerById(id) {
     const partnersData = await fetchPartnersData();
     return partnersData.find(partner => partner.id === id) || null;
 }
 
-// 3. ดึงข้อมูลกิจกรรมทั้งหมด
+//3.ดึงข้อมูลกิจกรรมทั้งหมด
 async function getPublicActivities() {
     const partnersData = await fetchPartnersData();
     let allActivities = [];
@@ -38,15 +38,11 @@ async function getPublicActivities() {
     return allActivities;
 }
 
-// 4. ดึงข้อมูลกิจกรรมจาก ID
+//4.ดึงข้อมูลกิจกรรมจาก ID
 async function getPublicActivityById(id) {
     const allActivities = await getPublicActivities();
     return allActivities.find(activity => activity.id === id) || null;
 }
-
-// ==========================================
-// ส่วนของการ Render UI 
-// ==========================================
 
 function getColorClass(type) {
     switch(type) {
@@ -60,12 +56,12 @@ function getColorClass(type) {
     }
 }
 
-// สร้างการ์ดหน้า Collaborator
+//สร้างการ์ดหน้า Collaborator
 async function renderCollaboratorCards() {
     const container = document.getElementById('collaboratorGrid');
     if (!container) return;
     
-    // ดึงข้อมูล
+    //ดึงข้อมูล
     const partners = await getPublicPartners();
     container.innerHTML = ''; 
 
@@ -101,12 +97,12 @@ async function renderEventCards() {
     activities.forEach(activity => {
         const colorClass = getColorClass(activity.type);
 
-        // เช็คว่ามี image_path ไหม ถ้ามีให้ทำเป็น Background Image
+        //เช็คว่ามี image_path ไหม ถ้ามีให้ทำเป็น Background Image
         const bgStyle = activity.image_path 
             ? `background-image: url('${activity.image_path}'); background-size: cover; background-position: center;` 
             : '';
 
-        // ถ้าไม่มีรูป ให้แสดงชื่อกิจกรรมตัวใหญ่ๆ กลางสีพื้นหลัง (Graceful Degradation)
+        //ถ้าไม่มีรูปให้แสดงชื่อกิจกรรมตัวใหญ่ๆ กลางสีพื้นหลัง (Graceful Degradation)
         const thumbnailContent = activity.image_path 
             ? '' 
             : `<h2 style="color:white; font-size:1.5rem; text-align:center; padding:0 1.5rem; margin: auto;">${activity.title}</h2>`;
