@@ -101,9 +101,21 @@ async function renderEventCards() {
     activities.forEach(activity => {
         const colorClass = getColorClass(activity.type);
 
+        // เช็คว่ามี image_path ไหม ถ้ามีให้ทำเป็น Background Image
+        const bgStyle = activity.image_path 
+            ? `background-image: url('${activity.image_path}'); background-size: cover; background-position: center;` 
+            : '';
+
+        // ถ้าไม่มีรูป ให้แสดงชื่อกิจกรรมตัวใหญ่ๆ กลางสีพื้นหลัง (Graceful Degradation)
+        const thumbnailContent = activity.image_path 
+            ? '' 
+            : `<h2 style="color:white; font-size:1.5rem; text-align:center; padding:0 1.5rem; margin: auto;">${activity.title}</h2>`;
+
         const cardHTML = `
-            <div class="card" id="${activity.id}">
-                <div class="card-thumbnail ${colorClass}"></div>
+            <div class="card" id="${activity.id}" onclick="window.location.href='detail.html?id=${activity.partnerId}'">
+                <div class="card-thumbnail ${colorClass}" style="${bgStyle}; display: flex;">
+                    ${thumbnailContent}
+                </div>
                 <div class="card-content">
                     <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--text-dark);">${activity.title}</h3>
                     <p class="card-desc">${activity.summary}</p>
