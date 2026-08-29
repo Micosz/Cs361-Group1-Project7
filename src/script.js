@@ -70,7 +70,7 @@ async function renderCollaboratorCards() {
         const colorClass = getColorClass(partner.type);
 
         const cardHTML = `
-            <div class="card" id="${partner.id}">
+            <div class="card" id="${partner.id}" onclick="openModal()">
                 <div class="card-thumbnail ${colorClass}" style="${bgStyle}"></div>
                 <div class="card-content">
                     <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--text-dark);">${partner.name}</h3>
@@ -108,7 +108,7 @@ async function renderEventCards() {
             : `<h2 style="color:white; font-size:1.5rem; text-align:center; padding:0 1.5rem; margin: auto;">${activity.title}</h2>`;
 
         const cardHTML = `
-            <div class="card" id="${activity.id}" onclick="window.location.href='detail.html?id=${activity.partnerId}'">
+            <div class="card" id="${activity.id}" onclick="openModal()">
                 <div class="card-thumbnail ${colorClass}" style="${bgStyle}; display: flex;">
                     ${thumbnailContent}
                 </div>
@@ -189,3 +189,18 @@ document.addEventListener('DOMContentLoaded', () => {
     renderEventCards();
     initHeroTicker(); // เติมบรรทัดนี้เพื่อให้ระบบสุ่มเริ่มทำงาน
 });
+
+function openModal() {
+    document.getElementById('detailModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('detailModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('detailModal');
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
+}
