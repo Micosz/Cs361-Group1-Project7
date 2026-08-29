@@ -1,7 +1,7 @@
 // ดึงข้อมูลจากไฟล์ JSON
 async function fetchPartnersData() {
     try {
-        const response = await fetch('../src/partners.json'); // อย่าลืมเช็ค Path ตรงนี้ให้ตรงกับโฟลเดอร์งานอ้นนะ
+        const response = await fetch('data/partners.json');
         if (!response.ok) throw new Error("ไม่สามารถดึงข้อมูลได้");
         return await response.json();
     } catch (error) {
