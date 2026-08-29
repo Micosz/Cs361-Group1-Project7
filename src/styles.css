@@ -252,38 +252,42 @@ main {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.6);
-    padding: 1rem 1.5rem;
-    border-radius: 20px;
+    padding: 0.6rem 1rem;
+    border-radius: 16px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     z-index: 1;
     animation: floating 6s infinite ease-in-out;
+    max-width: 280px;
 }
 
 .float-card .icon-box {
-    width: 45px;
-    height: 45px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     background: white;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--tu-red);
-    font-size: 1.25rem;
+    font-size: 1rem;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    flex-shrink: 0;
 }
 
 .float-card .card-text h4 {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     font-weight: 800;
     color: var(--text-dark);
-    margin: 0 0 0.2rem 0;
+    margin: 0 0 0.15rem 0;
+    line-height: 1.2;
+    word-wrap: break-word; /* สั่งให้ข้อความขึ้นบรรทัดใหม่แทนการตัดคำทิ้ง */
 }
 
 .float-card .card-text p {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     color: var(--text-gray);
     margin: 0;
 }

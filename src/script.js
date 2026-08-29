@@ -148,8 +148,44 @@ function switchTab(tabName) {
     }
 }
 
+//ฟังก์ชันสุ่มข้อความใส่การ์ดทุกๆ 10 วินาที
+async function initHeroTicker() {
+    const partners = await getPublicPartners();
+    if (!partners || partners.length === 0) return;
+
+    function updateCards() {
+        // สลับลำดับข้อมูลแบบสุ่ม (Shuffle)
+        let shuffled = [...partners].sort(() => 0.5 - Math.random());
+        
+        // ดึง3บริษัทแรกหลังจากการสุ่ม
+        const p1 = shuffled[0] || partners[0];
+        const p2 = shuffled[1] || partners[0];
+        const p3 = shuffled[2] || partners[0];
+
+        //การ์ดใบที่ 1
+        const t1 = document.getElementById('heroTitle1');
+        const d1 = document.getElementById('heroDesc1');
+        if (t1) { t1.textContent = p1.name; d1.textContent = `${p1.type.toUpperCase()}`; }
+
+        //การ์ดใบที่ 2
+        const t2 = document.getElementById('heroTitle2');
+        const d2 = document.getElementById('heroDesc2');
+        if (t2) { t2.textContent = p2.name; d2.textContent = `${p2.type.toUpperCase()}`; }
+
+        //การ์ดใบที่ 3
+        const t3 = document.getElementById('heroTitle3');
+        const d3 = document.getElementById('heroDesc3');
+        if (t3) { t3.textContent = p3.name; d3.textContent = `${p3.type.toUpperCase()}`; }
+    }
+
+    updateCards();
+
+    setInterval(updateCards, 10000);
+}
+
 //สั่งให้ Render การ์ดทันทีเมื่อโหลดโครงสร้าง HTML เสร็จ
 document.addEventListener('DOMContentLoaded', () => {
     renderCollaboratorCards();
     renderEventCards();
+    initHeroTicker(); // เติมบรรทัดนี้เพื่อให้ระบบสุ่มเริ่มทำงาน
 });
