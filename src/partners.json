@@ -1,0 +1,224 @@
+[
+  {
+    "id": "partner-ascend-001",
+    "name": "บริษัท แอสเซนด์ กรุ๊ป จำกัด",
+    "type": "company",
+    "summary": "พันธมิตรด้านเทคโนโลยีที่มีการลงนามความร่วมมือ (MoU) และเป็นสถานประกอบการที่รับนักศึกษาปฏิบัติงาน",
+    "location": "กรุงเทพมหานคร ประเทศไทย",
+    "website_url": "https://www.ascendcorp.com",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "collab-ascend-001",
+        "title": "โครงการฝึกงานและสหกิจศึกษา",
+        "type": "internship",
+        "period": "2026",
+        "summary": "รับนักศึกษาหลักสูตรวิทยาการคอมพิวเตอร์เข้าปฏิบัติสหกิจศึกษา"
+      },
+      {
+        "id": "collab-ascend-002",
+        "title": "บันทึกข้อตกลงความร่วมมือทางวิชาการ (MoU)",
+        "type": "academic_activity",
+        "period": "ต่อเนื่อง",
+        "summary": "ความร่วมมือในการส่งเสริมและพัฒนาทักษะทางวิชาการและวิชาชีพแก่นักศึกษา"
+      }
+    ]
+  },
+  {
+    "id": "partner-ipb-001",
+    "name": "Institut Pertanian Bogor (IPB)",
+    "type": "university",
+    "summary": "มหาวิทยาลัยคู่ความร่วมมือจากประเทศอินโดนีเซีย ที่ร่วมจัดโครงการแลกเปลี่ยนวิชาการและวัฒนธรรม",
+    "location": "Bogor, Indonesia",
+    "website_url": "https://ipb.ac.id",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "collab-ipb-001",
+        "title": "International Summer Course CSAgri",
+        "type": "academic_activity",
+        "period": "2022",
+        "summary": "โครงการหลักสูตรระยะสั้นในธีม Computer Science และการประยุกต์ใช้ IoT สำหรับเกษตรกรรม"
+      }
+    ]
+  },
+  {
+    "id": "partner-tuhosp-001",
+    "name": "โรงพยาบาลสนามธรรมศาสตร์",
+    "type": "hospital",
+    "summary": "หน่วยงานความร่วมมือในการนำเทคโนโลยีคอมพิวเตอร์มาประยุกต์ใช้ทางการแพทย์และการดูแลผู้ป่วย",
+    "location": "ปทุมธานี ประเทศไทย",
+    "website_url": "",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "collab-tuhosp-001",
+        "title": "โครงการพัฒนาแอปพลิเคชันติดตามสุขภาพใจ",
+        "type": "research",
+        "period": "2021 - 2022",
+        "summary": "ความร่วมมือวิจัยและพัฒนาแอปพลิเคชันสำหรับจิตแพทย์ เพื่อติดตามสภาพจิตใจของผู้ป่วยระหว่างรักษาตัว"
+      }
+    ]
+  },
+  {
+    "id": "partner-nectec-001",
+    "name": "ศูนย์เทคโนโลยีอิเล็กทรอนิกส์และคอมพิวเตอร์แห่งชาติ (NECTEC)",
+    "type": "government",
+    "summary": "องค์กรภาครัฐด้านการวิจัยและพัฒนาเทคโนโลยี ที่รับนักศึกษาเข้าฝึกปฏิบัติงานจริง",
+    "location": "ปทุมธานี ประเทศไทย",
+    "website_url": "https://www.nectec.or.th",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "collab-nectec-001",
+        "title": "ปฏิบัติสหกิจศึกษาและวิจัยร่วม",
+        "type": "internship",
+        "period": "2026",
+        "summary": "การปฏิบัติงานในห้องปฏิบัติการวิจัยและพัฒนานวัตกรรมระดับประเทศ"
+      }
+    ]
+  },
+  {
+    "id": "partner-kbtg-001",
+    "name": "บริษัทกสิกร บิซิเนส-เทคโนโลยี กรุ๊ป (KBTG)",
+    "type": "company",
+    "summary": "องค์กรชั้นนำด้าน FinTech ของประเทศไทย หนึ่งในเครือข่ายสถานประกอบการสหกิจศึกษา",
+    "location": "นนทบุรี ประเทศไทย",
+    "website_url": "",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "collab-kbtg-001",
+        "title": "สหกิจศึกษาด้าน Software Engineering",
+        "type": "internship",
+        "period": "2026",
+        "summary": "รับนักศึกษาเพื่อประยุกต์ใช้ความรู้ในการพัฒนาระบบซอฟต์แวร์จริงในสเกลระดับประเทศ"
+      }
+    ]
+  },
+  {
+    "id": "partner-set-001",
+    "name": "ตลาดหลักทรัพย์แห่งประเทศไทย (SET)",
+    "type": "company",
+    "summary": "ศูนย์กลางการซื้อขายหลักทรัพย์และให้บริการข้อมูลด้านการลงทุนของประเทศไทย",
+    "location": "กรุงเทพมหานคร ประเทศไทย",
+    "website_url": "https://www.set.or.th",
+    "logo_path": "",
+    "collaborations": []
+  },
+  {
+    "id": "partner-ipb-001",
+    "name": "Institut Pertanian Bogor (IPB)",
+    "type": "university",
+    "summary": "มหาวิทยาลัยคู่ความร่วมมือจากประเทศอินโดนีเซีย",
+    "location": "Bogor, Indonesia",
+    "website_url": "https://ipb.ac.id",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "event-ipb-001",
+        "title": "International Summer Course CSAgri IPB 2022",
+        "type": "academic_activity",
+        "period": "9 - 17 กันยายน 2565",
+        "summary": "การส่งเสริมให้ผู้เข้าร่วมตระหนักถึงความสำคัญของเกษตรกรรมและการนำ IoT เข้ามาใช้ (Arduino, Smart Urban Farming)"
+      }
+    ]
+  },
+  {
+    "id": "partner-ucsd-001",
+    "name": "University of California, San Diego (UCSD)",
+    "type": "university",
+    "summary": "สถาบันการศึกษาชั้นนำในประเทศสหรัฐอเมริกา",
+    "location": "California, USA",
+    "website_url": "",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "event-ucsd-001",
+        "title": "International Summer Research Program (ISRP)",
+        "type": "research",
+        "period": "26 มิ.ย. - 27 ส.ค. 2565",
+        "summary": "ศึกษาพื้นฐานการควบคุมหุ่นยนต์ด้วย ROS และระบบ Marvelmind เพื่อประโยชน์ทางธุรกิจ Logistic และการช่วยเหลือผู้ประสบภัย"
+      }
+    ]
+  },
+  {
+    "id": "partner-kbtg-001",
+    "name": "บริษัทกสิกร บิซิเนส-เทคโนโลยี กรุ๊ป (KBTG)",
+    "type": "company",
+    "summary": "องค์กรด้านเทคโนโลยีและนวัตกรรมทางการเงิน",
+    "location": "นนทบุรี ประเทศไทย",
+    "website_url": "",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "event-kbtg-001",
+        "title": "KBTG University Roadshow",
+        "type": "event",
+        "period": "ตุลาคม 2563",
+        "summary": "นำทีมผู้เชี่ยวชาญมาแนะนำบริษัทและแลกเปลี่ยนแบ่งปันความรู้ให้แก่นักศึกษา"
+      },
+      {
+        "id": "collab-kbtg-002",
+        "title": "สหกิจศึกษาด้าน Software Engineering",
+        "type": "internship",
+        "period": "ต่อเนื่อง",
+        "summary": "รับนักศึกษาเพื่อประยุกต์ใช้ความรู้ในการพัฒนาระบบซอฟต์แวร์จริงในสเกลระดับประเทศ"
+      }
+    ]
+  },
+  {
+    "id": "partner-kingpower-001",
+    "name": "บริษัท King Power Click",
+    "type": "company",
+    "summary": "บริษัทที่สนับสนุนการวิจัยเทคโนโลยีระดับนานาชาติ",
+    "location": "ประเทศไทย",
+    "website_url": "",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "event-aist-001",
+        "title": "โครงการแลกเปลี่ยนทำวิจัยที่ AIST",
+        "type": "research",
+        "period": "10 มิ.ย. - 17 ส.ค. 2563",
+        "summary": "นักศึกษาแลกเปลี่ยนทำวิจัยที่สถาบัน The National Institute of Advanced Industrial Science and Technology (AIST) ประเทศญี่ปุ่น"
+      }
+    ]
+  },
+  {
+    "id": "partner-cp-001",
+    "name": "Feed Ingredients Trading Business Group (C.P. Group)",
+    "type": "company",
+    "summary": "กลุ่มธุรกิจการค้าระหว่างประเทศ เครือเจริญโภคภัณฑ์",
+    "location": "กรุงเทพมหานคร ประเทศไทย",
+    "website_url": "",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "event-cp-001",
+        "title": "งานสัมมนา Democratizing A.I.",
+        "type": "academic_activity",
+        "period": "24 กุมภาพันธ์ 2563",
+        "summary": "สัมมนาเรื่อง How a computer scientist can help narrow social inequality พร้อมแบ่งปันประสบการณ์การบูรณาการองค์ความรู้"
+      }
+    ]
+  },
+  {
+    "id": "partner-tudublin-001",
+    "name": "Technological University Dublin",
+    "type": "university",
+    "summary": "มหาวิทยาลัยเทคโนโลยีแห่งดับลิน ประเทศไอร์แลนด์",
+    "location": "Dublin, Ireland",
+    "website_url": "",
+    "logo_path": "",
+    "collaborations": [
+      {
+        "id": "event-tudublin-001",
+        "title": "หารือความร่วมมือด้านการศึกษา",
+        "type": "academic_activity",
+        "period": "5 พฤศจิกายน 2562",
+        "summary": "การแลกเปลี่ยนความเป็นไปได้ในการสร้างความร่วมมือด้านการศึกษากับ Senior Education Consultant จาก TU Dublin"
+      }
+    ]
+  }
+]

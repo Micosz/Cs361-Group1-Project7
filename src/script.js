@@ -1,0 +1,155 @@
+//ดึงข้อมูลจากไฟล์ JSON
+async function fetchPartnersData() {
+    try {
+        const response = await fetch('../src/partners.json'); // อย่าลืมเช็ค Path ตรงนี้ให้ตรงกับโฟลเดอร์งานอ้นนะ
+        if (!response.ok) throw new Error("ไม่สามารถดึงข้อมูลได้");
+        return await response.json();
+    } catch (error) {
+        console.error("Error loading JSON:", error);
+        return [];
+    }
+}
+
+//1.ดึงข้อมูล Partner ทั้งหมดสำหรับหน้า Browse
+async function getPublicPartners() {
+    return await fetchPartnersData();
+}
+
+//2.ดึงข้อมูล Partner จาก ID สำหรับหน้า Detail
+async function getPublicPartnerById(id) {
+    const partnersData = await fetchPartnersData();
+    return partnersData.find(partner => partner.id === id) || null;
+}
+
+//3.ดึงข้อมูลกิจกรรมทั้งหมด
+async function getPublicActivities() {
+    const partnersData = await fetchPartnersData();
+    let allActivities = [];
+    partnersData.forEach(partner => {
+        if (partner.collaborations && partner.collaborations.length > 0) {
+            const activitiesWithPartnerId = partner.collaborations.map(collab => ({
+                ...collab,
+                partnerId: partner.id,
+                partnerName: partner.name
+            }));
+            allActivities = [...allActivities, ...activitiesWithPartnerId];
+        }
+    });
+    return allActivities;
+}
+
+//4.ดึงข้อมูลกิจกรรมจาก ID
+async function getPublicActivityById(id) {
+    const allActivities = await getPublicActivities();
+    return allActivities.find(activity => activity.id === id) || null;
+}
+
+function getColorClass(type) {
+    switch(type) {
+        case 'university': 
+        case 'academic_activity': return 'card-bg-red';
+        case 'company': 
+        case 'internship': return 'card-bg-yellow';
+        case 'government': 
+        case 'research': return 'card-bg-orange';
+        default: return 'card-bg-red';
+    }
+}
+
+//สร้างการ์ดหน้า Collaborator
+async function renderCollaboratorCards() {
+    const container = document.getElementById('collaboratorGrid');
+    if (!container) return;
+    
+    //ดึงข้อมูล
+    const partners = await getPublicPartners();
+    container.innerHTML = ''; 
+
+    partners.forEach(partner => {
+        const bgStyle = partner.logo_path ? `background-image: url('${partner.logo_path}'); background-size: cover; background-position: center;` : '';
+        const colorClass = getColorClass(partner.type);
+
+        const cardHTML = `
+            <div class="card" id="${partner.id}">
+                <div class="card-thumbnail ${colorClass}" style="${bgStyle}"></div>
+                <div class="card-content">
+                    <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--text-dark);">${partner.name}</h3>
+                    <p class="card-desc">${partner.summary}</p>
+                    <div class="card-footer">
+                        <div class="author"><span class="author-name">${partner.location}</span></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.innerHTML += cardHTML;
+    });
+}
+
+//สร้างการ์ดหน้า Event & Activities
+async function renderEventCards() {
+    const container = document.getElementById('eventGrid');
+    if (!container) return;
+    
+    //ดึงข้อมูลกิจกรรมที่ถูกแปลงรูปร่างแล้ว
+    const activities = await getPublicActivities();
+    container.innerHTML = ''; 
+
+    activities.forEach(activity => {
+        const colorClass = getColorClass(activity.type);
+
+        //เช็คว่ามี image_path ไหม ถ้ามีให้ทำเป็น Background Image
+        const bgStyle = activity.image_path 
+            ? `background-image: url('${activity.image_path}'); background-size: cover; background-position: center;` 
+            : '';
+
+        //ถ้าไม่มีรูปให้แสดงชื่อกิจกรรมตัวใหญ่ๆ กลางสีพื้นหลัง (Graceful Degradation)
+        const thumbnailContent = activity.image_path 
+            ? '' 
+            : `<h2 style="color:white; font-size:1.5rem; text-align:center; padding:0 1.5rem; margin: auto;">${activity.title}</h2>`;
+
+        const cardHTML = `
+            <div class="card" id="${activity.id}" onclick="window.location.href='detail.html?id=${activity.partnerId}'">
+                <div class="card-thumbnail ${colorClass}" style="${bgStyle}; display: flex;">
+                    ${thumbnailContent}
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--text-dark);">${activity.title}</h3>
+                    <p class="card-desc">${activity.summary}</p>
+                    <div class="card-footer">
+                        <div class="author"><span class="author-name">${activity.partnerName}</span></div>
+                        <div class="stats">${activity.period}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.innerHTML += cardHTML;
+    });
+}
+
+//ฟังก์ชันสลับ Tab
+function switchTab(tabName) {
+    const tabCollab = document.getElementById('tabCollab');
+    const tabEvent = document.getElementById('tabEvent');
+    const secCollab = document.getElementById('sectionCollaborator');
+    const secEvent = document.getElementById('sectionEvent');
+
+    if (!tabCollab || !tabEvent || !secCollab || !secEvent) return;
+
+    if (tabName === 'collaborator') {
+        tabCollab.classList.add('active');
+        tabEvent.classList.remove('active');
+        secCollab.style.display = 'block';
+        secEvent.style.display = 'none';
+    } else {
+        tabEvent.classList.add('active');
+        tabCollab.classList.remove('active');
+        secEvent.style.display = 'block';
+        secCollab.style.display = 'none';
+    }
+}
+
+//สั่งให้ Render การ์ดทันทีเมื่อโหลดโครงสร้าง HTML เสร็จ
+document.addEventListener('DOMContentLoaded', () => {
+    renderCollaboratorCards();
+    renderEventCards();
+});

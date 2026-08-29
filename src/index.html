@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSTUHub - Information Board</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">
+            CSTU<span>Hub</span>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" placeholder="ค้นหาโปรเจกต์, ผู้มีส่วนได้ส่วนเสีย, หรืออัปเดตต่างๆ...">
+            <button class="search-btn">Search</button>
+        </div>
+        
+        <div class="auth-buttons">
+            <a href="#" class="signup-link">Sign up</a>
+            <a href="#" class="login-btn">Log in</a>
+        </div>
+    </nav>
+
+
+    <section class="hero-section container">
+        <div class="hero-content">
+            <h1 class="hero-heading">Welcome to the <span>Computer Science</span> Community</h1>
+            <ul class="hero-features">
+                <li><i class="fas fa-check-circle"></i> ติดตามโปรเจกต์และผลงานของนักศึกษา</li>
+                <li><i class="fas fa-check-circle"></i> ค้นหากิจกรรมและโอกาสความร่วมมือต่างๆ</li>
+                <li><i class="fas fa-check-circle"></i> ค้นหาองค์กรชั้นนำมากมายที่คอยสนับสนุนคุณ</li>
+            </ul>
+            <a href="#board-section" class="hero-btn"><i class="fas fa-sparkles"></i> ถึงตาคุณแล้ว! เริ่มต้นเลย</a>
+        </div>
+        
+        <div class="hero-animation">
+            <div class="glow-blob bg-yellow"></div>
+            <div class="glow-blob bg-red"></div>
+
+            <div class="float-card card-top">
+                <!-- การ์ด 1 ไอคอน code" -->
+                <div class="icon-box"><i class="fas fa-laptop-code"></i></div>
+                <div class="card-text">
+                    <h4>รอข้อมูล</h4>
+                    <p>รอข้อมูล</p>
+                </div>
+            </div>
+            
+            <div class="float-card card-mid">
+                <!-- การ์ด 2 ไอคอน calender" -->
+                <div class="icon-box"><i class="fas fa-calendar-alt"></i></div>
+                <div class="card-text">
+                    <h4>รอข้อมูล</h4>
+                    <p>รอข้อมูล</p>
+                </div>
+            </div>
+
+            <div class="float-card card-bot">
+                <!-- การ์ด 3 ไอคอน บริษัท" -->
+                <div class="icon-box"><i class="fas fa-building"></i></div>
+                <div class="card-text">
+                    <h4>รอข้อมูล</h4>
+                    <p>รอข้อมูล</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="board-section" class="sub-header container">
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('collaborator')" id="tabCollab">COLLABORATOR</button>
+            <button class="tab" onclick="switchTab('event')" id="tabEvent">EVENT & ACTIVITIES</button>
+        </div>
+        <div class="page-title">
+            <h1>Computer Science</h1>
+            <h2>Information Board</h2>
+        </div>
+    </div>
+
+    <main class="container">
+        <section id="sectionCollaborator" class="mb-section active-section">
+            <div class="grid" id="collaboratorGrid">
+            </div>
+        </section>
+
+        <section id="sectionEvent" class="mb-section" style="display: none;">
+            <div class="grid" id="eventGrid">
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-content">
+            <div class="logo footer-logo">
+                CSTU<span>Hub</span>
+            </div>
+            <div class="footer-text">
+                Computer Science community information board. &copy; 2026 CSTUHub
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
