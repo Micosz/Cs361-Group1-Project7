@@ -264,5 +264,17 @@
       }
     ]
   
+  },{
+    "id": "partner-coop-main-001",
+    "name": "สหกิจศึกษา",
+    "type": "internship",
+    "summary": "เครือข่ายความร่วมมือระหว่างหลักสูตรวิทยาการคอมพิวเตอร์และสถานประกอบการชั้นนำกว่า 100 แห่งทั่วประเทศ เพื่อให้นักศึกษาได้ออกไปปฏิบัติงานจริง",
+    "location": "มหาวิทยาลัยธรรมศาสตร์ ศูนย์รังสิต",
+    "website_url": "https://docs.google.com/spreadsheets/d/1mrexRW94TkVQUK91wLhqQtbEBResL4OBc9BWzcsvOjE/edit?gid=0#gid=0",
+    "logo_path": "resources/collab1.jpg",
+    "collaborations": [
+      
+    ]
   }
+
 ]
