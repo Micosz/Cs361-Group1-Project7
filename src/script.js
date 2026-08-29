@@ -25,17 +25,34 @@ async function getPublicPartnerById(id) {
 async function getPublicActivities() {
     const partnersData = await fetchPartnersData();
     let allActivities = [];
+    
     partnersData.forEach(partner => {
         if (partner.collaborations && partner.collaborations.length > 0) {
-            const activitiesWithPartnerId = partner.collaborations.map(collab => ({
+            // กรองเอาเฉพาะอันที่ visibility เป็น public หรือไม่มีฟิลด์นี้
+            const publicCollabs = partner.collaborations.filter(collab => collab.visibility === 'public' || !collab.visibility);
+            
+            const activitiesWithPartnerId = publicCollabs.map(collab => ({
                 ...collab,
                 partnerId: partner.id,
                 partnerName: partner.name
             }));
+            
             allActivities = [...allActivities, ...activitiesWithPartnerId];
         }
     });
-    return allActivities;
+
+    // --- กรอง Event ที่ ID ซ้ำกันออก ---
+    let uniqueActivities = [];
+    let seenIds = new Set();
+
+    allActivities.forEach(activity => {
+        if (!seenIds.has(activity.id)) {
+            seenIds.add(activity.id);
+            uniqueActivities.push(activity);
+        }
+    });
+
+    return uniqueActivities;
 }
 
 // 4. ดึงข้อมูลกิจกรรมจาก ID
@@ -94,25 +111,27 @@ async function renderEventCards() {
     const container = document.getElementById('eventGrid');
     if (!container) return;
     
-    //ดึงข้อมูลกิจกรรมที่ถูกแปลงรูปร่างแล้ว
     const activities = await getPublicActivities();
     container.innerHTML = ''; 
 
     activities.forEach(activity => {
         const colorClass = getColorClass(activity.type);
-
-        // เช็คว่ามี image_path ไหม ถ้ามีให้ทำเป็น Background Image
+        
+        // เช็คว่ามีรูปไหม
         const bgStyle = activity.image_path 
             ? `background-image: url('${activity.image_path}'); background-size: cover; background-position: center;` 
             : '';
-
-        // ถ้าไม่มีรูป ให้แสดงชื่อกิจกรรมตัวใหญ่ๆ กลางสีพื้นหลัง (Graceful Degradation)
         const thumbnailContent = activity.image_path 
             ? '' 
             : `<h2 style="color:white; font-size:1.5rem; text-align:center; padding:0 1.5rem; margin: auto;">${activity.title}</h2>`;
 
+        // --- เช็คผู้จัดร่วม (co_hosts) ---
+        const hostNames = (activity.co_hosts && activity.co_hosts.length > 0)
+            ? activity.co_hosts.join(' และ ') 
+            : activity.partnerName;
+
         const cardHTML = `
-            <div class="card" id="${activity.id}" onclick="window.location.href='detail.html?id=${activity.partnerId}'">
+            <div class="card" id="${activity.id}">
                 <div class="card-thumbnail ${colorClass}" style="${bgStyle}; display: flex;">
                     ${thumbnailContent}
                 </div>
@@ -120,7 +139,7 @@ async function renderEventCards() {
                     <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--text-dark);">${activity.title}</h3>
                     <p class="card-desc">${activity.summary}</p>
                     <div class="card-footer">
-                        <div class="author"><span class="author-name">${activity.partnerName}</span></div>
+                        <div class="author"><span class="author-name">${hostNames}</span></div>
                         <div class="stats">${activity.period}</div>
                     </div>
                 </div>
