@@ -91,7 +91,7 @@ async function renderCollaboratorCards() {
         const colorClass = getColorClass(partner.type);
 
         const cardHTML = `
-            <div class="card" id="${partner.id}">
+            <div class="card" id="${partner.id}" onclick="openModal('${partner.id}', 'partner')">
                 <div class="card-thumbnail ${colorClass}" style="${bgStyle}"></div>
                 <div class="card-content">
                     <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--text-dark);">${partner.name}</h3>
@@ -131,7 +131,7 @@ async function renderEventCards() {
             : activity.partnerName;
 
         const cardHTML = `
-            <div class="card" id="${activity.id}">
+            <div class="card" id="${activity.id}" onclick="openModal('${activity.id}', 'activity')">
                 <div class="card-thumbnail ${colorClass}" style="${bgStyle}; display: flex;">
                     ${thumbnailContent}
                 </div>
@@ -212,3 +212,40 @@ document.addEventListener('DOMContentLoaded', () => {
     renderEventCards();
     initHeroTicker(); // เติมบรรทัดนี้เพื่อให้ระบบสุ่มเริ่มทำงาน
 });
+
+async function openModal(id, type) {
+    let data = null;
+
+    if (type === 'partner') {
+        data = await getPublicPartnerById(id);
+    } else if (type === 'activity') {
+        data = await getPublicActivityById(id);
+    }
+
+    if (!data) return;
+
+    if (type === 'partner') {
+        document.getElementById('modalTitle').textContent = data.name;
+        document.getElementById('modalName').textContent = data.location || 'ไม่ระบุสถานที่';
+        document.getElementById('modalInfo').textContent = data.type.toUpperCase();
+        document.getElementById('modalDetails').innerHTML = `<p>${data.summary}</p>`;
+    } else {
+        document.getElementById('modalTitle').textContent = data.title;
+        document.getElementById('modalName').textContent = data.partnerName;
+        document.getElementById('modalInfo').textContent = data.period || data.type.toUpperCase();
+        document.getElementById('modalDetails').innerHTML = `<p>${data.summary}</p>`;
+    }
+
+    document.getElementById('detailModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('detailModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('detailModal');
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
+}
