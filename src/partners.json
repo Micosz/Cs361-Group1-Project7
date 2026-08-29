@@ -6,7 +6,7 @@
     "summary": "พันธมิตรด้านเทคโนโลยีที่มีการลงนามความร่วมมือ (MoU) และเป็นสถานประกอบการที่รับนักศึกษาปฏิบัติงาน",
     "location": "กรุงเทพมหานคร ประเทศไทย",
     "website_url": "https://www.ascendcorp.com",
-    "logo_path": "../Ascend_Logo.jpg",
+    "logo_path": "resources/Ascend_Logo.jpg",
     "collaborations": [
       {
         "id": "collab-ascend-001",
@@ -14,7 +14,7 @@
         "type": "internship",
         "period": "2026",
         "summary": "รับนักศึกษาหลักสูตรวิทยาการคอมพิวเตอร์เข้าปฏิบัติสหกิจศึกษา",
-        "image_path": "../Ascend_Logo.jpg",
+        "image_path": "resources/Ascend_Logo.jpg",
         "visibility": "public"
       },
       {
@@ -23,7 +23,7 @@
         "type": "academic_activity",
         "period": "ต่อเนื่อง",
         "summary": "ความร่วมมือในการส่งเสริมและพัฒนาทักษะทางวิชาการและวิชาชีพแก่นักศึกษา",
-        "image_path": "../Ascend1.jpg",
+        "image_path": "resources/Ascend1.jpg",
         "visibility": "public"
       }
     ]
@@ -35,7 +35,7 @@
     "summary": "มหาวิทยาลัยคู่ความร่วมมือจากประเทศอินโดนีเซีย ที่ร่วมจัดโครงการแลกเปลี่ยนวิชาการและวัฒนธรรม",
     "location": "Bogor, Indonesia",
     "website_url": "https://ipb.ac.id",
-    "logo_path": "../IPB_logo.jpg",
+    "logo_path": "resources/IPB_logo.jpg",
     "collaborations": [
       {
         "id": "collab-ipb-001",
@@ -43,7 +43,7 @@
         "type": "academic_activity",
         "period": "2022",
         "summary": "โครงการหลักสูตรระยะสั้นในธีม Computer Science และการประยุกต์ใช้ IoT สำหรับเกษตรกรรม",
-        "image_path": "../IPB1.jpg",
+        "image_path": "resources/IPB1.jpg",
         "visibility": "public"
       },
       {
@@ -52,7 +52,7 @@
         "type": "academic_activity",
         "period": "9 - 17 กันยายน 2565",
         "summary": "การส่งเสริมให้ผู้เข้าร่วมตระหนักถึงความสำคัญของเกษตรกรรมและการนำ IoT เข้ามาใช้ (Arduino, Smart Urban Farming)",
-        "image_path": "../IPB2.jpg",
+        "image_path": "resources/IPB2.jpg",
         "visibility": "public"
       }
     ]
@@ -64,7 +64,7 @@
     "summary": "องค์กรภาครัฐด้านการวิจัยและพัฒนาเทคโนโลยี ที่รับนักศึกษาเข้าฝึกปฏิบัติงานจริง",
     "location": "ปทุมธานี ประเทศไทย",
     "website_url": "https://www.nectec.or.th",
-    "logo_path": "../NECTEC_logo.jpg",
+    "logo_path": "resources/NECTEC_logo.jpg",
     "collaborations": [
       {
         "id": "collab-nectec-001",
@@ -72,7 +72,7 @@
         "type": "internship",
         "period": "2026",
         "summary": "การปฏิบัติงานในห้องปฏิบัติการวิจัยและพัฒนานวัตกรรมระดับประเทศ",
-        "image_path": "../NECTEC_logo.jpg",
+        "image_path": "resources/NECTEC_logo.jpg",
         "visibility": "public"
       }
     ]
@@ -84,7 +84,7 @@
     "summary": "องค์กรด้านเทคโนโลยีและนวัตกรรมทางการเงิน",
     "location": "นนทบุรี ประเทศไทย",
     "website_url": "",
-    "logo_path": "../kbtg_logo.jpg",
+    "logo_path": "resources/kbtg_logo.jpg",
     "collaborations": [
       {
         "id": "event-kbtg-001",
@@ -92,7 +92,7 @@
         "type": "event",
         "period": "ตุลาคม 2563",
         "summary": "นำทีมผู้เชี่ยวชาญมาแนะนำบริษัทและแลกเปลี่ยนแบ่งปันความรู้ให้แก่นักศึกษา",
-        "image_path": "../kbtg1.jpg",
+        "image_path": "resources/kbtg1.jpg",
         "visibility": "public"
       },
       {
@@ -101,7 +101,7 @@
         "type": "internship",
         "period": "ต่อเนื่อง",
         "summary": "รับนักศึกษาเพื่อประยุกต์ใช้ความรู้ในการพัฒาระบบซอฟต์แวร์จริงในสเกลระดับประเทศ",
-        "image_path": "../kbtg_logo.jpg",
+        "image_path": "resources/kbtg_logo.jpg",
         "visibility": "public"
       }
     ]
@@ -113,7 +113,7 @@
     "summary": "ศูนย์กลางการซื้อขายหลักทรัพย์และให้บริการข้อมูลด้านการลงทุนของประเทศไทย",
     "location": "กรุงเทพมหานคร ประเทศไทย",
     "website_url": "https://www.set.or.th",
-    "logo_path": "../SET_logo.jpg",
+    "logo_path": "resources/SET_logo.jpg",
     "collaborations": []
   },
   {
@@ -123,7 +123,7 @@
     "summary": "สถาบันการศึกษาชั้นนำในประเทศสหรัฐอเมริกา",
     "location": "California, USA",
     "website_url": "",
-    "logo_path": "../UCSD_logo.jpg",
+    "logo_path": "resources/UCSD_logo.jpg",
     "collaborations": [
       {
         "id": "event-ucsd-001",
@@ -131,7 +131,7 @@
         "type": "research",
         "period": "26 มิ.ย. - 27 ส.ค. 2565",
         "summary": "ศึกษาพื้นฐานการควบคุมหุ่นยนต์ด้วย ROS และระบบ Marvelmind เพื่อประโยชน์ทางธุรกิจ Logistic และการช่วยเหลือผู้ประสบภัย",
-        "image_path": "../UCSDp.jpg",
+        "image_path": "resources/UCSDp.jpg",
         "visibility": "public"
       }
     ]
@@ -143,7 +143,7 @@
     "summary": "บริษัทที่สนับสนุนการวิจัยเทคโนโลยีระดับนานาชาติ",
     "location": "ประเทศไทย",
     "website_url": "",
-    "logo_path": "../KPC_logo.jpg",
+    "logo_path": "resources/KPC_logo.jpg",
     "collaborations": [
       {
         "id": "event-aist-001",
@@ -151,7 +151,7 @@
         "type": "research",
         "period": "10 มิ.ย. - 17 ส.ค. 2563",
         "summary": "นักศึกษาแลกเปลี่ยนทำวิจัยที่สถาบัน The National Institute of Advanced Industrial Science and Technology (AIST) ประเทศญี่ปุ่น",
-        "image_path": "../KPCp.jpg",
+        "image_path": "resources/KPCp.jpg",
         "visibility": "public"
       }
     ]
@@ -163,7 +163,7 @@
     "summary": "กลุ่มธุรกิจการค้าระหว่างประเทศ เครือเจริญโภคภัณฑ์",
     "location": "กรุงเทพมหานคร ประเทศไทย",
     "website_url": "",
-    "logo_path": "../FITBG_logo.jpg",
+    "logo_path": "resources/FITBG_logo.jpg",
     "collaborations": [
       {
         "id": "event-cp-001",
@@ -171,7 +171,7 @@
         "type": "academic_activity",
         "period": "24 กุมภาพันธ์ 2563",
         "summary": "สัมมนาเรื่อง How a computer scientist can help narrow social inequality พร้อมแบ่งปันประสบการณ์การบูรณาการองค์ความรู้",
-        "image_path": "../Demo_ai.jpg",
+        "image_path": "resources/Demo_ai.jpg",
         "visibility": "public"
       }
     ]
@@ -183,7 +183,7 @@
     "summary": "มหาวิทยาลัยเทคโนโลยีแห่งดับลิน ประเทศไอร์แลนด์",
     "location": "Dublin, Ireland",
     "website_url": "",
-    "logo_path": "../DIT_logo.jpg",
+    "logo_path": "resources/DIT_logo.jpg",
     "collaborations": [
       {
         "id": "event-tudublin-001",
@@ -191,7 +191,7 @@
         "type": "academic_activity",
         "period": "5 พฤศจิกายน 2562",
         "summary": "การแลกเปลี่ยนความเป็นไปได้ในการสร้างความร่วมมือด้านการศึกษากับ Senior Education Consultant จาก TU Dublin",
-        "image_path": "../TU dublin.jpg",
+        "image_path": "resources/TU dublin.jpg",
         "visibility": "public"
       }
     ]
@@ -203,7 +203,7 @@
     "summary": "ผู้เชี่ยวชาญด้าน Local LLM และ AI training & education community",
     "location": "กรุงเทพมหานคร ประเทศไทย",
     "website_url": "https://agicafet.com",
-    "logo_path": "../agicafet-logo.jpg",
+    "logo_path": "resources/agicafet-logo.jpg",
     "collaborations": [
       {
         "id": "event-sparkcamp-001",
@@ -211,7 +211,7 @@
         "type": "event",
         "period": "มิถุนายน",
         "summary": "ค่ายฝึกทักษะ AI สำหรับนักศึกษา ครอบคลุมเนื้อหา LLM, Prompting, RAG, Agentic AI และ AI Deployment",
-        "image_path": "../CSTU AI.jpg",
+        "image_path": "resources/CSTU AI.jpg",
         "visibility": "public",
         "co_hosts": [
           "AGICAFET",
@@ -227,7 +227,7 @@
     "summary": "บริษัทด้าน AI infrastructure จากประเทศสิงคโปร์ ผู้เชี่ยวชาญด้าน AI Deployment",
     "location": "Singapore",
     "website_url": "",
-    "logo_path": "../Embedded LLM.jpg",
+    "logo_path": "resources/Embedded LLM.jpg",
     "collaborations": [
       {
         "id": "event-sparkcamp-001",
@@ -244,14 +244,14 @@
       }
     ]
   },
-{
+  {
     "id": "partner-kansai-001",
     "name": "Kansai University",
     "type": "university",
     "summary": "มหาวิทยาลัยชั้นนำในประเทศญี่ปุ่น พันธมิตรโครงการแลกเปลี่ยนนักศึกษาและวิจัยด้าน Data Science",
     "location": "Osaka, Japan",
     "website_url": "",
-    "logo_path": "../kansai_logo.jpg",
+    "logo_path": "resources/kansai_logo.jpg",
     "collaborations": [
       {
         "id": "event-kansai-exchange-001",
@@ -259,10 +259,10 @@
         "type": "research",
         "period": "ปัจจุบัน",
         "summary": "โครงการนำร่องแลกเปลี่ยนนักศึกษาเพื่อทำวิจัยด้านระบบ AI สำหรับตอบคำถามเกี่ยวกับอาคารโดยใช้ข้อมูล BIM",
-        "image_path": "../kansai1.jpg",
+        "image_path": "resources/kansai1.jpg",
         "visibility": "public"
       }
-        ]
-      }
     ]
-
+  
+  }
+]
