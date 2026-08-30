@@ -12,16 +12,11 @@
 | รายการ | ค่าที่ใช้ใน V1 |
 | --- | --- |
 | AWS Service | Amazon S3 Static Website Hosting |
-| AWS Region | `TO BE UPDATED` |
-| S3 Bucket Name | `TO BE UPDATED` |
+| AWS Region | `us-east-1` |
+| S3 Bucket Name | `cs361-group1-project7` |
 | Deployment Source Branch | `main` |
-| Install Command | `TO BE UPDATED` |
-| Build Command | `TO BE UPDATED` |
-| Build Output Directory | `TO BE UPDATED` |
 | Index Document | `index.html` |
-| Error Document | `TO BE UPDATED` |
-| Public URL | `TO BE UPDATED AFTER DEPLOYMENT` |
-| Deployed Commit | `TO BE UPDATED AFTER DEPLOYMENT` |
+| Public URL | `http://cs361-group1-project7.s3-website-us-east-1.amazonaws.com` |
 
 ## Deployment Workflow
 
