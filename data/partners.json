@@ -14,6 +14,7 @@
         "type": "internship",
         "period": "2026",
         "summary": "รับนักศึกษาหลักสูตรวิทยาการคอมพิวเตอร์เข้าปฏิบัติสหกิจศึกษา",
+        "full_description": "บริษัท แอสเซนด์ กรุ๊ป เปิดรับนักศึกษาชั้นปีที่ 4 จากสาขาวิทยาการคอมพิวเตอร์ มหาวิทยาลัยธรรมศาสตร์ เข้าปฏิบัติสหกิจศึกษา โดยนักศึกษาจะได้เข้าไปมีส่วนร่วมในกระบวนการพัฒนาซอฟต์แวร์จริงขององค์กร ครอบคลุมทั้งฝั่ง Frontend, Backend, Data Science และ Software Testing เพื่อเตรียมความพร้อมในการก้าวเข้าสู่สายอาชีพนักพัฒนาซอฟต์แวร์ระดับมืออาชีพ",
         "image_path": "resources/Ascend_Logo.jpg",
         "visibility": "public"
       },
@@ -23,6 +24,7 @@
         "type": "academic_activity",
         "period": "ต่อเนื่อง",
         "summary": "ความร่วมมือในการส่งเสริมและพัฒนาทักษะทางวิชาการและวิชาชีพแก่นักศึกษา",
+        "full_description": "คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยธรรมศาสตร์ ได้ร่วมลงนามบันทึกข้อตกลงความร่วมมือทางวิชาการ (MoU) กับ บริษัท แอสเซนด์ กรุ๊ป จำกัด โดยมีวัตถุประสงค์เพื่อส่งเสริมการแลกเปลี่ยนเรียนรู้ระหว่างภาคการศึกษาและภาคธุรกิจ ตลอดจนร่วมกันพัฒนาทักษะทางวิชาการและวิชาชีพให้แก่นักศึกษา ผ่านการจัดกิจกรรมสัมมนา เวิร์กชอป และการรับนักศึกษาเข้าฝึกปฏิบัติงาน",
         "image_path": "resources/Ascend1.jpg",
         "visibility": "public"
       }
@@ -43,6 +45,7 @@
         "type": "academic_activity",
         "period": "2022",
         "summary": "โครงการหลักสูตรระยะสั้นในธีม Computer Science และการประยุกต์ใช้ IoT สำหรับเกษตรกรรม",
+        "full_description": "Institut Pertanian Bogor (IPB) ร่วมกับสาขาวิทยาการคอมพิวเตอร์ มหาวิทยาลัยธรรมศาสตร์ จัดตั้งโครงการ International Summer Course CSAgri ขึ้น เพื่อเป็นเวทีให้นักศึกษาจากหลากหลายประเทศได้แลกเปลี่ยนความรู้และวัฒนธรรม โดยเน้นบูรณาการองค์ความรู้ด้าน Computer Science เข้ากับการเกษตรยุคใหม่",
         "image_path": "resources/IPB1.jpg",
         "visibility": "public"
       },
@@ -52,6 +55,7 @@
         "type": "academic_activity",
         "period": "9 - 17 กันยายน 2565",
         "summary": "การส่งเสริมให้ผู้เข้าร่วมตระหนักถึงความสำคัญของเกษตรกรรมและการนำ IoT เข้ามาใช้ (Arduino, Smart Urban Farming)",
+        "full_description": "ระหว่างวันที่ 9 - 17 กันยายน 2565 มีการจัดกิจกรรมหลักสูตรระยะสั้น ภายใต้ธีม CSAgri เพื่อส่งเสริมให้นักศึกษาและผู้เข้าร่วมตระหนักถึงความสำคัญของเทคโนโลยีการเกษตร (Smart Urban Farming) ผ่านการลงมือปฏิบัติจริงด้วยการเขียนโปรแกรมควบคุมบอร์ด Arduino และการนำเทคโนโลยี Internet of Things (IoT) มาประยุกต์ใช้ในการแก้ปัญหาทางการเกษตร",
         "image_path": "resources/IPB2.jpg",
         "visibility": "public"
       }
@@ -72,6 +76,7 @@
         "type": "internship",
         "period": "2026",
         "summary": "การปฏิบัติงานในห้องปฏิบัติการวิจัยและพัฒนานวัตกรรมระดับประเทศ",
+        "full_description": "ศูนย์เทคโนโลยีอิเล็กทรอนิกส์และคอมพิวเตอร์แห่งชาติ (NECTEC) สวทช. เป็นหนึ่งในหน่วยงานภาครัฐที่ร่วมมือกับสาขาวิทยาการคอมพิวเตอร์ มหาวิทยาลัยธรรมศาสตร์ อย่างต่อเนื่องในการรับนักศึกษาเข้าปฏิบัติสหกิจศึกษา โดยนักศึกษาจะได้รับโอกาสเข้าไปทำงานร่วมกับทีมนักวิจัยในห้องปฏิบัติการชั้นนำ เพื่อพัฒนานวัตกรรมและโซลูชันเทคโนโลยีระดับประเทศ",
         "image_path": "resources/NECTEC_logo.jpg",
         "visibility": "public"
       }
@@ -92,6 +97,7 @@
         "type": "event",
         "period": "ตุลาคม 2563",
         "summary": "นำทีมผู้เชี่ยวชาญมาแนะนำบริษัทและแลกเปลี่ยนแบ่งปันความรู้ให้แก่นักศึกษา",
+        "full_description": "ในเดือนตุลาคม 2563 บริษัท กสิกร บิซิเนส-เทคโนโลยี กรุ๊ป (KBTG) ได้จัดกิจกรรม University Roadshow ขึ้นที่มหาวิทยาลัยธรรมศาสตร์ ศูนย์รังสิต โดยมีการนำทีมผู้เชี่ยวชาญด้าน IT และนวัตกรรมทางการเงินมาบรรยายให้ความรู้ แชร์ประสบการณ์การทำงานในสาย Tech และแนะนำโอกาสในการเข้าร่วมงานกับ KBTG ให้แก่นักศึกษาสาขาวิทยาการคอมพิวเตอร์",
         "image_path": "resources/kbtg1.jpg",
         "visibility": "public"
       },
@@ -101,6 +107,7 @@
         "type": "internship",
         "period": "ต่อเนื่อง",
         "summary": "รับนักศึกษาเพื่อประยุกต์ใช้ความรู้ในการพัฒาระบบซอฟต์แวร์จริงในสเกลระดับประเทศ",
+        "full_description": "KBTG เป็นหนึ่งในสถานประกอบการหลักเครือข่ายสหกิจศึกษา โดยรับนักศึกษาชั้นปีที่ 4 ที่มีความสนใจในสายงาน Software Engineering เข้าร่วมทีมพัฒนาแอปพลิเคชันและระบบการเงินที่มีผู้ใช้งานนับล้านคน (Scale ระดับประเทศ) ซึ่งช่วยให้นักศึกษาได้สัมผัสกับสถาปัตยกรรมซอฟต์แวร์สมัยใหม่และการทำงานแบบ Agile ร่วมกับทีมงานมืออาชีพ",
         "image_path": "resources/kbtg_logo.jpg",
         "visibility": "public"
       }
@@ -131,6 +138,7 @@
         "type": "research",
         "period": "26 มิ.ย. - 27 ส.ค. 2565",
         "summary": "ศึกษาพื้นฐานการควบคุมหุ่นยนต์ด้วย ROS และระบบ Marvelmind เพื่อประโยชน์ทางธุรกิจ Logistic และการช่วยเหลือผู้ประสบภัย",
+        "full_description": "นักศึกษาสาขาวิทยาการคอมพิวเตอร์ ได้รับคัดเลือกให้เข้าร่วมโครงการ International Summer Research Program (ISRP) ณ University of California, San Diego (UCSD) ระหว่างวันที่ 26 มิถุนายน - 27 สิงหาคม 2565 โดยทำการศึกษาและวิจัยพื้นฐานการควบคุมหุ่นยนต์ด้วย Robot Operating System (ROS) ควบคู่กับระบบ Marvelmind Indoor Navigation เพื่อพัฒนาต้นแบบหุ่นยนต์สำหรับประยุกต์ใช้ในธุรกิจ Logistic และการช่วยเหลือผู้ประสบภัย",
         "image_path": "resources/UCSDp.jpg",
         "visibility": "public"
       }
@@ -151,6 +159,7 @@
         "type": "research",
         "period": "10 มิ.ย. - 17 ส.ค. 2563",
         "summary": "นักศึกษาแลกเปลี่ยนทำวิจัยที่สถาบัน The National Institute of Advanced Industrial Science and Technology (AIST) ประเทศญี่ปุ่น",
+        "full_description": "นายยุทธนา บุญปาลิต และนายศิวกร สุวรรณจินดา นักศึกษาชั้นปีที่ 3 หลักสูตรวิทยาศาสตรบัณฑิต สาขาวิชาวิทยาการคอมพิวเตอร์ ได้รับโอกาสเดินทางไปแลกเปลี่ยนและทำวิจัยทางด้านเทคโนโลยีคอมพิวเตอร์ ณ สถาบัน The National Institute of Advanced Industrial Science and Technology (AIST) ที่เมือง Tsukuba ประเทศญี่ปุ่น ในระหว่างวันที่ 10 มิถุนายน ถึง 17 สิงหาคม 2563",
         "image_path": "resources/KPCp.jpg",
         "visibility": "public"
       }
@@ -171,6 +180,7 @@
         "type": "academic_activity",
         "period": "24 กุมภาพันธ์ 2563",
         "summary": "สัมมนาเรื่อง How a computer scientist can help narrow social inequality พร้อมแบ่งปันประสบการณ์การบูรณาการองค์ความรู้",
+        "full_description": "วันที่ 24 ก.พ. 63 สาขาวิทยาการคอมพิวเตอร์จัดงานสัมมนา เรื่อง Democratizing A.I. - How a computer scientist can help narrow social inequality โดยได้รับเกียรติจากวิทยากรผู้เชี่ยวชาญด้านระบบสนับสนุนการตัดสินใจโลจิสติกส์และห่วงโซ่อุปทานสินค้าเกษตรจากบริษัท Feed Ingredients Trading Business Group (C.P. Group) จำกัด มาแลกเปลี่ยนแบ่งปันความรู้และประสบการณ์ของการบูรณาการองค์ความรู้ทางด้านเศรษฐศาสตร์ คอมพิวเตอร์ การวิเคราะห์ประมวลผลข้อมูล เพื่อพัฒนาโมเดลวิเคราะห์ผลกระทบต่อ supply & demand ของสินค้าเกษตร",
         "image_path": "resources/Demo_ai.jpg",
         "visibility": "public"
       }
@@ -191,6 +201,7 @@
         "type": "academic_activity",
         "period": "5 พฤศจิกายน 2562",
         "summary": "การแลกเปลี่ยนความเป็นไปได้ในการสร้างความร่วมมือด้านการศึกษากับ Senior Education Consultant จาก TU Dublin",
+        "full_description": "วันที่ 5 พฤศจิกายน 2562 ผศ.ดร.ณัฐธนนท์ หงส์วริทธิ์ธร คณบดีคณะวิทยาศาสตร์ฯ อาจารย์ ดร.ประภาพร รัตนธำรง ผู้ช่วยคณบดีฝ่ายวิเทศสัมพันธ์และประชาสัมพันธ์ หารือแลกเปลี่ยนความเป็นไปได้ในการสร้างความร่วมมือด้านการศึกษากับ Mr. Cormac Kavanagh, Senior Education Consultant Ms. Andrea Ryan, the Regional Recruitment Officer และ Ms. Elizabeth McHenry, Manager จาก Technological University Dublin ประเทศ Ireland ณ ห้องรับรอง อาคารโดมบริหาร มหาวิทยาลัยธรรมศาสตร์ ศูนย์รังสิต",
         "image_path": "resources/TU dublin.jpg",
         "visibility": "public"
       }
@@ -211,6 +222,7 @@
         "type": "event",
         "period": "มิถุนายน",
         "summary": "ค่ายฝึกทักษะ AI สำหรับนักศึกษา ครอบคลุมเนื้อหา LLM, Prompting, RAG, Agentic AI และ AI Deployment",
+        "full_description": "โครงการ CSTU Spark Camp in AI เป็นค่ายฝึกทักษะปัญญาประดิษฐ์ (AI) แบบเจาะลึกที่จัดขึ้นสำหรับนักศึกษา โดยได้รับความร่วมมือจากบริษัท AGICAFET (Thailand) และ Embedded LLM (Singapore) เพื่อมาเป็นวิทยากรถ่ายทอดความรู้ ครอบคลุมเนื้อหาสำคัญในยุคปัจจุบัน เช่น Large Language Models (LLM), เทคนิคการทำ Prompting, Retrieval-Augmented Generation (RAG), การสร้าง Agentic AI และแนวทางการทำ AI Deployment บนสถาปัตยกรรมจริง",
         "image_path": "resources/CSTU AI.jpg",
         "visibility": "public",
         "co_hosts": [
@@ -235,6 +247,7 @@
         "type": "event",
         "period": "มิถุนายน",
         "summary": "ค่ายฝึกทักษะ AI สำหรับนักศึกษา ครอบคลุมเนื้อหา LLM, Prompting, RAG, Agentic AI และ AI Deployment",
+        "full_description": "โครงการ CSTU Spark Camp in AI เป็นค่ายฝึกทักษะปัญญาประดิษฐ์ (AI) แบบเจาะลึกที่จัดขึ้นสำหรับนักศึกษา โดยได้รับความร่วมมือจากบริษัท AGICAFET (Thailand) และ Embedded LLM (Singapore) เพื่อมาเป็นวิทยากรถ่ายทอดความรู้ ครอบคลุมเนื้อหาสำคัญในยุคปัจจุบัน เช่น Large Language Models (LLM), เทคนิคการทำ Prompting, Retrieval-Augmented Generation (RAG), การสร้าง Agentic AI และแนวทางการทำ AI Deployment บนสถาปัตยกรรมจริง",
         "image_path": "",
         "visibility": "public",
         "co_hosts": [
@@ -259,6 +272,7 @@
         "type": "research",
         "period": "ปัจจุบัน",
         "summary": "โครงการนำร่องแลกเปลี่ยนนักศึกษาเพื่อทำวิจัยด้านระบบ AI สำหรับตอบคำถามเกี่ยวกับอาคารโดยใช้ข้อมูล BIM",
+        "full_description": "นายปิตะวัต ภิรักษา นักศึกษาชั้นปีที่ 4 สาขาวิทยาการคอมพิวเตอร์ เข้าร่วมโครงการแลกเปลี่ยน ณ คณะ Business Data Science มหาวิทยาลัยคันไซ (Kansai University) ประเทศญี่ปุ่น โดยได้ทำการวิจัยร่วมกับ Prof. Kohei Ichikawa ในหัวข้อการพัฒนาระบบ AI สำหรับตอบคำถามเกี่ยวกับอาคารโดยใช้ข้อมูล Building Information Modeling (BIM) นอกจากนี้ยังมีการประชุมร่วมกับ ผศ.ดร.ประภาพร รัตนธำรง (อาจารย์ที่ปรึกษา) และ Prof. José Fortes จาก University of Florida ผ่านระบบออนไลน์เพื่อแลกเปลี่ยนความคิดเห็นด้านงานวิจัยอย่างต่อเนื่อง",
         "image_path": "resources/kansai1.jpg",
         "visibility": "public"
       }
@@ -272,9 +286,7 @@
     "location": "มหาวิทยาลัยธรรมศาสตร์ ศูนย์รังสิต",
     "website_url": "https://docs.google.com/spreadsheets/d/1mrexRW94TkVQUK91wLhqQtbEBResL4OBc9BWzcsvOjE/edit?gid=0#gid=0",
     "logo_path": "resources/collab1.jpg",
-    "collaborations": [
-      
-    ]
+    "full_description": "ศูนย์รวมข้อมูลสำหรับนักศึกษา อาจารย์ และสถานประกอบการเกี่ยวกับแผนสหกิจศึกษาหลักสูตรวิทยาศาสตรบัณฑิต สาขาวิชาวิทยาการคอมพิวเตอร์ มหาวิทยาลัยธรรมศาสตร์ พ.ศ. 2561 และ 2566เครือข่ายความร่วมมือระหว่างหลักสูตรวิทยาการคอมพิวเตอร์และสถานประกอบการชั้นนำกว่า 100 แห่งทั่วประเทศ เพื่อให้นักศึกษาได้ออกไปปฏิบัติงานจริง<br><br><ul style='padding-left: 1.5rem; line-height: 1.8;'><li>ทะเบียนสถานประกอบการปฏิบัติสหกิจศึกษา 2569 <a href='https://docs.google.com/spreadsheets/d/1mrexRW94TkVQUK91wLhqQtbEBResL4OBc9BWzcsvOjE/edit?gid=0#gid=0' target='_blank' style='color: #0066cc; text-decoration: underline; cursor: pointer;'>คลิกที่นี่</a></li><li>เกณฑ์รับเข้าแผนสหกิจศึกษา <a href='ใส่ลิงก์เกณฑ์รับเข้าตรงนี้' target='_blank' style='color: #0066cc; text-decoration: underline; cursor: pointer;'>คลิกที่นี่</a></li></ul>",
+    "collaborations": []
   }
-
 ]
