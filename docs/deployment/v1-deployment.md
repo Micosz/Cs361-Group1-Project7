@@ -17,6 +17,9 @@
 | Deployment Source Branch | `main` |
 | Index Document | `index.html` |
 | Public URL | `http://cs361-group1-project7.s3-website-us-east-1.amazonaws.com` |
+| Deployed By | `ชนกานต์ คงัรชตภิญโญ` |
+| Deployment Date | `สิงหาคม/30/26` |
+| Deployed Commit SHA | [`a1b2c3d`](https://github.com/Micosz/Cs361-Group1-Project7/commit/a1b2c3d4e5f678901234567890abcdef12345678) |
 
 ## Deployment Workflow
 
