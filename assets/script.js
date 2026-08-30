@@ -87,7 +87,9 @@ async function renderCollaboratorCards() {
     container.innerHTML = ''; 
 
     partners.forEach(partner => {
-        const bgStyle = partner.logo_path ? `background-image: url('${partner.logo_path}'); background-size: cover; background-position: center;` : '';
+        const bgStyle = partner.logo_path 
+    ? `background-image: url('${partner.logo_path}'); background-color: white; background-size: contain; background-repeat: no-repeat; background-position: center;` 
+    : '';
         const colorClass = getColorClass(partner.type);
 
         const cardHTML = `
@@ -117,10 +119,9 @@ async function renderEventCards() {
     activities.forEach(activity => {
         const colorClass = getColorClass(activity.type);
         
-        // เช็คว่ามีรูปไหม
         const bgStyle = activity.image_path 
-            ? `background-image: url('${activity.image_path}'); background-size: cover; background-position: center;` 
-            : '';
+    ? `background-image: url('${activity.image_path}'); background-color: white; background-size: contain; background-repeat: no-repeat; background-position: center;` 
+    : '';
         const thumbnailContent = activity.image_path 
             ? '' 
             : `<h2 style="color:white; font-size:1.5rem; text-align:center; padding:0 1.5rem; margin: auto;">${activity.title}</h2>`;
@@ -215,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function openModal(id, type) {
     let data = null;
+    const allActivities = await getPublicActivities(); // ดึงกิจกรรมทั้งหมดมารอไว้หาความสัมพันธ์
 
     if (type === 'partner') {
         data = await getPublicPartnerById(id);
@@ -224,16 +226,94 @@ async function openModal(id, type) {
 
     if (!data) return;
 
+    const modalImage = document.getElementById('modalImage');
+    const modalDetails = document.getElementById('modalDetails');
+
+    // ฟังก์ชันช่วยสร้าง HTML การ์ดขนาดเล็กสำหรับใส่ใน Modal
+    const createMiniCardHTML = (collab, partnerName) => {
+        const bgStyle = collab.image_path ? `background-image: url('${collab.image_path}'); background-size: cover; background-position: center;` : '';
+        const colorClass = getColorClass(collab.type || 'academic_activity');
+        const thumbnailContent = collab.image_path ? '' : `<h2 style="color:white; font-size:1.2rem; text-align:center; padding:0 1rem; margin: auto;">${collab.title}</h2>`;
+        
+        return `
+            <div class="card" onclick="openModal('${collab.id}', 'activity')" style="cursor: pointer; margin-bottom: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div class="card-thumbnail ${colorClass}" style="${bgStyle}; display: flex; height: 120px;">
+                    ${thumbnailContent}
+                </div>
+                <div class="card-content" style="padding: 1rem;">
+                    <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1rem; color: var(--text-dark);">${collab.title}</h3>
+                    <p class="card-desc" style="font-size: 0.85rem; margin-bottom: 0.5rem;">${collab.summary}</p>
+                    <div class="card-footer" style="font-size: 0.8rem; border-top: 1px solid #eee; padding-top: 0.5rem; display: flex; justify-content: space-between;">
+                        <span class="author-name" style="color: #666;">${partnerName}</span>
+                        <span class="stats" style="color: #999;">${collab.period}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+
     if (type === 'partner') {
+        // --- 1. ส่วนของ Partner (แสดงการ์ดกิจกรรมที่เกี่ยวข้อง) ---
         document.getElementById('modalTitle').textContent = data.name;
         document.getElementById('modalName').textContent = data.location || 'ไม่ระบุสถานที่';
         document.getElementById('modalInfo').textContent = data.type.toUpperCase();
-        document.getElementById('modalDetails').innerHTML = `<p>${data.summary}</p>`;
+        
+        if (data.logo_path) {
+            modalImage.style.backgroundImage = `url('${data.logo_path}')`;
+            modalImage.style.display = 'block';
+        } else {
+            modalImage.style.display = 'none';
+        }
+
+        const partnerDetailText = data.full_description ? data.full_description : data.summary;
+        let detailsHTML = `<p style="font-weight: bold; font-size: 1.1em; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.6;">${partnerDetailText}</p>`;
+        
+        // แปลง List เป็น Grid Cards
+        if (data.collaborations && data.collaborations.length > 0) {
+            const publicCollabs = data.collaborations.filter(c => c.visibility === 'public');
+            if(publicCollabs.length > 0) {
+                detailsHTML += `<h3 style="margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">ความร่วมมือและกิจกรรม</h3>`;
+                // สร้าง Grid ขนาดย่อมใน Modal
+                detailsHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">`;
+                publicCollabs.forEach(collab => {
+                    detailsHTML += createMiniCardHTML(collab, data.name);
+                });
+                detailsHTML += `</div>`;
+            }
+        }
+        modalDetails.innerHTML = detailsHTML;
+
     } else {
+        // --- 2. ส่วนของ Activity (แสดง Event อื่นๆ ของบริษัทเดียวกัน) ---
+        const hostNames = (data.co_hosts && data.co_hosts.length > 0) ? data.co_hosts.join(' และ ') : data.partnerName;
+
         document.getElementById('modalTitle').textContent = data.title;
-        document.getElementById('modalName').textContent = data.partnerName;
+        document.getElementById('modalName').textContent = hostNames;
         document.getElementById('modalInfo').textContent = data.period || data.type.toUpperCase();
-        document.getElementById('modalDetails').innerHTML = `<p>${data.summary}</p>`;
+        
+        if (data.image_path) {
+            modalImage.style.backgroundImage = `url('${data.image_path}')`;
+            modalImage.style.display = 'block';
+        } else {
+            modalImage.style.display = 'none';
+        }
+
+        const detailText = data.full_description ? data.full_description : data.summary;
+        let detailsHTML = `<p style="line-height: 1.6; color: var(--text-dark); text-align: justify; margin-bottom: 1.5rem;">${detailText}</p>`;
+
+        // หา Event อื่นๆ ที่มาจากบริษัทเดียวกัน (และไม่ใช่ตัวมันเอง)
+        const relatedActivities = allActivities.filter(a => a.partnerId === data.partnerId && a.id !== data.id);
+        
+        if (relatedActivities.length > 0) {
+            detailsHTML += `<h3 style="margin-top: 2rem; margin-bottom: 1rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">กิจกรรมอื่นๆ จาก ${data.partnerName}</h3>`;
+            detailsHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">`;
+            relatedActivities.forEach(collab => {
+                detailsHTML += createMiniCardHTML(collab, collab.partnerName);
+            });
+            detailsHTML += `</div>`;
+        }
+
+        modalDetails.innerHTML = detailsHTML;
     }
 
     document.getElementById('detailModal').style.display = 'flex';
