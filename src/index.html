@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSTUHub - Information Board</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/script.js" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -108,13 +108,12 @@
             <span class="close-btn" onclick="closeModal()">&times;</span>
             <h1 class="modal-title" id="modalTitle">HEAD</h1>
             <div class="user-info">
-                <div class="avatar"></div>
                 <div class="user-text">
                     <div class="name" id="modalName">Name</div>
                     <div class="info" id="modalInfo">information</div>
                 </div>
             </div>
-            <div class="main-image"></div>
+            <div class="main-image" id="modalImage"></div>
             <div class="details-section" id="modalDetails">
                 <p>details</p>
             </div>
