@@ -32,7 +32,7 @@ V1 ครอบคลุมเฉพาะหน้า Browse หน้ารา
 | [`docs/data/v1-data.md`](docs/data/v1-data.md) | อธิบายโครงสร้างข้อมูล ชนิดข้อมูลใน `partners.json` |
 | [`docs/design/v1-design.md`](docs/design/v1-design.md) | อธิบายการออกแบบหน้าหลัก ส่วนประกอบ ลำดับการใช้งาน และ เงื่อนไขการทำ Responsive Design |
 | [`docs/deployment/v1-deployment.md`](docs/deployment/v1-deployment.md) | ระบุการตั้งค่า ขั้นตอน Deploy ระบบขึ้น AWS Services |
-| [`docs/evidence/v1/v1-evidence.md`](docs/evidence/v1/v1-evidence.md) | ใช้รวบรวมหลักฐานการพัฒนา ทดสอบ และเผยแพร่ระบบสำหรับ V1 |
+| [`docs/evidence/v1-evidence.md`](docs/evidence/v1/v1-evidence.md) | ใช้รวบรวมหลักฐานการพัฒนา ทดสอบ และเผยแพร่ระบบสำหรับ V1 |
 | [`docs/ai-usage/v1-ai-usage-declaration.md`](docs/ai-usage/v1-ai-usage-declaration.md) | ใช้บันทึกการใช้ AI หรือเครื่องมือค้นหาของสมาชิกแต่ละคน |
 
 ## Team Members
