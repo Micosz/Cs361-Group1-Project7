@@ -82,12 +82,33 @@
 
     <main class="container">
         <section id="sectionCollaborator" class="mb-section active-section">
+            <div class="filter-wrapper">
+                <select id="filterCollab" class="modern-select" onchange="applyCollabFilters()">
+                    <option value="all">องค์กรทั้งหมด</option>
+                    <option value="company">บริษัท (Company)</option>
+                    <option value="university">มหาวิทยาลัย (University)</option>
+                    <option value="government">หน่วยงานรัฐ (Government)</option>
+                    <option value="internship">เครือข่ายสหกิจศึกษา (Internship)</option>
+                </select>
+            </div>
+
             <div class="grid" id="collaboratorGrid">
+
             </div>
         </section>
-
         <section id="sectionEvent" class="mb-section" style="display: none;">
+            <div class="filter-wrapper">
+                <select id="filterEvent" class="modern-select" onchange="applyEventFilters()">
+                    <option value="all">กิจกรรมทั้งหมด</option>
+                    <option value="internship">โครงการฝึกงานและสหกิจฯ</option>
+                    <option value="academic_activity">กิจกรรมวิชาการ (MoU)</option>
+                    <option value="event">กิจกรรมทั่วไปและสัมมนา</option>
+                    <option value="research">งานวิจัยและแลกเปลี่ยน</option>
+                </select>
+            </div>
+
             <div class="grid" id="eventGrid">
+                
             </div>
         </section>
     </main>
