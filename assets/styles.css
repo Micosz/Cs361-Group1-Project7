@@ -66,10 +66,16 @@ main {
 
 .logo span { color: var(--tu-red); }
 
-.search-container {
-    display: flex;
+/* --- อัปเดตส่วนค้นหาและ Autocomplete --- */
+.search-wrapper {
+    position: relative;
     width: 45%;
     max-width: 550px;
+}
+
+.search-container {
+    display: flex;
+    width: 100%;
     background-color: var(--bg-gray-dark);
     border-radius: 50px;
     border: 1px solid var(--border-color);
@@ -101,6 +107,61 @@ main {
 }
 
 .search-btn:hover { background-color: var(--tu-yellow-hover); }
+
+.suggestions-dropdown {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.suggestion-item {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background-color: var(--bg-gray-dark);
+}
+
+.suggestion-title {
+    font-weight: 700;
+    color: var(--text-dark);
+    font-size: 0.95rem;
+}
+
+.suggestion-category {
+    font-size: 0.7rem;
+    color: var(--tu-red);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.suggestion-desc {
+    font-size: 0.8rem;
+    color: var(--text-gray);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* -------------------------------- */
 
 .auth-buttons {
     display: flex;
@@ -283,7 +344,7 @@ main {
     color: var(--text-dark);
     margin: 0 0 0.15rem 0;
     line-height: 1.2;
-    word-wrap: break-word; /* สั่งให้ข้อความขึ้นบรรทัดใหม่แทนการตัดคำทิ้ง */
+    word-wrap: break-word; 
 }
 
 .float-card .card-text p {
@@ -479,7 +540,7 @@ main {
     .container { padding: 0 1rem; }
     
     .navbar { flex-wrap: wrap; padding: 1rem; gap: 1rem; }
-    .search-container { order: 3; width: 100%; max-width: 100%; }
+    .search-wrapper { order: 3; width: 100%; max-width: 100%; }
     
     .hero-section { 
         flex-direction: column; 
@@ -638,7 +699,6 @@ main {
     }
 }
 
-/* ================= แถบตัวกรองสไตล์ Modern (ชิดขวา) ================= */
 .filter-wrapper {
     display: flex;
     justify-content: flex-end; 

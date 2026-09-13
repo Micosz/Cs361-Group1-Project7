@@ -15,9 +15,12 @@
             CSTU<span>Hub</span>
         </div>
         
-        <div class="search-container">
-            <input type="text" placeholder="ค้นหาโปรเจกต์, ผู้มีส่วนได้ส่วนเสีย, หรืออัปเดตต่างๆ...">
-            <button class="search-btn">Search</button>
+        <div class="search-wrapper">
+            <div class="search-container">
+                <input type="text" id="searchInput" oninput="showSuggestions()" placeholder="ค้นหาโปรเจกต์, องค์กร, หรือกิจกรรมต่างๆ...">
+                <button class="search-btn" onclick="handleSearch(); document.getElementById('searchSuggestions').style.display='none';">Search</button>
+            </div>
+            <div id="searchSuggestions" class="suggestions-dropdown" style="display: none;"></div>
         </div>
         
         <div class="auth-buttons">
@@ -25,7 +28,6 @@
             <a href="#" class="login-btn">Log in</a>
         </div>
     </nav>
-
 
     <section class="hero-section container">
         <div class="hero-content">
@@ -69,7 +71,6 @@
     </section>
 
     <div id="board-section" class="sub-header container">
-
         <div class="tabs">
             <button class="tab active" onclick="switchTab('collaborator')" id="tabCollab">COLLABORATOR</button>
             <button class="tab" onclick="switchTab('event')" id="tabEvent">EVENT & ACTIVITIES</button>
@@ -91,11 +92,9 @@
                     <option value="internship">เครือข่ายสหกิจศึกษา (Internship)</option>
                 </select>
             </div>
-
-            <div class="grid" id="collaboratorGrid">
-
-            </div>
+            <div class="grid" id="collaboratorGrid"></div>
         </section>
+
         <section id="sectionEvent" class="mb-section" style="display: none;">
             <div class="filter-wrapper">
                 <select id="filterEvent" class="modern-select" onchange="applyEventFilters()">
@@ -106,10 +105,7 @@
                     <option value="research">งานวิจัยและแลกเปลี่ยน</option>
                 </select>
             </div>
-
-            <div class="grid" id="eventGrid">
-                
-            </div>
+            <div class="grid" id="eventGrid"></div>
         </section>
     </main>
 
@@ -129,7 +125,6 @@
             <span class="close-btn" onclick="closeModal()">&times;</span>
             <h1 class="modal-title" id="modalTitle">HEAD</h1>
             <div class="user-info">
-                <div class="avatar"></div>
                 <div class="user-text">
                     <div class="name" id="modalName">Name</div>
                     <div class="info" id="modalInfo">information</div>
