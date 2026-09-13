@@ -66,7 +66,6 @@ main {
 
 .logo span { color: var(--tu-red); }
 
-/* --- อัปเดตส่วนค้นหาและ Autocomplete --- */
 .search-wrapper {
     position: relative;
     width: 45%;
@@ -161,7 +160,6 @@ main {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-/* -------------------------------- */
 
 .auth-buttons {
     display: flex;
@@ -322,6 +320,13 @@ main {
     z-index: 1;
     animation: floating 6s infinite ease-in-out;
     max-width: 280px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.float-card:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    border-color: var(--tu-red);
 }
 
 .float-card .icon-box {

@@ -2,6 +2,7 @@ let currentSearchKeyword = "";
 let currentCollabFilter = "all";
 let currentEventFilter = "all";
 
+// ดึงข้อมูลจากไฟล์ JSON
 async function fetchPartnersData() {
     try {
         const response = await fetch('data/partners.json');
@@ -13,46 +14,60 @@ async function fetchPartnersData() {
     }
 }
 
+// 1. ดึงข้อมูล Partner ทั้งหมดสำหรับหน้า Browse
 async function getPublicPartners() {
     return await fetchPartnersData();
 }
 
+// 2. ดึงข้อมูล Partner จาก ID สำหรับหน้า Detail
 async function getPublicPartnerById(id) {
     const partnersData = await fetchPartnersData();
     return partnersData.find(partner => partner.id === id) || null;
 }
 
+// 3. ดึงข้อมูลกิจกรรมทั้งหมด
 async function getPublicActivities() {
     const partnersData = await fetchPartnersData();
     let allActivities = [];
     
     partnersData.forEach(partner => {
         if (partner.collaborations && partner.collaborations.length > 0) {
+            // กรองเอาเฉพาะอันที่ visibility เป็น public หรือไม่มีฟิลด์นี้
             const publicCollabs = partner.collaborations.filter(collab => collab.visibility === 'public' || !collab.visibility);
+            
             const activitiesWithPartnerId = publicCollabs.map(collab => ({
                 ...collab,
                 partnerId: partner.id,
                 partnerName: partner.name
             }));
+            
             allActivities = [...allActivities, ...activitiesWithPartnerId];
         }
     });
 
+    // --- กรอง Event ที่ ID ซ้ำกันออก ---
     let uniqueActivities = [];
     let seenIds = new Set();
+
     allActivities.forEach(activity => {
         if (!seenIds.has(activity.id)) {
             seenIds.add(activity.id);
             uniqueActivities.push(activity);
         }
     });
+
     return uniqueActivities;
 }
 
+// 4. ดึงข้อมูลกิจกรรมจาก ID
 async function getPublicActivityById(id) {
     const allActivities = await getPublicActivities();
     return allActivities.find(activity => activity.id === id) || null;
 }
+
+// ==========================================
+// ส่วนของการ Render UI 
+// ==========================================
 
 function handleSearch() {
     currentSearchKeyword = document.getElementById('searchInput').value.toLowerCase().trim();
@@ -139,14 +154,18 @@ function getColorClass(type) {
     }
 }
 
+// สร้างการ์ดหน้า Collaborator
 async function renderCollaboratorCards() {
     const container = document.getElementById('collaboratorGrid');
     if (!container) return;
     
+    // ดึงข้อมูล
     let partners = await getPublicPartners();
+
     if (currentCollabFilter !== 'all') {
         partners = partners.filter(p => p.type === currentCollabFilter);
     }
+
     if (currentSearchKeyword !== "") {
         partners = partners.filter(p => 
             (p.name && p.name.toLowerCase().includes(currentSearchKeyword)) ||
@@ -156,6 +175,7 @@ async function renderCollaboratorCards() {
     }
 
     container.innerHTML = ''; 
+
     if (partners.length === 0) {
         container.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-gray);">
@@ -169,8 +189,8 @@ async function renderCollaboratorCards() {
 
     partners.forEach(partner => {
         const bgStyle = partner.logo_path 
-            ? `background-image: url('${partner.logo_path}'); background-color: white; background-size: contain; background-repeat: no-repeat; background-position: center;` 
-            : '';
+    ? `background-image: url('${partner.logo_path}'); background-color: white; background-size: contain; background-repeat: no-repeat; background-position: center;` 
+    : '';
         const colorClass = getColorClass(partner.type);
 
         const cardHTML = `
@@ -189,14 +209,17 @@ async function renderCollaboratorCards() {
     });
 }
 
+//สร้างการ์ดหน้า Event & Activities
 async function renderEventCards() {
     const container = document.getElementById('eventGrid');
     if (!container) return;
     
     let activities = await getPublicActivities();
+
     if (currentEventFilter !== 'all') {
         activities = activities.filter(a => a.type === currentEventFilter);
     }
+
     if (currentSearchKeyword !== "") {
         activities = activities.filter(a => 
             (a.title && a.title.toLowerCase().includes(currentSearchKeyword)) ||
@@ -207,6 +230,7 @@ async function renderEventCards() {
     }
 
     container.innerHTML = ''; 
+
     if (activities.length === 0) {
         container.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-gray);">
@@ -220,13 +244,15 @@ async function renderEventCards() {
 
     activities.forEach(activity => {
         const colorClass = getColorClass(activity.type);
+        
         const bgStyle = activity.image_path 
-            ? `background-image: url('${activity.image_path}'); background-color: white; background-size: contain; background-repeat: no-repeat; background-position: center;` 
-            : '';
+    ? `background-image: url('${activity.image_path}'); background-color: white; background-size: contain; background-repeat: no-repeat; background-position: center;` 
+    : '';
         const thumbnailContent = activity.image_path 
             ? '' 
             : `<h2 style="color:white; font-size:1.5rem; text-align:center; padding:0 1.5rem; margin: auto;">${activity.title}</h2>`;
 
+        // --- เช็คผู้จัดร่วม (co_hosts) ---
         const hostNames = (activity.co_hosts && activity.co_hosts.length > 0)
             ? activity.co_hosts.join(' และ ') 
             : activity.partnerName;
@@ -250,6 +276,7 @@ async function renderEventCards() {
     });
 }
 
+//ฟังก์ชันสลับ Tab
 function switchTab(tabName) {
     const tabCollab = document.getElementById('tabCollab');
     const tabEvent = document.getElementById('tabEvent');
@@ -271,42 +298,57 @@ function switchTab(tabName) {
     }
 }
 
+//ฟังก์ชันสุ่มข้อความใส่การ์ดทุกๆ 10 วินาที
 async function initHeroTicker() {
     const partners = await getPublicPartners();
     if (!partners || partners.length === 0) return;
 
     function updateCards() {
+        // สลับลำดับข้อมูลแบบสุ่ม (Shuffle)
         let shuffled = [...partners].sort(() => 0.5 - Math.random());
+        
+        // ดึง3บริษัทแรกหลังจากการสุ่ม
         const p1 = shuffled[0] || partners[0];
         const p2 = shuffled[1] || partners[0];
         const p3 = shuffled[2] || partners[0];
 
+        //การ์ดใบที่ 1
         const t1 = document.getElementById('heroTitle1');
         const d1 = document.getElementById('heroDesc1');
+        const c1 = document.getElementById('heroCard1');
         if (t1) { t1.textContent = p1.name; d1.textContent = `${p1.type.toUpperCase()}`; }
+        if (c1) { c1.onclick = () => openModal(p1.id, 'partner'); }
 
+        //การ์ดใบที่ 2
         const t2 = document.getElementById('heroTitle2');
         const d2 = document.getElementById('heroDesc2');
+        const c2 = document.getElementById('heroCard2');
         if (t2) { t2.textContent = p2.name; d2.textContent = `${p2.type.toUpperCase()}`; }
+        if (c2) { c2.onclick = () => openModal(p2.id, 'partner'); }
 
+        //การ์ดใบที่ 3
         const t3 = document.getElementById('heroTitle3');
         const d3 = document.getElementById('heroDesc3');
+        const c3 = document.getElementById('heroCard3');
         if (t3) { t3.textContent = p3.name; d3.textContent = `${p3.type.toUpperCase()}`; }
+        if (c3) { c3.onclick = () => openModal(p3.id, 'partner'); }
     }
 
     updateCards();
+
     setInterval(updateCards, 10000);
 }
 
+//สั่งให้ Render การ์ดทันทีเมื่อโหลดโครงสร้าง HTML เสร็จ
 document.addEventListener('DOMContentLoaded', () => {
     renderCollaboratorCards();
     renderEventCards();
-    initHeroTicker(); 
+    initHeroTicker(); // เติมบรรทัดนี้เพื่อให้ระบบสุ่มเริ่มทำงาน
 });
 
 async function openModal(id, type) {
     let data = null;
-    const allActivities = await getPublicActivities();
+    const allActivities = await getPublicActivities(); // ดึงกิจกรรมทั้งหมดมารอไว้หาความสัมพันธ์
 
     if (type === 'partner') {
         data = await getPublicPartnerById(id);
@@ -319,6 +361,7 @@ async function openModal(id, type) {
     const modalImage = document.getElementById('modalImage');
     const modalDetails = document.getElementById('modalDetails');
 
+    // ฟังก์ชันช่วยสร้าง HTML การ์ดขนาดเล็กสำหรับใส่ใน Modal
     const createMiniCardHTML = (collab, partnerName) => {
         const bgStyle = collab.image_path ? `background-image: url('${collab.image_path}'); background-size: cover; background-position: center;` : '';
         const colorClass = getColorClass(collab.type || 'academic_activity');
@@ -342,6 +385,7 @@ async function openModal(id, type) {
     };
 
     if (type === 'partner') {
+        // --- 1. ส่วนของ Partner (แสดงการ์ดกิจกรรมที่เกี่ยวข้อง) ---
         document.getElementById('modalTitle').textContent = data.name;
         document.getElementById('modalName').textContent = data.location || 'ไม่ระบุสถานที่';
         document.getElementById('modalInfo').textContent = data.type.toUpperCase();
@@ -356,10 +400,12 @@ async function openModal(id, type) {
         const partnerDetailText = data.full_description ? data.full_description : data.summary;
         let detailsHTML = `<p style="font-weight: bold; font-size: 1.1em; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.6;">${partnerDetailText}</p>`;
         
+        // แปลง List เป็น Grid Cards
         if (data.collaborations && data.collaborations.length > 0) {
             const publicCollabs = data.collaborations.filter(c => c.visibility === 'public');
             if(publicCollabs.length > 0) {
                 detailsHTML += `<h3 style="margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">ความร่วมมือและกิจกรรม</h3>`;
+                // สร้าง Grid ขนาดย่อมใน Modal
                 detailsHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">`;
                 publicCollabs.forEach(collab => {
                     detailsHTML += createMiniCardHTML(collab, data.name);
@@ -370,6 +416,7 @@ async function openModal(id, type) {
         modalDetails.innerHTML = detailsHTML;
 
     } else {
+        // --- 2. ส่วนของ Activity (แสดง Event อื่นๆ ของบริษัทเดียวกัน) ---
         const hostNames = (data.co_hosts && data.co_hosts.length > 0) ? data.co_hosts.join(' และ ') : data.partnerName;
 
         document.getElementById('modalTitle').textContent = data.title;
@@ -386,6 +433,7 @@ async function openModal(id, type) {
         const detailText = data.full_description ? data.full_description : data.summary;
         let detailsHTML = `<p style="line-height: 1.6; color: var(--text-dark); text-align: justify; margin-bottom: 1.5rem;">${detailText}</p>`;
 
+        // หา Event อื่นๆ ที่มาจากบริษัทเดียวกัน (และไม่ใช่ตัวมันเอง)
         const relatedActivities = allActivities.filter(a => a.partnerId === data.partnerId && a.id !== data.id);
         
         if (relatedActivities.length > 0) {
