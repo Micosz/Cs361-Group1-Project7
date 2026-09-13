@@ -1,0 +1,28 @@
+{
+  "name": "cs361-group1-project7",
+  "version": "1.0.0",
+  "description": "**Project Definition:** โครงการนี้มีเป้าหมายสร้างระบบกลางสำหรับบริหารข้อมูลคู่ความร่วมมือและผู้มีส่วนได้ส่วนเสียของหลักสูตร เนื่องจากปัจจุบันข้อมูลคู่ความร่วมมือ เอกสาร ข้อตกลง กิจกรรม และผู้ประสานงานมักกระจายอยู่ในหลายไฟล์หรือหลายระบบ ทำให้ติดตามสถานะหรือระยะเวลาของข้อตกลงที่เกิดขึ้นได้ยาก",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Micosz/Cs361-Group1-Project7.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Micosz/Cs361-Group1-Project7/issues"
+  },
+  "homepage": "https://github.com/Micosz/Cs361-Group1-Project7#readme",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1129.0",
+    "@aws-sdk/lib-dynamodb": "^3.1129.0"
+  }
+}
