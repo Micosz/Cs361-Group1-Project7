@@ -191,21 +191,12 @@ async function renderCollaboratorCards() {
     if (!container) return;
     
     // ดึงข้อมูล
-    let partners = await getPublicPartners();
-
-    if (currentCollabFilter !== 'all') {
-        partners = partners.filter(p => p.type === currentCollabFilter);
-    }
-
-    if (currentSearchKeyword !== "") {
-        partners = partners.filter(p => 
-            (p.name && p.name.toLowerCase().includes(currentSearchKeyword)) ||
-            (p.summary && p.summary.toLowerCase().includes(currentSearchKeyword)) ||
-            (p.location && p.location.toLowerCase().includes(currentSearchKeyword))
-        );
-    }
-
+    const version = ++collaboratorRenderVersion;
+    const records = await getPublicPartners();
+    if (version !== collaboratorRenderVersion) return;
+    const partners = filterBrowseRecords(records, 'name', 'filterCollab');
     container.innerHTML = ''; 
+    showBrowseEmptyState(container, partners.length);
 
     if (partners.length === 0) {
         container.innerHTML = `
@@ -245,22 +236,12 @@ async function renderEventCards() {
     const container = document.getElementById('eventGrid');
     if (!container) return;
     
-    let activities = await getPublicActivities();
-
-    if (currentEventFilter !== 'all') {
-        activities = activities.filter(a => a.type === currentEventFilter);
-    }
-
-    if (currentSearchKeyword !== "") {
-        activities = activities.filter(a => 
-            (a.title && a.title.toLowerCase().includes(currentSearchKeyword)) ||
-            (a.summary && a.summary.toLowerCase().includes(currentSearchKeyword)) ||
-            (a.partnerName && a.partnerName.toLowerCase().includes(currentSearchKeyword)) ||
-            (a.co_hosts && a.co_hosts.join(' ').toLowerCase().includes(currentSearchKeyword))
-        );
-    }
-
+    const version = ++eventRenderVersion;
+    const records = await getPublicActivities();
+    if (version !== eventRenderVersion) return;
+    const activities = filterBrowseRecords(records, 'title', 'filterEvent');
     container.innerHTML = ''; 
+    showBrowseEmptyState(container, activities.length);
 
     if (activities.length === 0) {
         container.innerHTML = `
@@ -492,3 +473,115 @@ window.onclick = function(event) {
         modal.style.display = "none";
     }
 }
+
+// ==========================================
+// Browse filters (data access and search UI remain separate)
+// ==========================================
+let browseKeyword = '';
+let collaboratorRenderVersion = 0;
+let eventRenderVersion = 0;
+
+function filterBrowseRecords(records, field, selectId) {
+    const type = document.getElementById(selectId)?.value || 'all';
+    const keyword = browseKeyword.trim().toLowerCase();
+    // Preserve dates, co_hosts and relationships from the data source.
+    return records.filter(record =>
+        (type === 'all' || record.type === type) &&
+        String(record[field] ?? '').toLowerCase().includes(keyword)
+    );
+}
+
+// Integration point for #48: pass the keyword, or '' to clear only search.
+function setBrowseKeyword(keyword) {
+    browseKeyword = String(keyword ?? '');
+    return Promise.all([renderCollaboratorCards(), renderEventCards()]);
+}
+
+function applyCollabFilters() {
+    return renderCollaboratorCards();
+}
+
+function applyEventFilters() {
+    return renderEventCards();
+}
+
+function initBrowseFilters() {
+    [
+        ['filterCollab', 'ประเภทคู่ความร่วมมือ', applyCollabFilters],
+        ['filterEvent', 'ประเภทกิจกรรม', applyEventFilters]
+    ].forEach(([id, label, apply]) => {
+        const select = document.getElementById(id);
+        if (!select || document.getElementById(`${id}Clear`)) return;
+        
+        select.setAttribute('aria-label', label);
+        
+        // สร้างปุ่มล้าง Filter (ถังขยะ)
+        const clearButton = document.createElement('button');
+        clearButton.id = `${id}Clear`;
+        clearButton.type = 'button';
+        clearButton.className = 'clear-filter-btn'; // เปลี่ยน Class เพื่อไปเขียน CSS ใหม่
+        clearButton.innerHTML = '<i class="fas fa-trash-alt"></i>'; // ใช้ Icon ถังขยะ
+        clearButton.setAttribute('aria-label', `ล้าง${label}`);
+        clearButton.title = `ล้าง${label}`; // เพิ่ม Tooltip ให้รู้ว่าปุ่มนี้ทำอะไร
+        
+        const sync = () => { 
+            // ซ่อนปุ่มถังขยะถ้าเลือก 'all' (ไม่มีอะไรให้ล้าง)
+            clearButton.style.display = select.value === 'all' ? 'none' : 'flex';
+
+            adjustSelectWidth(select);
+        };
+        
+        select.addEventListener('change', sync);
+        clearButton.addEventListener('click', () => {
+            select.value = 'all';
+            sync();
+            apply();
+        });
+        
+        // แทรกลงไปต่อท้ายกล่อง Select
+        select.insertAdjacentElement('afterend', clearButton);
+        sync();
+    });
+}
+
+function showBrowseEmptyState(container, resultCount) {
+    if (resultCount > 0) return;
+    const message = document.createElement('p');
+    message.setAttribute('role', 'status');
+    message.style.gridColumn = '1 / -1';
+    message.textContent = 'ไม่พบอีเวนต์หรือคู่ความร่วมมือที่ตรงกับเงื่อนไข กรุณาเปลี่ยนหรือล้างประเภทหรือคำค้น';
+    container.appendChild(message);
+}
+
+// ฟังก์ชันช่วยคำนวณความกว้างของข้อความใน Select ให้พอดีเป๊ะ (เวอร์ชันคำนวณจาก CSS จริง)
+function adjustSelectWidth(selectElement) {
+    const tempSpan = document.createElement('span');
+    tempSpan.textContent = selectElement.options[selectElement.selectedIndex].text;
+    
+    // ดึงสไตล์ของฟอนต์มาให้เหมือนกล่อง Select เป๊ะๆ
+    const style = window.getComputedStyle(selectElement);
+    tempSpan.style.fontFamily = style.fontFamily;
+    tempSpan.style.fontSize = style.fontSize;
+    tempSpan.style.fontWeight = style.fontWeight;
+    
+    tempSpan.style.visibility = 'hidden';
+    tempSpan.style.position = 'absolute';
+    tempSpan.style.whiteSpace = 'nowrap';
+    document.body.appendChild(tempSpan);
+    
+    // หาความกว้างเฉพาะตัวอักษร
+    const textWidth = tempSpan.getBoundingClientRect().width;
+    document.body.removeChild(tempSpan);
+    
+    // ดึงค่า Padding ซ้าย/ขวา และ Border จาก CSS มาบวกเพิ่ม (แทนการกะเลขเอง)
+    const paddingLeft = parseFloat(style.paddingLeft) || 16;
+    const paddingRight = parseFloat(style.paddingRight) || 40;
+    const border = 2; // ขอบซ้ายขวา
+    
+    // รวมความกว้างทั้งหมด (บวกเผื่อบัฟเฟอร์ไว้อีก 5px กันตัวอักษรเบียดขอบ)
+    const newWidth = textWidth + paddingLeft + paddingRight + border + 5;
+    
+    selectElement.style.width = `${newWidth}px`;
+}
+
+document.addEventListener('DOMContentLoaded', initBrowseFilters);

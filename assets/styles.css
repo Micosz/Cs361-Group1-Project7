@@ -707,7 +707,35 @@ main {
 .filter-wrapper {
     display: flex;
     justify-content: flex-end; 
+    align-items: center; /* ให้ปุ่มกับ Select ตรงกัน */
+    gap: 0.5rem; /* ระยะห่างระหว่างกล่อง Select กับปุ่ม */
     margin-bottom: 1.5rem;
+}
+
+.clear-filter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background-color: white;
+    color: var(--text-light); /* สีเทาอ่อนตอนปกติ */
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.clear-filter-btn:hover {
+    color: var(--tu-red); /* เปลี่ยนเป็นสีแดงของมหาลัยตอน Hover */
+    border-color: var(--tu-red);
+    background-color: #fff5f5; /* พื้นหลังแดงอ่อนๆ */
+    box-shadow: 0 4px 6px rgba(194, 30, 45, 0.1);
+}
+
+.clear-filter-btn:active {
+    transform: scale(0.95); /* เอฟเฟกต์กดปุ่ม */
 }
 
 .modern-select {
@@ -728,7 +756,7 @@ main {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
     font-family: inherit;
-    width: 155px;
+    /* ลบ width หรือ min-width ออกไปเลยครับ */
     text-align: left;
 }
 
