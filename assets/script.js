@@ -12,14 +12,25 @@ async function fetchPartnersData() {
         
         // --- 2. เริ่มขั้นตอนประกอบร่างข้อมูล (Reconstruct Data) ---
         // คัดแยกเฉพาะองค์กร (Partner จะมีฟิลด์ name)
-        const partners = rawData.filter(item => item.name);
+         const partners = rawData.filter(item => item.name);
         
         // คัดแยกเฉพาะกิจกรรม (Event จะมีฟิลด์ partnerId)
         const events = rawData.filter(item => item.partnerId);
         
         // นำกิจกรรมไปผูกกลับเข้ากับองค์กรให้เหมือนโครงสร้าง JSON เดิม
         partners.forEach(partner => {
-            partner.collaborations = events.filter(e => e.partnerId === partner.id);
+            partner.collaborations = events.filter(e => {
+                // 1. เป็นเจ้าภาพหลัก (เช็คจาก partnerId)
+                if (e.partnerId === partner.id) return true;
+                
+                // 2. เป็นผู้จัดร่วม (เช็คจาก co_hosts ถ้ามี)
+                if (e.co_hosts && Array.isArray(e.co_hosts)) {
+                    // เช็คว่าชื่อใน co_hosts ตรงกับส่วนใดส่วนหนึ่งของชื่อ Partner หรือไม่
+                    return e.co_hosts.some(hostName => partner.name.includes(hostName));
+                }
+                
+                return false;
+            });
         });
         // --------------------------------------------------------
         
