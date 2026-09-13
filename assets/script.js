@@ -62,72 +62,6 @@ async function getPublicActivityById(id) {
 }
 
 // ==========================================
-// Browse filters (data access and search UI remain separate)
-// ==========================================
-let browseKeyword = '';
-let collaboratorRenderVersion = 0;
-let eventRenderVersion = 0;
-
-function filterBrowseRecords(records, field, selectId) {
-    const type = document.getElementById(selectId)?.value || 'all';
-    const keyword = browseKeyword.trim().toLowerCase();
-    // Preserve dates, co_hosts and relationships from the data source.
-    return records.filter(record =>
-        (type === 'all' || record.type === type) &&
-        String(record[field] ?? '').toLowerCase().includes(keyword)
-    );
-}
-
-// Integration point for #48: pass the keyword, or '' to clear only search.
-function setBrowseKeyword(keyword) {
-    browseKeyword = String(keyword ?? '');
-    return Promise.all([renderCollaboratorCards(), renderEventCards()]);
-}
-
-function applyCollabFilters() {
-    return renderCollaboratorCards();
-}
-
-function applyEventFilters() {
-    return renderEventCards();
-}
-
-function initBrowseFilters() {
-    [
-        ['filterCollab', 'ประเภทคู่ความร่วมมือ', applyCollabFilters],
-        ['filterEvent', 'ประเภทกิจกรรม', applyEventFilters]
-    ].forEach(([id, label, apply]) => {
-        const select = document.getElementById(id);
-        if (!select || document.getElementById(`${id}Clear`)) return;
-        select.setAttribute('aria-label', label);
-        const clearButton = document.createElement('button');
-        clearButton.id = `${id}Clear`;
-        clearButton.type = 'button';
-        clearButton.className = 'modern-select';
-        clearButton.textContent = 'ล้างประเภท';
-        clearButton.setAttribute('aria-label', `ล้าง${label}`);
-        const sync = () => { clearButton.disabled = select.value === 'all'; };
-        select.addEventListener('change', sync);
-        clearButton.addEventListener('click', () => {
-            select.value = 'all';
-            sync();
-            apply();
-        });
-        select.insertAdjacentElement('afterend', clearButton);
-        sync();
-    });
-}
-
-function showBrowseEmptyState(container, resultCount) {
-    if (resultCount > 0) return;
-    const message = document.createElement('p');
-    message.setAttribute('role', 'status');
-    message.style.gridColumn = '1 / -1';
-    message.textContent = 'ไม่พบอีเวนต์หรือคู่ความร่วมมือที่ตรงกับเงื่อนไข กรุณาเปลี่ยนหรือล้างประเภทหรือคำค้น';
-    container.appendChild(message);
-}
-
-// ==========================================
 // ส่วนของการ Render UI 
 // ==========================================
 
@@ -283,7 +217,6 @@ async function initHeroTicker() {
 
 //สั่งให้ Render การ์ดทันทีเมื่อโหลดโครงสร้าง HTML เสร็จ
 document.addEventListener('DOMContentLoaded', () => {
-    initBrowseFilters();
     renderCollaboratorCards();
     renderEventCards();
     initHeroTicker(); // เติมบรรทัดนี้เพื่อให้ระบบสุ่มเริ่มทำงาน
@@ -404,3 +337,71 @@ window.onclick = function(event) {
         modal.style.display = "none";
     }
 }
+
+// ==========================================
+// Browse filters (data access and search UI remain separate)
+// ==========================================
+let browseKeyword = '';
+let collaboratorRenderVersion = 0;
+let eventRenderVersion = 0;
+
+function filterBrowseRecords(records, field, selectId) {
+    const type = document.getElementById(selectId)?.value || 'all';
+    const keyword = browseKeyword.trim().toLowerCase();
+    // Preserve dates, co_hosts and relationships from the data source.
+    return records.filter(record =>
+        (type === 'all' || record.type === type) &&
+        String(record[field] ?? '').toLowerCase().includes(keyword)
+    );
+}
+
+// Integration point for #48: pass the keyword, or '' to clear only search.
+function setBrowseKeyword(keyword) {
+    browseKeyword = String(keyword ?? '');
+    return Promise.all([renderCollaboratorCards(), renderEventCards()]);
+}
+
+function applyCollabFilters() {
+    return renderCollaboratorCards();
+}
+
+function applyEventFilters() {
+    return renderEventCards();
+}
+
+function initBrowseFilters() {
+    [
+        ['filterCollab', 'ประเภทคู่ความร่วมมือ', applyCollabFilters],
+        ['filterEvent', 'ประเภทกิจกรรม', applyEventFilters]
+    ].forEach(([id, label, apply]) => {
+        const select = document.getElementById(id);
+        if (!select || document.getElementById(`${id}Clear`)) return;
+        select.setAttribute('aria-label', label);
+        const clearButton = document.createElement('button');
+        clearButton.id = `${id}Clear`;
+        clearButton.type = 'button';
+        clearButton.className = 'modern-select';
+        clearButton.textContent = 'ล้างประเภท';
+        clearButton.setAttribute('aria-label', `ล้าง${label}`);
+        const sync = () => { clearButton.disabled = select.value === 'all'; };
+        select.addEventListener('change', sync);
+        clearButton.addEventListener('click', () => {
+            select.value = 'all';
+            sync();
+            apply();
+        });
+        select.insertAdjacentElement('afterend', clearButton);
+        sync();
+    });
+}
+
+function showBrowseEmptyState(container, resultCount) {
+    if (resultCount > 0) return;
+    const message = document.createElement('p');
+    message.setAttribute('role', 'status');
+    message.style.gridColumn = '1 / -1';
+    message.textContent = 'ไม่พบอีเวนต์หรือคู่ความร่วมมือที่ตรงกับเงื่อนไข กรุณาเปลี่ยนหรือล้างประเภทหรือคำค้น';
+    container.appendChild(message);
+}
+
+document.addEventListener('DOMContentLoaded', initBrowseFilters);
