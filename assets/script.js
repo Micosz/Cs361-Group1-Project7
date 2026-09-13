@@ -100,6 +100,79 @@ async function getPublicActivityById(id) {
 // ส่วนของการ Render UI 
 // ==========================================
 
+function handleSearch() {
+    currentSearchKeyword = document.getElementById('searchInput').value.toLowerCase().trim();
+    renderCollaboratorCards();
+    renderEventCards();
+}
+
+async function showSuggestions() {
+    const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+    const dropdown = document.getElementById('searchSuggestions');
+    
+    handleSearch(); 
+
+    if (keyword.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+    }
+
+    const partners = await getPublicPartners();
+    const activities = await getPublicActivities();
+
+    const matchedPartners = partners.filter(p => 
+        (p.name && p.name.toLowerCase().includes(keyword)) ||
+        (p.summary && p.summary.toLowerCase().includes(keyword)) ||
+        (p.location && p.location.toLowerCase().includes(keyword))
+    ).map(p => ({ ...p, resultType: 'partner', topicLabel: 'องค์กร / ผู้มีส่วนได้ส่วนเสีย' }));
+
+    const matchedActivities = activities.filter(a => 
+        (a.title && a.title.toLowerCase().includes(keyword)) ||
+        (a.summary && a.summary.toLowerCase().includes(keyword)) ||
+        (a.partnerName && a.partnerName.toLowerCase().includes(keyword)) ||
+        (a.co_hosts && a.co_hosts.join(' ').toLowerCase().includes(keyword))
+    ).map(a => ({ ...a, resultType: 'activity', topicLabel: 'กิจกรรม / โครงการ' }));
+
+    const results = [...matchedPartners, ...matchedActivities];
+
+    if (results.length === 0) {
+        dropdown.innerHTML = `<div style="padding: 15px 20px; color: var(--text-light); text-align: center;">ไม่พบข้อมูลที่ตรงกับ "${keyword}"</div>`;
+    } else {
+        dropdown.innerHTML = results.slice(0, 6).map(item => `
+            <div class="suggestion-item" onclick="selectSuggestion('${item.id}', '${item.resultType}')">
+                <span class="suggestion-category">${item.topicLabel} • ${item.type.toUpperCase()}</span>
+                <span class="suggestion-title">${item.name || item.title}</span>
+                <span class="suggestion-desc">${item.summary || ''}</span>
+            </div>
+        `).join('');
+    }
+    
+    dropdown.style.display = 'block';
+}
+
+function selectSuggestion(id, type) {
+    document.getElementById('searchSuggestions').style.display = 'none';
+    openModal(id, type);
+}
+
+document.addEventListener('click', function(event) {
+    const wrapper = document.querySelector('.search-wrapper');
+    const dropdown = document.getElementById('searchSuggestions');
+    if (wrapper && !wrapper.contains(event.target)) {
+        if (dropdown) dropdown.style.display = 'none';
+    }
+});
+
+function applyCollabFilters() {
+    currentCollabFilter = document.getElementById('filterCollab').value;
+    renderCollaboratorCards();
+}
+
+function applyEventFilters() {
+    currentEventFilter = document.getElementById('filterEvent').value;
+    renderEventCards();
+}
+
 function getColorClass(type) {
     switch(type) {
         case 'university': 
@@ -124,6 +197,17 @@ async function renderCollaboratorCards() {
     const partners = filterBrowseRecords(records, 'name', 'filterCollab');
     container.innerHTML = ''; 
     showBrowseEmptyState(container, partners.length);
+
+    if (partners.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-gray);">
+                <i class="fas fa-search" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+                <h3 style="color: var(--text-dark); margin-bottom: 0.5rem;">ไม่พบผู้มีส่วนได้ส่วนเสีย</h3>
+                <p>ลองเปลี่ยนคำค้นหา หรือล้างตัวกรองเพื่อดูข้อมูลทั้งหมด</p>
+            </div>
+        `;
+        return;
+    }
 
     partners.forEach(partner => {
         const bgStyle = partner.logo_path 
@@ -158,6 +242,17 @@ async function renderEventCards() {
     const activities = filterBrowseRecords(records, 'title', 'filterEvent');
     container.innerHTML = ''; 
     showBrowseEmptyState(container, activities.length);
+
+    if (activities.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-gray);">
+                <i class="fas fa-search" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+                <h3 style="color: var(--text-dark); margin-bottom: 0.5rem;">ไม่พบกิจกรรม</h3>
+                <p>ลองเปลี่ยนคำค้นหา หรือล้างตัวกรองเพื่อดูข้อมูลทั้งหมด</p>
+            </div>
+        `;
+        return;
+    }
 
     activities.forEach(activity => {
         const colorClass = getColorClass(activity.type);
@@ -232,17 +327,23 @@ async function initHeroTicker() {
         //การ์ดใบที่ 1
         const t1 = document.getElementById('heroTitle1');
         const d1 = document.getElementById('heroDesc1');
+        const c1 = document.getElementById('heroCard1');
         if (t1) { t1.textContent = p1.name; d1.textContent = `${p1.type.toUpperCase()}`; }
+        if (c1) { c1.onclick = () => openModal(p1.id, 'partner'); }
 
         //การ์ดใบที่ 2
         const t2 = document.getElementById('heroTitle2');
         const d2 = document.getElementById('heroDesc2');
+        const c2 = document.getElementById('heroCard2');
         if (t2) { t2.textContent = p2.name; d2.textContent = `${p2.type.toUpperCase()}`; }
+        if (c2) { c2.onclick = () => openModal(p2.id, 'partner'); }
 
         //การ์ดใบที่ 3
         const t3 = document.getElementById('heroTitle3');
         const d3 = document.getElementById('heroDesc3');
+        const c3 = document.getElementById('heroCard3');
         if (t3) { t3.textContent = p3.name; d3.textContent = `${p3.type.toUpperCase()}`; }
+        if (c3) { c3.onclick = () => openModal(p3.id, 'partner'); }
     }
 
     updateCards();
