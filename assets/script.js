@@ -1,15 +1,46 @@
-let currentSearchKeyword = "";
-let currentCollabFilter = "all";
-let currentEventFilter = "all";
+const API_URL = 'https://eb49u61kph.execute-api.us-east-1.amazonaws.com/default/fetchPartnersData'; 
 
-// ดึงข้อมูลจากไฟล์ JSON
 async function fetchPartnersData() {
     try {
-        const response = await fetch('data/partners.json');
-        if (!response.ok) throw new Error("ไม่สามารถดึงข้อมูลได้");
-        return await response.json();
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // 1. รับข้อมูลดิบ 27 รายการจาก DynamoDB
+        const rawData = await response.json();
+        
+        // --- 2. เริ่มขั้นตอนประกอบร่างข้อมูล (Reconstruct Data) ---
+        // คัดแยกเฉพาะองค์กร (Partner จะมีฟิลด์ name)
+         const partners = rawData.filter(item => item.name);
+        
+        // คัดแยกเฉพาะกิจกรรม (Event จะมีฟิลด์ partnerId)
+        const events = rawData.filter(item => item.partnerId);
+        
+        // นำกิจกรรมไปผูกกลับเข้ากับองค์กรให้เหมือนโครงสร้าง JSON เดิม
+        partners.forEach(partner => {
+            partner.collaborations = events.filter(e => {
+                // 1. เป็นเจ้าภาพหลัก (เช็คจาก partnerId)
+                if (e.partnerId === partner.id) return true;
+                
+                // 2. เป็นผู้จัดร่วม (เช็คจาก co_hosts ถ้ามี)
+                if (e.co_hosts && Array.isArray(e.co_hosts)) {
+                    // เช็คว่าชื่อใน co_hosts ตรงกับส่วนใดส่วนหนึ่งของชื่อ Partner หรือไม่
+                    return e.co_hosts.some(hostName => partner.name.includes(hostName));
+                }
+                
+                return false;
+            });
+        });
+        // --------------------------------------------------------
+        
+        console.log("Data reconstructed successfully:", partners);
+        
+        // 3. ส่งข้อมูลที่ประกอบร่างแล้วไปให้ UI ใช้งานต่อ
+        return partners; 
+        
     } catch (error) {
-        console.error("Error loading JSON:", error);
+        console.error("เกิดข้อผิดพลาดในการดึงข้อมูลจาก API:", error);
         return [];
     }
 }

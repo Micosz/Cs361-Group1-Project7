@@ -255,7 +255,7 @@
         "period_date": "2024-06-01",
         "summary": "ค่ายฝึกทักษะ AI สำหรับนักศึกษา ครอบคลุมเนื้อหา LLM, Prompting, RAG, Agentic AI และ AI Deployment",
         "full_description": "โครงการ CSTU Spark Camp in AI เป็นค่ายฝึกทักษะปัญญาประดิษฐ์ (AI) แบบเจาะลึกที่จัดขึ้นสำหรับนักศึกษา โดยได้รับความร่วมมือจากบริษัท AGICAFET (Thailand) และ Embedded LLM (Singapore) เพื่อมาเป็นวิทยากรถ่ายทอดความรู้ ครอบคลุมเนื้อหาสำคัญในยุคปัจจุบัน เช่น Large Language Models (LLM), เทคนิคการทำ Prompting, Retrieval-Augmented Generation (RAG), การสร้าง Agentic AI และแนวทางการทำ AI Deployment บนสถาปัตยกรรมจริง",
-        "image_path": "resources/CSTU AI.jpg",
+        "image_path": "resources/CSTU_sparkcamp.jpg",
         "visibility": "public",
         "co_hosts": [
           "AGICAFET",
@@ -283,7 +283,7 @@
         "period_date": "2024-06-01",
         "summary": "ค่ายฝึกทักษะ AI สำหรับนักศึกษา ครอบคลุมเนื้อหา LLM, Prompting, RAG, Agentic AI และ AI Deployment",
         "full_description": "โครงการ CSTU Spark Camp in AI เป็นค่ายฝึกทักษะปัญญาประดิษฐ์ (AI) แบบเจาะลึกที่จัดขึ้นสำหรับนักศึกษา โดยได้รับความร่วมมือจากบริษัท AGICAFET (Thailand) และ Embedded LLM (Singapore) เพื่อมาเป็นวิทยากรถ่ายทอดความรู้ ครอบคลุมเนื้อหาสำคัญในยุคปัจจุบัน เช่น Large Language Models (LLM), เทคนิคการทำ Prompting, Retrieval-Augmented Generation (RAG), การสร้าง Agentic AI และแนวทางการทำ AI Deployment บนสถาปัตยกรรมจริง",
-        "image_path": "",
+        "image_path": "resources/CSTU_sparkcamp.jpg",
         "visibility": "public",
         "co_hosts": [
           "AGICAFET",
