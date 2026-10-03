@@ -19,7 +19,7 @@ V1 ครอบคลุมเฉพาะหน้า Browse หน้ารา
 
 ระบบ V1 Deploy ด้วย Amazon S3 Static Website Hosting และสามารถกดได้โดยไม่ต้องเข้าสู่ระบบ
 
-[![Live Website](https://img.shields.io/badge/Live_Website-Open-2ea44f?style=for-the-badge&logo=amazons3&logoColor=white)]([http://cs361-group1-project7.s3-website-us-east-1.amazonaws.com](https://main.d2q46seuxuluap.amplifyapp.com/))
+[![Live Website](https://img.shields.io/badge/Live_Website-Open-2ea44f?style=for-the-badge&logo=amazons3&logoColor=white)](https://main.d2q46seuxuluap.amplifyapp.com/)
 
 ## Documentation
 
