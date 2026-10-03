@@ -1,21 +1,33 @@
 const API_URL = 'https://eb49u61kph.execute-api.us-east-1.amazonaws.com/default/fetchPartnersData'; 
 
-async function fetchPartnersData() {
-    try {
-        const response = await fetch(API_URL);
+// Cache only a successful API snapshot for this page; reload to get fresh data.
+let partnersDataCache = null;
+let partnersDataRequest = null;
+
+function isPublicRecord(record) {
+    return record.visibility === 'public' || !record.visibility;
+}
+
+function fetchPartnersData() {
+    if (partnersDataCache !== null) return Promise.resolve(partnersDataCache);
+    if (partnersDataRequest) return partnersDataRequest;
+
+    partnersDataRequest = (async () => {
+        const response = await fetch(API_URL, { cache: 'no-store' });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        // 1. รับข้อมูลดิบ 27 รายการจาก DynamoDB
+        // รับข้อมูลจาก API เท่านั้น ไม่ใช้ไฟล์ JSON สำรองเมื่อโหลดล้มเหลว
         const rawData = await response.json();
+        if (!Array.isArray(rawData)) throw new Error('Invalid API response: expected an array');
         
         // --- 2. เริ่มขั้นตอนประกอบร่างข้อมูล (Reconstruct Data) ---
         // คัดแยกเฉพาะองค์กร (Partner จะมีฟิลด์ name)
-         const partners = rawData.filter(item => item.name);
+        const partners = rawData.filter(item => item.name && isPublicRecord(item));
         
         // คัดแยกเฉพาะกิจกรรม (Event จะมีฟิลด์ partnerId)
-        const events = rawData.filter(item => item.partnerId);
+        const events = rawData.filter(item => item.partnerId && isPublicRecord(item));
         
         // นำกิจกรรมไปผูกกลับเข้ากับองค์กรให้เหมือนโครงสร้าง JSON เดิม
         partners.forEach(partner => {
@@ -34,15 +46,17 @@ async function fetchPartnersData() {
         });
         // --------------------------------------------------------
         
-        console.log("Data reconstructed successfully:", partners);
-        
-        // 3. ส่งข้อมูลที่ประกอบร่างแล้วไปให้ UI ใช้งานต่อ
+        partnersDataCache = partners;
         return partners; 
-        
-    } catch (error) {
+    })().catch(error => {
         console.error("เกิดข้อผิดพลาดในการดึงข้อมูลจาก API:", error);
-        return [];
-    }
+        throw error;
+    }).finally(() => {
+        // Clear the in-flight request on success or failure so failures can retry.
+        partnersDataRequest = null;
+    });
+
+    return partnersDataRequest;
 }
 
 // 1. ดึงข้อมูล Partner ทั้งหมดสำหรับหน้า Browse
@@ -64,12 +78,13 @@ async function getPublicActivities() {
     partnersData.forEach(partner => {
         if (partner.collaborations && partner.collaborations.length > 0) {
             // กรองเอาเฉพาะอันที่ visibility เป็น public หรือไม่มีฟิลด์นี้
-            const publicCollabs = partner.collaborations.filter(collab => collab.visibility === 'public' || !collab.visibility);
+            const publicCollabs = partner.collaborations.filter(isPublicRecord);
             
             const activitiesWithPartnerId = publicCollabs.map(collab => ({
                 ...collab,
-                partnerId: partner.id,
-                partnerName: partner.name
+                // Keep the primary host when the first matching partner is a co-host.
+                partnerId: collab.partnerId,
+                partnerName: partnersData.find(p => p.id === collab.partnerId)?.name || partner.name
             }));
             
             allActivities = [...allActivities, ...activitiesWithPartnerId];
@@ -100,43 +115,79 @@ async function getPublicActivityById(id) {
 // ส่วนของการ Render UI 
 // ==========================================
 
+let searchDebounceTimer = null;
+let suggestionsVersion = 0;
+
+function getSearchKeyword() {
+    return document.getElementById('searchInput').value.toLowerCase().trim();
+}
+
+function hideSuggestions() {
+    ++suggestionsVersion;
+    const dropdown = document.getElementById('searchSuggestions');
+    if (dropdown) dropdown.style.display = 'none';
+}
+
+function cancelPendingSearch() {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+}
+
 function handleSearch() {
-    currentSearchKeyword = document.getElementById('searchInput').value.toLowerCase().trim();
-    renderCollaboratorCards();
-    renderEventCards();
+    cancelPendingSearch();
+    hideSuggestions();
+    return setBrowseKeyword(getSearchKeyword());
+}
+
+function scheduleSearch() {
+    cancelPendingSearch();
+    hideSuggestions();
+    // Invalidate pending card renders as soon as input changes, before debounce.
+    ++collaboratorRenderVersion;
+    ++eventRenderVersion;
+    if (!getSearchKeyword()) return setBrowseKeyword('');
+
+    const version = suggestionsVersion;
+    searchDebounceTimer = setTimeout(() => {
+        searchDebounceTimer = null;
+        setBrowseKeyword(getSearchKeyword());
+        // Dismissal cancels suggestions, while the pending search still updates cards.
+        if (version === suggestionsVersion) showSuggestions();
+    }, 250);
 }
 
 async function showSuggestions() {
-    const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+    const keyword = getSearchKeyword();
     const dropdown = document.getElementById('searchSuggestions');
-    
-    handleSearch(); 
+    const version = ++suggestionsVersion;
 
     if (keyword.length === 0) {
         dropdown.style.display = 'none';
         return;
     }
 
-    const partners = await getPublicPartners();
-    const activities = await getPublicActivities();
+    let partners, activities;
+    try {
+        [partners, activities] = await Promise.all([getPublicPartners(), getPublicActivities()]);
+    } catch (error) {
+        if (version === suggestionsVersion) hideSuggestions();
+        return; // Card renderers show the API error and allow Search/filter to retry.
+    }
+    if (version !== suggestionsVersion || keyword !== getSearchKeyword()) return;
 
-    const matchedPartners = partners.filter(p => 
-        (p.name && p.name.toLowerCase().includes(keyword)) ||
-        (p.summary && p.summary.toLowerCase().includes(keyword)) ||
-        (p.location && p.location.toLowerCase().includes(keyword))
-    ).map(p => ({ ...p, resultType: 'partner', topicLabel: 'องค์กร / ผู้มีส่วนได้ส่วนเสีย' }));
+    const matchedPartners = filterBrowseRecords(partners, 'name', 'filterCollab', keyword)
+        .map(p => ({ ...p, resultType: 'partner', topicLabel: 'องค์กร / ผู้มีส่วนได้ส่วนเสีย' }));
 
-    const matchedActivities = activities.filter(a => 
-        (a.title && a.title.toLowerCase().includes(keyword)) ||
-        (a.summary && a.summary.toLowerCase().includes(keyword)) ||
-        (a.partnerName && a.partnerName.toLowerCase().includes(keyword)) ||
-        (a.co_hosts && a.co_hosts.join(' ').toLowerCase().includes(keyword))
-    ).map(a => ({ ...a, resultType: 'activity', topicLabel: 'กิจกรรม / โครงการ' }));
+    const matchedActivities = filterBrowseRecords(activities, 'title', 'filterEvent', keyword)
+        .map(a => ({ ...a, resultType: 'activity', topicLabel: 'กิจกรรม / โครงการ' }));
 
     const results = [...matchedPartners, ...matchedActivities];
 
     if (results.length === 0) {
-        dropdown.innerHTML = `<div style="padding: 15px 20px; color: var(--text-light); text-align: center;">ไม่พบข้อมูลที่ตรงกับ "${keyword}"</div>`;
+        const message = document.createElement('div');
+        message.style.cssText = 'padding: 15px 20px; color: var(--text-light); text-align: center;';
+        message.textContent = `ไม่พบข้อมูลที่ตรงกับ "${keyword}"`;
+        dropdown.replaceChildren(message);
     } else {
         dropdown.innerHTML = results.slice(0, 6).map(item => `
             <div class="suggestion-item" onclick="selectSuggestion('${item.id}', '${item.resultType}')">
@@ -151,27 +202,17 @@ async function showSuggestions() {
 }
 
 function selectSuggestion(id, type) {
-    document.getElementById('searchSuggestions').style.display = 'none';
-    openModal(id, type);
+    cancelPendingSearch();
+    hideSuggestions();
+    return openModal(id, type);
 }
 
 document.addEventListener('click', function(event) {
     const wrapper = document.querySelector('.search-wrapper');
-    const dropdown = document.getElementById('searchSuggestions');
     if (wrapper && !wrapper.contains(event.target)) {
-        if (dropdown) dropdown.style.display = 'none';
+        hideSuggestions();
     }
 });
-
-function applyCollabFilters() {
-    currentCollabFilter = document.getElementById('filterCollab').value;
-    renderCollaboratorCards();
-}
-
-function applyEventFilters() {
-    currentEventFilter = document.getElementById('filterEvent').value;
-    renderEventCards();
-}
 
 function getColorClass(type) {
     switch(type) {
@@ -192,11 +233,16 @@ async function renderCollaboratorCards() {
     
     // ดึงข้อมูล
     const version = ++collaboratorRenderVersion;
-    const records = await getPublicPartners();
+    let records;
+    try {
+        records = await getPublicPartners();
+    } catch (error) {
+        if (version === collaboratorRenderVersion) showDataLoadError(container);
+        return;
+    }
     if (version !== collaboratorRenderVersion) return;
+    initHeroTicker(records); // Also recover the ticker after a failed initial load.
     const partners = filterBrowseRecords(records, 'name', 'filterCollab');
-    container.innerHTML = ''; 
-    showBrowseEmptyState(container, partners.length);
 
     if (partners.length === 0) {
         container.innerHTML = `
@@ -209,13 +255,13 @@ async function renderCollaboratorCards() {
         return;
     }
 
-    partners.forEach(partner => {
+    container.innerHTML = partners.map(partner => {
         const bgStyle = partner.logo_path 
     ? `background-image: url('${partner.logo_path}'); background-color: white; background-size: contain; background-repeat: no-repeat; background-position: center;` 
     : '';
         const colorClass = getColorClass(partner.type);
 
-        const cardHTML = `
+        return `
             <div class="card" id="${partner.id}" onclick="openModal('${partner.id}', 'partner')">
                 <div class="card-thumbnail ${colorClass}" style="${bgStyle}"></div>
                 <div class="card-content">
@@ -227,8 +273,7 @@ async function renderCollaboratorCards() {
                 </div>
             </div>
         `;
-        container.innerHTML += cardHTML;
-    });
+    }).join('');
 }
 
 //สร้างการ์ดหน้า Event & Activities
@@ -237,11 +282,15 @@ async function renderEventCards() {
     if (!container) return;
     
     const version = ++eventRenderVersion;
-    const records = await getPublicActivities();
+    let records;
+    try {
+        records = await getPublicActivities();
+    } catch (error) {
+        if (version === eventRenderVersion) showDataLoadError(container);
+        return;
+    }
     if (version !== eventRenderVersion) return;
     const activities = filterBrowseRecords(records, 'title', 'filterEvent');
-    container.innerHTML = ''; 
-    showBrowseEmptyState(container, activities.length);
 
     if (activities.length === 0) {
         container.innerHTML = `
@@ -254,7 +303,7 @@ async function renderEventCards() {
         return;
     }
 
-    activities.forEach(activity => {
+    container.innerHTML = activities.map(activity => {
         const colorClass = getColorClass(activity.type);
         
         const bgStyle = activity.image_path 
@@ -269,7 +318,7 @@ async function renderEventCards() {
             ? activity.co_hosts.join(' และ ') 
             : activity.partnerName;
 
-        const cardHTML = `
+        return `
             <div class="card" id="${activity.id}" onclick="openModal('${activity.id}', 'activity')">
                 <div class="card-thumbnail ${colorClass}" style="${bgStyle}; display: flex;">
                     ${thumbnailContent}
@@ -284,8 +333,7 @@ async function renderEventCards() {
                 </div>
             </div>
         `;
-        container.innerHTML += cardHTML;
-    });
+    }).join('');
 }
 
 //ฟังก์ชันสลับ Tab
@@ -311,9 +359,25 @@ function switchTab(tabName) {
 }
 
 //ฟังก์ชันสุ่มข้อความใส่การ์ดทุกๆ 10 วินาที
-async function initHeroTicker() {
-    const partners = await getPublicPartners();
+let heroTickerStarted = false;
+
+async function initHeroTicker(records) {
+    if (heroTickerStarted) return;
+    let partners;
+    try {
+        partners = records || await getPublicPartners();
+    } catch (error) {
+        for (let i = 1; i <= 3; i++) {
+            const title = document.getElementById(`heroTitle${i}`);
+            const description = document.getElementById(`heroDesc${i}`);
+            if (title) title.textContent = 'โหลดข้อมูลไม่สำเร็จ';
+            if (description) description.textContent = 'กรุณากด Search เพื่อลองใหม่';
+        }
+        return;
+    }
+    if (heroTickerStarted) return;
     if (!partners || partners.length === 0) return;
+    heroTickerStarted = true;
 
     function updateCards() {
         // สลับลำดับข้อมูลแบบสุ่ม (Shuffle)
@@ -360,12 +424,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function openModal(id, type) {
     let data = null;
-    const allActivities = await getPublicActivities(); // ดึงกิจกรรมทั้งหมดมารอไว้หาความสัมพันธ์
+    let allActivities;
+    try {
+        allActivities = await getPublicActivities(); // ใช้ snapshot เดียวกับการ์ดและ suggestions
 
-    if (type === 'partner') {
-        data = await getPublicPartnerById(id);
-    } else if (type === 'activity') {
-        data = await getPublicActivityById(id);
+        if (type === 'partner') {
+            data = await getPublicPartnerById(id);
+        } else if (type === 'activity') {
+            data = await getPublicActivityById(id);
+        }
+    } catch (error) {
+        document.getElementById('modalTitle').textContent = 'โหลดข้อมูลไม่สำเร็จ';
+        document.getElementById('modalName').textContent = '';
+        document.getElementById('modalInfo').textContent = '';
+        document.getElementById('modalImage').style.display = 'none';
+        showDataLoadError(document.getElementById('modalDetails'));
+        document.getElementById('detailModal').style.display = 'flex';
+        return;
     }
 
     if (!data) return;
@@ -414,7 +489,7 @@ async function openModal(id, type) {
         
         // แปลง List เป็น Grid Cards
         if (data.collaborations && data.collaborations.length > 0) {
-            const publicCollabs = data.collaborations.filter(c => c.visibility === 'public');
+            const publicCollabs = data.collaborations.filter(isPublicRecord);
             if(publicCollabs.length > 0) {
                 detailsHTML += `<h3 style="margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">ความร่วมมือและกิจกรรม</h3>`;
                 // สร้าง Grid ขนาดย่อมใน Modal
@@ -481,9 +556,10 @@ let browseKeyword = '';
 let collaboratorRenderVersion = 0;
 let eventRenderVersion = 0;
 
-function filterBrowseRecords(records, field, selectId) {
+function filterBrowseRecords(records, field, selectId, searchKeyword = browseKeyword) {
     const type = document.getElementById(selectId)?.value || 'all';
-    const keyword = browseKeyword.trim().toLowerCase();
+    const keyword = searchKeyword.trim().toLowerCase();
+    // V2 specifies name/title search; suggestions and cards share these rules.
     // Preserve dates, co_hosts and relationships from the data source.
     return records.filter(record =>
         (type === 'all' || record.type === type) &&
@@ -498,10 +574,12 @@ function setBrowseKeyword(keyword) {
 }
 
 function applyCollabFilters() {
+    hideSuggestions();
     return renderCollaboratorCards();
 }
 
 function applyEventFilters() {
+    hideSuggestions();
     return renderEventCards();
 }
 
@@ -544,13 +622,12 @@ function initBrowseFilters() {
     });
 }
 
-function showBrowseEmptyState(container, resultCount) {
-    if (resultCount > 0) return;
+function showDataLoadError(container) {
     const message = document.createElement('p');
     message.setAttribute('role', 'status');
     message.style.gridColumn = '1 / -1';
-    message.textContent = 'ไม่พบอีเวนต์หรือคู่ความร่วมมือที่ตรงกับเงื่อนไข กรุณาเปลี่ยนหรือล้างประเภทหรือคำค้น';
-    container.appendChild(message);
+    message.textContent = 'โหลดข้อมูลไม่สำเร็จ กรุณากด Search หรือเปลี่ยนตัวกรองเพื่อลองใหม่';
+    container.replaceChildren(message);
 }
 
 // ฟังก์ชันช่วยคำนวณความกว้างของข้อความใน Select ให้พอดีเป๊ะ (เวอร์ชันคำนวณจาก CSS จริง)
