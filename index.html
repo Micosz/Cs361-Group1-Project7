@@ -17,8 +17,8 @@
         
         <div class="search-wrapper">
             <div class="search-container">
-                <input type="text" id="searchInput" oninput="showSuggestions()" placeholder="ค้นหาโปรเจกต์, องค์กร, หรือกิจกรรมต่างๆ...">
-                <button class="search-btn" onclick="handleSearch(); document.getElementById('searchSuggestions').style.display='none';">Search</button>
+                <input type="text" id="searchInput" oninput="scheduleSearch()" placeholder="ค้นหาโปรเจกต์, องค์กร, หรือกิจกรรมต่างๆ...">
+                <button class="search-btn" onclick="handleSearch()">Search</button>
             </div>
             <div id="searchSuggestions" class="suggestions-dropdown" style="display: none;"></div>
         </div>
