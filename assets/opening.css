@@ -6,13 +6,13 @@
 .hero-heading { font-size: clamp(2.5rem,4.4vw,4rem); }
 .hero-animation { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; padding: 0; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; transform: none; animation: none; pointer-events: none; }
 .hero-animation::before, .community-sphere { display: none; }
-.hero-animation .float-card { position: absolute; width: clamp(180px,17.5vw,240px); min-height: 214px; height: auto; animation: none; scale: 1; pointer-events: auto; --away-x: -100px; }
+.hero-animation .float-card { position: absolute; width: clamp(166px,15.5vw,212px); min-height: 192px; height: auto; padding: 10px; gap: 8px; animation: none; scale: 1; pointer-events: auto; --away-x: -100px; }
 .hero-animation .card-top { top: 28px; left: 22px; right: auto; bottom: auto; transform: rotate(-7deg); }
 .hero-animation .card-mid { top: 132px; right: 22px; left: auto; bottom: auto; transform: rotate(7deg); --away-x: 100px; }
 .hero-animation .card-bot { top: auto; bottom: 26px; left: 42px; right: auto; transform: rotate(-5deg); }
 .orbit-layer { position: absolute; inset: 0; z-index: 2; perspective: 1200px; pointer-events: none; }
 .orbit-drift { position: absolute; inset: 0; pointer-events: none; }
-.orbit-tile { position: absolute; left: 50%; top: 50%; width: 140px; height: 116px; padding: 18px; border: 1px solid #e5dfe1; border-radius: 18px; background: #fff; box-shadow: 0 10px 24px -18px rgb(53 18 27 / 25%); transform-origin: center; pointer-events: auto; transition: border-color 160ms ease-out, box-shadow 160ms ease-out; }
+.orbit-tile { position: absolute; left: 50%; top: 50%; width: 126px; height: 104px; padding: 16px; border: 1px solid #e5dfe1; border-radius: 18px; background: #fff; box-shadow: 0 10px 24px -18px rgb(53 18 27 / 25%); transform-origin: center; pointer-events: auto; transition: border-color 160ms ease-out, box-shadow 160ms ease-out; }
 .orbit-tile img { display: block; width: 100%; height: 100%; object-fit: contain; }
 /* Content stays visible unless the optional opening successfully initializes.
    Search, keyboard and scrolling dismiss this decorative sequence immediately. */
@@ -72,16 +72,21 @@
     .hero-section { position: relative; height: 680px; min-height: 680px; }
     .hero-content, .hero-animation .float-card, .orbit-drift { animation: none; }
 }
+@media (min-width: 1024px) {
+    .hero-animation .float-card { grid-template-columns: 26px minmax(0,1fr); }
+    .hero-animation .icon-box { width: 26px; height: 26px; }
+    .hero-card-media { height: 92px; }
+}
 @media (max-width: 1100px) and (min-width: 1024px) {
     .hero-content { top: 118px; left: 24%; width: 52%; }
     .hero-heading { font-size: 2.75rem; }
     .hero-features li { font-size: .8125rem; }
-    .hero-animation .float-card { width: 178px; min-height: 200px; padding: 10px; }
+    .hero-animation .float-card { width: 166px; min-height: 184px; padding: 10px; }
     .hero-animation .card-top { left: 14px; }
     .hero-animation .card-mid { right: 14px; }
     .hero-animation .card-bot { left: 28px; bottom: 24px; }
     .hero-animation .card-text h4 { font-size: .8125rem; }
-    .hero-card-media { height: 92px; }
+    .hero-card-media { height: 82px; }
 }
 @media (max-width: 1023px) {
     .hero-scroll { min-height: 0; }

@@ -101,12 +101,13 @@
             // Read all geometry together; never measure continuously while scrolling.
             const box = hero.getBoundingClientRect();
             const cards = liveCards.map(card => card.getBoundingClientRect());
+            const tileWidth = tiles[0].tile.offsetWidth || 126;
             const width = box.width;
             const height = box.height;
             const destinations = cards.map((card, index) => ({
                 x: card.left + card.width / 2 - box.left - width / 2,
                 y: card.top + card.height / 2 - box.top - height / 2,
-                angle: [-7, 7, -5][index], scale: card.width / 140, opacity: 0
+                angle: [-7, 7, -5][index], scale: liveCards[index].offsetWidth / tileWidth, opacity: 0
             }));
             // Five decorative companions frame the message without covering its text.
             const companions = [[.43, .08, -9], [.7, .08, 7], [.87, .79, 8], [.57, .91, -5], [.1, .48, 6]];
