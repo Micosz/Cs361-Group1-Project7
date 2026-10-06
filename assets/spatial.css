@@ -28,7 +28,7 @@ body { background: #fff; }
 .heading-subject::after { content: ""; position: absolute; left: 0; bottom: -2px; width: 100%; height: 3px; transform-origin: left; background: linear-gradient(90deg, var(--tu-red) 78%, var(--tu-yellow) 78%); }
 .hero-features { margin-bottom: 22px; }
 .hero-features li { font-size: 0.9375rem; line-height: 1.9; }
-.hero-btn { padding-inline: 22px; box-shadow: 0 4px 0 #8e0526, 0 10px 24px rgb(195 0 47 / 12%); }
+.hero-btn { padding-inline: 22px; background: #171717; color: #fff; box-shadow: 0 4px 0 #000, 0 10px 24px rgb(0 0 0 / 12%); }
 .hero-animation { border: 0; align-content: center; gap: 12px; perspective: 1100px; padding-block: 12px; position: relative; z-index: 2; }
 .float-card {
     width: calc(100% - 48px);
@@ -91,6 +91,7 @@ body { background: #fff; }
 .modal-content { z-index: 1; transform-origin: center; }
 .details-section .card:focus-within { border-color: #171717; }
 @media (hover: hover) and (pointer: fine) {
+    .hero-btn:hover { background: #303030; }
     .details-section .card:hover { border-color: #171717; box-shadow: 0 10px 24px -15px rgb(62 31 39 / 28%) !important; }
 }
 @media (prefers-reduced-motion: no-preference) {
