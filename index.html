@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSTUHub - Information Board</title>
+    <link rel="stylesheet" href="assets/styles.css?v=2">
+    <link rel="stylesheet" href="assets/spatial.css?v=10">
+    <link rel="stylesheet" href="assets/showcase.css?v=4">
+    <script src="assets/script.js" defer></script>
+    <script src="assets/presentation.js?v=5" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="scroll-progress" aria-hidden="true"><span></span></div>
+
+    <nav class="navbar">
+        <div class="logo">
+            CSTU<span>Hub</span>
+        </div>
+        
+        <div class="search-wrapper">
+            <div class="search-container">
+                <input type="text" id="searchInput" aria-label="ค้นหาโปรเจกต์, องค์กร, หรือกิจกรรมต่างๆ" oninput="scheduleSearch()" placeholder="ค้นหาโปรเจกต์, องค์กร, หรือกิจกรรมต่างๆ...">
+                <button class="search-btn" onclick="handleSearch()">Search</button>
+            </div>
+            <div id="searchSuggestions" class="suggestions-dropdown" style="display: none;"></div>
+        </div>
+        
+        <div class="auth-buttons">
+            <a href="#" class="signup-link">Sign up</a>
+            <a href="#" class="login-btn">Log in</a>
+        </div>
+    </nav>
+
+    <section class="hero-section container">
+        <div class="spatial-track" aria-hidden="true">
+            <div class="spatial-stage">
+                <div class="spatial-light"></div>
+                <div class="spatial-plane plane-back"></div>
+                <div class="spatial-ring"><div class="ring-body"></div></div>
+                <div class="spatial-orb"><div class="orb-body"></div></div>
+                <div class="spatial-plane plane-front"></div>
+            </div>
+        </div>
+        <div class="hero-content">
+            <h1 class="hero-heading"><span class="heading-intro">Welcome to the</span> <span class="heading-subject">Computer Science</span> <span class="heading-end">Community</span></h1>
+            <ul class="hero-features">
+                <li><i class="fas fa-check-circle"></i> ติดตามโปรเจกต์และผลงานของนักศึกษา</li>
+                <li><i class="fas fa-check-circle"></i> ค้นหากิจกรรมและโอกาสความร่วมมือต่างๆ</li>
+                <li><i class="fas fa-check-circle"></i> ค้นหาองค์กรชั้นนำมากมายที่พร้อมสนับสนุนคุณ</li>
+            </ul>
+            <a href="#board-section" class="hero-btn"><i class="fas fa-sparkles"></i> ถึงตาคุณแล้ว! เริ่มต้นเลย</a>
+        </div>
+        
+        <div class="hero-animation">
+            <div class="glow-blob bg-yellow" aria-hidden="true"></div>
+            <div class="glow-blob bg-red" aria-hidden="true"></div>
+
+            <div class="float-card card-top" id="heroCard1">
+                <div class="icon-box"><i class="fas fa-building"></i></div>
+                <div class="card-text">
+                    <h4 id="heroTitle1">กำลังโหลดชื่อบริษัท</h4>
+                    <p id="heroDesc1">รอข้อมูล...</p>
+                </div>
+            </div>
+            
+            <div class="float-card card-mid" id="heroCard2">
+                <div class="icon-box"><i class="fas fa-building"></i></div>
+                <div class="card-text">
+                    <h4 id="heroTitle2">กำลังโหลดชื่อบริษัท</h4>
+                    <p id="heroDesc2">รอข้อมูล...</p>
+                </div>
+            </div>
+
+            <div class="float-card card-bot" id="heroCard3">
+                <div class="icon-box"><i class="fas fa-building"></i></div>
+                <div class="card-text">
+                    <h4 id="heroTitle3">กำลังโหลดชื่อบริษัท</h4>
+                    <p id="heroDesc3">รอข้อมูล...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="board-section" class="sub-header container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('collaborator')" id="tabCollab">COLLABORATOR</button>
+            <button class="tab" onclick="switchTab('event')" id="tabEvent">EVENT & ACTIVITIES</button>
+        </div>
+        <div class="page-title">
+            <h1>Computer Science</h1>
+            <h2>Information Board</h2>
+        </div>
+    </div>
+
+    <main class="container">
+        <section id="sectionCollaborator" class="mb-section active-section">
+            <div class="filter-wrapper">
+                <select id="filterCollab" class="modern-select" onchange="applyCollabFilters()">
+                    <option value="all">องค์กรทั้งหมด</option>
+                    <option value="company">บริษัท (Company)</option>
+                    <option value="university">มหาวิทยาลัย (University)</option>
+                    <option value="government">หน่วยงานรัฐ (Government)</option>
+                    <option value="internship">เครือข่ายสหกิจศึกษา (Internship)</option>
+                </select>
+            </div>
+            <div class="grid" id="collaboratorGrid"></div>
+        </section>
+
+        <section id="sectionEvent" class="mb-section" style="display: none;">
+            <div class="filter-wrapper">
+                <select id="filterEvent" class="modern-select" onchange="applyEventFilters()">
+                    <option value="all">กิจกรรมทั้งหมด</option>
+                    <option value="internship">โครงการฝึกงานและสหกิจฯ</option>
+                    <option value="academic_activity">กิจกรรมวิชาการ (MoU)</option>
+                    <option value="event">กิจกรรมทั่วไปและสัมมนา</option>
+                    <option value="research">งานวิจัยและแลกเปลี่ยน</option>
+                </select>
+            </div>
+            <div class="grid" id="eventGrid"></div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-content">
+            <div class="logo footer-logo">
+                CSTU<span>Hub</span>
+            </div>
+            <div class="footer-text">
+                Computer Science community information board. &copy; 2026 CSTUHub
+            </div>
+        </div>
+    </footer>
+
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content">
+            <button type="button" class="close-btn" onclick="closeModal()" aria-label="ปิดรายละเอียด">&times;</button>
+            <h1 class="modal-title" id="modalTitle">HEAD</h1>
+            <div class="user-info">
+                <div class="user-text">
+                    <div class="name" id="modalName">Name</div>
+                    <div class="info" id="modalInfo">information</div>
+                </div>
+            </div>
+            <div class="main-image" id="modalImage"></div>            
+            <div class="details-section" id="modalDetails">
+                <p>details</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

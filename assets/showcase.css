@@ -1,0 +1,73 @@
+/* Fastwork-inspired image collage inside the original right-hand introduction. */
+.hero-animation {
+    position: relative;
+    display: block;
+    min-height: 430px;
+    padding: 0;
+    perspective: 1400px;
+}
+.hero-animation .float-card {
+    position: absolute;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-content: start;
+    align-items: center;
+    width: 228px;
+    min-height: 0;
+    margin: 0;
+    padding: 10px;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid #e5e1e2;
+    border-radius: 14px;
+    box-shadow: 0 3px 2px rgb(62 31 39 / 4%), 0 16px 38px -23px rgb(62 31 39 / 24%);
+    transform: rotate(var(--showcase-angle));
+}
+.hero-animation .card-top { --showcase-angle: -8deg; --showcase-x: -55px; --showcase-y: -60px; --showcase-depth: 70px; top: 5px; left: 0; z-index: 2; }
+.hero-animation .card-mid { --showcase-angle: 7deg; --showcase-x: 30px; --showcase-y: -45px; --showcase-depth: 95px; top: 105px; right: 0; z-index: 3; }
+.hero-animation .card-bot { --showcase-angle: -4deg; --showcase-x: -15px; --showcase-y: 55px; --showcase-depth: 50px; bottom: 0; left: 24px; z-index: 4; }
+.hero-card-media { display: block; grid-column: 1 / -1; height: 104px; border-radius: 7px; background-color: #faf9f9; background-position: center; background-repeat: no-repeat; background-size: contain; }
+.hero-animation .icon-box { width: 30px; height: 30px; border-radius: 50%; font-size: .8rem; }
+.hero-animation .card-text { min-width: 0; }
+.hero-animation .card-text h4 { font-size: .75rem; font-weight: 600; line-height: 1.65; }
+.hero-animation .card-text p { font-size: .6rem; line-height: 1.7; letter-spacing: .025em; }
+@media (hover: hover) and (pointer: fine) {
+    .hero-animation .float-card:hover { border-color: #171717; outline: 1px solid #171717; outline-offset: 0; }
+}
+.hero-animation .float-card:focus-within { border-color: #171717; outline: 1px solid #171717; outline-offset: 0; }
+@keyframes showcase-depart {
+    from { transform: translate3d(0,0,0) rotate(var(--showcase-angle)); }
+    to { transform: translate3d(var(--showcase-x),var(--showcase-y),var(--showcase-depth)) rotate(calc(var(--showcase-angle) * 1.8)); }
+}
+@media (prefers-reduced-motion: no-preference) and (min-width: 1024px) {
+    @supports (animation-timeline: view()) {
+        .hero-animation .float-card {
+            animation-name: partner-float, showcase-depart;
+            animation-duration: 6s, auto;
+            animation-timing-function: cubic-bezier(.45,0,.55,1), linear;
+            animation-iteration-count: infinite, 1;
+            animation-fill-mode: none, both;
+            animation-timeline: auto, --intro;
+            animation-range: normal, exit 0% exit 70%;
+        }
+        .hero-animation .card-mid { animation-duration: 7s, auto; animation-delay: -2.3s, 0s; }
+        .hero-animation .card-bot { animation-duration: 6.5s, auto; animation-delay: -4.1s, 0s; }
+        .hero-animation:hover .float-card,
+        .hero-animation:focus-within .float-card { animation-play-state: paused, running; }
+    }
+}
+@media (max-width: 1100px) and (min-width: 768px) {
+    .hero-animation .float-card { width: 190px; }
+    .hero-animation .card-bot { left: 8px; }
+}
+@media (max-width: 767px) {
+    .hero-animation { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; min-height: 0; perspective: none; }
+    .hero-animation .float-card { position: relative; inset: auto; width: 100%; margin: 0; padding: 8px; grid-template-columns: minmax(0,1fr); gap: 7px; transform: none; }
+    .hero-card-media { height: 76px; }
+    .hero-animation .icon-box { display: none; }
+    .hero-animation .card-text h4 { font-size: .625rem; line-height: 1.75; }
+    .hero-animation .card-text p { font-size: .5rem; overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .hero-animation .float-card { translate: none; }
+}
