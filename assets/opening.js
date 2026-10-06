@@ -1,9 +1,11 @@
 /* Presentation only. Reuses rendered collaborator logos without data requests,
-   app state changes, scroll handlers, click interception or scroll locking. */
+   app state changes, scroll handlers, click interception or scroll locking.
+   Extra previews delegate to the existing detail function and hero ticker. */
 (() => {
     'use strict';
     let dispose;
     let presented = false;
+    const catalog = new Map(); // Retain preview artwork when returning from the browser cache.
     function mount() {
         const hero = document.querySelector('.hero-section');
         const grid = document.querySelector('#collaboratorGrid');
@@ -33,6 +35,41 @@
             return animation;
         };
         const pose = (x, y, angle, scale) => `translate(-50%,-50%) translate3d(${x}px,${y}px,0) rotate(${angle}deg) scale(${scale})`;
+        const shuffle = items => {
+            const copy = [...items];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        };
+        function readPartners() {
+            grid.querySelectorAll(':scope > .card').forEach(card => {
+                const title = card.querySelector('.card-title')?.textContent.trim();
+                const background = card.querySelector('.card-thumbnail')?.style.backgroundImage;
+                const match = background?.match(/^url\((['"]?)(.*?)\1\)$/);
+                if (card.id && title && match) catalog.set(card.id, { id: card.id, title, src: match[2] });
+            });
+        }
+        function assign(item, partner) {
+            item.partner = partner;
+            item.tile.setAttribute('aria-label', `ดูรายละเอียด ${partner.title}`);
+            item.tile.title = partner.title;
+            if (item.image.getAttribute('src') !== partner.src) item.image.src = partner.src;
+        }
+        function refreshCompanions() {
+            if (!settled || disposed || !tiles.length) return;
+            const current = new Set(liveCards.map(card => card.querySelector('h4')?.textContent.trim()));
+            // Keep the preview under the pointer/focus stable until the next ticker cycle.
+            const held = tiles.filter(item => item.slot >= 3 &&
+                (item.tile.matches(':hover') || item.tile.contains(document.activeElement)));
+            held.forEach(item => current.add(item.partner.title));
+            const pool = shuffle([...catalog.values()].filter(partner => !current.has(partner.title)));
+            tiles.filter(item => item.slot >= 3 && !held.includes(item)).forEach(item => {
+                const partner = pool.pop();
+                if (partner) assign(item, partner);
+            });
+        }
         function measure() {
             if (!tiles.length) return;
             // Read all geometry together; never measure continuously while scrolling.
@@ -50,7 +87,7 @@
             companions.forEach(([x, y, angle]) => destinations.push({
                 x: width * x - width / 2,
                 y: Math.max(62, Math.min(height - 76, height * y)) - height / 2,
-                angle, scale: width < 1100 ? .84 : 1, opacity: compact.matches ? 0 : 1
+                angle, scale: width < 1100 ? .84 : 1, opacity: 1
             }));
             tiles.forEach(item => {
                 item.destination = destinations[item.slot];
@@ -70,6 +107,7 @@
             timers.clear();
             releaseDecode?.();
             releaseDecode = undefined;
+            tiles.forEach(item => { if (item.slot >= 3 && item.tile.disabled) item.tile.disabled = false; });
             // Inline endpoints are already present beneath the temporary animations.
         }
         function run() {
@@ -112,27 +150,22 @@
             after(finish, duration + 450); // Fail open even if animation completion is interrupted.
         }
         async function prepare() {
-            if (preparing || disposed || reduced.matches) return;
-            const partners = [...grid.querySelectorAll(':scope > .card')].map(card => ({
-                title: card.querySelector('.card-title')?.textContent.trim(),
-                background: card.querySelector('.card-thumbnail')?.style.backgroundImage
-            })).filter(item => item.title && item.background);
+            if (preparing || disposed) return;
+            readPartners();
+            const partners = [...catalog.values()];
             if (partners.length < 5) return;
             preparing = true;
-            observer.disconnect(); // Filtering never replays the opening or replaces its artwork.
             const selected = liveCards.map(card => partners.find(item => item.title === card.querySelector('h4')?.textContent.trim()));
-            partners.forEach(partner => { if (!selected.includes(partner) && selected.length < 8) selected.push(partner); });
+            shuffle(partners).forEach(partner => { if (!selected.includes(partner) && selected.length < 8) selected.push(partner); });
             const candidates = selected.map((partner, slot) => {
                 if (!partner) return null;
-                const match = partner.background.match(/^url\((['"]?)(.*?)\1\)$/);
-                if (!match) return null;
                 const image = document.createElement('img');
                 image.alt = '';
                 image.width = 104;
                 image.height = 80;
                 image.decoding = 'async';
-                image.src = match[2];
-                return { image, slot };
+                image.src = partner.src;
+                return { image, slot, partner };
             }).filter(Boolean);
             await Promise.race([
                 Promise.all(candidates.map(item => item.image.decode().catch(() => {}))),
@@ -144,25 +177,39 @@
             if (available.length < 5) { finish(); return; }
             layer = document.createElement('div');
             layer.className = 'orbit-layer';
-            layer.setAttribute('aria-hidden', 'true');
-            available.forEach(({ image, slot }) => {
+            available.forEach(({ image, slot, partner }) => {
                 const drift = document.createElement('div');
                 drift.className = 'orbit-drift';
-                const tile = document.createElement('div');
+                drift.dataset.slot = slot;
+                const tile = document.createElement('button');
+                tile.type = 'button';
                 tile.className = 'orbit-tile';
+                tile.disabled = true;
+                if (slot < 3) tile.setAttribute('aria-hidden', 'true');
                 tile.append(image);
                 drift.append(tile);
                 layer.append(drift);
-                tiles.push({ tile, drift, slot });
+                const item = { tile, drift, slot, image, partner };
+                tiles.push(item);
+                assign(item, partner);
+                if (slot >= 3) on(tile, 'click', () => {
+                    if (typeof window.openModal === 'function') window.openModal(item.partner.id, 'partner');
+                });
             });
-            hero.prepend(layer);
+            hero.append(layer);
             measure();
             // Clear only the pending-data timeout; the decorative sequence has its own bound.
             clearTimeout(pendingTimer);
             timers.delete(pendingTimer);
             try { run(); } catch { finish(); } // Optional motion must always fail open.
         }
-        const observer = new MutationObserver(prepare);
+        const observer = new MutationObserver(() => { readPartners(); prepare(); });
+        // Follow the existing ten-second ticker; no extra timer or data request.
+        const tickerObserver = new MutationObserver(refreshCompanions);
+        liveCards.forEach(card => {
+            const title = card.querySelector('h4');
+            if (title) tickerObserver.observe(title, { childList: true, subtree: true, characterData: true });
+        });
         observer.observe(grid, { childList: true });
         const pendingTimer = settled ? 0 : after(() => finish(), 3500);
         if (!settled) hero.classList.add('intro-pending');
@@ -185,6 +232,7 @@
             disposed = true;
             controller.abort();
             observer.disconnect();
+            tickerObserver.disconnect();
             cancelAnimationFrame(resizeFrame);
             finish();
             layer?.remove();

@@ -12,26 +12,31 @@
 .hero-animation .card-bot { top: auto; bottom: 26px; left: 42px; right: auto; transform: rotate(-5deg); }
 .orbit-layer { position: absolute; inset: 0; z-index: 2; perspective: 1200px; pointer-events: none; }
 .orbit-drift { position: absolute; inset: 0; pointer-events: none; }
-.orbit-tile { position: absolute; left: 50%; top: 50%; width: 140px; height: 116px; padding: 18px; border: 1px solid #e5dfe1; border-radius: 18px; background: #fff; box-shadow: 0 10px 24px -18px rgb(53 18 27 / 25%); transform-origin: center; pointer-events: none; }
+.orbit-tile { position: absolute; left: 50%; top: 50%; width: 140px; height: 116px; padding: 18px; border: 1px solid #e5dfe1; border-radius: 18px; background: #fff; box-shadow: 0 10px 24px -18px rgb(53 18 27 / 25%); transform-origin: center; pointer-events: auto; transition: border-color 160ms ease-out, box-shadow 160ms ease-out; }
 .orbit-tile img { display: block; width: 100%; height: 100%; object-fit: contain; }
 /* Content stays visible unless the optional opening successfully initializes.
    Search, keyboard and scrolling dismiss this decorative sequence immediately. */
 .intro-pending .hero-content, .intro-pending .hero-animation,
 .intro-playing .hero-content, .intro-playing .hero-animation { opacity: 0; }
 .intro-pending .hero-content, .intro-playing .hero-content { animation: none; }
-@keyframes portal-heading-exit { 0% { opacity: 1; transform: none; filter: none; } 100% { opacity: 0; transform: translateY(-36px) scale(.96); filter: blur(4px); } }
-@keyframes portal-card-exit { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: var(--away-x) -36px; } }
-@keyframes portal-orbit-exit { from { opacity: 1; transform: none; } to { opacity: 0; transform: translate(var(--scatter-x),var(--scatter-y)) scale(1.12); } }
+@keyframes portal-board-enter { from { opacity: .3; transform: translateY(28px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes portal-heading-exit { 0% { opacity: 1; transform: none; filter: none; } 100% { opacity: 0; visibility: hidden; transform: translateY(-36px) scale(.96); filter: blur(4px); } }
+@keyframes portal-card-exit { from { opacity: 1; translate: 0 0; } to { opacity: 0; visibility: hidden; translate: var(--away-x) -36px; } }
+@keyframes portal-orbit-exit { from { opacity: 1; transform: none; } to { opacity: 0; visibility: hidden; transform: translate(var(--scatter-x),var(--scatter-y)) scale(1.12); } }
 @media (prefers-reduced-motion: no-preference) and (min-width: 1024px) {
     @supports (animation-timeline: view()) {
+        body { timeline-scope: --portal; }
         .hero-scroll { min-height: calc(100dvh + 350px); view-timeline-name: --portal; view-timeline-axis: block; }
         .hero-section { position: sticky; top: 92px; height: calc(100dvh - 108px); min-height: 640px; }
-        .hero-content { animation: portal-heading-exit linear both; animation-duration: auto; animation-timeline: --portal; animation-range: contain 25% contain 100%; }
-        .hero-animation .float-card { animation: portal-card-exit linear both; animation-duration: auto; animation-timeline: --portal; animation-range: contain 10% contain 100%; animation-play-state: running; }
-        .orbit-drift { animation: portal-orbit-exit linear both; animation-duration: auto; animation-timeline: --portal; animation-range: contain 10% contain 100%; }
+        .hero-content { animation: portal-heading-exit linear both; animation-duration: auto; animation-timeline: --portal; animation-range: contain 0% contain 80%; }
+        .hero-animation .float-card { animation: portal-card-exit linear both; animation-duration: auto; animation-timeline: --portal; animation-range: contain 0% contain 85%; animation-play-state: running; }
+        .orbit-drift { animation: portal-orbit-exit linear both; animation-duration: auto; animation-timeline: --portal; animation-range: contain 0% contain 85%; }
+        #board-section { margin-top: -350px; z-index: 6; background: #fff; }
+        #board-section .page-title { animation: portal-board-enter linear both; animation-duration: auto; animation-timeline: --portal; animation-range: contain 35% contain 100%; }
+        main.container { position: relative; z-index: 6; background: #fff; }
         .hero-animation:hover .float-card, .hero-animation:focus-within .float-card { animation-play-state: running; }
-        /* Focus and an open detail view keep the selected hero card readable. */
-        .hero-content:focus-within { animation: none; opacity: 1; filter: none; }
+        /* Keep keyboard focus readable; pointer clicks retain the scroll transition. */
+        .hero-content:has(.hero-btn:focus-visible) { animation: none; opacity: 1; filter: none; }
         body:has(#detailModal[style*="flex"]) .orbit-layer { visibility: hidden; }
     }
 }
@@ -74,4 +79,32 @@
     .intro-pending .hero-content, .intro-pending .hero-animation,
     .intro-playing .hero-content, .intro-playing .hero-animation { opacity: 1; }
     @media (max-width: 767px) { .hero-animation { grid-template-columns: minmax(0,1fr); } }
+}
+
+/* Every settled companion is a real partner preview, with native button semantics. */
+.orbit-tile[aria-hidden="true"] { pointer-events: none; }
+.intro-playing .orbit-tile { pointer-events: none; }
+.orbit-tile:focus-visible { outline: 3px solid #171717; outline-offset: 4px; }
+@media (hover: hover) and (pointer: fine) {
+    .orbit-tile:not(:disabled):hover { border-color: #171717; box-shadow: 0 12px 28px -17px rgb(25 15 18 / 35%); }
+}
+@media (max-width: 1023px) {
+    .hero-section { padding-bottom: 120px; }
+    .hero-section:not(.intro-playing) .orbit-layer { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 10px; inset: auto 28px 26px; width: auto; margin: 0; height: 68px; }
+    .hero-section:not(.intro-playing) .orbit-drift { position: relative; inset: auto; min-width: 0; }
+    .hero-section:not(.intro-playing) .orbit-drift[data-slot="0"],
+    .hero-section:not(.intro-playing) .orbit-drift[data-slot="1"],
+    .hero-section:not(.intro-playing) .orbit-drift[data-slot="2"] { display: none; }
+    .hero-section:not(.intro-playing) .orbit-tile { position: relative; inset: auto; width: 100%; height: 68px; padding: 8px; border-radius: 12px; transform: none !important; opacity: 1 !important; }
+}
+@media (max-width: 767px) {
+    .hero-section:not(.intro-playing) .orbit-layer { left: 20px; right: 20px; gap: 8px; height: 58px; }
+    .hero-section:not(.intro-playing) .orbit-tile { height: 58px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .orbit-layer { position: relative; inset: auto; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 12px; width: min(700px,100%); margin: 24px auto 0; height: 68px; }
+    .orbit-drift { position: relative; inset: auto; min-width: 0; }
+    .orbit-drift[data-slot="0"], .orbit-drift[data-slot="1"], .orbit-drift[data-slot="2"] { display: none; }
+    .orbit-tile { position: relative; inset: auto; width: 100%; height: 68px; padding: 10px; transform: none !important; opacity: 1 !important; transition: none; }
+    @media (max-width: 1023px) { .hero-section { padding-bottom: 120px; } }
 }
