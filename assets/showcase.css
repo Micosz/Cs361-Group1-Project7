@@ -31,6 +31,10 @@
 .hero-animation .card-text { min-width: 0; }
 .hero-animation .card-text h4 { font-size: .75rem; font-weight: 600; line-height: 1.65; }
 .hero-animation .card-text p { font-size: .6rem; line-height: 1.7; letter-spacing: .025em; }
+@media (hover: hover) and (pointer: fine) {
+    .hero-animation .float-card:hover { border-color: #171717; outline: 1px solid #171717; outline-offset: 0; }
+}
+.hero-animation .float-card:focus-within { border-color: #171717; outline: 1px solid #171717; outline-offset: 0; }
 @keyframes showcase-depart {
     from { transform: translate3d(0,0,0) rotate(var(--showcase-angle)); }
     to { transform: translate3d(var(--showcase-x),var(--showcase-y),35px) rotate(calc(var(--showcase-angle) * 1.5)); }

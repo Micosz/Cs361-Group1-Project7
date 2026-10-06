@@ -88,6 +88,16 @@ body { background: #fff; }
 .modal-overlay { background: transparent; }
 .modal-overlay::before { content: ""; position: absolute; inset: 0; background: rgb(32 32 32 / 42%); pointer-events: none; }
 .modal-content { z-index: 1; transform-origin: center; }
+.details-section .card:focus-within { border-color: #171717; }
+@media (hover: hover) and (pointer: fine) {
+    .details-section .card:hover { border-color: #171717; box-shadow: 0 10px 24px -15px rgb(62 31 39 / 28%) !important; }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .details-section .card { transition: transform 180ms var(--ease-spatial), border-color 160ms ease, box-shadow 180ms ease; }
+    @media (hover: hover) and (pointer: fine) {
+        .details-section .card:hover { transform: translateY(-4px); }
+    }
+}
 @keyframes detail-scrim-enter { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: no-preference) {
     html { scroll-behavior: smooth; }
