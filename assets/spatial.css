@@ -64,7 +64,7 @@ body { background: #fff; }
 
 .sub-header { position: relative; padding-top: 24px; margin-top: 0; border-top: 1px solid #e7e0e2; }
 .page-title h1 { font-size: 1.75rem; }
-.page-title h2 { font-size: 0.875rem; }
+.page-title h2 { color: #c05600; font-size: 0.875rem; }
 .tabs { position: relative; isolation: isolate; gap: 0; padding: 5px; border: 1px solid #e3dade; border-radius: 12px; background: #f7f5f6; }
 .tab { position: relative; border: 0; border-radius: 8px; padding: 12px 18px; z-index: 1; }
 .tab.active { background: #fff; box-shadow: 0 2px 5px rgb(53 30 36 / 6%); }
