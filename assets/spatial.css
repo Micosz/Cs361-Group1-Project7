@@ -67,9 +67,10 @@ body { background: #fff; }
 .page-title h2 { color: #c05600; font-size: 0.875rem; }
 .tabs { position: relative; isolation: isolate; gap: 0; padding: 5px; border: 1px solid #e3dade; border-radius: 12px; background: #f7f5f6; }
 .tab { position: relative; border: 0; border-radius: 8px; padding: 12px 18px; z-index: 1; }
-.tab.active { background: #fff; box-shadow: 0 2px 5px rgb(53 30 36 / 6%); }
-.tab-indicator { position: absolute; left: 0; bottom: 4px; width: 100px; height: 3px; background: var(--tu-red); border-radius: 2px; pointer-events: none; transform-origin: left; z-index: 2; }
-.tabs.has-indicator .tab.active { box-shadow: none; }
+.tab.active { background: var(--tu-red); color: #fff; box-shadow: none; }
+.tab-indicator { position: absolute; left: 0; top: 5px; bottom: 5px; width: 100px; background: var(--tu-red); border-radius: 8px; pointer-events: none; transform-origin: left; opacity: 0; z-index: 0; }
+.tabs.has-indicator .tab-indicator { opacity: 1; }
+.tabs.has-indicator .tab.active { background: transparent; }
 .filter-wrapper { margin-bottom: 24px; }
 .grid { gap: 28px; perspective: 1300px; }
 .grid > .card { position: relative; overflow: visible; box-shadow: 0 4px 0 #f0ecee; transform-style: preserve-3d; }

@@ -248,12 +248,14 @@
             indicator.className = 'tab-indicator';
             indicator.setAttribute('aria-hidden', 'true');
             tabs.append(indicator);
-            tabs.classList.add('has-indicator');
             const sync = () => {
                 cancelAnimationFrame(indicatorFrame);
                 indicatorFrame = requestAnimationFrame(() => {
                     const selected = tabs.querySelector('.tab.active');
-                    if (selected) indicator.style.transform = `translateX(${selected.offsetLeft}px) scaleX(${selected.offsetWidth / 100})`;
+                    if (selected) {
+                        indicator.style.transform = `translateX(${selected.offsetLeft}px) scaleX(${selected.offsetWidth / 100})`;
+                        tabs.classList.add('has-indicator');
+                    }
                 });
             };
             const observer = new MutationObserver(sync);
