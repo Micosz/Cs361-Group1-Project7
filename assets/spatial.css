@@ -1,0 +1,204 @@
+/* Presentation-only spatial identity. Application hooks and visibility stay in styles.css. */
+:root {
+    --ease-spatial: cubic-bezier(0.22, 1, 0.36, 1);
+    --radius-card: 14px;
+    --radius-control: 8px;
+}
+body { background: #fff; }
+.navbar { border-bottom-color: #e7e3e4; box-shadow: 0 4px 24px rgb(65 23 33 / 3%); }
+.logo { letter-spacing: -0.055em; font-size: 1.5rem; }
+.search-container { background: #faf9f9; }
+.hero-section {
+    position: relative;
+    isolation: isolate;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 64px;
+    padding-top: 42px;
+    padding-bottom: 42px;
+    min-height: 466px;
+    view-timeline-name: --intro;
+    view-timeline-axis: block;
+}
+.hero-content { position: relative; z-index: 2; }
+.hero-heading { font-size: clamp(2.25rem, 3.6vw, 3.2rem); line-height: 1.18; letter-spacing: -0.045em; font-weight: 650; margin-bottom: 22px; perspective: 900px; }
+.hero-heading span { display: block; width: fit-content; transform-origin: left bottom; }
+.hero-heading .heading-intro { font-size: 0.43em; font-weight: 500; letter-spacing: -0.015em; line-height: 1.6; color: var(--text-gray); margin-bottom: 8px; }
+.hero-heading .heading-end { color: var(--text-dark); }
+.heading-subject { position: relative; }
+.heading-subject::after { content: ""; position: absolute; left: 0; bottom: -2px; width: 100%; height: 3px; transform-origin: left; background: linear-gradient(90deg, var(--tu-red) 78%, var(--tu-yellow) 78%); }
+.hero-features { margin-bottom: 22px; }
+.hero-features li { font-size: 0.9375rem; line-height: 1.9; }
+.hero-btn { padding-inline: 22px; box-shadow: 0 4px 0 #8e0526, 0 10px 24px rgb(195 0 47 / 12%); }
+.hero-animation { border: 0; align-content: center; gap: 12px; perspective: 1100px; padding-block: 12px; position: relative; z-index: 2; }
+.float-card {
+    width: calc(100% - 48px);
+    min-height: 104px;
+    padding: 16px 20px;
+    border: 1px solid #e3dade;
+    border-radius: 12px;
+    background: rgb(255 255 255 / 96%);
+    box-shadow: 0 6px 0 rgb(227 219 222 / 50%), 0 16px 28px -20px rgb(76 18 32 / 28%);
+    transform-origin: center;
+}
+.float-card + .float-card { border-top: 1px solid #e3dade; }
+.card-top { margin-left: 0; transform: rotateY(-7deg) rotateZ(-2deg); }
+.card-mid { margin-left: 48px; transform: rotateY(-7deg) rotateZ(2deg); }
+.card-bot { margin-left: 18px; transform: rotateY(-7deg) rotateZ(-1deg); }
+.float-card .icon-box { border: 1px solid #eee5e7; background: #fff5f7; color: var(--tu-red); border-radius: 10px; }
+.card-top .icon-box { background: var(--tu-yellow); color: var(--text-dark); border-color: #e7bd37; }
+.float-card .card-text h4 { font-size: 0.875rem; line-height: 1.65; }
+.float-card .card-text p { font-size: 0.6875rem; margin-top: 3px; letter-spacing: 0.05em; }
+
+/* Only this aria-hidden artwork sticks. It adds no scroll distance or hit targets. */
+.spatial-track { position: absolute; inset: 0 0 0 auto; width: 47%; pointer-events: none; z-index: 0; }
+.spatial-stage { position: relative; height: 260px; perspective: 850px; transform-style: preserve-3d; }
+.spatial-stage > div { position: absolute; pointer-events: none; }
+.spatial-light { width: 100%; height: 410px; top: -5px; right: 0; background: radial-gradient(ellipse at 64% 40%, #ffecb6 0%, #fff1f2 38%, rgb(255 255 255 / 0%) 70%); opacity: 0.8; }
+.spatial-ring { width: 290px; height: 290px; top: -5px; right: 10px; transform: rotateX(48deg) rotateY(-18deg) rotateZ(-28deg); transform-style: preserve-3d; }
+.ring-body { width: 100%; height: 100%; border: 44px solid var(--tu-red); border-top-color: #e92e56; border-left-color: #d41340; border-bottom-color: #9e0026; border-radius: 50%; box-shadow: 8px 14px 0 #7b0b29, inset 2px 3px 3px rgb(255 255 255 / 40%), 20px 32px 38px -24px rgb(120 0 28 / 32%); }
+.spatial-orb { width: 132px; height: 132px; top: 190px; right: 20px; transform: translateZ(50px); }
+.orb-body { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 32% 25%, #fffbdc 0%, #ffdf6b 26%, var(--tu-yellow) 50%, #d89413 90%); box-shadow: inset -8px -12px 16px rgb(143 75 0 / 12%), 16px 24px 24px -18px rgb(147 94 0 / 28%); }
+.spatial-plane { width: 235px; height: 156px; border: 1px solid #e4dfe0; border-radius: 24px; background: linear-gradient(145deg, #fff 5%, #f1ecee 95%); box-shadow: 4px 7px 0 #ddd4d7, 10px 30px 30px -20px rgb(52 28 34 / 20%); }
+.plane-back { top: 40px; left: 4px; transform: rotateX(55deg) rotateY(10deg) rotateZ(-28deg); }
+.plane-front { top: 248px; left: 40px; width: 140px; height: 92px; border-radius: 16px; transform: rotateX(60deg) rotateY(-8deg) rotateZ(22deg); }
+
+.sub-header { position: relative; padding-top: 24px; margin-top: 0; border-top: 1px solid #e7e0e2; }
+.page-title h1 { font-size: 1.75rem; }
+.page-title h2 { font-size: 0.875rem; }
+.tabs { position: relative; isolation: isolate; gap: 0; padding: 5px; border: 1px solid #e3dade; border-radius: 12px; background: #f7f5f6; }
+.tab { position: relative; border: 0; border-radius: 8px; padding: 12px 18px; z-index: 1; }
+.tab.active { background: #fff; box-shadow: 0 2px 5px rgb(53 30 36 / 6%); }
+.tab-indicator { position: absolute; left: 0; bottom: 4px; width: 100px; height: 3px; background: var(--tu-red); border-radius: 2px; pointer-events: none; transform-origin: left; z-index: 2; }
+.tabs.has-indicator .tab.active { box-shadow: none; }
+.filter-wrapper { margin-bottom: 24px; }
+.grid { gap: 28px; perspective: 1300px; }
+.grid > .card { position: relative; overflow: visible; box-shadow: 0 4px 0 #f0ecee; transform-style: preserve-3d; }
+.grid > .card > .card-thumbnail { position: relative; min-height: 192px; height: 192px; border-radius: 13px 13px 0 0; margin: 0; background-origin: content-box; background-clip: padding-box; padding: 24px; flex-shrink: 0; }
+.grid > .card > .card-content { border-radius: 0 0 13px 13px; position: relative; background: #fff; }
+.grid > .card .card-title { font-weight: 650; }
+.grid > .card .card-footer { border-color: #ece6e8; }
+.card-highlight { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; overflow: hidden; opacity: 0; z-index: 2; }
+.card-highlight::before { content: ""; position: absolute; width: 240px; height: 240px; left: -120px; top: -120px; border-radius: 50%; background: radial-gradient(circle, rgb(255 209 63 / 12%), rgb(255 255 255 / 0%) 68%); transform: translate(var(--light-x, 0px), var(--light-y, 0px)); }
+.grid > .card.is-tilting { z-index: 3; }
+.grid > .card.is-tilting .card-highlight { opacity: 1; }
+.site-footer { position: relative; background: #faf8f9; border-top: 1px solid #e3dade; }
+.site-footer::before { content: ""; position: absolute; height: 3px; top: -1px; left: max(40px, calc((100% - 1168px) / 2)); width: 80px; background: linear-gradient(90deg, var(--tu-red) 75%, var(--tu-yellow) 75%); transform-origin: left; }
+.modal-content { border-top: 4px solid var(--tu-red); }
+/* Fade only the scrim so expanding detail text stays opaque and readable. */
+.modal-overlay { background: transparent; }
+.modal-overlay::before { content: ""; position: absolute; inset: 0; background: rgb(32 32 32 / 42%); pointer-events: none; }
+.modal-content { z-index: 1; transform-origin: center; }
+@keyframes detail-scrim-enter { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+    .modal-overlay::before { animation: detail-scrim-enter 300ms ease-out; }
+}
+
+@keyframes ambient-ring { 50% { transform: translate3d(0, -6px, 0) rotateZ(2deg); } }
+@keyframes ambient-orb { 50% { transform: translate3d(0, 8px, 0); } }
+/* Independent translation preserves each card's existing perspective and angle. */
+@keyframes partner-float {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -9px; }
+}
+@keyframes partner-float-compact {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -3px; }
+}
+@keyframes ring-separate {
+    from { transform: translate3d(0, 0, 0) rotateX(48deg) rotateY(-18deg) rotateZ(-28deg); }
+    to { transform: translate3d(20px, -28px, 70px) rotateX(18deg) rotateY(22deg) rotateZ(25deg); }
+}
+@keyframes orb-separate { from { transform: translate3d(0, 0, 50px); } to { transform: translate3d(-110px, -62px, 100px) scale(0.84); } }
+@keyframes back-separate { from { transform: rotateX(55deg) rotateY(10deg) rotateZ(-28deg); } to { transform: translate3d(-60px, -20px, -50px) rotateX(15deg) rotateY(-20deg) rotateZ(-8deg); } }
+@keyframes front-separate { from { transform: rotateX(60deg) rotateY(-8deg) rotateZ(22deg); } to { transform: translate3d(35px, -10px, 30px) rotateX(20deg) rotateY(10deg) rotateZ(-12deg); } }
+@keyframes accent-trace { from { transform: scaleX(0.15); opacity: 0.4; } to { transform: scaleX(1); opacity: 1; } }
+
+@media (prefers-reduced-motion: no-preference) {
+    .hero-animation .float-card {
+        animation: partner-float 6s cubic-bezier(.45, 0, .55, 1) infinite;
+    }
+    .hero-animation .card-mid { animation-duration: 7s; animation-delay: -2.3s; }
+    .hero-animation .card-bot { animation-duration: 6.5s; animation-delay: -4.1s; }
+    .hero-animation:focus-within .float-card { animation-play-state: paused; }
+    /* Ambient movement ends after one gentle cycle; it never loops near reading content. */
+    .ring-body { animation: ambient-ring 4.5s ease-in-out 1; }
+    .orb-body { animation: ambient-orb 4.5s ease-in-out 1; }
+    .heading-subject::after { animation: accent-trace 700ms var(--ease-spatial) both; }
+    .tab-indicator { transition: transform 220ms var(--ease-spatial); }
+    .grid > .card { transition: transform 220ms var(--ease-spatial), border-color 160ms ease, box-shadow 160ms ease; }
+    .grid > .card.is-tilting { transition: transform 90ms linear, border-color 160ms ease, box-shadow 160ms ease; }
+    .grid > .card > .card-thumbnail { transition: transform 220ms var(--ease-spatial); }
+    .card-highlight { transition: opacity 200ms ease; }
+    .hero-btn, .search-btn, .login-btn { transition: transform 140ms var(--ease-spatial), background-color 140ms ease; }
+    .tabs:has(:focus-visible) .tab-indicator { transition: none; }
+    @supports (animation-timeline: view()) {
+        @media (min-width: 1024px) {
+            .spatial-stage { position: sticky; top: 96px; }
+            .spatial-ring, .spatial-orb, .plane-back, .plane-front {
+                animation-duration: auto;
+                animation-timing-function: linear;
+                animation-fill-mode: both;
+                animation-timeline: --intro;
+                animation-range: exit 0% exit 70%;
+            }
+            .spatial-ring { animation-name: ring-separate; }
+            .spatial-orb { animation-name: orb-separate; }
+            .plane-back { animation-name: back-separate; }
+            .plane-front { animation-name: front-separate; }
+        }
+    }
+}
+@media (hover: hover) and (pointer: fine) {
+    .hero-animation:hover .float-card { animation-play-state: paused; }
+    .grid > .card:hover { border-color: #bfa5ad; box-shadow: 0 5px 0 #eee5e8, 0 20px 40px -28px rgb(112 13 37 / 30%); }
+    .float-card:hover { background: #fff; border-color: #c69ca7; }
+    .tab:not(.active):hover { background: #eee8ea; }
+}
+/* Keyboard focus cancels spatial feedback immediately. */
+:where(button, a, input, select):focus-visible { transition: none !important; }
+.grid > .card:focus-within { transform: none !important; }
+
+@media (max-width: 1023px) {
+    .hero-section { gap: 32px; min-height: 440px; }
+    .hero-heading { font-size: 2.4rem; }
+    .float-card { padding: 14px; width: calc(100% - 20px); }
+    .card-mid { margin-left: 20px; }
+    .card-bot { margin-left: 6px; }
+    .spatial-track { width: 45%; }
+    .spatial-ring { width: 240px; height: 240px; }
+    .spatial-orb { width: 100px; height: 100px; }
+    .ring-body { border-width: 36px; }
+}
+@media (max-width: 767px) {
+    .hero-animation .float-card { animation-name: partner-float-compact; }
+    .hero-section { grid-template-columns: minmax(0, 1fr); min-height: 0; padding-top: 28px; padding-bottom: 26px; gap: 22px; }
+    .hero-heading { font-size: clamp(1.8rem, 7.6vw, 2.6rem); max-width: 100%; }
+    .hero-heading .heading-intro { font-size: 0.55em; }
+    .hero-animation { gap: 10px; padding-block: 0; perspective: none; }
+    .float-card { width: 100%; margin: 0; min-height: 78px; padding: 12px 14px; transform: none; border-radius: 10px; }
+    .float-card .card-text h4 { font-size: 0.875rem; }
+    .spatial-track { width: 100%; top: auto; height: 270px; bottom: 32px; overflow: clip; }
+    .spatial-stage { position: relative; height: 260px; opacity: 0.45; }
+    .spatial-ring { right: -38px; }
+    .spatial-orb { top: 136px; right: 10px; }
+    .spatial-plane { display: none; }
+    .tabs { gap: 0; }
+    .tab { padding-inline: 10px; font-size: 0.6875rem; }
+    .sub-header { padding-top: 20px; gap: 16px; }
+    .page-title h1 { font-size: 1.5rem; }
+    .grid { gap: 24px; perspective: none; }
+    .grid > .card > .card-thumbnail { height: 184px; min-height: 184px; padding: 20px; }
+    .site-footer::before { left: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .spatial-stage { position: relative; }
+    .float-card, .grid > .card, .grid > .card > .card-thumbnail { transform: none !important; }
+    .card-highlight { display: none; }
+    .hero-heading span, .page-title, .site-footer { opacity: 1 !important; transform: none !important; }
+}
+/* Contain projected decoration without creating a scroll container. */
+.hero-section { overflow: clip; }
+@media (max-width: 767px) {
+    .ring-body, .orb-body { animation: none; }
+}
