@@ -23,9 +23,9 @@
     box-shadow: 0 3px 2px rgb(62 31 39 / 4%), 0 16px 38px -23px rgb(62 31 39 / 24%);
     transform: rotate(var(--showcase-angle));
 }
-.hero-animation .card-top { --showcase-angle: -8deg; --showcase-x: -30px; --showcase-y: -20px; top: 5px; left: 0; z-index: 2; }
-.hero-animation .card-mid { --showcase-angle: 7deg; --showcase-x: 32px; --showcase-y: -12px; top: 105px; right: 0; z-index: 3; }
-.hero-animation .card-bot { --showcase-angle: -4deg; --showcase-x: -20px; --showcase-y: 22px; bottom: 0; left: 24px; z-index: 4; }
+.hero-animation .card-top { --showcase-angle: -8deg; --showcase-x: -55px; --showcase-y: -60px; --showcase-depth: 70px; top: 5px; left: 0; z-index: 2; }
+.hero-animation .card-mid { --showcase-angle: 7deg; --showcase-x: 30px; --showcase-y: -45px; --showcase-depth: 95px; top: 105px; right: 0; z-index: 3; }
+.hero-animation .card-bot { --showcase-angle: -4deg; --showcase-x: -15px; --showcase-y: 55px; --showcase-depth: 50px; bottom: 0; left: 24px; z-index: 4; }
 .hero-card-media { display: block; grid-column: 1 / -1; height: 104px; border-radius: 7px; background-color: #faf9f9; background-position: center; background-repeat: no-repeat; background-size: contain; }
 .hero-animation .icon-box { width: 30px; height: 30px; border-radius: 50%; font-size: .8rem; }
 .hero-animation .card-text { min-width: 0; }
@@ -37,7 +37,7 @@
 .hero-animation .float-card:focus-within { border-color: #171717; outline: 1px solid #171717; outline-offset: 0; }
 @keyframes showcase-depart {
     from { transform: translate3d(0,0,0) rotate(var(--showcase-angle)); }
-    to { transform: translate3d(var(--showcase-x),var(--showcase-y),35px) rotate(calc(var(--showcase-angle) * 1.5)); }
+    to { transform: translate3d(var(--showcase-x),var(--showcase-y),var(--showcase-depth)) rotate(calc(var(--showcase-angle) * 1.8)); }
 }
 @media (prefers-reduced-motion: no-preference) and (min-width: 1024px) {
     @supports (animation-timeline: view()) {
@@ -48,10 +48,12 @@
             animation-iteration-count: infinite, 1;
             animation-fill-mode: none, both;
             animation-timeline: auto, --intro;
-            animation-range: normal, exit 0% exit 85%;
+            animation-range: normal, exit 0% exit 70%;
         }
         .hero-animation .card-mid { animation-duration: 7s, auto; animation-delay: -2.3s, 0s; }
         .hero-animation .card-bot { animation-duration: 6.5s, auto; animation-delay: -4.1s, 0s; }
+        .hero-animation:hover .float-card,
+        .hero-animation:focus-within .float-card { animation-play-state: paused, running; }
     }
 }
 @media (max-width: 1100px) and (min-width: 768px) {
