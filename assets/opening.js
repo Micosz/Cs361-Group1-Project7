@@ -1,5 +1,5 @@
 /* Presentation only. Reuses rendered collaborator logos without data requests,
-   app state changes, scroll handlers, click interception or scroll locking.
+   app state changes, scroll handlers or scroll locking.
    Extra previews delegate to the existing detail function and hero ticker. */
 (() => {
     'use strict';
@@ -21,6 +21,7 @@
         let preparing = false;
         let settled = presented || reduced.matches || window.scrollY > 16;
         let resizeFrame = 0;
+        let navigationFrame = 0;
         let layer;
         let releaseDecode;
         const on = (target, type, handler, options = {}) => target.addEventListener(type, handler, { ...options, signal: controller.signal });
@@ -34,6 +35,31 @@
             animations.add(animation);
             return animation;
         };
+        const boardScene = document.querySelector('.board-scene');
+        const sceneMode = () => Boolean(boardScene) && !reduced.matches && !compact.matches && innerHeight > 650 &&
+            CSS.supports('animation-timeline: scroll()');
+        const updateSceneMode = () => document.body.classList.toggle('scene-ready', sceneMode());
+        updateSceneMode();
+        on(reduced, 'change', updateSceneMode);
+        on(window, 'resize', updateSceneMode);
+        function advanceScene() {
+            if (!boardScene || !sceneMode()) return;
+            // offsetTop is the stable document position, unaffected by the scene transform.
+            const top = Math.max(0, boardScene.offsetTop - 92);
+            cancelAnimationFrame(navigationFrame);
+            navigationFrame = requestAnimationFrame(() => {
+                navigationFrame = 0;
+                window.scrollTo({ top, behavior: 'smooth' });
+            });
+        }
+        // Preserve the anchor destination/history and all original search handlers.
+        on(hero.querySelector('.hero-btn'), 'click', advanceScene);
+        on(document.querySelector('.search-btn'), 'click', () => {
+            if (boardScene && scrollY < boardScene.offsetTop - 92) advanceScene();
+        });
+        on(document.querySelector('#searchInput'), 'keydown', event => {
+            if (event.key === 'Enter' && boardScene && scrollY < boardScene.offsetTop - 92) advanceScene();
+        });
         const pose = (x, y, angle, scale) => `translate(-50%,-50%) translate3d(${x}px,${y}px,0) rotate(${angle}deg) scale(${scale})`;
         const shuffle = items => {
             const copy = [...items];
@@ -234,8 +260,10 @@
             observer.disconnect();
             tickerObserver.disconnect();
             cancelAnimationFrame(resizeFrame);
+            cancelAnimationFrame(navigationFrame);
             finish();
             layer?.remove();
+            document.body.classList.remove('scene-ready');
         };
     }
     const start = () => { dispose?.(); dispose = mount(); };
