@@ -1,0 +1,77 @@
+/* Portfolio-orbit opening inspired by Fastwork. All images come from live
+   collaborator cards. Native scrolling and the original anchor remain intact. */
+.hero-scroll { min-height: 0; }
+.hero-section { display: block; min-height: 680px; height: 680px; border-radius: 0; background: #fff; }
+.hero-content { top: 132px; left: 24%; width: 52%; transform: none; animation: none; }
+.hero-heading { font-size: clamp(2.5rem,4.4vw,4rem); }
+.hero-animation { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; padding: 0; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; transform: none; animation: none; pointer-events: none; }
+.hero-animation::before, .community-sphere { display: none; }
+.hero-animation .float-card { position: absolute; width: clamp(180px,17.5vw,240px); min-height: 214px; height: auto; animation: none; scale: 1; pointer-events: auto; --away-x: -100px; }
+.hero-animation .card-top { top: 28px; left: 22px; right: auto; bottom: auto; transform: rotate(-7deg); }
+.hero-animation .card-mid { top: 132px; right: 22px; left: auto; bottom: auto; transform: rotate(7deg); --away-x: 100px; }
+.hero-animation .card-bot { top: auto; bottom: 26px; left: 42px; right: auto; transform: rotate(-5deg); }
+.orbit-layer { position: absolute; inset: 0; z-index: 2; perspective: 1200px; pointer-events: none; }
+.orbit-drift { position: absolute; inset: 0; pointer-events: none; }
+.orbit-tile { position: absolute; left: 50%; top: 50%; width: 140px; height: 116px; padding: 18px; border: 1px solid #e5dfe1; border-radius: 18px; background: #fff; box-shadow: 0 10px 24px -18px rgb(53 18 27 / 25%); transform-origin: center; pointer-events: none; }
+.orbit-tile img { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* Content stays visible unless the optional opening successfully initializes.
+   Search, keyboard and scrolling dismiss this decorative sequence immediately. */
+.intro-pending .hero-content, .intro-pending .hero-animation,
+.intro-playing .hero-content, .intro-playing .hero-animation { opacity: 0; }
+.intro-pending .hero-content, .intro-playing .hero-content { animation: none; }
+@keyframes portal-heading-exit { 0% { opacity: 1; transform: none; filter: none; } 100% { opacity: 0; transform: translateY(-36px) scale(.96); filter: blur(4px); } }
+@keyframes portal-card-exit { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: var(--away-x) -36px; } }
+@keyframes portal-orbit-exit { from { opacity: 1; transform: none; } to { opacity: 0; transform: translate(var(--scatter-x),var(--scatter-y)) scale(1.12); } }
+@media (prefers-reduced-motion: no-preference) and (min-width: 1024px) {
+    @supports (animation-timeline: view()) {
+        .hero-scroll { min-height: calc(100dvh + 350px); view-timeline-name: --portal; view-timeline-axis: block; }
+        .hero-section { position: sticky; top: 92px; height: calc(100dvh - 108px); min-height: 640px; }
+        .hero-content { animation: portal-heading-exit linear both; animation-duration: auto; animation-timeline: --portal; animation-range: contain 25% contain 100%; }
+        .hero-animation .float-card { animation: portal-card-exit linear both; animation-duration: auto; animation-timeline: --portal; animation-range: contain 10% contain 100%; animation-play-state: running; }
+        .orbit-drift { animation: portal-orbit-exit linear both; animation-duration: auto; animation-timeline: --portal; animation-range: contain 10% contain 100%; }
+        .hero-animation:hover .float-card, .hero-animation:focus-within .float-card { animation-play-state: running; }
+        /* Focus and an open detail view keep the selected hero card readable. */
+        .hero-content:focus-within { animation: none; opacity: 1; filter: none; }
+        body:has(#detailModal[style*="flex"]) .orbit-layer { visibility: hidden; }
+    }
+}
+@media (max-width: 1100px) and (min-width: 1024px) {
+    .hero-content { top: 118px; left: 24%; width: 52%; }
+    .hero-heading { font-size: 2.75rem; }
+    .hero-features li { font-size: .8125rem; }
+    .hero-animation .float-card { width: 178px; min-height: 200px; padding: 10px; }
+    .hero-animation .card-top { left: 14px; }
+    .hero-animation .card-mid { right: 14px; }
+    .hero-animation .card-bot { left: 28px; bottom: 24px; }
+    .hero-animation .card-text h4 { font-size: .8125rem; }
+    .hero-card-media { height: 92px; }
+}
+@media (max-width: 1023px) {
+    .hero-scroll { min-height: 0; }
+    .hero-section { position: relative; min-height: 0; height: auto; padding: 36px 28px; }
+    .hero-content { position: relative; inset: auto; width: 100%; max-width: 660px; margin-inline: auto; }
+    .hero-heading { font-size: clamp(2rem,5.7vw,3.5rem); }
+    .hero-animation { position: relative; inset: auto; width: 100%; height: auto; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin-top: 36px; pointer-events: auto; }
+    .hero-animation .float-card { position: relative; inset: auto; width: 100%; min-height: 220px; margin: 0; transform: none; }
+    .orbit-layer { display: none; }
+    .intro-playing .orbit-layer { display: block; }
+}
+@media (max-width: 767px) {
+    .hero-section { padding: 30px 20px 26px; }
+    .hero-heading { font-size: clamp(1.9rem,8vw,2.75rem); }
+    .hero-animation { grid-template-columns: minmax(0,1fr); gap: 12px; margin-top: 28px; }
+    .hero-animation .float-card { min-height: 96px; display: grid; grid-template-columns: 86px minmax(0,1fr); padding: 10px; border-radius: 16px; box-shadow: none; }
+    .hero-card-media { height: 80px; }
+    .orbit-tile { width: 100px; height: 86px; padding: 12px; border-radius: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .hero-scroll { min-height: 0; }
+    .hero-section { position: relative; height: auto; min-height: 0; padding: 36px 28px; }
+    .hero-content { position: relative; inset: auto; width: 100%; max-width: 700px; margin-inline: auto; }
+    .hero-animation { position: relative; inset: auto; width: 100%; height: auto; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin-top: 36px; pointer-events: auto; }
+    .hero-animation .float-card { position: relative; inset: auto; width: 100%; transform: none; }
+    .orbit-layer { display: none; }
+    .intro-pending .hero-content, .intro-pending .hero-animation,
+    .intro-playing .hero-content, .intro-playing .hero-animation { opacity: 1; }
+    @media (max-width: 767px) { .hero-animation { grid-template-columns: minmax(0,1fr); } }
+}
