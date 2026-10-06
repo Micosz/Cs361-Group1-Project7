@@ -68,9 +68,21 @@
         const timing = { duration: compact.matches ? 360 : 680, easing: 'cubic-bezier(.22,1,.36,1)' };
         document.querySelectorAll('.hero-heading span').forEach((line, index) => {
             animate(line, [
-                { opacity: .25, transform: 'perspective(900px) translateY(22px) rotateX(-24deg)' },
-                { opacity: 1, transform: 'none' }
-            ], { ...timing, delay: index * 70 });
+                { opacity: .2, clipPath: 'inset(0 0 100% 0)', transform: 'translateY(30px)' },
+                { opacity: 1, clipPath: 'inset(0)', transform: 'none' }
+            ], { ...timing, delay: index * 65 });
+        });
+        const scene = document.querySelector('.hero-animation');
+        if (scene) animate(scene, [
+            { opacity: .3, clipPath: 'inset(14% 8% 14% 8% round 32px)' },
+            { opacity: 1, clipPath: 'inset(0 round 32px)' }
+        ], { duration: compact.matches ? 350 : 900, easing: 'cubic-bezier(.16,1,.3,1)' });
+        // Forward keyboard activation to existing click handlers without changing them.
+        on(document, 'keydown', event => {
+            const card = event.target.closest('.float-card[role="button"]');
+            if (!card || (event.key !== 'Enter' && event.key !== ' ')) return;
+            event.preventDefault();
+            card.click();
         });
         let reveal;
         if ('IntersectionObserver' in window) {
@@ -80,11 +92,11 @@
                     reveal.unobserve(target);
                     if (target.matches('.card') && interacted) return;
                     const index = Array.from(target.parentElement.children).indexOf(target);
-                    const angle = compact.matches ? 0 : (index % 2 ? -7 : 7);
+                    const angle = compact.matches ? 0 : (index % 2 ? -5 : 5);
                     animate(target, [
                         { opacity: .35, transform: compact.matches ? 'translateY(12px)' : `perspective(1100px) translate3d(0,38px,-45px) rotateX(9deg) rotateY(${angle}deg)` },
                         { opacity: 1, transform: 'none' }
-                    ], timing);
+                    ], { ...timing, delay: target.matches('.card') ? (index % 3) * 55 : 0 });
                     const image = target.querySelector('.card-thumbnail');
                     if (image) animate(image, [
                         { clipPath: 'inset(0 0 12% 0)', transform: 'translateY(8px)' },
