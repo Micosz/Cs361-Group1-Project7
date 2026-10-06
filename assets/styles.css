@@ -41,14 +41,14 @@ button { cursor: pointer; }
 main { flex: 1; }
 .container { width: 100%; max-width: 1248px; margin: 0 auto; padding: 0 40px; }
 
-/* The header, introduction and board share one content alignment. */
+/* The header sits slightly wider than the introduction and board on desktop. */
 .navbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 32px;
     min-height: 76px;
-    padding: 14px max(40px, calc((100% - 1168px) / 2));
+    padding: 14px max(32px, calc((100% - 1280px) / 2));
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-color);
     position: sticky;
