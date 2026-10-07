@@ -71,3 +71,35 @@ test('Empty text clears only its date and does not change the other tab', () => 
     assert.equal(p.get('filterCollabDate').value, '2026-11-11');
     assert.equal(p.get('filterEventDateClear').hidden, true);
 });
+
+test('Eight typed digits format immediately and commit as the existing ISO calendar day', () => {
+    const p = setup(); const text = p.get('filterEventDateDisplay');
+    text.value = '01012549'; text.dispatchEvent(new Event('input'));
+    assert.equal(text.value, '01/01/2549');
+    assert.equal(p.get('filterEventDate').calls(), 0);
+    text.dispatchEvent(new Event('change'));
+    assert.equal(p.get('filterEventDate').value, '2006-01-01');
+    assert.equal(p.get('filterEventDate').calls(), 1);
+});
+test('Compact pasted Thai digits and whitespace normalize on commit', () => {
+    const p = setup(); const text = p.change('filterCollab', ' ๑๗๐๘๒๕๖๓ ');
+    assert.equal(text.value, '17/08/2563');
+    assert.equal(p.get('filterCollabDate').value, '2020-08-17');
+});
+test('Partial typing stays editable and invalid compact dates preserve the applied filter', () => {
+    const p = setup(); p.change('filterEvent', '01012549');
+    const text = p.get('filterEventDateDisplay');
+    text.value = '01012'; text.dispatchEvent(new Event('input'));
+    assert.equal(text.value, '01012');
+    p.change('filterEvent', '31022549');
+    assert.ok(text.validationMessage);
+    assert.equal(p.get('filterEventDate').value, '2006-01-01');
+    assert.equal(p.get('filterEventDate').calls(), 1);
+});
+test('Compact dates validate leap days after Buddhist-to-Gregorian conversion', () => {
+    const p = setup(); p.change('filterCollab', '29022567');
+    assert.equal(p.get('filterCollabDate').value, '2024-02-29');
+    p.change('filterCollab', '29022566');
+    assert.ok(p.get('filterCollabDateDisplay').validationMessage);
+    assert.equal(p.get('filterCollabDate').value, '2024-02-29');
+});

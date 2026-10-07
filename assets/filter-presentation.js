@@ -54,9 +54,19 @@
             };
             listen(date, 'change', sync);
             if (clear) listen(clear, 'click', sync);
-            listen(text, 'input', () => text.setCustomValidity(''));
+            const normalizeDateText = value => {
+                const normalized = value.trim().replace(/[๐-๙]/g, digit => String(digit.charCodeAt(0) - 3664));
+                return /^\d{8}$/.test(normalized)
+                    ? `${normalized.slice(0, 2)}/${normalized.slice(2, 4)}/${normalized.slice(4)}`
+                    : normalized;
+            };
+            listen(text, 'input', () => {
+                text.setCustomValidity('');
+                // Format a complete compact date without disturbing partial edits or the caret.
+                if (/^[0-9๐-๙]{8}$/.test(text.value)) text.value = normalizeDateText(text.value);
+            });
             listen(text, 'change', () => {
-                const value = text.value.trim().replace(/[๐-๙]/g, digit => String(digit.charCodeAt(0) - 3664));
+                const value = normalizeDateText(text.value);
                 const match = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/.exec(value);
                 let iso = '';
                 if (value && match) {
