@@ -35,3 +35,10 @@ final result: blocked
 - [P1] Visual acceptance evidence is missing. Capture the local login at desktop and mobile widths, compare beside the selected reference accounting for the requested two-field/brand adaptations, and verify entry/scroll motion, keyboard focus, back navigation, local submit feedback and console errors.
 - Comparison history: no implementation comparison was possible; no visual pass is claimed. Latest user revision supersedes the original dark palette and scroll choreography. White theme, larger UI, two copy removals, fixed page and a new white-background raster are implemented; browser acceptance remains pending.
 - Focused comparison is required for Thai labels, input sizing and heading wrapping once capture is available.
+
+## Background visibility correction
+- User supplied `/tmp/codex-clipboard-0e2e2175-27a6-4b16-a904-bfdea0b4ea32.png` showing a white login without optical artwork.
+- The image file exists and opens correctly locally; the exact browser failure cause is unconfirmed.
+- The raster now paints directly as the body background, rather than in a fixed positioned image layer. HTML preloads the same exact resource URL; the unnecessary image query string is removed.
+- Form/heading entry motion is retained; decorative image entry animation is removed.
+- Runtime visual acceptance remains blocked because the available browser tab is a failed connection page, not the user’s current login view. No successful post-fix browser screenshot is claimed.
