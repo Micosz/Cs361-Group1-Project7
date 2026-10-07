@@ -20,45 +20,17 @@
 .intro-playing .hero-content, .intro-playing .hero-animation { opacity: 0; }
 .intro-pending .hero-content, .intro-playing .hero-content,
 .scene-ready :is(.intro-pending, .intro-playing) .hero-content { animation: none; }
-/* opening.js scrubs these paused keyframes in every browser, without CSS timelines.
-   Two complete scenes share the viewport during a short native-scroll passage.
-   After one viewport of travel, the board resumes ordinary document scrolling. */
+/* The presentation controller writes transform/opacity directly. No CSS timeline
+   or CSS Animation inspection is needed to keep the two scenes separate. */
 .board-scene { position: relative; width: 100%; flex: 1; background: #fff; }
-@keyframes portal-heading-exit {
-    0% { opacity: 1; visibility: visible; transform: none; filter: none; }
-    55%, 100% { opacity: 0; visibility: hidden; transform: translateY(-24px) scale(.97); filter: blur(4px); }
-}
-@keyframes portal-card-exit {
-    0% { opacity: 1; visibility: visible; translate: 0 0; }
-    55%, 100% { opacity: 0; visibility: hidden; translate: var(--away-x) -36px; }
-}
-@keyframes portal-orbit-exit {
-    0% { opacity: 1; visibility: visible; transform: none; }
-    55%, 100% { opacity: 0; visibility: hidden; transform: translate(var(--scatter-x),var(--scatter-y)) scale(1.12); }
-}
-@keyframes portal-board-position {
-    from { transform: translateY(calc(-1 * var(--scene-height))); }
-    to { transform: none; }
-}
-@keyframes portal-board-appear {
-    0%, 55% { opacity: 0; visibility: hidden; pointer-events: none; }
-    56% { opacity: 0; visibility: visible; pointer-events: none; }
-    90%, 100% { opacity: 1; visibility: visible; pointer-events: auto; }
-}
 @media (prefers-reduced-motion: no-preference) and (min-width: 1024px) and (min-height: 651px) {
     body.scene-ready { --scene-height: calc(100dvh - 92px); }
     .scene-ready .hero-scroll { height: calc(2 * var(--scene-height)); min-height: 0; margin-top: 10px; }
     .scene-ready .hero-section { position: sticky; top: 92px; height: var(--scene-height); min-height: 0; }
-    .scene-ready .hero-content { animation: portal-heading-exit linear both; }
-    .scene-ready .hero-animation .float-card { animation: portal-card-exit linear both; }
-    .scene-ready .orbit-drift { animation: portal-orbit-exit linear both; }
-    .scene-ready .hero-content, .scene-ready .hero-animation .float-card, .scene-ready .orbit-drift {
-        animation-duration: 1s; animation-play-state: paused;
-    }
+    .scene-ready .hero-content, .scene-ready .hero-animation .float-card, .scene-ready .orbit-drift { animation: none; }
     .scene-ready .board-scene {
         margin-top: calc(-1 * var(--scene-height)); min-height: var(--scene-height); z-index: 6;
-        animation: portal-board-position linear both, portal-board-appear linear both;
-        animation-duration: 1s; animation-play-state: paused;
+        opacity: 0; visibility: hidden;
     }
     .scene-ready #board-section { margin-top: 0; background: #fff; }
     .scene-ready #board-section .page-title { animation: none; }

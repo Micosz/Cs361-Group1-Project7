@@ -1,6 +1,6 @@
 /* Presentation only. Reuses rendered collaborator logos without data requests,
    app state changes or scroll locking. A single RAF-batched scroll controller
-   scrubs the same paused CSS animations across browsers.
+   paints scene opacity and transforms directly across browsers.
    Extra previews delegate to the existing detail function and hero ticker. */
 (() => {
     'use strict';
@@ -37,37 +37,61 @@
             return animation;
         };
         const boardScene = document.querySelector('.board-scene');
-        const sceneElements = [hero.querySelector('.hero-content'), ...liveCards, boardScene].filter(Boolean);
-        let sceneAnimations = [];
+        const heading = hero.querySelector('.hero-content');
+        const sceneStyles = new Map();
         let sceneEnabled = false;
         let sceneFrame = 0;
         let sceneDirty = true;
         let sceneHeight = 1;
         let sceneProgress = -1;
         const sceneMode = () => Boolean(boardScene) && !reduced.matches && !compact.matches && innerHeight > 650;
+        const clamp = value => Math.max(0, Math.min(1, value));
+        function paintScene(element, styles) {
+            if (!element) return;
+            let original = sceneStyles.get(element);
+            if (!original) { original = {}; sceneStyles.set(element, original); }
+            Object.entries(styles).forEach(([property, value]) => {
+                if (!(property in original)) original[property] = element.style[property];
+                element.style[property] = value;
+            });
+        }
+        function clearSceneStyles() {
+            sceneStyles.forEach((styles, element) => Object.assign(element.style, styles));
+            sceneStyles.clear();
+        }
         function renderScene() {
             sceneFrame = 0;
             if (!sceneEnabled || disposed) return;
-            try {
-                if (sceneDirty) {
-                    // Discover only our CSS animations after layout/intro changes, never per scroll.
-                    sceneAnimations = [...sceneElements, ...tiles.map(item => item.drift)]
-                        .flatMap(element => element.getAnimations())
-                        .filter(animation => animation.animationName?.startsWith('portal-'));
-                    sceneHeight = Math.max(1, innerHeight - 92);
-                    sceneProgress = -1;
-                    sceneDirty = false;
-                }
-                const progress = Math.max(0, Math.min(1, window.scrollY / sceneHeight));
-                if (progress === sceneProgress) return; // No repeated work while reading the board.
-                sceneProgress = progress;
-                sceneAnimations.forEach(animation => { animation.currentTime = progress * 1000; });
-            } catch {
-                // Keep the complete page readable if optional presentation cannot initialize.
-                sceneEnabled = false;
-                sceneAnimations = [];
-                document.body.classList.remove('scene-ready');
-            }
+            // Only scroll position is read here. Geometry is cached at startup/resize.
+            const progress = clamp(window.scrollY / sceneHeight);
+            if (!sceneDirty && progress === sceneProgress) return;
+            sceneProgress = progress;
+            sceneDirty = false;
+            const exit = clamp(progress / .55);
+            const visibility = exit < 1 ? 'visible' : 'hidden';
+            const opacity = String(1 - exit);
+            // The opening owns the heading until its temporary animations finish.
+            if (settled) paintScene(heading, {
+                opacity, visibility,
+                transform: `translateY(${-24 * exit}px) scale(${1 - .03 * exit})`
+            });
+            liveCards.forEach((card, index) => paintScene(card, {
+                opacity, visibility,
+                translate: `${(index === 1 ? 100 : -100) * exit}px ${-36 * exit}px`
+            }));
+            tiles.forEach(item => {
+                if (!item.destination) return;
+                paintScene(item.drift, {
+                    opacity, visibility,
+                    transform: `translate(${item.destination.x * .25 * exit}px,${item.destination.y * .2 * exit}px) scale(${1 + .12 * exit})`
+                });
+            });
+            paintScene(boardScene, {
+                opacity: String(clamp((progress - .56) / .34)),
+                visibility: progress > .55 ? 'visible' : 'hidden',
+                pointerEvents: progress >= .9 ? 'auto' : 'none',
+                transform: `translateY(${(progress - 1) * sceneHeight}px)`
+            });
         }
         function scheduleScene(refresh = false) {
             if (!sceneEnabled || disposed) return;
@@ -76,11 +100,12 @@
         }
         const updateSceneMode = () => {
             sceneEnabled = sceneMode();
-            document.body.classList.toggle('scene-ready', sceneEnabled);
             cancelAnimationFrame(sceneFrame);
             sceneFrame = 0;
-            sceneAnimations = [];
             sceneDirty = true;
+            sceneHeight = Math.max(1, innerHeight - 92);
+            if (!sceneEnabled) clearSceneStyles();
+            document.body.classList.toggle('scene-ready', sceneEnabled);
             renderScene();
         };
         updateSceneMode();
@@ -168,8 +193,6 @@
                 item.destination = destinations[item.slot];
                 item.tile.style.transform = pose(item.destination.x, item.destination.y, item.destination.angle, item.destination.scale);
                 item.tile.style.opacity = item.destination.opacity;
-                item.drift.style.setProperty('--scatter-x', `${item.destination.x * .25}px`);
-                item.drift.style.setProperty('--scatter-y', `${item.destination.y * .2}px`);
             });
             scheduleScene(true);
         }
@@ -314,7 +337,7 @@
             cancelAnimationFrame(resizeFrame);
             cancelAnimationFrame(navigationFrame);
             cancelAnimationFrame(sceneFrame);
-            sceneAnimations = [];
+            clearSceneStyles();
             finish();
             layer?.remove();
             document.body.classList.remove('scene-ready');
