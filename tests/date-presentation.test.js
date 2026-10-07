@@ -26,12 +26,13 @@ function setup() {
     const get = id => elements.find(element => element.id === id);
     for (const id of ['filterCollab', 'filterEvent']) {
         const select = new Element(id); select.wrapper = new Element();
-        const date = new Element(`${id}Date`); date.setAttribute('aria-label', 'วันที่กิจกรรม');
+        const date = new Element(`${id}Date`); date.setAttribute('aria-label', 'วันที่เริ่มต้น');
+        const end = new Element(`${id}DateEnd`); end.setAttribute('aria-label', 'วันที่สิ้นสุด');
         const clear = new Element(`${id}DateClear`);
         let calls = 0;
         date.addEventListener('change', () => { calls++; });
         date.calls = () => calls;
-        clear.addEventListener('click', () => { date.value = ''; });
+        clear.addEventListener('click', () => { date.value = ''; end.value = ''; });
     }
     vm.runInNewContext(source, {
         AbortController, Event, document: { readyState: 'complete', getElementById: get,
@@ -102,4 +103,16 @@ test('Compact dates validate leap days after Buddhist-to-Gregorian conversion', 
     p.change('filterCollab', '29022566');
     assert.ok(p.get('filterCollabDateDisplay').validationMessage);
     assert.equal(p.get('filterCollabDate').value, '2024-02-29');
+});
+
+test('End date uses the Buddhist adapter and keeps clear visible for either bound', () => {
+    const p = setup(); const end = p.get('filterEventDateEndDisplay');
+    end.value = '31122569'; end.dispatchEvent(new Event('input')); end.dispatchEvent(new Event('change'));
+    assert.equal(end.value, '31/12/2569');
+    assert.equal(p.get('filterEventDateEnd').value, '2026-12-31');
+    assert.equal(p.get('filterEventDateClear').hidden, false);
+    p.get('filterEventDateClear').dispatchEvent(new Event('click'));
+    assert.equal(p.get('filterEventDateDisplay').value, '');
+    assert.equal(end.value, '');
+    assert.equal(p.get('filterEventDateClear').hidden, true);
 });

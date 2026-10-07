@@ -9,9 +9,9 @@
     <link rel="stylesheet" href="assets/showcase.css?v=4">
     <link rel="stylesheet" href="assets/cinematic.css?v=1">
     <link rel="stylesheet" href="assets/opening.css?v=9">
-    <link rel="stylesheet" href="assets/portal.css?v=5">
-    <script src="assets/script.js?v=3" defer></script>
-    <script src="assets/filter-presentation.js?v=4" defer></script>
+    <link rel="stylesheet" href="assets/portal.css?v=6">
+    <script src="assets/script.js?v=4" defer></script>
+    <script src="assets/filter-presentation.js?v=5" defer></script>
     <script src="assets/presentation.js?v=9" defer></script>
     <script src="assets/opening.js?v=11" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -115,8 +115,10 @@
                     <option value="internship">เครือข่ายสหกิจศึกษา (Internship)</option>
                 </select>
                 <div class="date-filter-row">
-                    <input type="date" id="filterCollabDate" onchange="applyBrowseDateFilter('filterCollab')" aria-label="วันที่ความร่วมมือ" lang="th-TH">
+                    <div class="date-range-field"><label id="filterCollabDateLabel" for="filterCollabDate">เริ่มต้น</label><input type="date" id="filterCollabDate" onchange="applyBrowseDateFilter('filterCollab')" aria-label="วันที่เริ่มต้นความร่วมมือ" lang="th-TH"></div>
+                    <div class="date-range-field"><label id="filterCollabDateEndLabel" for="filterCollabDateEnd">สิ้นสุด</label><input type="date" id="filterCollabDateEnd" onchange="applyBrowseDateFilter('filterCollab')" aria-label="วันที่สิ้นสุดความร่วมมือ" lang="th-TH"></div>
                     <button type="button" id="filterCollabDateClear" class="date-clear-btn" onclick="clearBrowseDateFilter('filterCollab')" aria-label="ล้างวันที่" title="ล้างวันที่" hidden disabled><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                    <span id="filterCollabDateError" class="date-range-error" role="status" hidden></span>
                 </div>
             </div>
             <div class="grid" id="collaboratorGrid"></div>
@@ -132,8 +134,10 @@
                     <option value="research">งานวิจัยและแลกเปลี่ยน</option>
                 </select>
                 <div class="date-filter-row">
-                    <input type="date" id="filterEventDate" onchange="applyBrowseDateFilter('filterEvent')" aria-label="วันที่กิจกรรม" lang="th-TH">
+                    <div class="date-range-field"><label id="filterEventDateLabel" for="filterEventDate">เริ่มต้น</label><input type="date" id="filterEventDate" onchange="applyBrowseDateFilter('filterEvent')" aria-label="วันที่เริ่มต้นกิจกรรม" lang="th-TH"></div>
+                    <div class="date-range-field"><label id="filterEventDateEndLabel" for="filterEventDateEnd">สิ้นสุด</label><input type="date" id="filterEventDateEnd" onchange="applyBrowseDateFilter('filterEvent')" aria-label="วันที่สิ้นสุดกิจกรรม" lang="th-TH"></div>
                     <button type="button" id="filterEventDateClear" class="date-clear-btn" onclick="clearBrowseDateFilter('filterEvent')" aria-label="ล้างวันที่" title="ล้างวันที่" hidden disabled><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                    <span id="filterEventDateError" class="date-range-error" role="status" hidden></span>
                 </div>
             </div>
             <div class="grid" id="eventGrid"></div>

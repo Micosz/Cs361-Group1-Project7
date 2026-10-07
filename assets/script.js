@@ -559,16 +559,21 @@ let eventRenderVersion = 0;
 function filterBrowseRecords(records, field, selectId, searchKeyword = browseKeyword) {
     const type = document.getElementById(selectId)?.value || 'all';
     const keyword = searchKeyword.trim().toLowerCase();
-    const date = document.getElementById(`${selectId}Date`)?.value || '';
+    const start = document.getElementById(`${selectId}Date`)?.value || '';
+    const end = document.getElementById(`${selectId}DateEnd`)?.value || '';
+    const withinRange = day => (!start && !end) || (
+        typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) &&
+        (!start || day >= start) && (!end || day <= end)
+    );
     // V2 specifies name/title search; suggestions and cards share these rules.
     // Preserve dates, co_hosts and relationships from the data source.
     return records.filter(record =>
         (type === 'all' || record.type === type) &&
         String(record[field] ?? '').toLowerCase().includes(keyword) &&
         // Compare the stored calendar day directly, without timezone conversion.
-        (!date || (selectId === 'filterCollab'
-            ? record.collaborations?.some(activity => activity.period_date === date)
-            : record.period_date === date))
+        ((!start && !end) || (selectId === 'filterCollab'
+            ? record.collaborations?.some(activity => withinRange(activity.period_date))
+            : withinRange(record.period_date)))
     );
 }
 
@@ -590,14 +595,24 @@ function applyEventFilters() {
 
 function applyBrowseDateFilter(selectId) {
     const input = document.getElementById(`${selectId}Date`);
+    const end = document.getElementById(`${selectId}DateEnd`);
     const clear = document.getElementById(`${selectId}DateClear`);
-    if (clear) { clear.disabled = !input?.value; clear.hidden = !input?.value; }
+    const active = Boolean(input?.value || end?.value);
+    if (clear) { clear.disabled = !active; clear.hidden = !active; }
+    const error = document.getElementById(`${selectId}DateError`);
+    if (error) {
+        const reversed = Boolean(input?.value && end?.value && input.value > end.value);
+        error.hidden = !reversed;
+        error.textContent = reversed ? 'วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น' : '';
+    }
     return selectId === 'filterCollab' ? applyCollabFilters() : applyEventFilters();
 }
 
 function clearBrowseDateFilter(selectId) {
     const input = document.getElementById(`${selectId}Date`);
     if (input) input.value = '';
+    const end = document.getElementById(`${selectId}DateEnd`);
+    if (end) end.value = '';
     return applyBrowseDateFilter(selectId);
 }
 

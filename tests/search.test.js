@@ -55,7 +55,7 @@ function page(fetchImpl = async () => response()) {
         getBoundingClientRect() { return { width: 100 }; }
         contains(target) { return target.insideSearch === true; }
     }
-    const ids = ['searchInput', 'searchSuggestions', 'filterCollab', 'filterEvent', 'filterEventDate', 'filterEventDateClear', 'filterCollabDate', 'filterCollabDateClear',
+    const ids = ['searchInput', 'searchSuggestions', 'filterCollab', 'filterEvent', 'filterEventDate', 'filterEventDateClear', 'filterCollabDate', 'filterCollabDateClear', 'filterEventDateEnd', 'filterCollabDateEnd', 'filterEventDateError', 'filterCollabDateError',
         'collaboratorGrid', 'eventGrid', 'detailModal', 'modalTitle', 'modalName',
         'modalInfo', 'modalImage', 'modalDetails', 'tabCollab', 'tabEvent',
         'sectionCollaborator', 'sectionEvent'];
@@ -346,6 +346,7 @@ test('a successful empty array is cached, unlike an API failure', async () => {
 test('calendar day combines with category and keyword in cards and suggestions without extra requests', async () => {
     const p = page();
     p.get('filterEventDate').value = '2026-11-11';
+    p.get('filterEventDateEnd').value = '2026-11-11';
     p.get('filterEvent').value = 'event';
     p.get('searchInput').value = 'Alpha';
     await p.context.handleSearch();
@@ -357,6 +358,7 @@ test('calendar day combines with category and keyword in cards and suggestions w
     assert.match(p.get('collaboratorGrid').innerHTML, /Alpha Company/, 'day does not filter organizations');
     assert.equal(p.requests, 1);
     p.get('filterEventDate').value = '2025-11-11';
+    p.get('filterEventDateEnd').value = '2025-11-11';
     await p.context.applyBrowseDateFilter('filterEvent');
     assert.match(p.get('eventGrid').innerHTML, /ไม่พบกิจกรรม/, 'the year is part of the exact calendar day');
     assert.equal(p.get('filterEventDateClear').disabled, false);
@@ -368,6 +370,7 @@ test('clearing the calendar day preserves search and category; undated activitie
     const p = page();
     p.get('filterEvent').value = 'research';
     p.get('filterEventDate').value = '2026-11-11';
+    p.get('filterEventDateEnd').value = '2026-11-11';
     p.get('searchInput').value = 'Research';
     await p.context.handleSearch();
     assert.match(p.get('eventGrid').innerHTML, /ไม่พบกิจกรรม/);
@@ -388,8 +391,10 @@ test('a calendar change during API loading renders only the latest day', async (
     const load = deferred();
     const p = page(() => load.promise);
     p.get('filterEventDate').value = '2026-11-11';
+    p.get('filterEventDateEnd').value = '2026-11-11';
     const first = p.context.applyBrowseDateFilter('filterEvent');
     p.get('filterEventDate').value = '2020-08-17';
+    p.get('filterEventDateEnd').value = '2020-08-17';
     const latest = p.context.applyBrowseDateFilter('filterEvent');
     load.resolve(response());
     await Promise.all([first, latest]);
@@ -403,6 +408,7 @@ test('a calendar change during API loading renders only the latest day', async (
 test('organization day matches public collaborations including co-hosts, without changing their relationships', async () => {
     const p = page();
     p.get('filterCollabDate').value = '2026-11-11';
+    p.get('filterCollabDateEnd').value = '2026-11-11';
     p.get('filterCollab').value = 'university';
     p.get('searchInput').value = 'Beta';
     await p.context.handleSearch();
@@ -411,6 +417,7 @@ test('organization day matches public collaborations including co-hosts, without
     assert.doesNotMatch(p.get('collaboratorGrid').innerHTML, /Alpha Company/);
     assert.match(p.get('searchSuggestions').innerHTML, /Beta University/);
     p.get('filterCollabDate').value = '2020-08-17';
+    p.get('filterCollabDateEnd').value = '2020-08-17';
     await p.context.applyBrowseDateFilter('filterCollab');
     assert.match(p.get('collaboratorGrid').innerHTML, /ไม่พบผู้มีส่วนได้ส่วนเสีย/);
     await p.context.clearBrowseDateFilter('filterCollab');
@@ -419,5 +426,67 @@ test('organization day matches public collaborations including co-hosts, without
     assert.equal(p.get('searchInput').value, 'Beta');
     assert.equal(p.get('filterCollabDateClear').disabled, true);
     assert.equal((await p.context.getPublicActivityById('joint')).partnerId, 'alpha');
+    assert.equal(p.requests, 1);
+});
+
+
+test('inclusive date range combines with search and category and excludes undated records', async () => {
+    const p = page();
+    p.get('filterEventDate').value = '2020-08-17';
+    p.get('filterEventDateEnd').value = '2026-11-11';
+    await p.context.applyBrowseDateFilter('filterEvent');
+    assert.match(p.get('eventGrid').innerHTML, /Research Day/);
+    assert.match(p.get('eventGrid').innerHTML, /Alpha Workshop/);
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /Beta Talk/);
+    p.get('filterEvent').value = 'event';
+    p.get('searchInput').value = 'Alpha';
+    await p.context.handleSearch();
+    await p.context.showSuggestions();
+    assert.match(p.get('eventGrid').innerHTML, /Alpha Workshop/);
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /Research Day|Beta Talk/);
+    assert.match(p.get('searchSuggestions').innerHTML, /Alpha Workshop/);
+    assert.equal(p.requests, 1);
+});
+test('one-sided ranges include only the available bound and clear resets both bounds', async () => {
+    const p = page();
+    p.get('filterEventDate').value = '2021-01-01';
+    await p.context.applyBrowseDateFilter('filterEvent');
+    assert.match(p.get('eventGrid').innerHTML, /Alpha Workshop/);
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /Research Day|Beta Talk/);
+    p.get('filterEventDate').value = '';
+    p.get('filterEventDateEnd').value = '2021-01-01';
+    await p.context.applyBrowseDateFilter('filterEvent');
+    assert.match(p.get('eventGrid').innerHTML, /Research Day/);
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /Alpha Workshop|Beta Talk/);
+    assert.equal(p.get('filterEventDateClear').hidden, false);
+    await p.context.clearBrowseDateFilter('filterEvent');
+    assert.equal(p.get('filterEventDate').value, '');
+    assert.equal(p.get('filterEventDateEnd').value, '');
+    assert.equal(p.get('filterEventDateClear').hidden, true);
+    assert.match(p.get('eventGrid').innerHTML, /Beta Talk/);
+});
+test('reversed ranges show an error and no results; correcting the range restores results', async () => {
+    const p = page();
+    p.get('filterEventDate').value = '2026-11-11';
+    p.get('filterEventDateEnd').value = '2020-08-17';
+    await p.context.applyBrowseDateFilter('filterEvent');
+    assert.equal(p.get('filterEventDateError').hidden, false);
+    assert.match(p.get('filterEventDateError').textContent, /วันที่สิ้นสุด/);
+    assert.match(p.get('eventGrid').innerHTML, /ไม่พบกิจกรรม/);
+    p.get('filterEventDate').value = '2020-08-17';
+    await p.context.applyBrowseDateFilter('filterEvent');
+    assert.equal(p.get('filterEventDateError').hidden, true);
+    assert.match(p.get('eventGrid').innerHTML, /Research Day/);
+});
+test('organization ranges use a single public collaboration within both bounds, including co-hosts', async () => {
+    const p = page();
+    p.get('filterCollabDate').value = '2021-01-01';
+    p.get('filterCollabDateEnd').value = '2027-01-01';
+    await p.context.applyBrowseDateFilter('filterCollab');
+    assert.match(p.get('collaboratorGrid').innerHTML, /Alpha Company/);
+    assert.match(p.get('collaboratorGrid').innerHTML, /Beta University/);
+    p.get('filterCollabDateEnd').value = '2025-12-31';
+    await p.context.applyBrowseDateFilter('filterCollab');
+    assert.match(p.get('collaboratorGrid').innerHTML, /ไม่พบผู้มีส่วนได้ส่วนเสีย/);
     assert.equal(p.requests, 1);
 });
