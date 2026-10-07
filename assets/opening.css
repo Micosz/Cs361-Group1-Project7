@@ -195,3 +195,26 @@
     .hero-section { padding-top: 24px; }
     .sub-header { scroll-margin-top: 20px; }
 }
+
+
+/* Scale the welcome composition to roomy desktop screens, including height.
+   Laptop and phone layouts keep their compact sizes; reduced motion stays in flow. */
+@media (min-width: 1440px) and (min-height: 800px) and (prefers-reduced-motion: no-preference) {
+    .hero-scroll { max-width: 1800px; }
+    .hero-section { max-width: 1680px; }
+    .hero-content { left: 21%; width: 58%; top: clamp(144px, calc((100svh - 92px) * .21), 232px); }
+    .hero-heading { font-size: clamp(4rem, min(5vw, 8.9svh), 6rem); margin-bottom: 22px; }
+    .hero-heading .heading-intro { font-size: clamp(1.25rem, 1.25vw, 1.5rem); margin-bottom: 10px; }
+    .hero-features { width: fit-content; max-width: 100%; margin-inline: auto; margin-bottom: 24px; }
+    .hero-features li { font-size: clamp(1rem, min(.95vw, 1.67svh), 1.125rem); line-height: 1.9; }
+    .hero-features li i { font-size: .875rem; }
+    .hero-btn { min-height: 56px; padding-inline: 32px; font-size: 1rem; }
+    .hero-animation .float-card { width: clamp(224px, min(17vw, 28svh), 284px); min-height: 246px; padding: 14px; gap: 10px; }
+    .hero-animation .card-top { top: 40px; }
+    .hero-animation .card-mid { top: clamp(144px, 17svh, 184px); }
+    .hero-animation .card-bot { bottom: clamp(56px, 7svh, 80px); }
+    .hero-card-media { height: clamp(124px, min(8vw, 13svh), 144px); }
+    .hero-animation .card-text h4 { font-size: clamp(.9375rem, .95vw, 1.0625rem); line-height: 1.75; }
+    .hero-animation .card-text p { font-size: .8125rem; }
+    .orbit-tile { width: 160px; height: 132px; padding: 18px; border-radius: 22px; }
+}

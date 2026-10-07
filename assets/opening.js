@@ -183,9 +183,11 @@
                 angle: [-7, 7, -5][index], scale: compact.matches ? 1 : liveCards[index].offsetWidth / tileWidth, opacity: 0
             }));
             // Five decorative companions frame the message without covering its text.
-            const companions = [[.43, .08, -9], [.7, .08, 7], [.87, .79, 8], [.57, .91, -5],
-                // On shorter laptops keep this logo below, away from long Thai titles.
-                height < 720 ? [.32, .9, 6] : [.1, .48, 6]];
+            const roomy = matchMedia('(min-width: 1440px) and (min-height: 800px)').matches;
+            const companions = [[roomy ? .38 : .43, .08, -9], [.7, .08, 7],
+                [.87, roomy ? .72 : .79, 8], [roomy && height < 800 ? .68 : .57, roomy && height >= 800 ? .86 : .91, -5],
+                // Larger previews need more space for Thai titles on shorter desktops.
+                height < (roomy ? 900 : 720) ? [.32, .9, 6] : [.1, .48, 6]];
             const phone = matchMedia('(max-width: 767px)').matches;
             const gutter = phone ? 16 : 28;
             const gap = phone ? 8 : 10;
@@ -196,7 +198,7 @@
                 angle: 0, scale: Math.min(1, companionWidth / tileWidth), opacity: 1
             } : {
                 x: width * x - width / 2,
-                y: Math.max(62, Math.min(height - 76, height * y)) - height / 2,
+                y: Math.max(roomy ? 88 : 62, Math.min(height - (roomy ? 88 : 76), height * y)) - height / 2,
                 angle, scale: width < 1100 ? .84 : 1, opacity: 1
             }));
             tiles.forEach(item => {
