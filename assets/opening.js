@@ -124,18 +124,35 @@
             scheduleScene();
         }, { passive: true });
         function advanceScene() {
-            if (!boardScene || !sceneMode()) return;
-            // offsetTop is the stable document position, unaffected by the scene transform.
-            // Explicit navigation lands at the reading position; wheel scrolling keeps the centered reveal.
-            const top = Math.max(0, boardScene.offsetTop - 92);
+            if (!boardScene) return;
             cancelAnimationFrame(navigationFrame);
             navigationFrame = requestAnimationFrame(() => {
                 navigationFrame = 0;
-                window.scrollTo({ top, behavior: 'smooth' });
+                updateSceneMode();
+                // Measure after layout settles. Never target the moving, transformed
+                // board on desktop, and finish the full scene travel even at half pixels.
+                const navbar = document.querySelector('.navbar');
+                const headerInset = navbar
+                    ? navbar.offsetHeight + (parseFloat(getComputedStyle(navbar).top) || 0) + 10
+                    : 92;
+                const top = sceneEnabled
+                    ? Math.ceil(Math.max(sceneTravel, boardScene.offsetTop - 92))
+                    : Math.max(0, boardScene.getBoundingClientRect().top + window.scrollY - headerInset);
+                window.scrollTo({ top, behavior: reduced.matches ? 'auto' : 'smooth' });
             });
         }
-        // Preserve the anchor destination/history and all original search handlers.
-        on(hero.querySelector('.hero-btn'), 'click', () => advanceScene());
+        // Own the ordinary anchor scroll so the browser cannot start a competing
+        // scroll toward the board while it is still transformed. Keep the same URL.
+        on(hero.querySelector('.hero-btn'), 'click', event => {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            finish();
+            if (window.location.hash !== '#board-section') {
+                try { window.history.pushState(null, '', '#board-section'); }
+                catch { /* Some local file previews disallow History API updates. */ }
+            }
+            advanceScene();
+        });
         on(document.querySelector('.search-btn'), 'click', () => {
             if (boardScene && scrollY < boardScene.offsetTop - 92) advanceScene();
         });
