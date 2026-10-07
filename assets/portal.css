@@ -1,6 +1,8 @@
 /* Campus surfaces: decoration only; scene geometry and application hooks stay intact. */
 :root { --portal-paper: #f7f5f0; --portal-line: #e5dfd8; }
 body { background: var(--portal-paper); }
+/* The welcome artwork fills the viewport; board content retains its reading width. */
+.hero-scroll, .hero-section { max-width: none; }
 .navbar { background: #fffefa; }
 .navbar::before { background: #fffefa; border-color: #e5dfd8; animation: none; transform: none; opacity: 1; }
 .navbar .logo { padding-inline-end: 24px; border-inline-end: 1px solid #e6dfd6; }
@@ -11,8 +13,8 @@ body { background: var(--portal-paper); }
 .navbar .login-btn { color: #fff; background: #c3002f; border-color: #c3002f; padding-inline: 24px; }
 .hero-section {
     isolation: isolate;
-    background: radial-gradient(ellipse at 4% 30%, #f3dce1 0%, transparent 43%),
-        radial-gradient(ellipse at 97% 78%, #f9e8aa 0%, transparent 43%),
+    background: radial-gradient(ellipse at 4% 30%, #efb9c6 0%, transparent 43%),
+        radial-gradient(ellipse at 97% 78%, #f5da74 0%, transparent 43%),
         radial-gradient(ellipse at 50% 42%, #fff 12%, #fffdf8 65%);
 }
 .hero-section::before {
@@ -30,8 +32,8 @@ body { background: var(--portal-paper); }
 }
 .hero-animation .float-card, .orbit-tile { border-color: #d9cbd0; }
 .board-scene {
-    background: radial-gradient(ellipse 780px 440px at 0 0, #f4e4e4, transparent 100%),
-        radial-gradient(ellipse 700px 420px at 100% 150px, #f5eac7, transparent 100%), var(--portal-paper);
+    background: radial-gradient(ellipse 780px 440px at 0 0, #efd0d7, transparent 100%),
+        radial-gradient(ellipse 700px 420px at 100% 150px, #f2db96, transparent 100%), var(--portal-paper);
     border-top: 1px solid var(--portal-line);
 }
 #board-section, .scene-ready #board-section { background: transparent; }
@@ -59,7 +61,7 @@ body { background: var(--portal-paper); }
     .navbar .login-btn { padding-inline: 18px; }
     .hero-section::before { background-size: 24px 24px; opacity: .26; }
     .hero-section::after { width: 150%; left: -25%; height: 58%; top: 25%; outline-offset: 32px; }
-    .board-scene { background: radial-gradient(ellipse 400px 300px at 100% 0, #f7e9c5, transparent), var(--portal-paper); }
+    .board-scene { background: radial-gradient(ellipse 400px 300px at 100% 0, #f2db96, transparent), var(--portal-paper); }
 }
 
 /* Category controls use the original select options and its change event. */
@@ -100,5 +102,51 @@ body { background: var(--portal-paper); }
 @media (max-width: 767px) {
     .filter-wrapper.has-filter-chips { padding: 12px; border-radius: 16px; }
     .filter-chip { font-size: .875rem; padding-inline: 12px; }
-    .filter-options { gap: 8px; }
+    .filter-options {
+        flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding: 4px 4px 8px;
+        margin-inline: -4px; scroll-padding-inline: 4px;
+        overscroll-behavior-inline: contain; scrollbar-width: thin;
+        scrollbar-color: #c3002f #eee5db;
+    }
+    .filter-chip { flex: 0 0 auto; max-width: none; white-space: nowrap; overflow-wrap: normal; }
+}
+
+/* Compact headings; the Thai reading text keeps its existing size and leading. */
+.hero-heading { font-size: clamp(2.25rem, 4vw, 3.6rem); }
+.page-title h1 { font-size: clamp(1.8rem, 3.6vw, 2.9rem); }
+.tabs, .tab, .tab-indicator { border-radius: 999px; }
+@media (prefers-reduced-motion: no-preference) {
+    .tab-indicator { transition: transform 220ms var(--ease-spatial), width 220ms var(--ease-spatial); }
+}
+@media (min-width: 1440px) and (min-height: 800px) and (prefers-reduced-motion: no-preference) {
+    .hero-heading { font-size: clamp(3.6rem, min(4.5vw, 8svh), 5.4rem); }
+}
+@media (max-width: 1023px) {
+    .hero-heading { font-size: clamp(1.8rem, 5.1vw, 3.15rem); }
+}
+@media (max-width: 767px) {
+    .hero-heading { font-size: clamp(1.625rem, 7.2vw, 2.5rem); }
+    .page-title h1 { font-size: clamp(1.5rem, 6.1vw, 2.25rem); }
+}
+
+/* Separate brand, central search capsule and account actions, as in the reference. */
+.navbar { background: transparent; border-radius: 0; box-shadow: none; }
+.navbar::before {
+    inset: -12px -24px -6px; border: 0; border-radius: 0;
+    background: linear-gradient(#f7f5f0f5, #f7f5f0e6);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.navbar .logo { padding-inline: 0; border: 0; }
+.auth-buttons { padding-inline: 0; border: 0; gap: 10px; }
+.navbar .search-container { background: #2b2024; border-color: #2b2024; }
+.navbar .search-container input { color: #fff; background: transparent; }
+.navbar .search-container input::placeholder { color: #e2d6db; opacity: 1; }
+.navbar .search-container:focus-within { border-color: #b58a00; box-shadow: 0 0 0 3px rgb(255 209 63 / 38%); }
+.navbar .signup-link { padding-inline: 18px; border-radius: 999px; background: #2b2024; color: #fff; text-decoration: none; justify-content: center; }
+@media (min-width: 768px) { .navbar { padding-inline: 8px; } }
+@media (hover: hover) and (pointer: fine) { .navbar .signup-link:hover { background: #4c303c; color: #fff; } }
+@media (max-width: 767px) {
+    .navbar::before { inset: -6px -8px -6px; }
+    .navbar .signup-link { padding-inline: 14px; }
+    .auth-buttons { gap: 8px; }
 }

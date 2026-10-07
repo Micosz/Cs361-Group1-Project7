@@ -269,7 +269,9 @@
                 indicatorFrame = requestAnimationFrame(() => {
                     const selected = tabs.querySelector('.tab.active');
                     if (selected) {
-                        indicator.style.transform = `translateX(${selected.offsetLeft}px) scaleX(${selected.offsetWidth / 100})`;
+                        // Size the pill without scaling its corner radius into an ellipse.
+                        indicator.style.width = `${selected.offsetWidth}px`;
+                        indicator.style.transform = `translateX(${selected.offsetLeft}px)`;
                         tabs.classList.add('has-indicator');
                     }
                 });
