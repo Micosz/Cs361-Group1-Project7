@@ -25,7 +25,7 @@
 .board-scene { position: relative; width: 100%; flex: 1; background: #fff; }
 @media (prefers-reduced-motion: no-preference) and (min-width: 1024px) and (min-height: 651px) {
     body.scene-ready { --scene-height: calc(100dvh - 92px); }
-    .scene-ready .hero-scroll { height: calc(2 * var(--scene-height)); min-height: 0; margin-top: 10px; }
+    .scene-ready .hero-scroll { height: calc(2.5 * var(--scene-height)); min-height: 0; margin-top: 10px; }
     .scene-ready .hero-section { position: sticky; top: 92px; height: var(--scene-height); min-height: 0; }
     .scene-ready .hero-content, .scene-ready .hero-animation .float-card, .scene-ready .orbit-drift { animation: none; }
     .scene-ready .board-scene {

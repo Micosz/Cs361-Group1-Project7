@@ -43,6 +43,7 @@
         let sceneFrame = 0;
         let sceneDirty = true;
         let sceneHeight = 1;
+        let sceneTravel = 1;
         let sceneProgress = -1;
         const sceneMode = () => Boolean(boardScene) && !reduced.matches && !compact.matches && innerHeight > 650;
         const clamp = value => Math.max(0, Math.min(1, value));
@@ -63,11 +64,11 @@
             sceneFrame = 0;
             if (!sceneEnabled || disposed) return;
             // Only scroll position is read here. Geometry is cached at startup/resize.
-            const progress = clamp(window.scrollY / sceneHeight);
+            const progress = clamp(window.scrollY / sceneTravel);
             if (!sceneDirty && progress === sceneProgress) return;
             sceneProgress = progress;
             sceneDirty = false;
-            const exit = clamp(progress / .55);
+            const exit = clamp(progress / .34);
             const visibility = exit < 1 ? 'visible' : 'hidden';
             const opacity = String(1 - exit);
             // The opening owns the heading until its temporary animations finish.
@@ -86,11 +87,16 @@
                     transform: `translate(${item.destination.x * .25 * exit}px,${item.destination.y * .2 * exit}px) scale(${1 + .12 * exit})`
                 });
             });
+            // Welcome leaves first; then the board title arrives near mid-screen.
+            // A short reading beat precedes the rise into normal document scrolling.
+            const entrance = clamp((progress - .36) / .20);
+            const rise = clamp((progress - .72) / .28);
+            const boardOffset = sceneHeight * .30 * (1 - rise) + 40 * (1 - entrance);
             paintScene(boardScene, {
-                opacity: String(clamp((progress - .56) / .34)),
-                visibility: progress > .55 ? 'visible' : 'hidden',
-                pointerEvents: progress >= .9 ? 'auto' : 'none',
-                transform: `translateY(${(progress - 1) * sceneHeight}px)`
+                opacity: String(entrance),
+                visibility: progress > .36 ? 'visible' : 'hidden',
+                pointerEvents: progress >= .56 ? 'auto' : 'none',
+                transform: `translateY(${(progress - 1) * sceneTravel + boardOffset}px)`
             });
         }
         function scheduleScene(refresh = false) {
@@ -104,6 +110,8 @@
             sceneFrame = 0;
             sceneDirty = true;
             sceneHeight = Math.max(1, innerHeight - 92);
+            // Keep this travel in sync with the 2.5-view hero track in opening.css.
+            sceneTravel = sceneHeight * 1.5;
             if (!sceneEnabled) clearSceneStyles();
             document.body.classList.toggle('scene-ready', sceneEnabled);
             renderScene();
@@ -115,10 +123,11 @@
             if (!settled) finish();
             scheduleScene();
         }, { passive: true });
-        function advanceScene() {
+        function advanceScene(reading = false) {
             if (!boardScene || !sceneMode()) return;
             // offsetTop is the stable document position, unaffected by the scene transform.
-            const top = Math.max(0, boardScene.offsetTop - 92);
+            // The CTA lands on the centered title; search goes straight to results.
+            const top = Math.max(0, boardScene.offsetTop - 92) * (reading ? 1 : .6);
             cancelAnimationFrame(navigationFrame);
             navigationFrame = requestAnimationFrame(() => {
                 navigationFrame = 0;
@@ -126,12 +135,12 @@
             });
         }
         // Preserve the anchor destination/history and all original search handlers.
-        on(hero.querySelector('.hero-btn'), 'click', advanceScene);
+        on(hero.querySelector('.hero-btn'), 'click', () => advanceScene());
         on(document.querySelector('.search-btn'), 'click', () => {
-            if (boardScene && scrollY < boardScene.offsetTop - 92) advanceScene();
+            if (boardScene && scrollY < boardScene.offsetTop - 92) advanceScene(true);
         });
         on(document.querySelector('#searchInput'), 'keydown', event => {
-            if (event.key === 'Enter' && boardScene && scrollY < boardScene.offsetTop - 92) advanceScene();
+            if (event.key === 'Enter' && boardScene && scrollY < boardScene.offsetTop - 92) advanceScene(true);
         });
         const pose = (x, y, angle, scale) => `translate(-50%,-50%) translate3d(${x}px,${y}px,0) rotate(${angle}deg) scale(${scale})`;
         const shuffle = items => {
