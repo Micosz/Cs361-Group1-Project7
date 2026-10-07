@@ -1,0 +1,168 @@
+/* Campus surfaces: decoration only; scene geometry and application hooks stay intact. */
+:root { --portal-paper: #f7f5f0; --portal-line: #e5dfd8; }
+body { background: var(--portal-paper); }
+/* The welcome artwork fills the viewport; board content retains its reading width. */
+.hero-scroll, .hero-section { max-width: none; }
+.navbar { background: #fffefa; }
+.navbar::before { background: #fffefa; border-color: #e5dfd8; animation: none; transform: none; opacity: 1; }
+.navbar .logo { padding-inline-end: 24px; border-inline-end: 1px solid #e6dfd6; }
+.navbar .search-wrapper { max-width: min(720px, 55vw); }
+.search-container { background: #f4f2ee; border-color: #d4cec7; }
+.search-container:focus-within { border-color: #c3002f; box-shadow: 0 0 0 3px rgb(195 0 47 / 9%); }
+.auth-buttons { padding-inline-start: 24px; border-inline-start: 1px solid #e6dfd6; }
+.navbar .login-btn { color: #fff; background: #c3002f; border-color: #c3002f; padding-inline: 24px; }
+.hero-section {
+    isolation: isolate;
+    background: radial-gradient(ellipse at 4% 30%, #efb9c6 0%, transparent 43%),
+        radial-gradient(ellipse at 97% 78%, #f5da74 0%, transparent 43%),
+        radial-gradient(ellipse at 50% 42%, #fff 12%, #fffdf8 65%);
+}
+.hero-section::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background-image: radial-gradient(#baac9c 1px, transparent 1px);
+    background-size: 28px 28px; opacity: .36;
+    mask-image: linear-gradient(90deg, #000, transparent 34%, transparent 65%, #000);
+}
+.hero-section::after {
+    content: ""; position: absolute; z-index: -1; pointer-events: none;
+    width: 86%; height: 74%; left: 7%; top: 13%;
+    border: 1px solid rgb(195 0 47 / 15%); border-radius: 50%;
+    outline: 1px solid rgb(168 129 28 / 14%); outline-offset: 44px;
+    transform: rotate(-12deg);
+}
+.hero-animation .float-card, .orbit-tile { border-color: #d9cbd0; }
+.board-scene {
+    background: radial-gradient(ellipse 780px 440px at 0 0, #efd0d7, transparent 100%),
+        radial-gradient(ellipse 700px 420px at 100% 150px, #f2db96, transparent 100%), var(--portal-paper);
+    border-top: 1px solid var(--portal-line);
+}
+#board-section, .scene-ready #board-section { background: transparent; }
+.page-title h2 { display: inline-flex; align-items: center; gap: 12px; }
+.page-title h2::before, .page-title h2::after { content: ""; width: 24px; height: 2px; background: #d59420; }
+.tabs { background: #fffdf9; border-color: #ddd5cb; }
+.grid > .card { border-color: #ded8d1; }
+.grid > .card > .card-thumbnail { background-color: #fffefa; }
+.site-footer { background: #eee9e1; border-top: 1px solid #dcd3c7; border-radius: 0; }
+.site-footer::before { display: block; left: max(28px, calc((100% - 1168px) / 2)); width: 96px; }
+.navbar .login-btn:focus-visible, .signup-link:focus-visible { outline: 3px solid #171717; outline-offset: 4px; }
+@media (hover: hover) and (pointer: fine) {
+    .navbar .login-btn:hover { color: #fff; background: #a50028; border-color: #a50028; }
+    .signup-link:hover { color: #c3002f; }
+}
+@media (min-width: 768px) { .navbar { padding-block: 8px; } }
+@media (max-width: 1023px) {
+    .navbar .logo { padding-inline-end: 16px; }
+    .auth-buttons { padding-inline-start: 16px; }
+    .hero-section::after { width: 110%; left: -5%; height: 70%; top: 18%; }
+}
+@media (max-width: 767px) {
+    .navbar .logo, .auth-buttons { padding-inline: 0; border: 0; }
+    .navbar .search-wrapper { max-width: none; }
+    .navbar .login-btn { padding-inline: 18px; }
+    .hero-section::before { background-size: 24px 24px; opacity: .26; }
+    .hero-section::after { width: 150%; left: -25%; height: 58%; top: 25%; outline-offset: 32px; }
+    .board-scene { background: radial-gradient(ellipse 400px 300px at 100% 0, #f2db96, transparent), var(--portal-paper); }
+}
+
+/* Compact headings; the Thai reading text keeps its existing size and leading. */
+.hero-heading { font-size: clamp(2.25rem, 4vw, 3.6rem); }
+.page-title h1 { font-size: clamp(1.8rem, 3.6vw, 2.9rem); }
+.tabs, .tab, .tab-indicator { border-radius: 999px; }
+@media (prefers-reduced-motion: no-preference) {
+    .tab-indicator { transition: transform 220ms var(--ease-spatial), width 220ms var(--ease-spatial); }
+}
+@media (min-width: 1440px) and (min-height: 800px) and (prefers-reduced-motion: no-preference) {
+    .hero-heading { font-size: clamp(3.6rem, min(4.5vw, 8svh), 5.4rem); }
+}
+@media (max-width: 1023px) {
+    .hero-heading { font-size: clamp(1.8rem, 5.1vw, 3.15rem); }
+}
+@media (max-width: 767px) {
+    .hero-heading { font-size: clamp(1.625rem, 7.2vw, 2.5rem); }
+    .page-title h1 { font-size: clamp(1.5rem, 6.1vw, 2.25rem); }
+}
+
+/* Separate brand, central search capsule and account actions, as in the reference. */
+.navbar { background: transparent; border-radius: 0; box-shadow: none; }
+.navbar::before {
+    inset: -12px -24px -6px; border: 0; border-radius: 0;
+    background: linear-gradient(#f7f5f0f5, #f7f5f0e6);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.navbar .logo { padding-inline: 0; border: 0; }
+.auth-buttons { padding-inline: 0; border: 0; gap: 10px; }
+.navbar .search-container { background: #2b2024; border-color: #2b2024; }
+.navbar .search-container input { color: #fff; background: transparent; }
+.navbar .search-container input::placeholder { color: #e2d6db; opacity: 1; }
+.navbar .search-container:focus-within { border-color: #b58a00; box-shadow: 0 0 0 3px rgb(255 209 63 / 38%); }
+.navbar .signup-link { padding-inline: 18px; border-radius: 999px; background: #2b2024; color: #fff; text-decoration: none; justify-content: center; }
+@media (min-width: 768px) { .navbar { padding-inline: 8px; } }
+@media (hover: hover) and (pointer: fine) { .navbar .signup-link:hover { background: #4c303c; color: #fff; } }
+@media (max-width: 767px) {
+    .navbar::before { inset: -6px -8px -6px; }
+    .navbar .signup-link { padding-inline: 14px; }
+    .auth-buttons { gap: 8px; }
+}
+
+/* White header capsules keep the separated reference layout. */
+.navbar .search-container { background: #fff; border-color: #d7cfc9; }
+.navbar .search-container input { color: #202020; }
+.navbar .search-container input::placeholder { color: #655d61; }
+.navbar .signup-link { color: #202020; background: #fff; border: 1px solid #d7cfc9; }
+@media (hover: hover) and (pointer: fine) {
+    .navbar .signup-link:hover { color: #950024; background: #fff3f5; border-color: #c3002f; }
+}
+/* A compact, right-aligned filter group with adjacent category and date controls. */
+.filter-wrapper.has-filter-controls {
+    display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap;
+    gap: 10px; width: fit-content; max-width: 100%; margin-inline-start: auto;
+    padding: 10px 12px; background: #fffdf9; border: 1px solid #ded6ca; border-radius: 16px;
+}
+.filter-caption { display: inline-flex; align-items: center; gap: 8px; color: #5a514a; font-size: .875rem; font-weight: 600; line-height: 1.7; }
+.filter-caption i { color: #c3002f; font-size: .75rem; }
+.has-filter-controls > .modern-select { flex: 0 1 auto; max-width: 100%; border-color: #c9bfb3; border-radius: 12px; }
+.has-filter-controls > .clear-filter-btn { border-color: #d7cfc9; border-radius: 12px; }
+.date-filter-row { display: flex; align-items: center; gap: 8px; margin: 0; }
+.date-filter-row input {
+    min-height: 44px; min-width: 0; width: 176px; padding: 8px 12px;
+    font: inherit; font-size: 1rem; color: #202020; background: #fff;
+    border: 1px solid #c9bfb3; border-radius: 12px; color-scheme: light;
+}
+.buddhist-date-control { position: relative; min-width: 0; width: 180px; }
+.buddhist-date-control > input:not(.native-date-source) { width: 100%; padding-inline-end: 42px; }
+.buddhist-date-control input::placeholder { color: #655d55; opacity: 1; }
+.buddhist-date-control .native-date-source {
+    position: absolute; bottom: 0; left: 0; width: 1px; height: 1px; min-height: 0;
+    padding: 0; border: 0; opacity: 0; pointer-events: none;
+}
+.date-picker-btn { position: absolute; inset: 0 0 0 auto; width: 40px; border: 0; border-radius: 10px; background: transparent; color: #655d55; }
+.date-clear-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 1px solid #d7cfc9; border-radius: 12px; background: #fff; color: #655d55; font-size: 1rem; }
+.date-clear-btn[hidden] { display: none; }
+.date-filter-row :is(input, button):focus-visible { outline: 3px solid #171717; outline-offset: 3px; }
+.buddhist-date-control input:invalid { border-color: #c3002f; }
+@media (hover: hover) and (pointer: fine) {
+    .date-clear-btn:hover, .date-picker-btn:hover { color: #950024; background: #fff3f5; }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .date-clear-btn, .date-picker-btn { transition: background-color 140ms ease-out, color 140ms ease-out; }
+}
+/* Calendar range labels remain compact and preserve Thai marks. */
+.filter-wrapper.has-filter-controls { align-items: flex-end; }
+.filter-caption { min-height: 44px; }
+.date-filter-row { align-items: flex-end; flex-wrap: wrap; }
+.date-range-field { display: grid; gap: 4px; min-width: 0; }
+.date-range-field > label { color: #655d55; font-size: .8125rem; line-height: 1.7; }
+.date-range-error { flex-basis: 100%; color: #a50028; font-size: .8125rem; line-height: 1.7; }
+.date-range-error[hidden] { display: none; }
+@media (max-width: 767px) {
+    .filter-wrapper.has-filter-controls { display: grid; grid-template-columns: minmax(0,1fr) auto; width: 100%; align-items: end; gap: 10px 8px; padding: 10px; }
+    .filter-caption { display: none; }
+    .has-filter-controls > .modern-select { grid-column: 1; grid-row: 1; width: 100% !important; max-width: 100%; padding-inline-start: 10px; font-size: .875rem; }
+    .has-filter-controls > .clear-filter-btn { grid-column: 2; grid-row: 1; }
+    .date-filter-row { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; min-width: 0; }
+    .buddhist-date-control { width: 100%; }
+    .buddhist-date-control > input:not(.native-date-source) { padding-inline-start: 8px; padding-inline-end: 34px; }
+    .date-picker-btn { width: 32px; }
+    .date-filter-row > .date-clear-btn { grid-column: 2; justify-self: end; }
+    .date-range-error { grid-column: 1 / -1; }
+}
