@@ -64,53 +64,6 @@ body { background: var(--portal-paper); }
     .board-scene { background: radial-gradient(ellipse 400px 300px at 100% 0, #f2db96, transparent), var(--portal-paper); }
 }
 
-/* Category controls use the original select options and its change event. */
-.filter-wrapper.has-filter-chips {
-    display: grid; grid-template-columns: auto minmax(0, 1fr) 44px;
-    align-items: start; gap: 12px; padding: 18px;
-    background: #fffdf9; border: 1px solid #ded6ca; border-radius: 18px;
-    box-shadow: inset 3px 0 #c3002f;
-}
-.has-filter-chips > .modern-select { display: none; }
-.filter-caption { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: #5a514a; font-size: .875rem; font-weight: 600; line-height: 1.7; }
-.filter-caption i { color: #c3002f; font-size: .75rem; }
-.filter-options { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
-.filter-chip {
-    display: inline-flex; align-items: center; justify-content: center;
-    min-height: 44px; max-width: 100%; padding: 9px 15px;
-    font: inherit; font-size: .8125rem; font-weight: 500; line-height: 1.7;
-    text-align: center; overflow-wrap: anywhere; color: #443c35;
-    border: 1px solid #ddd6cb; border-radius: 24px; background: #fff; cursor: pointer;
-}
-.filter-chip[aria-pressed="true"] { color: #fff; background: #c3002f; border-color: #c3002f; }
-.filter-chip:focus-visible { outline: 3px solid #171717; outline-offset: 3px; }
-.has-filter-chips > .clear-filter-btn { grid-column: 3; width: 44px; height: 44px; border-color: #ddd6cb; }
-@media (hover: hover) and (pointer: fine) {
-    .filter-chip:hover { background: #fae9ed; border-color: #c3002f; color: #950024; }
-    .filter-chip[aria-pressed="true"]:hover { background: #a50028; color: #fff; }
-}
-@media (prefers-reduced-motion: no-preference) {
-    .filter-chip { transition: background-color 140ms ease-out, border-color 140ms ease-out, color 140ms ease-out, transform 140ms ease-out; }
-    .filter-chip:active:not(:focus-visible) { transform: scale(.98); }
-}
-@media (max-width: 1100px) {
-    .filter-wrapper.has-filter-chips { grid-template-columns: minmax(0, 1fr) 44px; gap: 10px; }
-    .filter-caption { grid-column: 1; grid-row: 1; }
-    .filter-options { grid-column: 1 / -1; grid-row: 2; }
-    .has-filter-chips > .clear-filter-btn { grid-column: 2; grid-row: 1; }
-}
-@media (max-width: 767px) {
-    .filter-wrapper.has-filter-chips { padding: 12px; border-radius: 16px; }
-    .filter-chip { font-size: .875rem; padding-inline: 12px; }
-    .filter-options {
-        flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding: 4px 4px 8px;
-        margin-inline: -4px; scroll-padding-inline: 4px;
-        overscroll-behavior-inline: contain; scrollbar-width: thin;
-        scrollbar-color: #c3002f #eee5db;
-    }
-    .filter-chip { flex: 0 0 auto; max-width: none; white-space: nowrap; overflow-wrap: normal; }
-}
-
 /* Compact headings; the Thai reading text keeps its existing size and leading. */
 .hero-heading { font-size: clamp(2.25rem, 4vw, 3.6rem); }
 .page-title h1 { font-size: clamp(1.8rem, 3.6vw, 2.9rem); }
@@ -149,4 +102,58 @@ body { background: var(--portal-paper); }
     .navbar::before { inset: -6px -8px -6px; }
     .navbar .signup-link { padding-inline: 14px; }
     .auth-buttons { gap: 8px; }
+}
+
+/* White header capsules keep the separated reference layout. */
+.navbar .search-container { background: #fff; border-color: #d7cfc9; }
+.navbar .search-container input { color: #202020; }
+.navbar .search-container input::placeholder { color: #655d61; }
+.navbar .signup-link { color: #202020; background: #fff; border: 1px solid #d7cfc9; }
+@media (hover: hover) and (pointer: fine) {
+    .navbar .signup-link:hover { color: #950024; background: #fff3f5; border-color: #c3002f; }
+}
+/* Category menu and calendar sit together in the same filter panel. */
+.filter-wrapper.has-filter-controls {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+    padding: 16px 18px; background: #fffdf9; border: 1px solid #ded6ca;
+    border-radius: 18px; box-shadow: inset 3px 0 #c3002f;
+}
+.filter-caption { display: inline-flex; align-items: center; gap: 8px; color: #5a514a; font-size: .875rem; font-weight: 600; line-height: 1.7; }
+.filter-caption i { color: #c3002f; font-size: .75rem; }
+.has-filter-controls > .modern-select { flex: 0 1 auto; max-width: 100%; border-color: #c9bfb3; border-radius: 12px; }
+.has-filter-controls > .clear-filter-btn { border-color: #d7cfc9; border-radius: 12px; }
+.date-filter-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-inline-start: auto; }
+.date-filter-row label { display: inline-flex; align-items: center; gap: 8px; font-size: .875rem; font-weight: 600; color: #443c35; }
+.date-filter-row label i { color: #c3002f; }
+.date-filter-row input {
+    min-height: 44px; min-width: 0; width: 176px; padding: 8px 12px;
+    font: inherit; font-size: 1rem; color: #202020; background: #fff;
+    border: 1px solid #c9bfb3; border-radius: 12px; color-scheme: light;
+}
+.date-clear-btn {
+    min-height: 44px; padding: 8px 14px; border: 1px solid #d7cfc9;
+    border-radius: 12px; background: #fff; color: #950024; font-size: .875rem;
+}
+.date-clear-btn:disabled { color: #746b63; background: #f3f0ea; cursor: default; }
+.date-filter-help { font-size: .8125rem; color: #655d55; }
+.date-filter-row :is(input, button):focus-visible { outline: 3px solid #171717; outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+    .date-clear-btn:not(:disabled):hover { border-color: #c3002f; background: #fff3f5; }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .date-clear-btn { transition: background-color 140ms ease-out, border-color 140ms ease-out; }
+}
+@media (max-width: 1100px) { .date-filter-help { display: none; } }
+@media (max-width: 767px) {
+    .filter-wrapper.has-filter-controls {
+        display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+        grid-template-rows: auto 44px auto; align-items: start; gap: 8px 12px; padding: 12px;
+    }
+    .filter-caption { grid-column: 1; grid-row: 1; min-height: 24px; }
+    .has-filter-controls > .modern-select { grid-column: 1; grid-row: 2; width: 100% !important; max-width: 100%; padding-inline-start: 10px; font-size: .875rem; }
+    .has-filter-controls > .clear-filter-btn { grid-column: 1; grid-row: 3; }
+    .date-filter-row { grid-column: 2; grid-row: 1 / 4; display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; width: 100%; margin-inline-start: 0; }
+    .date-filter-row label { min-height: 24px; font-size: .8125rem; gap: 6px; }
+    .date-filter-row input { width: 100%; padding-inline: 8px; font-size: 1rem; }
+    .date-clear-btn { justify-self: start; }
 }

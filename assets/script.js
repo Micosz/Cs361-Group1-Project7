@@ -559,11 +559,16 @@ let eventRenderVersion = 0;
 function filterBrowseRecords(records, field, selectId, searchKeyword = browseKeyword) {
     const type = document.getElementById(selectId)?.value || 'all';
     const keyword = searchKeyword.trim().toLowerCase();
+    const date = document.getElementById(`${selectId}Date`)?.value || '';
     // V2 specifies name/title search; suggestions and cards share these rules.
     // Preserve dates, co_hosts and relationships from the data source.
     return records.filter(record =>
         (type === 'all' || record.type === type) &&
-        String(record[field] ?? '').toLowerCase().includes(keyword)
+        String(record[field] ?? '').toLowerCase().includes(keyword) &&
+        // Compare the stored calendar day directly, without timezone conversion.
+        (!date || (selectId === 'filterCollab'
+            ? record.collaborations?.some(activity => activity.period_date === date)
+            : record.period_date === date))
     );
 }
 
@@ -581,6 +586,19 @@ function applyCollabFilters() {
 function applyEventFilters() {
     hideSuggestions();
     return renderEventCards();
+}
+
+function applyBrowseDateFilter(selectId) {
+    const input = document.getElementById(`${selectId}Date`);
+    const clear = document.getElementById(`${selectId}DateClear`);
+    if (clear) clear.disabled = !input?.value;
+    return selectId === 'filterCollab' ? applyCollabFilters() : applyEventFilters();
+}
+
+function clearBrowseDateFilter(selectId) {
+    const input = document.getElementById(`${selectId}Date`);
+    if (input) input.value = '';
+    return applyBrowseDateFilter(selectId);
 }
 
 function initBrowseFilters() {

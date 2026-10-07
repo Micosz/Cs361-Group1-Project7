@@ -9,8 +9,8 @@ const fixture = [
     { id: 'beta', name: 'Beta University', type: 'university', summary: 'summary-only', location: 'Bangkok' },
     { id: 'alpha', name: 'Alpha Company', type: 'company', visibility: 'public', summary: 'summary-only' },
     { id: 'hidden', name: 'Private Partner', type: 'company', visibility: 'private' },
-    { id: 'joint', title: 'Alpha Workshop', type: 'event', partnerId: 'alpha', visibility: 'public', co_hosts: ['Beta', 'Alpha'], period: '2026' },
-    { id: 'related', title: 'Research Day', type: 'research', partnerId: 'alpha', visibility: 'public' },
+    { id: 'joint', title: 'Alpha Workshop', type: 'event', partnerId: 'alpha', visibility: 'public', co_hosts: ['Beta', 'Alpha'], period: '2026', period_date: '2026-11-11' },
+    { id: 'related', title: 'Research Day', type: 'research', partnerId: 'alpha', visibility: 'public', period_date: '2020-08-17' },
     { id: 'legacy', title: 'Beta Talk', type: 'event', partnerId: 'beta' },
     { id: 'secret', title: 'Private Event', type: 'event', partnerId: 'alpha', visibility: 'private' },
     { id: 'hidden-event', title: 'Private Host Event', type: 'event', partnerId: 'hidden', visibility: 'public' }
@@ -55,7 +55,7 @@ function page(fetchImpl = async () => response()) {
         getBoundingClientRect() { return { width: 100 }; }
         contains(target) { return target.insideSearch === true; }
     }
-    const ids = ['searchInput', 'searchSuggestions', 'filterCollab', 'filterEvent',
+    const ids = ['searchInput', 'searchSuggestions', 'filterCollab', 'filterEvent', 'filterEventDate', 'filterEventDateClear', 'filterCollabDate', 'filterCollabDateClear',
         'collaboratorGrid', 'eventGrid', 'detailModal', 'modalTitle', 'modalName',
         'modalInfo', 'modalImage', 'modalDetails', 'tabCollab', 'tabEvent',
         'sectionCollaborator', 'sectionEvent'];
@@ -340,4 +340,84 @@ test('a successful empty array is cached, unlike an API failure', async () => {
     await p.context.handleSearch();
     assert.equal(p.requests, 1);
     assert.match(p.get('collaboratorGrid').innerHTML, /ไม่พบ/);
+});
+
+
+test('calendar day combines with category and keyword in cards and suggestions without extra requests', async () => {
+    const p = page();
+    p.get('filterEventDate').value = '2026-11-11';
+    p.get('filterEvent').value = 'event';
+    p.get('searchInput').value = 'Alpha';
+    await p.context.handleSearch();
+    await p.context.showSuggestions();
+    assert.match(p.get('eventGrid').innerHTML, /Alpha Workshop/);
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /Research Day|Beta Talk/);
+    assert.match(p.get('searchSuggestions').innerHTML, /Alpha Workshop/);
+    assert.doesNotMatch(p.get('searchSuggestions').innerHTML, /Research Day|Beta Talk/);
+    assert.match(p.get('collaboratorGrid').innerHTML, /Alpha Company/, 'day does not filter organizations');
+    assert.equal(p.requests, 1);
+    p.get('filterEventDate').value = '2025-11-11';
+    await p.context.applyBrowseDateFilter('filterEvent');
+    assert.match(p.get('eventGrid').innerHTML, /ไม่พบกิจกรรม/, 'the year is part of the exact calendar day');
+    assert.equal(p.get('filterEventDateClear').disabled, false);
+    assert.equal(p.get('searchSuggestions').style.display, 'none');
+    assert.equal(p.requests, 1);
+});
+
+test('clearing the calendar day preserves search and category; undated activities return when blank', async () => {
+    const p = page();
+    p.get('filterEvent').value = 'research';
+    p.get('filterEventDate').value = '2026-11-11';
+    p.get('searchInput').value = 'Research';
+    await p.context.handleSearch();
+    assert.match(p.get('eventGrid').innerHTML, /ไม่พบกิจกรรม/);
+    await p.context.clearBrowseDateFilter('filterEvent');
+    assert.match(p.get('eventGrid').innerHTML, /Research Day/);
+    assert.equal(p.get('filterEvent').value, 'research');
+    assert.equal(p.get('searchInput').value, 'Research');
+    assert.equal(p.get('filterEventDate').value, '');
+    assert.equal(p.get('filterEventDateClear').disabled, true);
+    p.get('filterEvent').value = 'all';
+    p.get('searchInput').value = '';
+    await p.context.handleSearch();
+    assert.match(p.get('eventGrid').innerHTML, /Beta Talk/, 'blank day includes undated records');
+    assert.equal(p.requests, 1);
+});
+
+test('a calendar change during API loading renders only the latest day', async () => {
+    const load = deferred();
+    const p = page(() => load.promise);
+    p.get('filterEventDate').value = '2026-11-11';
+    const first = p.context.applyBrowseDateFilter('filterEvent');
+    p.get('filterEventDate').value = '2020-08-17';
+    const latest = p.context.applyBrowseDateFilter('filterEvent');
+    load.resolve(response());
+    await Promise.all([first, latest]);
+    assert.match(p.get('eventGrid').innerHTML, /Research Day/);
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /Alpha Workshop/);
+    assert.equal(p.get('eventGrid').writes, 1);
+    assert.equal(p.requests, 1);
+});
+
+
+test('organization day matches public collaborations including co-hosts, without changing their relationships', async () => {
+    const p = page();
+    p.get('filterCollabDate').value = '2026-11-11';
+    p.get('filterCollab').value = 'university';
+    p.get('searchInput').value = 'Beta';
+    await p.context.handleSearch();
+    await p.context.showSuggestions();
+    assert.match(p.get('collaboratorGrid').innerHTML, /Beta University/, 'a co-host retains its shared activity date');
+    assert.doesNotMatch(p.get('collaboratorGrid').innerHTML, /Alpha Company/);
+    assert.match(p.get('searchSuggestions').innerHTML, /Beta University/);
+    p.get('filterCollabDate').value = '2020-08-17';
+    await p.context.applyBrowseDateFilter('filterCollab');
+    assert.match(p.get('collaboratorGrid').innerHTML, /ไม่พบผู้มีส่วนได้ส่วนเสีย/);
+    await p.context.clearBrowseDateFilter('filterCollab');
+    assert.match(p.get('collaboratorGrid').innerHTML, /Beta University/);
+    assert.equal(p.get('filterCollab').value, 'university');
+    assert.equal(p.get('searchInput').value, 'Beta');
+    assert.equal(p.get('filterCollabDateClear').disabled, true);
+    assert.equal((await p.context.getPublicActivityById('joint')).partnerId, 'alpha');
+    assert.equal(p.requests, 1);
 });
