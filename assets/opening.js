@@ -123,11 +123,11 @@
             if (!settled) finish();
             scheduleScene();
         }, { passive: true });
-        function advanceScene(reading = false) {
+        function advanceScene() {
             if (!boardScene || !sceneMode()) return;
             // offsetTop is the stable document position, unaffected by the scene transform.
-            // The CTA lands on the centered title; search goes straight to results.
-            const top = Math.max(0, boardScene.offsetTop - 92) * (reading ? 1 : .6);
+            // Explicit navigation lands at the reading position; wheel scrolling keeps the centered reveal.
+            const top = Math.max(0, boardScene.offsetTop - 92);
             cancelAnimationFrame(navigationFrame);
             navigationFrame = requestAnimationFrame(() => {
                 navigationFrame = 0;
@@ -137,10 +137,10 @@
         // Preserve the anchor destination/history and all original search handlers.
         on(hero.querySelector('.hero-btn'), 'click', () => advanceScene());
         on(document.querySelector('.search-btn'), 'click', () => {
-            if (boardScene && scrollY < boardScene.offsetTop - 92) advanceScene(true);
+            if (boardScene && scrollY < boardScene.offsetTop - 92) advanceScene();
         });
         on(document.querySelector('#searchInput'), 'keydown', event => {
-            if (event.key === 'Enter' && boardScene && scrollY < boardScene.offsetTop - 92) advanceScene(true);
+            if (event.key === 'Enter' && boardScene && scrollY < boardScene.offsetTop - 92) advanceScene();
         });
         const pose = (x, y, angle, scale) => `translate(-50%,-50%) translate3d(${x}px,${y}px,0) rotate(${angle}deg) scale(${scale})`;
         const shuffle = items => {
