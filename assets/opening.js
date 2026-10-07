@@ -1,5 +1,6 @@
 /* Presentation only. Reuses rendered collaborator logos without data requests,
-   app state changes, scroll handlers or scroll locking.
+   app state changes or scroll locking. A single RAF-batched scroll controller
+   scrubs the same paused CSS animations across browsers.
    Extra previews delegate to the existing detail function and hero ticker. */
 (() => {
     'use strict';
@@ -36,12 +37,59 @@
             return animation;
         };
         const boardScene = document.querySelector('.board-scene');
-        const sceneMode = () => Boolean(boardScene) && !reduced.matches && !compact.matches && innerHeight > 650 &&
-            CSS.supports('animation-timeline: scroll()');
-        const updateSceneMode = () => document.body.classList.toggle('scene-ready', sceneMode());
+        const sceneElements = [hero.querySelector('.hero-content'), ...liveCards, boardScene].filter(Boolean);
+        let sceneAnimations = [];
+        let sceneEnabled = false;
+        let sceneFrame = 0;
+        let sceneDirty = true;
+        let sceneHeight = 1;
+        let sceneProgress = -1;
+        const sceneMode = () => Boolean(boardScene) && !reduced.matches && !compact.matches && innerHeight > 650;
+        function renderScene() {
+            sceneFrame = 0;
+            if (!sceneEnabled || disposed) return;
+            try {
+                if (sceneDirty) {
+                    // Discover only our CSS animations after layout/intro changes, never per scroll.
+                    sceneAnimations = [...sceneElements, ...tiles.map(item => item.drift)]
+                        .flatMap(element => element.getAnimations())
+                        .filter(animation => animation.animationName?.startsWith('portal-'));
+                    sceneHeight = Math.max(1, innerHeight - 92);
+                    sceneProgress = -1;
+                    sceneDirty = false;
+                }
+                const progress = Math.max(0, Math.min(1, window.scrollY / sceneHeight));
+                if (progress === sceneProgress) return; // No repeated work while reading the board.
+                sceneProgress = progress;
+                sceneAnimations.forEach(animation => { animation.currentTime = progress * 1000; });
+            } catch {
+                // Keep the complete page readable if optional presentation cannot initialize.
+                sceneEnabled = false;
+                sceneAnimations = [];
+                document.body.classList.remove('scene-ready');
+            }
+        }
+        function scheduleScene(refresh = false) {
+            if (!sceneEnabled || disposed) return;
+            sceneDirty ||= refresh;
+            if (!sceneFrame) sceneFrame = requestAnimationFrame(renderScene);
+        }
+        const updateSceneMode = () => {
+            sceneEnabled = sceneMode();
+            document.body.classList.toggle('scene-ready', sceneEnabled);
+            cancelAnimationFrame(sceneFrame);
+            sceneFrame = 0;
+            sceneAnimations = [];
+            sceneDirty = true;
+            renderScene();
+        };
         updateSceneMode();
         on(reduced, 'change', updateSceneMode);
         on(window, 'resize', updateSceneMode);
+        on(window, 'scroll', () => {
+            if (!settled) finish();
+            scheduleScene();
+        }, { passive: true });
         function advanceScene() {
             if (!boardScene || !sceneMode()) return;
             // offsetTop is the stable document position, unaffected by the scene transform.
@@ -123,8 +171,10 @@
                 item.drift.style.setProperty('--scatter-x', `${item.destination.x * .25}px`);
                 item.drift.style.setProperty('--scatter-y', `${item.destination.y * .2}px`);
             });
+            scheduleScene(true);
         }
         function finish() {
+            const wasSettled = settled;
             settled = true;
             presented = true;
             hero.classList.remove('intro-pending', 'intro-playing', 'intro-orbit-visible', 'intro-unfolding');
@@ -135,6 +185,7 @@
             releaseDecode?.();
             releaseDecode = undefined;
             tiles.forEach(item => { if (item.slot >= 3 && item.tile.disabled) item.tile.disabled = false; });
+            if (!wasSettled) scheduleScene(true);
             // Inline endpoints are already present beneath the temporary animations.
         }
         function run() {
@@ -262,6 +313,8 @@
             tickerObserver.disconnect();
             cancelAnimationFrame(resizeFrame);
             cancelAnimationFrame(navigationFrame);
+            cancelAnimationFrame(sceneFrame);
+            sceneAnimations = [];
             finish();
             layer?.remove();
             document.body.classList.remove('scene-ready');
