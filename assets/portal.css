@@ -112,48 +112,47 @@ body { background: var(--portal-paper); }
 @media (hover: hover) and (pointer: fine) {
     .navbar .signup-link:hover { color: #950024; background: #fff3f5; border-color: #c3002f; }
 }
-/* Category menu and calendar sit together in the same filter panel. */
+/* A compact, right-aligned filter group with adjacent category and date controls. */
 .filter-wrapper.has-filter-controls {
-    display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
-    padding: 16px 18px; background: #fffdf9; border: 1px solid #ded6ca;
-    border-radius: 18px; box-shadow: inset 3px 0 #c3002f;
+    display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap;
+    gap: 10px; width: fit-content; max-width: 100%; margin-inline-start: auto;
+    padding: 10px 12px; background: #fffdf9; border: 1px solid #ded6ca; border-radius: 16px;
 }
 .filter-caption { display: inline-flex; align-items: center; gap: 8px; color: #5a514a; font-size: .875rem; font-weight: 600; line-height: 1.7; }
 .filter-caption i { color: #c3002f; font-size: .75rem; }
 .has-filter-controls > .modern-select { flex: 0 1 auto; max-width: 100%; border-color: #c9bfb3; border-radius: 12px; }
 .has-filter-controls > .clear-filter-btn { border-color: #d7cfc9; border-radius: 12px; }
-.date-filter-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-inline-start: auto; }
-.date-filter-row label { display: inline-flex; align-items: center; gap: 8px; font-size: .875rem; font-weight: 600; color: #443c35; }
-.date-filter-row label i { color: #c3002f; }
+.date-filter-row { display: flex; align-items: center; gap: 8px; margin: 0; }
 .date-filter-row input {
     min-height: 44px; min-width: 0; width: 176px; padding: 8px 12px;
     font: inherit; font-size: 1rem; color: #202020; background: #fff;
     border: 1px solid #c9bfb3; border-radius: 12px; color-scheme: light;
 }
-.date-clear-btn {
-    min-height: 44px; padding: 8px 14px; border: 1px solid #d7cfc9;
-    border-radius: 12px; background: #fff; color: #950024; font-size: .875rem;
+.buddhist-date-control { position: relative; min-width: 0; width: 180px; }
+.buddhist-date-control > input:not(.native-date-source) { width: 100%; padding-inline-end: 42px; }
+.buddhist-date-control input::placeholder { color: #655d55; opacity: 1; }
+.buddhist-date-control .native-date-source {
+    position: absolute; bottom: 0; left: 0; width: 1px; height: 1px; min-height: 0;
+    padding: 0; border: 0; opacity: 0; pointer-events: none;
 }
-.date-clear-btn:disabled { color: #746b63; background: #f3f0ea; cursor: default; }
-.date-filter-help { font-size: .8125rem; color: #655d55; }
+.date-picker-btn { position: absolute; inset: 0 0 0 auto; width: 40px; border: 0; border-radius: 10px; background: transparent; color: #655d55; }
+.date-clear-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 1px solid #d7cfc9; border-radius: 12px; background: #fff; color: #655d55; font-size: 1rem; }
+.date-clear-btn[hidden] { display: none; }
 .date-filter-row :is(input, button):focus-visible { outline: 3px solid #171717; outline-offset: 3px; }
+.buddhist-date-control input:invalid { border-color: #c3002f; }
 @media (hover: hover) and (pointer: fine) {
-    .date-clear-btn:not(:disabled):hover { border-color: #c3002f; background: #fff3f5; }
+    .date-clear-btn:hover, .date-picker-btn:hover { color: #950024; background: #fff3f5; }
 }
 @media (prefers-reduced-motion: no-preference) {
-    .date-clear-btn { transition: background-color 140ms ease-out, border-color 140ms ease-out; }
+    .date-clear-btn, .date-picker-btn { transition: background-color 140ms ease-out, color 140ms ease-out; }
 }
-@media (max-width: 1100px) { .date-filter-help { display: none; } }
 @media (max-width: 767px) {
-    .filter-wrapper.has-filter-controls {
-        display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
-        grid-template-rows: auto 44px auto; align-items: start; gap: 8px 12px; padding: 12px;
-    }
-    .filter-caption { grid-column: 1; grid-row: 1; min-height: 24px; }
-    .has-filter-controls > .modern-select { grid-column: 1; grid-row: 2; width: 100% !important; max-width: 100%; padding-inline-start: 10px; font-size: .875rem; }
-    .has-filter-controls > .clear-filter-btn { grid-column: 1; grid-row: 3; }
-    .date-filter-row { grid-column: 2; grid-row: 1 / 4; display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; width: 100%; margin-inline-start: 0; }
-    .date-filter-row label { min-height: 24px; font-size: .8125rem; gap: 6px; }
-    .date-filter-row input { width: 100%; padding-inline: 8px; font-size: 1rem; }
-    .date-clear-btn { justify-self: start; }
+    .filter-wrapper.has-filter-controls { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); width: 100%; align-items: start; gap: 8px; padding: 10px; }
+    .filter-caption { display: none; }
+    .has-filter-controls > .modern-select { grid-column: 1; grid-row: 1; width: 100% !important; max-width: 100%; padding-inline-start: 10px; font-size: .875rem; }
+    .has-filter-controls > .clear-filter-btn { grid-column: 1; grid-row: 2; justify-self: end; }
+    .date-filter-row { grid-column: 2; grid-row: 1 / 3; display: grid; justify-items: end; gap: 8px; min-width: 0; }
+    .buddhist-date-control { width: 100%; }
+    .buddhist-date-control > input:not(.native-date-source) { padding-inline-start: 8px; padding-inline-end: 34px; }
+    .date-picker-btn { width: 32px; }
 }

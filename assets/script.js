@@ -591,7 +591,7 @@ function applyEventFilters() {
 function applyBrowseDateFilter(selectId) {
     const input = document.getElementById(`${selectId}Date`);
     const clear = document.getElementById(`${selectId}DateClear`);
-    if (clear) clear.disabled = !input?.value;
+    if (clear) { clear.disabled = !input?.value; clear.hidden = !input?.value; }
     return selectId === 'filterCollab' ? applyCollabFilters() : applyEventFilters();
 }
 

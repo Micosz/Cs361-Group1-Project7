@@ -7,7 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "node --test tests/search.test.js"
+    "test": "node --test tests/search.test.js tests/date-presentation.test.js"
   },
   "repository": {
     "type": "git",

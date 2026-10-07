@@ -9,9 +9,9 @@
     <link rel="stylesheet" href="assets/showcase.css?v=4">
     <link rel="stylesheet" href="assets/cinematic.css?v=1">
     <link rel="stylesheet" href="assets/opening.css?v=9">
-    <link rel="stylesheet" href="assets/portal.css?v=4">
-    <script src="assets/script.js?v=2" defer></script>
-    <script src="assets/filter-presentation.js?v=2" defer></script>
+    <link rel="stylesheet" href="assets/portal.css?v=5">
+    <script src="assets/script.js?v=3" defer></script>
+    <script src="assets/filter-presentation.js?v=3" defer></script>
     <script src="assets/presentation.js?v=9" defer></script>
     <script src="assets/opening.js?v=11" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -115,10 +115,8 @@
                     <option value="internship">เครือข่ายสหกิจศึกษา (Internship)</option>
                 </select>
                 <div class="date-filter-row">
-                    <label for="filterCollabDate"><i class="far fa-calendar-alt" aria-hidden="true"></i> วันที่ความร่วมมือ</label>
-                    <input type="date" id="filterCollabDate" onchange="applyBrowseDateFilter('filterCollab')" aria-describedby="collabDateHelp">
-                    <button type="button" id="filterCollabDateClear" class="date-clear-btn" onclick="clearBrowseDateFilter('filterCollab')" disabled>ล้างวันที่</button>
-                    <span id="collabDateHelp" class="date-filter-help">เว้นว่างเพื่อดูทุกวัน</span>
+                    <input type="date" id="filterCollabDate" onchange="applyBrowseDateFilter('filterCollab')" aria-label="วันที่ความร่วมมือ" lang="th-TH">
+                    <button type="button" id="filterCollabDateClear" class="date-clear-btn" onclick="clearBrowseDateFilter('filterCollab')" aria-label="ล้างวันที่" title="ล้างวันที่" hidden disabled><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
                 </div>
             </div>
             <div class="grid" id="collaboratorGrid"></div>
@@ -134,10 +132,8 @@
                     <option value="research">งานวิจัยและแลกเปลี่ยน</option>
                 </select>
                 <div class="date-filter-row">
-                    <label for="filterEventDate"><i class="far fa-calendar-alt" aria-hidden="true"></i> วันที่กิจกรรม</label>
-                    <input type="date" id="filterEventDate" onchange="applyBrowseDateFilter('filterEvent')" aria-describedby="eventDateHelp">
-                    <button type="button" id="filterEventDateClear" class="date-clear-btn" onclick="clearBrowseDateFilter('filterEvent')" disabled>ล้างวันที่</button>
-                    <span id="eventDateHelp" class="date-filter-help">เว้นว่างเพื่อดูทุกวัน</span>
+                    <input type="date" id="filterEventDate" onchange="applyBrowseDateFilter('filterEvent')" aria-label="วันที่กิจกรรม" lang="th-TH">
+                    <button type="button" id="filterEventDateClear" class="date-clear-btn" onclick="clearBrowseDateFilter('filterEvent')" aria-label="ล้างวันที่" title="ล้างวันที่" hidden disabled><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
                 </div>
             </div>
             <div class="grid" id="eventGrid"></div>
