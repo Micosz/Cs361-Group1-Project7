@@ -30,26 +30,20 @@ test('invalid submit is prevented without a simulated success or status', () => 
     const p=setup();p.form.valid=false;const event=new Event('submit',{cancelable:true});p.form.dispatchEvent(event);
     assert.equal(event.defaultPrevented,true);assert.equal(p.status.hidden,true);
 });
-test('scroll work coalesces into one frame, with distinct heading and light motion', () => {
-    const p=setup();p.window.scrollY=300;
-    p.window.dispatchEvent(new Event('scroll'));p.window.dispatchEvent(new Event('scroll'));
-    assert.equal(p.frames.size,1);p.flush();
-    assert.equal(p.styles.get('--light-y'),'54px');assert.equal(p.styles.get('--heading-y'),'30px');assert.equal(p.styles.get('--panel-y'),'-10.500000000000002px');
-});
-test('reduced motion is static and mobile uses reduced travel', () => {
-    const p=setup(true);p.window.scrollY=300;p.window.dispatchEvent(new Event('scroll'));p.flush();assert.equal(p.styles.get('--light-y'),'0px');
-    const phone=setup(false,true);phone.window.scrollY=300;phone.window.dispatchEvent(new Event('scroll'));phone.flush();assert.equal(phone.styles.get('--light-y'),'18.9px');
-});
-test('pagehide cleans listeners and pending frames; restored page enables one form handler', () => {
-    const p=setup();p.window.dispatchEvent(new Event('scroll'));p.window.dispatchEvent(new Event('pagehide'));
-    assert.equal(p.frames.size,0);assert.equal(p.submit.disabled,true);assert.equal(p.classes.has('login-enter'),false);
-    p.window.dispatchEvent(new Event('scroll'));assert.equal(p.frames.size,0);
-    const restored=new Event('pageshow');restored.persisted=true;p.window.dispatchEvent(restored);
-    assert.equal(p.submit.disabled,false);p.window.dispatchEvent(new Event('scroll'));assert.equal(p.frames.size,1);
+test('pagehide disables submission and removes its handler; BFCache restoration reinstalls it', () => {
+    const p = setup(); p.window.dispatchEvent(new Event('pagehide'));
+    assert.equal(p.submit.disabled, true); assert.equal(p.classes.has('login-enter'), false);
+    const afterHide = new Event('submit', {cancelable:true}); p.form.dispatchEvent(afterHide);
+    assert.equal(afterHide.defaultPrevented, false);
+    const restored = new Event('pageshow'); restored.persisted = true; p.window.dispatchEvent(restored);
+    assert.equal(p.submit.disabled, false);
+    const afterRestore = new Event('submit', {cancelable:true}); p.form.dispatchEvent(afterRestore);
+    assert.equal(afterRestore.defaultPrevented, true); assert.equal(p.status.hidden, false);
 });
 test('login markup has only the requested credentials, starts submission disabled and homepage has no signup', () => {
     const html=readFileSync(`${base}/login.html`,'utf8'),home=readFileSync(`${base}/index.html`,'utf8');
     assert.equal((html.match(/<input /g)||[]).length,2);
     assert.match(html,/id="login-submit"[^>]+disabled/);assert.match(html,/autocomplete="username"/);assert.match(html,/autocomplete="current-password"/);
+    assert.doesNotMatch(html,/กลับมาเชื่อมต่อกับชุมชน|พื้นที่เชื่อมต่อโอกาส/);
     assert.doesNotMatch(home,/class="signup-link"/);assert.match(home,/href="login.html" class="login-btn"/);
 });

@@ -8,7 +8,7 @@ final result: blocked
 - Implementation: `login.html`, served at http://127.0.0.1:8780/login.html.
 - Implementation screenshot: unavailable.
 - Implementation CSS viewport and screenshot density: not captured; normalization/comparison not performed.
-- Intended state: dark login, two empty credential fields, crimson action and red/gold optical background.
+- Intended state (latest user revision): predominantly white login, larger form and Thai login heading, two empty credential fields, crimson action and a clearly visible red/gold optical background. Page-level scrolling is disabled; inner scrolling is reserved for short-height/keyboard/zoom accessibility.
 - Intentional adaptations: CSTUHub branding, student ID/password only, university red/yellow, local-only unavailable-auth state. No backend authentication was added.
 
 ## Evidence and blocker
@@ -19,19 +19,19 @@ final result: blocked
 - Browser capture, full-view paired comparison, focused comparisons, mobile inspection, runtime motion inspection and console-error verification remain blocked. A running preview server and passing automated tests do not establish visual QA.
 
 ## Required fidelity surfaces
-- Fonts/typography: Noto Sans Thai and Cormorant Garamond italic are implemented with fallbacks; rendered font loading, shaping, clipping and heading fit are unverified.
+- Fonts/typography: Noto Sans Thai and Cormorant Garamond italic are implemented with fallbacks; the Thai login heading is enlarged from 24px to 32–48px at typical viewports. Rendered font loading, shaping, clipping and heading fit are unverified.
 - Spacing/layout rhythm: centered display heading, wide form/compact aside, mobile single-column form are implemented; actual viewport fit remains unverified.
-- Colors/tokens: #C3002F action/brand, #FFD13F focus/icon accents, dark surfaces and white text are implemented; rendered contrast is unverified.
-- Image quality: generated red/gold optical raster asset is supplied at 1536 × 1024; composition was inspected independently, but actual browser crop behind the UI is unverified.
+- Colors/tokens: #C3002F action/brand/focus, white surfaces, dark readable text and red/gold raster artwork are implemented; rendered contrast is unverified.
+- Image quality: updated white-background red/gold optical raster is supplied at 1536 × 1024, at full opacity; composition was inspected independently, but actual browser crop behind the UI is unverified.
 - Copy/content: Thai login copy and exactly two credential inputs are implemented; submit explicitly reports that authentication is not connected.
 
 ## Nonvisual verification
 - Existing search/date tests: 37 passing.
-- Login tests: local-only submit handling, invalid form behavior, scroll requestAnimationFrame coalescing, reduced/mobile motion, pagehide/BFCache lifecycle, two-input markup and homepage navigation. 6 passing.
+- Login tests (latest revision): local-only submit handling, invalid form behavior, pagehide/BFCache lifecycle, two-input markup, removed copy and homepage navigation. 4 passing. Scroll choreography and its obsolete tests were removed at the user request.
 - JavaScript syntax and git diff whitespace checks pass.
 - No actual browser form, mobile layout or reduced-motion browser session was verified.
 
 ## Findings and next verification
 - [P1] Visual acceptance evidence is missing. Capture the local login at desktop and mobile widths, compare beside the selected reference accounting for the requested two-field/brand adaptations, and verify entry/scroll motion, keyboard focus, back navigation, local submit feedback and console errors.
-- Comparison history: no implementation comparison was possible; no visual pass is claimed.
+- Comparison history: no implementation comparison was possible; no visual pass is claimed. Latest user revision supersedes the original dark palette and scroll choreography. White theme, larger UI, two copy removals, fixed page and a new white-background raster are implemented; browser acceptance remains pending.
 - Focused comparison is required for Thai labels, input sizing and heading wrapping once capture is available.
