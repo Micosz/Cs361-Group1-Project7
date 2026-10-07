@@ -26,7 +26,7 @@ checks pass. The checks use DOM/fetch mocks; they do not verify AWS or a browser
 - Login background asset readability on the deployment host. Earlier S3 image
   requests returned 403; repository inclusion does not verify host permissions.
 
-No fresh browser verification was performed for this integration. See design-qa.md
+No fresh browser verification was performed for this integration. See [login design QA](../design/login-qa.md)
 for the earlier preview limitation. Login remains a UI prototype without authentication;
 valid submit reports that authentication is unavailable and sends no credentials.
 
