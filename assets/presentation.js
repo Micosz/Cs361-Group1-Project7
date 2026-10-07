@@ -64,7 +64,7 @@
                 else animations.delete(element);
             };
         }
-        const compact = matchMedia('(max-width: 767px)');
+        const compact = matchMedia('(max-width: 767px), (max-height: 500px)');
         const timing = { duration: compact.matches ? 360 : 680, easing: 'cubic-bezier(.22,1,.36,1)' };
         document.querySelectorAll('.hero-heading span').forEach((line, index) => {
             animate(line, [
@@ -101,7 +101,7 @@
                     if (image) animate(image, [
                         { clipPath: 'inset(0 0 12% 0)', transform: 'translateY(8px)' },
                         { clipPath: 'inset(0)', transform: 'none' }
-                    ], { ...timing, duration: 760 });
+                    ], { ...timing, duration: compact.matches ? 320 : 760 });
                 });
             }, { threshold: .08 });
             observers.push(reveal);
@@ -186,7 +186,7 @@
                     animate(panel, [
                         { transform: `translate3d(${x}px,${y}px,0) scale(${scaleX},${scaleY})` },
                         { transform: 'translate3d(0,0,0) scale(1,1)' }
-                    ], { duration: 1000, easing: 'cubic-bezier(.16,1,.3,1)' });
+                    ], { duration: compact.matches ? 420 : 1000, easing: 'cubic-bezier(.16,1,.3,1)' });
                 });
             };
             const modalObserver = new MutationObserver(modalChanged);

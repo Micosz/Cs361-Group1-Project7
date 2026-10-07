@@ -180,11 +180,21 @@
             const destinations = cards.map((card, index) => ({
                 x: card.left + card.width / 2 - box.left - width / 2,
                 y: card.top + card.height / 2 - box.top - height / 2,
-                angle: [-7, 7, -5][index], scale: liveCards[index].offsetWidth / tileWidth, opacity: 0
+                angle: [-7, 7, -5][index], scale: compact.matches ? 1 : liveCards[index].offsetWidth / tileWidth, opacity: 0
             }));
             // Five decorative companions frame the message without covering its text.
-            const companions = [[.43, .08, -9], [.7, .08, 7], [.87, .79, 8], [.57, .91, -5], [.1, .48, 6]];
-            companions.forEach(([x, y, angle]) => destinations.push({
+            const companions = [[.43, .08, -9], [.7, .08, 7], [.87, .79, 8], [.57, .91, -5],
+                // On shorter laptops keep this logo below, away from long Thai titles.
+                height < 720 ? [.32, .9, 6] : [.1, .48, 6]];
+            const phone = matchMedia('(max-width: 767px)').matches;
+            const gutter = phone ? 16 : 28;
+            const gap = phone ? 8 : 10;
+            const companionWidth = (width - gutter * 2 - gap * 4) / 5;
+            companions.forEach(([x, y, angle], index) => destinations.push(compact.matches ? {
+                x: gutter + companionWidth / 2 + index * (companionWidth + gap) - width / 2,
+                y: height - (phone ? 24 + 29 : 26 + 34) - height / 2,
+                angle: 0, scale: Math.min(1, companionWidth / tileWidth), opacity: 1
+            } : {
                 x: width * x - width / 2,
                 y: Math.max(62, Math.min(height - 76, height * y)) - height / 2,
                 angle, scale: width < 1100 ? .84 : 1, opacity: 1
@@ -219,13 +229,16 @@
             const box = hero.getBoundingClientRect();
             const radiusX = compact.matches ? Math.min(box.width * .31, 150) : Math.min(box.width * .23, 245);
             const radiusY = compact.matches ? Math.min(box.width * .31, 150) : Math.min(box.height * .32, 225);
-            const duration = compact.matches ? 1500 : 2300;
+            const duration = compact.matches ? 1100 : 2300;
+            // Keep the compact orbit near the message rather than halfway down
+            // the tall mobile card list. Touch/scroll can still settle it immediately.
+            const centerY = compact.matches ? Math.min(190, box.height / 2) - box.height / 2 : 0;
             // Expose presentation phases for visual checks without touching app state.
             after(() => hero.classList.add('intro-orbit-visible'), duration * .22);
             after(() => hero.classList.add('intro-unfolding'), duration * .68);
             const ring = (angle, scale, radius = 1) => {
                 const radians = angle * Math.PI / 180;
-                return pose(Math.cos(radians) * radiusX * radius, Math.sin(radians) * radiusY * radius, angle + 90, scale);
+                return pose(Math.cos(radians) * radiusX * radius, centerY + Math.sin(radians) * radiusY * radius, angle + 90, scale);
             };
             const completed = tiles.map((item, index) => {
                 const angle = -90 + index * 360 / tiles.length;
