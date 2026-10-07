@@ -42,3 +42,11 @@ final result: blocked
 - The raster now paints directly as the body background, rather than in a fixed positioned image layer. HTML preloads the same exact resource URL; the unnecessary image query string is removed.
 - Form/heading entry motion is retained; decorative image entry animation is removed.
 - Runtime visual acceptance remains blocked because the available browser tab is a failed connection page, not the user’s current login view. No successful post-fix browser screenshot is claimed.
+
+## Softer background and contrast revision
+- Added a pointer-transparent white scrim at 78% over only the page artwork. Foreground text and controls keep full opacity; white panels increased from 86% to 95%.
+- Input borders darkened to #89767d; button/brand palette unchanged. CSS link cache version increased to 4.
+- Conservative numerical contrast checks assume the source artwork can contain a fully black pixel. White compositing therefore bounds the minimum page luminance; no actual rendered screenshot or image-editing workaround was used.
+- Computed lower bounds: main heading 9.63:1; large crimson heading/brand 3.69:1; eyebrow 4.80:1; field labels 9.11:1; aside copy 7.26:1; placeholders 5.67:1; submit label 6.25:1; field boundary 4.23:1; gold icons 3.84:1.
+- All 41 existing tests and git diff whitespace checks pass. Runtime visual QA remains pending; numerical checks do not prove the rendered layout or motion.
+- Files to upload for this visual adjustment: login.html and assets/login.css. The existing image file is unchanged.
