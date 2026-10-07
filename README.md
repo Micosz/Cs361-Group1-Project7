@@ -148,7 +148,7 @@ V2 เน้นการจัดเก็บ เรียกดู ค้นห
 ```bash
 git clone https://github.com/Micosz/Cs361-Group1-Project7.git
 cd Cs361-Group1-Project7
-python3 -m http.server 8000
+python3 -m http.server 8000 --directory public
 ```
 
 เปิด [http://localhost:8000](http://localhost:8000) หน้าเว็บเป็น static frontend จึงไม่มีขั้นตอน build และไม่จำเป็นต้องติดตั้ง npm dependencies เพื่อเปิดหน้าเว็บ
@@ -159,8 +159,8 @@ python3 -m http.server 8000
 
 | ค่า | ตำแหน่ง | หมายเหตุ |
 | --- | --- | --- |
-| `API_URL` | [`assets/script.js`](assets/script.js) | Endpoint สำหรับโหลดข้อมูลหลัก |
-| Public backup | [`data/partner-data-backup.json`](data/partner-data-backup.json) | Snapshot สำรอง ไม่ได้รับประกันว่าเป็นข้อมูลล่าสุด |
+| `API_URL` | [`public/assets/script.js`](public/assets/script.js) | Endpoint สำหรับโหลดข้อมูลหลัก |
+| Public backup | [`public/data/partner-data-backup.json`](public/data/partner-data-backup.json) | Snapshot สำรอง ไม่ได้รับประกันว่าเป็นข้อมูลล่าสุด |
 | Region / table | [`migrate.js`](migrate.js) | สคริปต์ migration ใช้ `us-east-1` และตาราง `Partner` |
 
 <details>
@@ -233,3 +233,14 @@ Repository นี้มี frontend, สคริปต์ migration และ w
 | 6709650698 | นายสุทธิพจน์ สุวรรณสุทธิ์ |
 
 ---
+
+
+## Frontend directory and deployment
+
+ไฟล์ที่เผยแพร่บนเว็บไซต์ทั้งหมดอยู่ใน `public/`: หน้า HTML, `assets/`, `resources/`,
+`login/` และ JSON สำรองใน `data/` เพิ่มหน้าเว็บหรือ assets ใหม่ในโฟลเดอร์นี้ได้โดยไม่ต้องเพิ่มรายการคัดลอกไฟล์
+URL บนเว็บเหมือนเดิม เช่น `/login/` และ `/assets/login.css` ไม่ต้องมี `/public/` ใน URL
+
+`amplify.yml` ใน repository กำหนดให้รันทดสอบแล้วเผยแพร่ `public/` โดยตรง ไม่มีขั้นตอนสร้าง `dist/`
+หลัง merge ให้ตรวจ deployment ล่าสุดใน Amplify ว่าใช้ build specification จาก repository นี้
+ไฟล์ migration, ข้อมูลต้นฉบับ `data/partners.json`, tests และ docs อยู่นอก `public/` และไม่ถูกส่งขึ้นเว็บไซต์

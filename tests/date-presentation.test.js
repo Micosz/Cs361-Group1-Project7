@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
-const source = readFileSync(require.resolve('../assets/filter-presentation.js'), 'utf8');
+const source = readFileSync(require.resolve('../public/assets/filter-presentation.js'), 'utf8');
 function setup() {
     const elements = [];
     class Element {

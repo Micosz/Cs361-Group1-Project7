@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
 
-const source = readFileSync(require.resolve('../assets/script.js'), 'utf8');
+const source = readFileSync(require.resolve('../public/assets/script.js'), 'utf8');
 const fixture = [
     // Co-host comes first to catch accidental primary partnerId replacement.
     { id: 'beta', name: 'Beta University', type: 'university', access_level: 'public', summary: 'summary-only', location: 'Bangkok' },

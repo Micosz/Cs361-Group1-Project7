@@ -53,7 +53,7 @@ jobs:
               raise RuntimeError("Duplicate IDs; keeping existing backup")
 
           data.sort(key=lambda item: item["id"])
-          path = Path("data/partner-data-backup.json")
+          path = Path("public/data/partner-data-backup.json")
           path.parent.mkdir(parents=True, exist_ok=True)
           path.write_text(
               json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
@@ -63,7 +63,7 @@ jobs:
 
       - name: Commit changes if needed
         run: |
-          git add data/partner-data-backup.json
+          git add public/data/partner-data-backup.json
 
           if git diff --cached --quiet; then
             echo "No data changes"

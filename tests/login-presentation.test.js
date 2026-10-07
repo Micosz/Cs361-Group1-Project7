@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
-const base = join(__dirname, '..');
+const base = join(__dirname, '..', 'public');
 const source = readFileSync(`${base}/assets/login.js`, 'utf8');
 function setup(reduce = false, mobile = false) {
     class Target extends EventTarget { constructor() { super(); this.disabled = true; this.hidden = true; this.valid = true; } reportValidity() { return this.valid; } }
