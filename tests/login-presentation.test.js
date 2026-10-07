@@ -47,3 +47,20 @@ test('login markup has only the requested credentials, starts submission disable
     assert.doesNotMatch(html,/กลับมาเชื่อมต่อกับชุมชน|พื้นที่เชื่อมต่อโอกาส/);
     assert.doesNotMatch(home,/class="signup-link"/);assert.match(home,/href="login.html" class="login-btn"/);
 });
+
+
+test('Amplify clean login route serves the same page and resolves assets and home at the site root', () => {
+    const canonical = readFileSync(`${base}/login.html`, 'utf8');
+    const routed = readFileSync(`${base}/login/index.html`, 'utf8');
+    assert.equal(routed.replace('\n    <!-- Amplify clean URL entry. Keep markup aligned with ../login.html. -->\n    <base href="../">', ''), canonical);
+    const { existsSync } = require('node:fs');
+    for (const path of ['/login/', '/login/index.html']) {
+        const pageURL = new URL(path, 'https://example.test');
+        const baseURL = new URL('../', pageURL);
+        for (const resource of ['assets/login.css?v=4', 'assets/login.js?v=2', 'resources/login-prism.png', 'index.html']) {
+            const resolved = new URL(resource, baseURL);
+            assert.equal(resolved.pathname, '/' + resource.split('?')[0]);
+            assert.ok(existsSync(join(base, resolved.pathname.slice(1))));
+        }
+    }
+});
