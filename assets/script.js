@@ -9,50 +9,113 @@ function isPublicRecord(record) {
 }
 
 function fetchPartnersData() {
-    if (partnersDataCache !== null) return Promise.resolve(partnersDataCache);
+    if (partnersDataCache !== null) {
+        return Promise.resolve(partnersDataCache);
+    }
+
     if (partnersDataRequest) return partnersDataRequest;
 
-    partnersDataRequest = (async () => {
-        const response = await fetch(API_URL, { cache: 'no-store' });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+    async function loadJson(url, timeoutMs) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+            const response = await fetch(url, {
+                cache: 'no-store',
+                signal: controller.signal
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (
+                !Array.isArray(data) ||
+                data.some(item => !item || typeof item !== 'object' ||
+                    Array.isArray(item))
+            ) {
+                throw new Error('Invalid data: expected an array of records');
+            }
+
+            return data;
+        } finally {
+            clearTimeout(timer);
         }
-        
-        // รับข้อมูลจาก API เท่านั้น ไม่ใช้ไฟล์ JSON สำรองเมื่อโหลดล้มเหลว
-        const rawData = await response.json();
-        if (!Array.isArray(rawData)) throw new Error('Invalid API response: expected an array');
-        
-        // --- 2. เริ่มขั้นตอนประกอบร่างข้อมูล (Reconstruct Data) ---
-        // คัดแยกเฉพาะองค์กร (Partner จะมีฟิลด์ name)
-        const partners = rawData.filter(item => item.name && isPublicRecord(item));
-        
-        // คัดแยกเฉพาะกิจกรรม (Event จะมีฟิลด์ partnerId)
-        const events = rawData.filter(item => item.partnerId && isPublicRecord(item));
-        
-        // นำกิจกรรมไปผูกกลับเข้ากับองค์กรให้เหมือนโครงสร้าง JSON เดิม
+    }
+
+    partnersDataRequest = (async () => {
+        let rawData;
+        let usingBackup = false;
+
+        try {
+            rawData = await loadJson(API_URL, 8000);
+        } catch (apiError) {
+            console.warn('API unavailable; loading backup:', apiError);
+
+            rawData = await loadJson(
+                './data/partner-data-backup.json',
+                8000
+            );
+
+            usingBackup = true;
+        }
+
+        // ใช้เฉพาะรายการที่ระบุว่าเผยแพร่ได้
+        const publicRecords = rawData.filter(item =>
+            item.access_level === 'public' ||
+            item.visibility === 'public'
+        );
+
+        const partners = publicRecords
+            .filter(item => item.name)
+            .map(item => ({ ...item }));
+
+        const events = publicRecords.filter(item => item.partnerId);
+
+        // ประกอบข้อมูลแบบเดียวกันทั้ง API และไฟล์สำรอง
         partners.forEach(partner => {
-            partner.collaborations = events.filter(e => {
-                // 1. เป็นเจ้าภาพหลัก (เช็คจาก partnerId)
-                if (e.partnerId === partner.id) return true;
-                
-                // 2. เป็นผู้จัดร่วม (เช็คจาก co_hosts ถ้ามี)
-                if (e.co_hosts && Array.isArray(e.co_hosts)) {
-                    // เช็คว่าชื่อใน co_hosts ตรงกับส่วนใดส่วนหนึ่งของชื่อ Partner หรือไม่
-                    return e.co_hosts.some(hostName => partner.name.includes(hostName));
+            partner.collaborations = events.filter(event => {
+                if (event.partnerId === partner.id) return true;
+
+                if (Array.isArray(event.co_hosts)) {
+                    return event.co_hosts.some(hostName =>
+                        typeof hostName === 'string' &&
+                        partner.name.includes(hostName)
+                    );
                 }
-                
+
                 return false;
             });
         });
-        // --------------------------------------------------------
-        
+
+        // แจ้งผู้ใช้เมื่อกำลังแสดงข้อมูลสำรอง
+        let notice = document.getElementById('backupDataNotice');
+
+        if (usingBackup && !notice) {
+            notice = document.createElement('div');
+            notice.id = 'backupDataNotice';
+            notice.setAttribute('role', 'status');
+            notice.style.cssText =
+                'padding:12px 16px;background:#fff4d6;' +
+                'color:#664d03;text-align:center;font-size:14px;';
+
+            document.body.prepend(notice);
+        }
+
+        if (notice) {
+            notice.textContent =
+                'กำลังแสดงข้อมูลสำรอง ข้อมูลอาจไม่ใช่ข้อมูลล่าสุด';
+            notice.hidden = !usingBackup;
+        }
+
         partnersDataCache = partners;
-        return partners; 
+        return partners;
     })().catch(error => {
-        console.error("เกิดข้อผิดพลาดในการดึงข้อมูลจาก API:", error);
+        console.error('โหลดข้อมูลไม่สำเร็จ:', error);
         throw error;
     }).finally(() => {
-        // Clear the in-flight request on success or failure so failures can retry.
         partnersDataRequest = null;
     });
 

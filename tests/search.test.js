@@ -6,12 +6,12 @@ const vm = require('node:vm');
 const source = readFileSync(require.resolve('../assets/script.js'), 'utf8');
 const fixture = [
     // Co-host comes first to catch accidental primary partnerId replacement.
-    { id: 'beta', name: 'Beta University', type: 'university', summary: 'summary-only', location: 'Bangkok' },
+    { id: 'beta', name: 'Beta University', type: 'university', access_level: 'public', summary: 'summary-only', location: 'Bangkok' },
     { id: 'alpha', name: 'Alpha Company', type: 'company', visibility: 'public', summary: 'summary-only' },
     { id: 'hidden', name: 'Private Partner', type: 'company', visibility: 'private' },
     { id: 'joint', title: 'Alpha Workshop', type: 'event', partnerId: 'alpha', visibility: 'public', co_hosts: ['Beta', 'Alpha'], period: '2026', period_date: '2026-11-11' },
     { id: 'related', title: 'Research Day', type: 'research', partnerId: 'alpha', visibility: 'public', period_date: '2020-08-17' },
-    { id: 'legacy', title: 'Beta Talk', type: 'event', partnerId: 'beta' },
+    { id: 'legacy', title: 'Beta Talk', type: 'event', partnerId: 'beta', visibility: 'public' },
     { id: 'secret', title: 'Private Event', type: 'event', partnerId: 'alpha', visibility: 'private' },
     { id: 'hidden-event', title: 'Private Host Event', type: 'event', partnerId: 'hidden', visibility: 'public' }
 ];
@@ -48,6 +48,7 @@ function page(fetchImpl = async () => response()) {
         get innerHTML() { return this.html; }
         replaceChildren(...children) { this.children = children; this.html = ''; this.writes++; }
         appendChild(child) { this.children.push(child); }
+        prepend(child) { this.children.unshift(child); }
         removeChild(child) { this.children = this.children.filter(item => item !== child); }
         setAttribute() {}
         addEventListener(name, fn) { this.events[name] = fn; }
@@ -78,7 +79,7 @@ function page(fetchImpl = async () => response()) {
     };
     const context = vm.createContext({
         document, window: { getComputedStyle: () => ({}) },
-        console: { error() {} },
+        console: { error() {}, warn() {} }, AbortController,
         fetch: (...args) => { requests++; return fetchImpl(...args); },
         setTimeout: (fn, delay) => { timeouts.set(++timerId, { fn, due: now + delay }); return timerId; },
         clearTimeout: id => timeouts.delete(id),
@@ -310,7 +311,7 @@ for (const failure of ['HTTP', 'network', 'invalid JSON', 'invalid shape']) {
     test(`${failure} is handled by all UI callers and a later Search retries successfully`, async () => {
         let calls = 0;
         const p = page(async () => {
-            if (++calls > 1) return response();
+            if (++calls > 2) return response();
             if (failure === 'HTTP') return { ok: false, status: 503 };
             if (failure === 'network') throw new Error('Offline');
             if (failure === 'invalid JSON') return { ok: true, json: async () => { throw new SyntaxError('JSON'); } };
@@ -320,14 +321,14 @@ for (const failure of ['HTTP', 'network', 'invalid JSON', 'invalid shape']) {
         p.get('searchInput').value = 'Alpha';
         await Promise.all([p.context.showSuggestions(), p.context.openModal('alpha', 'partner')]);
         await settle();
-        assert.equal(p.requests, 1);
+        assert.equal(p.requests, 2);
         assert.match(p.get('collaboratorGrid').children[0].textContent, /โหลดข้อมูลไม่สำเร็จ/);
         assert.match(p.get('eventGrid').children[0].textContent, /โหลดข้อมูลไม่สำเร็จ/);
         assert.equal(p.get('modalTitle').textContent, 'โหลดข้อมูลไม่สำเร็จ');
         assert.equal(p.get('searchSuggestions').style.display, 'none');
         await p.context.handleSearch();
         await p.context.openModal('alpha', 'partner');
-        assert.equal(p.requests, 2);
+        assert.equal(p.requests, 3);
         assert.match(p.get('collaboratorGrid').innerHTML, /Alpha Company/);
         assert.equal(p.get('modalTitle').textContent, 'Alpha Company');
         assert.equal(p.intervals.size, 1);
@@ -489,4 +490,39 @@ test('organization ranges use a single public collaboration within both bounds, 
     await p.context.applyBrowseDateFilter('filterCollab');
     assert.match(p.get('collaboratorGrid').innerHTML, /ไม่พบผู้มีส่วนได้ส่วนเสีย/);
     assert.equal(p.requests, 1);
+});
+
+
+test('API failure uses one shared backup snapshot, shows notice and keeps date filters', async () => {
+    const urls = [];
+    const p = page(async url => {
+        urls.push(url);
+        if (url !== './data/partner-data-backup.json') throw new Error('Offline');
+        return response();
+    });
+    p.get('filterEventDate').value = '2026-01-01';
+    await Promise.all([p.context.renderCollaboratorCards(), p.context.renderEventCards()]);
+    assert.equal(p.requests, 2);
+    assert.equal(urls[1], './data/partner-data-backup.json');
+    assert.match(p.get('backupDataNotice').textContent, /ข้อมูลสำรอง/);
+    assert.equal(p.get('backupDataNotice').hidden, false);
+    assert.match(p.get('eventGrid').innerHTML, /Alpha Workshop/);
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /Research Day|Beta Talk/);
+    await p.context.openModal('joint', 'activity');
+    assert.equal(p.requests, 2);
+    assert.equal((await p.context.getPublicActivityById('joint')).partnerId, 'alpha');
+});
+
+test('main public-only loading excludes records without explicit publication and invalid co-host entries', async () => {
+    const p = page(async () => response([
+        ...fixture,
+        { id: 'unmarked', name: 'Unmarked Company', type: 'company' },
+        { id: 'unmarked-event', title: 'Unmarked Event', partnerId: 'alpha' },
+        { id: 'safe-event', title: 'Safe Event', partnerId: 'alpha', access_level: 'public', co_hosts: [null, 3, 'Beta'] }
+    ]));
+    assert.equal(await p.context.getPublicPartnerById('unmarked'), null);
+    assert.equal(await p.context.getPublicActivityById('unmarked-event'), null);
+    const beta = await p.context.getPublicPartnerById('beta');
+    assert.ok(beta.collaborations.some(activity => activity.id === 'safe-event'));
+    assert.equal((await p.context.getPublicActivityById('safe-event')).partnerId, 'alpha');
 });

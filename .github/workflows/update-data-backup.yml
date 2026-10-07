@@ -1,0 +1,76 @@
+name: Update public data backup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-public-data-backup
+  cancel-in-progress: false
+
+jobs:
+  update-backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Download and validate public data
+        env:
+          API_URL: https://eb49u61kph.execute-api.us-east-1.amazonaws.com/default/fetchPartnersData
+        run: |
+          python <<'PY'
+          import json
+          import os
+          import urllib.request
+          from pathlib import Path
+
+          with urllib.request.urlopen(os.environ["API_URL"], timeout=30) as response:
+              if response.status != 200:
+                  raise RuntimeError("API did not return HTTP 200")
+              data = json.load(response)
+
+          if not isinstance(data, list) or not data:
+              raise RuntimeError("Expected a non-empty array; keeping existing backup")
+
+          for item in data:
+              if not isinstance(item, dict) or not isinstance(item.get("id"), str):
+                  raise RuntimeError("Invalid record; keeping existing backup")
+              if not (
+                  item.get("access_level") == "public"
+                  or item.get("visibility") == "public"
+              ):
+                  raise RuntimeError("Non-public record; keeping existing backup")
+
+          ids = [item["id"] for item in data]
+          if len(ids) != len(set(ids)):
+              raise RuntimeError("Duplicate IDs; keeping existing backup")
+
+          data.sort(key=lambda item: item["id"])
+          path = Path("data/partner-data-backup.json")
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_text(
+              json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Commit changes if needed
+        run: |
+          git add data/partner-data-backup.json
+
+          if git diff --cached --quiet; then
+            echo "No data changes"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update public data backup"
+          git push origin HEAD:main
