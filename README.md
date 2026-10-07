@@ -231,11 +231,3 @@ Repository นี้มี frontend, สคริปต์ migration และ w
 | 6709650698 | นายสุทธิพจน์ สุวรรณสุทธิ์ |
 
 ---
-
-<div align="center">
-
-<p><strong>Built together. Improved one version at a time.</strong></p>
-<p>CSTU Hub · Public Collaboration → Collaboration Repository → Secure Workspace</p>
-<p><sub>README styling inspired by <a href="https://github.com/Ratheshan03/Ratheshan03">Ratheshan03</a> · Typing animation by <a href="https://github.com/DenverCoder1/readme-typing-svg">Readme Typing SVG</a></sub></p>
-
-</div>
