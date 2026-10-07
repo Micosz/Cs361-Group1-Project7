@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#030303">
+    <title>เข้าสู่ระบบ | CSTUHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/login.css?v=1">
+    <script src="assets/login.js?v=1" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#login-form">ข้ามไปยังแบบฟอร์มเข้าสู่ระบบ</a>
+    <div class="login-atmosphere" aria-hidden="true"><img src="resources/login-prism.png" width="1536" height="1024" alt="" fetchpriority="high"></div>
+    <header class="login-header">
+        <a class="login-brand" href="index.html" aria-label="CSTUHub หน้าหลัก">CSTU<span>Hub</span></a>
+        <a class="back-link" href="index.html"><i class="fas fa-arrow-left" aria-hidden="true"></i><span>กลับหน้าหลัก</span></a>
+    </header>
+    <main class="login-main">
+        <div class="login-heading" data-reveal>
+            <p class="login-eyebrow">COMPUTER SCIENCE COMMUNITY</p>
+            <h1>Welcome <em>Back</em></h1>
+        </div>
+        <div class="login-layout">
+            <section class="login-panel" aria-labelledby="login-title" data-reveal>
+                <i class="fas fa-arrow-right-to-bracket panel-symbol" aria-hidden="true"></i>
+                <h2 id="login-title">เข้าสู่ระบบ</h2>
+                <p class="panel-intro">กลับมาเชื่อมต่อกับชุมชน<br>วิทยาการคอมพิวเตอร์ของคุณ</p>
+                <form id="login-form" action="login.html" method="post" aria-describedby="login-status">
+                    <div class="login-field">
+                        <label for="student-id">รหัสนักศึกษา <span aria-hidden="true">*</span></label>
+                        <input id="student-id" name="studentId" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="username" placeholder="กรอกรหัสนักศึกษา" required spellcheck="false">
+                    </div>
+                    <div class="login-field">
+                        <label for="student-password">รหัสผ่าน <span aria-hidden="true">*</span></label>
+                        <input id="student-password" name="password" type="password" autocomplete="current-password" placeholder="กรอกรหัสผ่าน" required>
+                    </div>
+                    <button id="login-submit" class="login-submit" type="submit" disabled><span>เข้าสู่ระบบ</span><i class="fas fa-arrow-right" aria-hidden="true"></i></button>
+                    <p id="login-status" class="login-status" role="status" hidden></p>
+                </form>
+                <noscript><p class="login-status">กรุณาเปิด JavaScript เพื่อใช้แบบฟอร์มเข้าสู่ระบบ</p></noscript>
+            </section>
+            <aside class="community-panel" aria-label="Computer Science Community" data-reveal>
+                <div><i class="fas fa-graduation-cap" aria-hidden="true"></i><p>Computer Science<br><strong>Thammasat University</strong></p></div>
+                <div><i class="fas fa-handshake" aria-hidden="true"></i><p>ความร่วมมือ<br>และโอกาสใหม่ ๆ</p></div>
+                <div><i class="fas fa-users" aria-hidden="true"></i><p>ชุมชนของเรา<br><strong>CSTUHub</strong></p></div>
+            </aside>
+        </div>
+        <p class="login-note" data-reveal>พื้นที่เชื่อมต่อโอกาส ความร่วมมือ และกิจกรรมของชาว CSTU</p>
+    </main>
+</body>
+</html>
