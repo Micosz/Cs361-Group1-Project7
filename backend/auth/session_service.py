@@ -180,7 +180,7 @@ class SessionService:
             user = None
             if "userId" in row:
                 user = self.users.get(row["userId"])
-                if (user is None or not user.active
+                if (user is None or user.user_id != row["userId"] or not user.active
                         or type(row.get("authzVersion")) is not int
                         or row["authzVersion"] != user.authz_version):
                     self.store.delete(key)
@@ -204,7 +204,7 @@ class SessionService:
         self.check_csrf(prior_token, origin, csrf)
         self.validate(prior_token, require_user=False)
         user = self.users.get(user_id)
-        if user is None or not user.active:
+        if user is None or user.user_id != user_id or not user.active:
             raise AuthError("AUTH_REQUIRED")
         if not self.store.consume(token_hash(prior_token), int(self.clock())):
             raise AuthError("SESSION_REVOKED")
