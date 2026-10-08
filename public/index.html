@@ -12,7 +12,9 @@
     <link rel="stylesheet" href="assets/portal.css?v=6">
     <script src="assets/auth-config.js" defer></script>
     <script src="assets/auth-client.js" defer></script>
-    <script src="assets/script.js?v=5" defer></script>
+    <script src="assets/script.js?v=6" defer></script>
+    <link rel="stylesheet" href="assets/role-menu.css?v=1">
+    <script src="assets/role-menu.js?v=1" defer></script>
     <script src="assets/filter-presentation.js?v=5" defer></script>
     <script src="assets/presentation.js?v=9" defer></script>
     <script src="assets/opening.js?v=11" defer></script>
@@ -39,10 +41,18 @@
         </div>
     </nav>
 
-    <nav class="role-navigation-container" style="display: none; gap: 12px; align-items: center; padding: 10px 20px; background: rgba(255, 255, 255, 0.05); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-        <div id="dynamic-nav-links" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; width: 100%;">
+    <dialog id="role-menu" class="role-menu" aria-labelledby="role-menu-title">
+        <div class="role-menu-header">
+            <a class="role-menu-brand" href="index.html">CSTU<span>Hub</span></a>
+            <button type="button" id="close-role-menu" class="role-menu-close">Close <span aria-hidden="true">×</span></button>
         </div>
-    </nav>
+        <div class="role-menu-content">
+            <p id="role-menu-title" class="role-menu-eyebrow">พื้นที่ของคุณ</p>
+            <nav id="role-menu-links" aria-label="เมนูตามสิทธิ์"></nav>
+            <p id="role-menu-status" role="status"></p>
+            <button id="role-menu-logout" class="role-menu-logout" type="button">ออกจากระบบ <span aria-hidden="true">↗</span></button>
+        </div>
+    </dialog>
 
     <div class="hero-scroll">
     <section class="hero-section container">
