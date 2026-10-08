@@ -10,3 +10,6 @@ __pycache__/
 
 # Generated clean login route
 public/login/index.html
+
+# Local course account passwords and provisioning manifests
+.course-test/

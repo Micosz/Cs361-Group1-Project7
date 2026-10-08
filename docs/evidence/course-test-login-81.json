@@ -1,0 +1,105 @@
+[
+  {
+    "username": "course.student-a",
+    "loginStatus": 200,
+    "roles": [
+      "student"
+    ],
+    "capabilities": [],
+    "sessionStatus": 200,
+    "logoutStatus": 200,
+    "anonymousAfterLogout": true,
+    "secureCookie": true,
+    "httpOnlyCookie": true
+  },
+  {
+    "username": "course.student-b",
+    "loginStatus": 200,
+    "roles": [
+      "student"
+    ],
+    "capabilities": [],
+    "sessionStatus": 200,
+    "logoutStatus": 200,
+    "anonymousAfterLogout": true,
+    "secureCookie": true,
+    "httpOnlyCookie": true
+  },
+  {
+    "username": "course.coordinator",
+    "loginStatus": 200,
+    "roles": [
+      "coordinator"
+    ],
+    "capabilities": [],
+    "sessionStatus": 200,
+    "logoutStatus": 200,
+    "anonymousAfterLogout": true,
+    "secureCookie": true,
+    "httpOnlyCookie": true
+  },
+  {
+    "username": "course.staff",
+    "loginStatus": 200,
+    "roles": [
+      "staff"
+    ],
+    "capabilities": [],
+    "sessionStatus": 200,
+    "logoutStatus": 200,
+    "anonymousAfterLogout": true,
+    "secureCookie": true,
+    "httpOnlyCookie": true
+  },
+  {
+    "username": "course.executive",
+    "loginStatus": 200,
+    "roles": [
+      "executive"
+    ],
+    "capabilities": [],
+    "sessionStatus": 200,
+    "logoutStatus": 200,
+    "anonymousAfterLogout": true,
+    "secureCookie": true,
+    "httpOnlyCookie": true
+  },
+  {
+    "username": "course.employee",
+    "loginStatus": 200,
+    "roles": [],
+    "capabilities": [],
+    "sessionStatus": 200,
+    "logoutStatus": 200,
+    "anonymousAfterLogout": true,
+    "secureCookie": true,
+    "httpOnlyCookie": true
+  },
+  {
+    "username": "course.manager",
+    "loginStatus": 200,
+    "roles": [],
+    "capabilities": [
+      "manageRoles"
+    ],
+    "sessionStatus": 200,
+    "logoutStatus": 200,
+    "anonymousAfterLogout": true,
+    "secureCookie": true,
+    "httpOnlyCookie": true
+  },
+  {
+    "username": "course.multi",
+    "loginStatus": 200,
+    "roles": [
+      "student",
+      "coordinator"
+    ],
+    "capabilities": [],
+    "sessionStatus": 200,
+    "logoutStatus": 200,
+    "anonymousAfterLogout": true,
+    "secureCookie": true,
+    "httpOnlyCookie": true
+  }
+]

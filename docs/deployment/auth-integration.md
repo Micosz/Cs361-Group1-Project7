@@ -2,12 +2,12 @@
 
 ## สถานะหลังรวมโค้ด
 
-รวม source ของ #74–#80 พร้อมตัวเชื่อมที่ใช้สัญญาข้อมูลเดียวกันแล้ว ยังไม่เปิดระบบใหม่บน AWS ตามข้อตกลงของทีม
+รวม source ของ #74–#80 พร้อมตัวเชื่อมที่ใช้สัญญาข้อมูลเดียวกันแล้ว ภายหลังตั้ง AWS และเปิดบัญชีทดสอบผ่าน Login ปกติใน #81 ตาม [course-test-login.md](course-test-login.md)
 
-- `public/assets/auth-config.js` มี `enabled: false` หน้า Browse/Search และ Login เดิมจึงยังทำงานแบบเดิม
+- `public/assets/auth-config.js` มี `enabled: true` หลังทดสอบบัญชีทดสอบครบทั้ง 8 ผ่าน origin เว็บจริง หน้า Browse/Search ใช้ข้อมูลเดิม
 - Backend ต้องตั้ง `AUTH_V3_ENABLED=true` จึงเปิด orchestration ใหม่ การเปลี่ยน frontend เพียงอย่างเดียวไม่เปิด backend
 - ตั้ง GitHub repository variable `LAMBDA_DEPLOYMENT_PAUSED=true` ก่อน merge เพื่อพัก workflow deploy ทั้งสาม Lambda จนเตรียม AWS ใน #81 เสร็จ CI ตรวจโค้ดยังทำงานตามปกติ
-- Python backend ยังไม่มี workflow deploy ของตัวเอง ต้องเตรียมแพ็กเกจ/ทรัพยากรใน #81
+- Python backend deploy เป็น `CSTUHubAuth` แล้ว แต่ยังไม่มี workflow deploy ของตัวเอง การอัปเดตต้องแพ็กและ deploy โดยผู้ดูแล
 
 ## Flow และไฟล์ที่ทีมต้องใช้
 
@@ -36,7 +36,9 @@
 
 นักศึกษาได้รับ student grant เฉพาะ `STUDENT_SCOPE_ID` ตอนสร้างบัญชีครั้งแรก การ Login ซ้ำไม่คืนสิทธิ์ที่ถูกถอนหรือเปิดบัญชีที่ถูกปิด พนักงานเริ่มด้วย identity แบบ provisional และไม่มีบทบาท ผู้ดูแลต้องยืนยันตัวบุคคลก่อนมอบบทบาท การเป็น staff/executive ไม่ให้สิทธิ์จัดการบทบาทอัตโนมัติ และผู้ดูแลเพิ่มสิทธิ์ให้ตัวเองผ่าน API ไม่ได้
 
-## ขั้นตอนที่เหลือใน #81
+## Checklist การตั้งระบบใน #81
+
+ขั้นตอน 1–6 ตั้งแล้วสำหรับบัญชีทดสอบ รวมถึง User/IdentityLink/Session/LoginRate และ same-origin `/api/*` ส่วนการตรวจ TU account จริง, feature adapters และ acceptance ทั้งหมดในข้อ 8 ยังไม่ครบ ดูสถานะล่าสุดในคู่มือบัญชีทดสอบ
 
 1. ตรวจ `tuAuthLogin` #75 บน AWS ว่า runtime/handler ถูกต้องและตั้ง `TU_APP_KEY` แล้ว ใช้ endpoint มหาวิทยาลัยเดิมตามเอกสาร `tu-authentication.md` ไม่ต้องให้ browser ถือ key
 2. เตรียมตารางตาม schema ข้างต้นและตรวจข้อมูลเดิมก่อนย้าย ตารางแบบ PK/SK จากตัวอย่าง #76/#77 เดิมใช้ตรง ๆ ไม่ได้

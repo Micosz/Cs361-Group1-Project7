@@ -70,12 +70,13 @@ class DynamoSessionStore:
 class DynamoUserReader:
     """PK id; #76/#77 maintain an atomic user+authz snapshot, see backend README."""
 
-    def __init__(self, table):
+    def __init__(self, table, allow_course_tests=False):
         self.table = table
+        self.allow_course_tests = allow_course_tests
 
     def get(self, user_id):
         raw = self.table.get_item(Key={"id": user_id}, ConsistentRead=True).get("Item")
-        if raw is None:
+        if raw is None or (raw.get("authProvider") == "course-test" and not self.allow_course_tests):
             return None
         row = _integers(raw)
         return UserState(
