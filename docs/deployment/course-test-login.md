@@ -4,10 +4,11 @@
 
 ## สิ่งที่เพิ่ม
 
-- ชื่อบัญชี `course.student-a`, `course.student-b`, `course.coordinator`, `course.staff`, `course.executive`, `course.employee`, `course.manager`, `course.multi`
-- `course.employee` ไม่มี role; `course.manager` มี scoped manageRoles แต่ไม่มีสิทธิ์ธุรกิจอัตโนมัติ; `course.multi` มี student + coordinator
-- ตรวจ PBKDF2-SHA256 (600,000 รอบ, salt แยกบัญชี) ฝั่ง backend รหัสผ่านสุ่มแยกบัญชี ไม่มีรหัสจริงหรือ hashes ใน source/public/PR
-- Prefix `course.` สงวนสำหรับบัญชีทดสอบ รหัสผิด/บัญชีหาย/ปิดโหมดไม่ส่งรหัสผ่านต่อไป TU ส่วนชื่อ TU ปกติยังใช้ adapter #75
+- บัญชีออนไลน์ใช้ชื่อและรหัสเหมือนกัน: `studenta`, `studentb`, `coordinator`, `staff`, `executive`, `employee`, `manager`, `multi`
+- แต่ละบัญชียังคง user ID, role และ scope เดิม เปลี่ยนเฉพาะชื่อเข้าใช้และรหัสผ่าน
+- `employee` ไม่มี role; `manager` มี scoped manageRoles แต่ไม่มีสิทธิ์ธุรกิจอัตโนมัติ; `multi` มี student + coordinator
+- ตรวจ PBKDF2-SHA256 (600,000 รอบ, salt แยกบัญชี) ฝั่ง backend ค่า hash เก็บใน Lambda environment; บัญชีจำง่ายชุดนี้ใช้สำหรับงานวิชาเท่านั้น
+- ชื่อจำง่ายทั้ง 8 ชื่อและ prefix `course.` สงวนสำหรับบัญชีทดสอบ รหัสผิด/บัญชีหาย/ปิดโหมดไม่ส่งรหัสผ่านต่อไป TU ส่วนชื่อ TU ปกติยังใช้ adapter #75
 - ใช้ User/grants/authzVersion จากฐานข้อมูลปัจจุบันและสร้าง Session ผ่าน flow เดิม มี Origin/CSRF/rate limit ก่อนตรวจรหัส บัญชีทดสอบไม่ได้ข้ามตัวตรวจ API #79
 - Login ซ้ำไม่เพิ่ม role คืนและไม่เปิดบัญชีที่ถูกปิด การมอบ/ถอนสิทธิ์ #77 ใช้กับ IdentityLink provider `course-test` ได้
 - `COURSE_TEST_ENABLED` ไม่ใช่ `true` ปิดทั้ง Login และการยืนยัน Session ของบัญชีทดสอบเมื่อมี request ครั้งถัดไป บัญชี TU ปกติไม่ถูกปิดไปด้วย
@@ -15,7 +16,7 @@
 ## สร้างบัญชี (ยังไม่เปลี่ยน AWS)
 
 ```sh
-python3 scripts/course_test_accounts.py --scope cs-demo
+python3 scripts/course_test_accounts.py --scope cs-demo --simple-login
 ```
 
 `cs-demo` เป็นขอบเขตทดสอบของชุดนี้ ต้องตรงกับ scope ของข้อมูลที่จะให้บัญชีทดสอบใช้งาน ไม่ได้ให้สิทธิ์ครอบคลุมทุก scope
@@ -40,7 +41,7 @@ python3 scripts/course_test_accounts.py --scope cs-demo
 6. กรอกบัญชีจาก `accounts.tsv` ผ่าน Login เดิม ตรวจ Session, role, scope และ Logout บนระบบจริง
 7. ปิดโหมดด้วย `COURSE_TEST_ENABLED=false` เมื่อไม่ใช้แล้ว หากต้องการปิดเฉพาะบัญชี ให้ตั้ง active=false และเพิ่ม authzVersion ตามขั้นตอนดูแลผู้ใช้
 
-รหัสผ่านชุดนี้เป็นบัญชีทดสอบที่มีสิทธิ์จริงตาม grants ในตารางที่ตั้ง จึงไม่ควรใช้ค่าเดียวกันทุก role หรือฝัง password list ใน frontend เมนูธุรกิจที่ยังไม่มีและ API ที่ยังไม่ต่อไม่ได้ถูกสร้างขึ้นจากการมีบัญชีทดสอบ
+รหัสผ่านชุดนี้เป็นบัญชีทดสอบที่มีสิทธิ์จริงตาม grants ในตารางที่ตั้ง จึงให้ใช้เฉพาะงานวิชา ชื่อกับรหัสเหมือนกันตามที่ทีมเลือก และไม่ฝัง password list ใน frontend เมนูธุรกิจที่ยังไม่มีและ API ที่ยังไม่ต่อไม่ได้ถูกสร้างขึ้นจากการมีบัญชีทดสอบ
 
 ## ผลตรวจและสถานะ AWS
 
