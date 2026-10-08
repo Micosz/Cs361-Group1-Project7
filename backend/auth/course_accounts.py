@@ -7,6 +7,7 @@ from .session_service import AuthError
 
 ITERATIONS = 600_000
 PREFIX = 'course.'
+SIMPLE_NAMES = {'studenta', 'studentb', 'coordinator', 'staff', 'executive', 'employee', 'manager', 'multi'}
 
 
 def password_digest(password, salt):
@@ -24,7 +25,8 @@ class CourseProvider:
                 raise ValueError()
             for entry in entries:
                 if (set(entry) != {'username', 'userId', 'salt', 'passwordHash'}
-                        or not re.fullmatch(r'course\.[a-z0-9-]{1,30}', entry['username'])
+                        or not (re.fullmatch(r'course\.[a-z0-9-]{1,30}', entry['username'])
+                                or entry['username'] in SIMPLE_NAMES)
                         or not re.fullmatch(r'[a-f0-9-]{36}', entry['userId'])
                         or not re.fullmatch(r'[a-f0-9]{32}', entry['salt'])
                         or not re.fullmatch(r'[a-f0-9]{64}', entry['passwordHash'])
@@ -35,7 +37,7 @@ class CourseProvider:
             raise ValueError('Invalid course account configuration') from None
 
     def authenticate(self, username, password):
-        if not username.startswith(PREFIX):
+        if not username.startswith(PREFIX) and username not in SIMPLE_NAMES:
             return self.tu.authenticate(username, password)
         # Reserved test usernames never fall back to TU, including disabled/wrong-password cases.
         entry = self.entries.get(username) if self.enabled else None

@@ -22,14 +22,15 @@ def private_file(path, value):
     with os.fdopen(fd, 'w') as output: output.write(value)
 
 
-def generate(directory, scope):
+def generate(directory, scope, simple_login=False):
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     if any((directory / f).exists() for f in ['accounts.tsv','manifest.json','lambda-env.json']):
         raise ValueError('Private files already exist; reuse them or choose a new directory')
     manifest, configuration, handoff = [], [], ['username\tpassword\troles\tuserId']
     now = datetime.now(timezone.utc).isoformat()
     for short, roles in CATALOG:
-        username, user_id, password, salt = 'course.' + short, str(uuid.uuid4()), secrets.token_urlsafe(18), secrets.token_hex(16)
+        username = short.replace('-', '') if simple_login else 'course.' + short
+        user_id, password, salt = str(uuid.uuid4()), username if simple_login else secrets.token_urlsafe(18), secrets.token_hex(16)
         subject = 'course-test:' + user_id
         user = dict(id=user_id, displayName='บัญชีทดสอบ ' + short, active=True, identityVerified=True,
             authzVersion=1, authProvider='course-test', subjectKey=subject, capabilities=[],
@@ -75,13 +76,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory',type=Path,default=Path(__file__).resolve().parents[1]/'.course-test')
     parser.add_argument('--scope')
+    parser.add_argument('--simple-login',action='store_true',help='Course-only: username equals password')
     parser.add_argument('--apply',action='store_true')
     args = parser.parse_args()
     if args.apply: apply(args.directory)
     else:
         import re
         if not args.scope or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}',args.scope): parser.error('--scope required (confirmed scope ID)')
-        generate(args.directory,args.scope)
+        generate(args.directory,args.scope,args.simple_login)
 
 if __name__ == '__main__':
     try: main()
