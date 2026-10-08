@@ -1,1 +1,9 @@
 node_modules/
+
+# Lambda build output and local AWS credentials
+*.zip
+.aws/
+.env
+.env.*
+!.env.example
+__pycache__/

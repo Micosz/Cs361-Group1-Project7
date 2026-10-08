@@ -52,7 +52,7 @@ test('login markup has only the requested credentials, starts submission disable
 test('Amplify clean login route serves the same page and resolves assets and home at the site root', () => {
     const canonical = readFileSync(`${base}/login.html`, 'utf8');
     const routed = readFileSync(`${base}/login/index.html`, 'utf8');
-    assert.equal(routed.replace('\n    <!-- Amplify clean URL entry. Keep markup aligned with ../login.html. -->\n    <base href="../">', ''), canonical);
+    assert.equal(routed.replace('\n    <!-- Generated from public/login.html by npm run build. Do not edit. -->\n    <base href="../">', ''), canonical);
     const { existsSync } = require('node:fs');
     for (const path of ['/login/', '/login/index.html']) {
         const pageURL = new URL(path, 'https://example.test');
