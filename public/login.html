@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="preload" as="image" href="resources/login-prism.png">
-    <link rel="stylesheet" href="assets/login.css?v=4">
+    <link rel="stylesheet" href="assets/login.css?v=5">
     <script src="assets/auth-config.js" defer></script>
     <script src="assets/auth-client.js" defer></script>
     <script src="assets/login.js?v=3" defer></script>
@@ -44,11 +44,25 @@
                 </form>
                 <noscript><p class="login-status">กรุณาเปิด JavaScript เพื่อใช้แบบฟอร์มเข้าสู่ระบบ</p></noscript>
             </section>
+            <div class="login-sidebar">
             <aside class="community-panel" aria-label="Computer Science Community" data-reveal>
                 <div><i class="fas fa-graduation-cap" aria-hidden="true"></i><p>Computer Science<br><strong>Thammasat University</strong></p></div>
                 <div><i class="fas fa-handshake" aria-hidden="true"></i><p>ความร่วมมือ<br>และโอกาสใหม่ ๆ</p></div>
                 <div><i class="fas fa-users" aria-hidden="true"></i><p>ชุมชนของเรา<br><strong>CSTUHub</strong></p></div>
             </aside>
+            <aside class="demo-accounts" aria-labelledby="demo-accounts-title" data-reveal>
+                <h2 id="demo-accounts-title">บัญชีสำหรับทดลอง</h2>
+                <p>ใช้ชื่อบัญชีและรหัสผ่านเหมือนกัน<br>เช่น <code>studenta / studenta</code></p>
+                <dl>
+                    <div><dt>นักศึกษา / ผู้เข้าร่วม</dt><dd><code>studenta</code></dd></div>
+                    <div><dt>อาจารย์ / ผู้ประสานงาน</dt><dd><code>coordinator</code></dd></div>
+                    <div><dt>เจ้าหน้าที่หลักสูตร</dt><dd><code>staff</code></dd></div>
+                    <div><dt>ผู้บริหาร / ผู้ดูแลระบบ</dt><dd><code>executive</code></dd></div>
+                </dl>
+                <p class="demo-fallback">ลองกรณียังไม่มีบทบาท: <code>employee / employee</code></p>
+                <p class="demo-note">บัญชีทดสอบสำหรับสาธิตงานวิชา</p>
+            </aside>
+            </div>
         </div>
     </main>
 </body>

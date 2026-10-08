@@ -89,3 +89,20 @@ h2 { margin: 0 40px 12px 0; color: #202020; font-size: clamp(32px,4.4svh,48px); 
 }
 
 @media (prefers-reduced-motion: reduce) { [data-reveal] { animation: none; transform: none; } }
+
+/* Course demo accounts: separate card below the community panel. */
+.login-sidebar { display: grid; gap: 14px; min-width: 0; }
+.demo-accounts { padding: 20px; border: 1px solid #e1d3cf; border-radius: 18px; background: rgb(255 250 247 / 96%); }
+.demo-accounts h2 { margin: 0 0 8px; color: #a7002b; font-size: 16px; font-weight: 600; }
+.demo-accounts p { margin: 0; color: #65575d; font-size: 12px; line-height: 1.8; }
+.demo-accounts dl { margin: 14px 0; display: grid; gap: 10px; }
+.demo-accounts dl > div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 3px 8px; }
+.demo-accounts dt { font-size: 11px; color: #65575d; }
+.demo-accounts dd { margin: 0; }
+.demo-accounts code { font: 12px ui-monospace, monospace; color: #7e1835; overflow-wrap: anywhere; }
+.demo-accounts .demo-fallback { border-top: 1px solid #e8dcd6; padding-top: 10px; }
+.demo-accounts .demo-note { margin-top: 10px; font-size: 11px; color: #817078; }
+@media (max-width: 767px) { .demo-accounts { padding: 16px; } }
+/* The additional card must remain reachable on short screens and mobile. */
+.login-main { justify-content: safe center; overflow-y: auto; }
+.login-layout { flex-shrink: 0; }
