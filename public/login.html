@@ -10,10 +10,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="preload" as="image" href="resources/login-prism.png">
-    <link rel="stylesheet" href="assets/login.css?v=5">
+    <link rel="stylesheet" href="assets/login.css?v=6">
     <script src="assets/auth-config.js" defer></script>
     <script src="assets/auth-client.js" defer></script>
     <script src="assets/login.js?v=3" defer></script>
+    <script src="assets/demo-accounts.js?v=1" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#login-form">ข้ามไปยังแบบฟอร์มเข้าสู่ระบบ</a>
@@ -50,7 +51,14 @@
                 <div><i class="fas fa-handshake" aria-hidden="true"></i><p>ความร่วมมือ<br>และโอกาสใหม่ ๆ</p></div>
                 <div><i class="fas fa-users" aria-hidden="true"></i><p>ชุมชนของเรา<br><strong>CSTUHub</strong></p></div>
             </aside>
-            <aside class="demo-accounts" aria-labelledby="demo-accounts-title" data-reveal>
+            <button id="open-demo-accounts" class="demo-accounts-trigger" type="button" aria-haspopup="dialog" aria-controls="demo-accounts-dialog" aria-expanded="false">
+                <span>บัญชีสำหรับทดลอง</span><span aria-hidden="true">↗</span>
+            </button>
+            </div>
+        </div>
+    </main>
+            <dialog id="demo-accounts-dialog" class="demo-accounts" aria-labelledby="demo-accounts-title">
+                <button id="close-demo-accounts" class="demo-accounts-close" type="button" aria-label="ปิดบัญชีสำหรับทดลอง">×</button>
                 <h2 id="demo-accounts-title">บัญชีสำหรับทดลอง</h2>
                 <p>ใช้ชื่อบัญชีและรหัสผ่านเหมือนกัน<br>เช่น <code>studenta / studenta</code></p>
                 <dl>
@@ -61,9 +69,6 @@
                 </dl>
                 <p class="demo-fallback">ลองกรณียังไม่มีบทบาท: <code>employee / employee</code></p>
                 <p class="demo-note">บัญชีทดสอบสำหรับสาธิตงานวิชา</p>
-            </aside>
-            </div>
-        </div>
-    </main>
+            </dialog>
 </body>
 </html>
