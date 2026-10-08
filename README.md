@@ -245,6 +245,12 @@ Repository นี้มี frontend, สคริปต์ migration และ w
 `login/` และ JSON สำรองใน `data/` เพิ่มหน้าเว็บหรือ assets ใหม่ในโฟลเดอร์นี้ได้โดยไม่ต้องเพิ่มรายการคัดลอกไฟล์
 URL บนเว็บเหมือนเดิม เช่น `/login/` และ `/assets/login.css` ไม่ต้องมี `/public/` ใน URL
 
-`amplify.yml` ใน repository กำหนดให้รันทดสอบแล้วเผยแพร่ `public/` โดยตรง ไม่มีขั้นตอนสร้าง `dist/`
-หลัง merge ให้ตรวจ deployment ล่าสุดใน Amplify ว่าใช้ build specification จาก repository นี้
+หน้า Login แก้ HTML ที่ `public/login.html` จุดเดียว ส่วน CSS/JS อยู่ที่ `public/assets/login.css` และ `public/assets/login.js`
+รัน `npm run build` ก่อนเปิดเว็บในเครื่อง: คำสั่งนี้สร้าง `public/login/index.html` สำหรับ URL `/login/`
+โดยอัตโนมัติพร้อม `<base href="../">` เพื่อให้ assets และลิงก์กลับหน้าหลักทำงานเหมือน `/login.html`
+ไฟล์ที่สร้างถูก ignore ใน Git ห้ามแก้โดยตรง เพราะจะถูกเขียนทับเมื่อ build
+
+`npm test` เรียก build ผ่าน `pretest` ก่อนทดสอบเสมอ จึงใช้คำสั่ง build เดิมของ Amplify ได้
+`amplify.yml` ยังคงเผยแพร่ `public/` โดยตรง ไม่สร้าง `dist/` และไม่ต้องแก้ค่าใน AWS Amplify
+หากมี changes จาก branch เก่าที่แก้ `public/login/index.html` ให้ย้าย changes นั้นมา `public/login.html` แล้ว build ใหม่
 ไฟล์ migration, ข้อมูลต้นฉบับ `data/partners.json`, tests และ docs อยู่นอก `public/` และไม่ถูกส่งขึ้นเว็บไซต์
