@@ -162,3 +162,12 @@ expired session; logout and replay in another tab; committed role-version change
 and subsequent denial; outage handling; cookie flags and no credential logs.
 The integration dependencies are still open, so #78 should stay open until these
 checks pass. No AWS resources or real user roles were changed by this implementation.
+
+## ตัวตรวจสิทธิ์ต่อจาก Session — #79
+
+เพิ่ม `permissions/` สำหรับ role/scope/record/field/document checks และ HTTP gateway
+ที่เรียก `require_session` จาก #78 อ่าน [คู่มือเชื่อม feature APIs](permissions/README.th.md)
+และ [หลักฐานทดสอบ #79](../docs/evidence/v3-permissions-issue-79.md) ก่อนใช้งาน
+`handle(event, service, repository)` รับ adapter เป็น argument ที่สาม; Lambda เดิมยัง
+ไม่มี business repository และตอบ 503 สำหรับ protected business requests ที่ผ่าน auth
+จนเชื่อม adapter จริง Public Lambda/backup เดิมยังไม่ได้เปลี่ยนมาใช้ projection ใหม่
