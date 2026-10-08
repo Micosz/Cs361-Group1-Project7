@@ -1,20 +1,38 @@
 # หลักฐาน CI/CD Lambda — #120
 
-ตรวจวันที่ 8 ตุลาคม 2026 ใน `ReserveFolder`; branch `feature/120-lambda-cicd` จาก `main` commit `3df15f8` ไม่รวมงาน #78/#79
+ตรวจวันที่ 8 ตุลาคม 2026 ใน `ReserveFolder`; branch `feature/120-lambda-cicd` จาก `main` commit `3df15f8` ไม่รวมงาน #78/#79 Scope ล่าสุดที่ผู้รับผิดชอบเลือกคือสาม functions และ deploy เฉพาะ source ที่เปลี่ยน
 
-## สิ่งที่ตรวจได้
+## Source และ configuration จริง
 
-- `main` ไม่มี implementation ของ `fetchPartnersData`; README/deployment docs ระบุว่า Lambda source อยู่นอก repo จึงไม่ได้สร้าง implementation สมมติ Source directory มีเพียงคำอธิบายสิ่งที่ต้องนำเข้า
-- Python packaging tests 7 tests ใช้ synthetic files ใน temporary Git repos: ZIP root/CRC/content ตรง fixture, CJS/ESM เดิมคงไว้, ไม่รวม frontend/untracked files, missing source/lockfile/dependencies/runtime/container/path traversal/unsafe files/symlinks/native deps ถูกปฏิเสธ
-- actionlint 1.7.12 จาก release ทางการ ตรวจ checksum ของเครื่องมือก่อนใช้ แล้วตรวจ deploy workflow ผ่าน (`-shellcheck=`; ไม่มีผล shellcheck)
-- YAML structure/trigger/main/path filters/target region+function และ Bash syntax ของทุก run step ผ่าน
-- actual source packaging ยังทำไม่ได้ เพราะยังขาด source/Runtime/Handler จริง ผล fixture tests ไม่ใช่ผล package ของ Lambda ที่ใช้อยู่
-- GitHub repository secret names ที่อ่านได้เป็นรายการว่าง ไม่เคยอ่าน/แสดง secret values; boto3 ไม่พบ credential provider ในเครื่อง
+ใช้ Learner Lab credentials ที่ผู้รับผิดชอบให้เพื่อตรวจ AWS แบบ read-only พบ `fetchPartnersData`, `getPublicPartners`, `tuAuthLogin` ใน us-east-1; ชื่อ `fetchPartnerData` ไม่มีใน account ที่ตรวจ ทั้งสามใช้ Node.js 24, Zip, Handler index.handler และไม่มี layers
 
-ก่อนส่งตรวจยังตรวจ `git diff --check`, diff scope และสแกน tracked text files หา AWS key/private-key/credential patterns โดยไม่พิมพ์ค่าที่ match ผลและ commit สุดท้ายดูใน Draft PR
+Source bytes ใน Git ตรงกับ index.mjs ที่ดาวน์โหลดจากแต่ละ function ตาม SHA-256:
 
-## สิ่งที่ยังไม่ได้ยืนยัน
+| Function | SHA-256 ของ source file | Packaging |
+| --- | --- | --- |
+| fetchPartnersData | `8ff005e976e3276163c4de151ac9910eda4d407ce2360215e7c0ddd8ed47581b` | index.mjs เดิม |
+| getPublicPartners | `0e249becac85157ac6befd958695de1db2d10bd2c327f7ddcfb89a750a628194` | เปลี่ยนเฉพาะชื่อจาก index.mjs เป็น index.cjs สำหรับ CommonJS |
+| tuAuthLogin | `bb6787c6b4885c0fab7e66cb384315f77460c987e89fb74f821880cc31d67dc2` | index.mjs เดิม |
 
-ไม่ได้เรียก `UpdateFunctionCode`, ไม่ได้ deploy/invoke Lambda, ไม่ได้ทดสอบ API หลัง deploy และไม่ได้เปลี่ยน AWS resources/configuration/credentials ไม่มี Actions deployment run จาก branch นี้ เพราะ deploy trigger เฉพาะ `main`
+getPublicPartners มี mapping/CORS/query เดิม ไม่มีการเพิ่ม publication filter ใหม่ในงาน CI/CD นี้ ส่วน tuAuthLogin ไม่ได้เปลี่ยนการจัดการ Session/role หรือ TU credential logic
 
-ต้องนำ source จริงเข้า repository และยืนยัน dependencies/layers/runtime/handler ก่อน merge จากนั้นตั้ง Secrets ทั้งสามค่า เปิด Lab และทดสอบ workflow กับ credentials ที่ยังไม่หมดอายุ พร้อมบันทึก run URL, Git SHA, CodeSha256 และผล API smoke ตาม [คู่มือ deploy](../deployment/lambda-cicd.md)
+## ผลตรวจ
+
+- Python packaging/selection tests ผ่าน 15 tests: root/CRC/source isolation/dependencies/unsafe files, full push range, multi-function selection, deletion และ shared-tool changes
+- Actual Lambda source behavior ผ่าน Node tests 6 tests ด้วย AWS SDK/TU mocks ไม่มีคำขอฐานข้อมูลหรือ TU จริง
+- node --check ผ่านทั้งสามไฟล์; actual source ZIP ทั้งสามสร้างได้และมีเพียง handler file ที่ root
+- actionlint 1.7.12 ตรวจ deploy/PR CI workflows ผ่าน; binary ตรวจ checksum จาก release ทางการ (`-shellcheck=` ไม่ได้อ้างผล shellcheck)
+- YAML triggers/paths/matrix และ Bash syntax ของ run steps ตรวจในเครื่อง; frontend regression และ credential scan ดูผลสรุปใน PR
+- หลังผู้รับผิดชอบอนุมัติ บันทึก repository Actions Secrets ทั้งสามค่าแล้ว ตรวจเฉพาะชื่อ ไม่แสดง secret values ใน logs/Git/PR
+
+## AWS DryRun จริง
+
+เรียก `UpdateFunctionCode` ด้วย `DryRun=True` และ actual ZIP ทั้งสามสำเร็จ HTTP 200 ตรวจ CodeSha256, RevisionId, Runtime, Handler, Architectures และ Environment ก่อน/หลังไม่เปลี่ยน ไม่ได้เผยค่า environment ในหลักฐาน
+
+ผลย่อที่ไม่มี credentials อยู่ใน [dry-run results](lambda-cicd-issue-120.json) การที่ AWS ยอมรับ dry-run ไม่ยืนยันว่า module load/handler/database/TU/API Gateway ทำงานจริง
+
+## ส่วนที่ยังไม่ได้ทดสอบ
+
+**ไม่ได้ deploy หรือ invoke functions และไม่ได้ merge PR** จึงยังไม่มี GitHub Actions deployment run หรือ API smoke ของ commit นี้ ต้อง review/merge main ขณะ Lab/credentials พร้อม แล้วเก็บ run URL, Git SHA, CodeSha256 ราย function และผล API smoke แยกตาม [คู่มือ](../deployment/lambda-cicd.md)
+
+PR CI ใช้ mocks และไม่รับ AWS Secrets; credential expiration/renewal ยังเป็น manual ตาม Learner Lab ไม่ได้สร้าง IAM/OIDC/resources หรือเปลี่ยน AWS configuration

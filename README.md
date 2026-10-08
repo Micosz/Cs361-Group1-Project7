@@ -221,7 +221,7 @@ npm test
 
 <br>
 
-Repository นี้มี frontend, สคริปต์ migration และ workflow อัปเดตข้อมูลสำรอง ส่วน source code ของ Lambda และการตั้งค่า API Gateway/DynamoDB ไม่ได้รวมอยู่ใน repo นี้
+Repository นี้มี frontend, สคริปต์ migration, workflow อัปเดตข้อมูลสำรอง และ source ของ Lambda ทั้งสามใน `backend/lambda/` พร้อม [CI/CD สำหรับ Learner Lab](docs/deployment/lambda-cicd.md) ส่วนการตั้งค่า API Gateway/DynamoDB ยังดูแลแยกบน AWS
 
 </details>
 

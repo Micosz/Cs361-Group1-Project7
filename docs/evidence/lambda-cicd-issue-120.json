@@ -1,0 +1,36 @@
+{
+  "region": "us-east-1",
+  "verification": "AWS DryRun only; no deployment or invocation",
+  "functions": [
+    {
+      "function": "fetchPartnersData",
+      "dryRun": true,
+      "httpStatus": 200,
+      "existingCodeAndConfigUnchanged": true,
+      "zipFiles": [
+        "index.mjs"
+      ],
+      "builtCodeSha256": "sPLU1NQCc2Hy8XCV2+AaDdlgeqMjEkZ5UQLOJnnAOSw="
+    },
+    {
+      "function": "getPublicPartners",
+      "dryRun": true,
+      "httpStatus": 200,
+      "existingCodeAndConfigUnchanged": true,
+      "zipFiles": [
+        "index.cjs"
+      ],
+      "builtCodeSha256": "BomYdouSGnP5WD20TT6MdnfiUg5caF2hAeN2S67hBRQ="
+    },
+    {
+      "function": "tuAuthLogin",
+      "dryRun": true,
+      "httpStatus": 200,
+      "existingCodeAndConfigUnchanged": true,
+      "zipFiles": [
+        "index.mjs"
+      ],
+      "builtCodeSha256": "xvNyywy5OSf/xrwCqK+dhli+2UqlTL9h5GWNIbQSsec="
+    }
+  ]
+}

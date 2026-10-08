@@ -30,7 +30,7 @@
 | Deployment Date | **รอยืนยันวันที่เผยแพร่ V2** |
 | Deployed Frontend Commit SHA | **รอยืนยัน commit จาก Amplify deployment ที่สำเร็จ** |
 
-Commit SHA ด้านบนใช้ระบุ frontend ที่เผยแพร่ผ่าน Amplify ส่วน Lambda, API Gateway และ DynamoDB ต้องตรวจการตั้งค่าบน AWS แยกจาก frontend เพราะ repository นี้ไม่มี source code ของ Lambda หรือ Infrastructure as Code สำหรับสร้าง backend
+Commit SHA ด้านบนใช้ระบุ frontend ที่เผยแพร่ผ่าน Amplify ส่วน Lambda, API Gateway และ DynamoDB ต้องตรวจการตั้งค่าบน AWS แยกจาก frontend โดย source ของ Lambda อยู่ใน `backend/lambda/` และมี [คู่มือ CI/CD สำหรับ Learner Lab](lambda-cicd.md); repository ยังไม่มี Infrastructure as Code สำหรับสร้าง backend
 
 ## Deployment Workflow
 
