@@ -24,7 +24,7 @@ function mount() {
             if (controller.signal.aborted) return;
             if (!session.user) throw new Error('คำตอบ Login ไม่ถูกต้อง');
             // No password/profile/Session credential in browser storage.
-            window.location.href = 'workspace.html';
+            window.location.href = 'index.html';
         } catch (error) {
             if (controller.signal.aborted) return;
             const messages = {
