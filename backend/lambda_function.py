@@ -21,7 +21,8 @@ def build_service():
     )
     database = boto3.resource("dynamodb", region_name=os.environ["AWS_REGION"])
     return SessionService(DynamoSessionStore(database.Table(session_table)),
-                          DynamoUserReader(database.Table(user_table)), policy)
+                          DynamoUserReader(database.Table(user_table),
+                              allow_course_tests=os.environ.get("COURSE_TEST_ENABLED") == "true"), policy)
 
 
 @lru_cache(maxsize=1)
@@ -33,6 +34,7 @@ def build_application():
     from .auth.roles import RoleService
     from .auth.dynamo_accounts import DynamoAccounts, DynamoLoginLimiter
     from .auth.tu_provider import LambdaTuProvider
+    from .auth.course_accounts import CourseProvider, CourseAccounts
     sessions = build_service()
     secret = base64.b64decode(os.environ['IDENTITY_HMAC_SECRET'], validate=True)
     db = boto3.resource('dynamodb', region_name=os.environ['AWS_REGION'])
@@ -41,13 +43,21 @@ def build_application():
     # No SDK retry of a password invocation. The Node adapter has its own 8s deadline.
     client = boto3.client('lambda', region_name=os.environ['AWS_REGION'],
                           config=Config(connect_timeout=3, read_timeout=12, retries={'total_max_attempts': 1}))
-    return AuthApplication(sessions, LambdaTuProvider(client, 'tuAuthLogin'),
-        AccountService(store, secret, os.environ['STUDENT_SCOPE_ID']), RoleService(store),
+    provider = CourseProvider(LambdaTuProvider(client, 'tuAuthLogin'),
+        enabled=os.environ.get('COURSE_TEST_ENABLED') == 'true',
+        configuration=os.environ.get('COURSE_TEST_ACCOUNTS', '[]'))
+    accounts = CourseAccounts(AccountService(store, secret, os.environ['STUDENT_SCOPE_ID']), store)
+    return AuthApplication(sessions, provider, accounts, RoleService(store),
         DynamoLoginLimiter(db.Table(os.environ['LOGIN_RATE_TABLE']), secret))
 
 
 def handler(event, context):
     try:
+        # HTTP API named stages appear in rawPath; route only the application path.
+        stage = event.get('requestContext', {}).get('stage')
+        prefix = '/' + stage + '/' if isinstance(stage, str) and stage != '$default' else None
+        if prefix and event.get('rawPath', '').startswith(prefix):
+            event = {**event, 'rawPath': event['rawPath'][len(prefix) - 1:]}
         # Preserve the standalone #78 handler contract; new orchestration requires
         # explicit deployment configuration and is never enabled by the frontend alone.
         if os.environ.get('AUTH_V3_ENABLED') == 'true':

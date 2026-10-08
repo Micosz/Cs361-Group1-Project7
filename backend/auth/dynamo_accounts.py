@@ -72,7 +72,7 @@ class DynamoAccounts:
                 'UpdateExpression': 'SET verification = :verified',
                 'ConditionExpression': 'userId = :user AND provider = :provider',
                 'ExpressionAttributeValues': values({':verified': 'verified',
-                    ':user': original['id'], ':provider': 'tu'})}}]
+                    ':user': original['id'], ':provider': original.get('authProvider', 'tu')})}}]
         try:
             self.client.transact_write_items(TransactItems=checks)
         except Exception as error:
