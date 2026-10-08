@@ -89,6 +89,9 @@
         }
     }
     closeButton.onclick = close;
+    dialog.addEventListener('click', event => {
+        if (!event.target.closest('a, button')) close(event);
+    });
     dialog.addEventListener('cancel', event => { event.preventDefault(); close({detail: 0}); });
     dialog.addEventListener('close', restoreScroll);
     logout.onclick = async () => {
