@@ -1,4 +1,4 @@
-name: Deploy fetchPartnersData
+name: Deploy changed Lambda functions
 
 on:
   push:
@@ -6,27 +6,48 @@ on:
       - main
     paths:
       - 'backend/lambda/fetchPartnersData/**'
+      - 'backend/lambda/getPublicPartners/**'
+      - 'backend/lambda/tuAuthLogin/**'
       - '.github/scripts/package-lambda.py'
+      - '.github/scripts/select-lambdas.py'
       - '.github/workflows/deploy-lambda.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: deploy-fetchPartnersData-us-east-1
+  group: deploy-lambdas-us-east-1
   cancel-in-progress: false
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+      has-changes: ${{ steps.select.outputs.has-changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select changed functions
+        id: select
+        run: python3 .github/scripts/select-lambdas.py
+
   deploy:
-    if: github.ref == 'refs/heads/main'
+    needs: changes
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.changes.outputs.matrix) }}
+    if: github.ref == 'refs/heads/main' && needs.changes.outputs.has-changes == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       AWS_REGION: us-east-1
       AWS_DEFAULT_REGION: us-east-1
       AWS_PAGER: ''
-      LAMBDA_FUNCTION: fetchPartnersData
-      SOURCE_DIR: backend/lambda/fetchPartnersData
+      LAMBDA_FUNCTION: ${{ matrix.function }}
+      SOURCE_DIR: backend/lambda/${{ matrix.function }}
     steps:
       - name: Checkout commit
         uses: actions/checkout@v4
@@ -95,16 +116,17 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/scripts/package-lambda.py \
+            --function "$LAMBDA_FUNCTION" \
             --config "$RUNNER_TEMP/lambda-config.json" \
-            --output "$RUNNER_TEMP/fetchPartnersData.zip"
+            --output "$RUNNER_TEMP/$LAMBDA_FUNCTION.zip"
 
-      - name: Update only fetchPartnersData code
+      - name: Update selected existing Lambda code
         run: |
           set -euo pipefail
           revision=$(python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "lambda-config.json")))["RevisionId"])')
           aws lambda update-function-code \
             --function-name "$LAMBDA_FUNCTION" \
-            --zip-file "fileb://$RUNNER_TEMP/fetchPartnersData.zip" \
+            --zip-file "fileb://$RUNNER_TEMP/$LAMBDA_FUNCTION.zip" \
             --revision-id "$revision" \
             --query '{CodeSha256:CodeSha256,RevisionId:RevisionId}' \
             --output json > "$RUNNER_TEMP/lambda-update.json"
@@ -125,9 +147,9 @@ jobs:
           from pathlib import Path
           temp = Path(os.environ['RUNNER_TEMP'])
           result = json.loads((temp / 'lambda-result.json').read_text())
-          digest = base64.b64encode(hashlib.sha256((temp / 'fetchPartnersData.zip').read_bytes()).digest()).decode()
+          digest = base64.b64encode(hashlib.sha256((temp / (os.environ['LAMBDA_FUNCTION'] + '.zip')).read_bytes()).digest()).decode()
           if result.get('LastUpdateStatus') != 'Successful' or result.get('CodeSha256') != digest:
               raise SystemExit('Lambda update status/checksum verification failed')
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
-              summary.write(f'Lambda: fetchPartnersData\n\nRegion: us-east-1\n\nCommit: {os.environ["GITHUB_SHA"]}\n\nCodeSha256: {digest}\n\nCode update and checksum verified; API smoke test still required.\n')
+              summary.write(f'Lambda: {os.environ["LAMBDA_FUNCTION"]}\n\nRegion: us-east-1\n\nCommit: {os.environ["GITHUB_SHA"]}\n\nCodeSha256: {digest}\n\nCode update and checksum verified; API smoke test still required.\n')
           PY

@@ -91,6 +91,27 @@ class PackageTests(unittest.TestCase):
                 self.package()
             subprocess.run(['git', 'rm', '--cached', '-q', name], cwd=self.source, check=True)
 
+    def test_selected_function_is_isolated_from_other_function_sources(self):
+        self.track('index.mjs', 'export const handler = async () => null;')
+        other = self.root / 'backend/lambda/getPublicPartners/index.cjs'
+        other.parent.mkdir(parents=True)
+        other.write_text('exports.handler = async () => "other-fixture";')
+        subprocess.run(['git', 'add', str(other)], cwd=self.root, check=True)
+        packager.package(self.root, self.config, self.output, 'getPublicPartners')
+        with zipfile.ZipFile(self.output) as archive:
+            self.assertEqual(['index.cjs'], archive.namelist())
+            self.assertEqual(other.read_bytes(), archive.read('index.cjs'))
+
+    def test_ambiguous_handler_module_files_fail_closed(self):
+        self.track('index.mjs', 'export const handler = async () => null;')
+        self.track('index.cjs', 'exports.handler = async () => null;')
+        with self.assertRaisesRegex(ValueError, 'Ambiguous'):
+            self.package()
+
+    def test_unknown_function_is_never_packaged(self):
+        with self.assertRaisesRegex(ValueError, 'allowlist'):
+            packager.package(self.root, self.config, self.output, 'unknownFunction')
+
     def test_symlink_and_native_dependencies_fail_closed(self):
         self.track('index.js', 'exports.handler = async () => null;\n')
         self.track('package.json', '{"dependencies":{"fixture":"1.0.0"}}')

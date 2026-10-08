@@ -1,0 +1,48 @@
+name: Validate Lambda source and workflows
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/lambda/**'
+      - '.github/scripts/**'
+      - '.github/workflows/deploy-lambda.yml'
+      - '.github/workflows/lambda-ci.yml'
+      - 'tests/lambda-source.test.cjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Packaging and changed-function selection tests
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+      - name: Source behavior with AWS and TU test doubles
+        run: node --experimental-vm-modules --test tests/lambda-source.test.cjs
+      - name: Check source syntax
+        run: |
+          node --check backend/lambda/fetchPartnersData/index.mjs
+          node --check backend/lambda/getPublicPartners/index.cjs
+          node --check backend/lambda/tuAuthLogin/index.mjs
+      - name: Validate GitHub Actions syntax
+        env:
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            --output "$RUNNER_TEMP/actionlint.tar.gz"
+          printf '%s  %s\n' "$ACTIONLINT_SHA256" "$RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check --status
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -shellcheck= .github/workflows/deploy-lambda.yml .github/workflows/lambda-ci.yml

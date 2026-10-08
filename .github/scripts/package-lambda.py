@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package only the tracked fetchPartnersData source; no AWS calls or secrets."""
+"""Package only one allowlisted Lambda tracked source; no AWS calls or secrets."""
 
 import argparse
 import json
@@ -8,7 +8,9 @@ import subprocess
 import sys
 import zipfile
 
-SOURCE = Path('backend/lambda/fetchPartnersData')
+FUNCTIONS = ('fetchPartnersData', 'getPublicPartners', 'tuAuthLogin')
+SOURCE_ROOT = Path('backend/lambda')
+SOURCE = SOURCE_ROOT / FUNCTIONS[0]
 EXTENSIONS = ('.js', '.mjs', '.cjs')
 
 
@@ -31,18 +33,21 @@ def handler_files(config):
     return [module + ext for ext in EXTENSIONS]
 
 
-def package(root, config, output):
+def package(root, config, output, function='fetchPartnersData'):
     root, output = root.resolve(), output.resolve()
-    source = root / SOURCE
+    if function not in FUNCTIONS:
+        fail('Function is not in the deployment allowlist')
+    source_path = SOURCE_ROOT / function
+    source = root / source_path
     if source.resolve() != source or source in output.parents:
         fail('Source must be a real directory; ZIP output must be outside source')
     candidates = handler_files(config)
     tracked = subprocess.check_output(
-        ['git', 'ls-files', '-z', '--', SOURCE.as_posix()], cwd=root,
+        ['git', 'ls-files', '-z', '--', source_path.as_posix()], cwd=root,
     ).decode().split('\0')
     files = {}
     for name in filter(None, tracked):
-        relative = Path(name).relative_to(SOURCE)
+        relative = Path(name).relative_to(source_path)
         if relative.name.lower() == 'readme.md':
             continue
         if (any(part.startswith('.') for part in relative.parts)
@@ -53,8 +58,11 @@ def package(root, config, output):
         if full.is_symlink() or not full.is_file() or source.resolve() not in full.resolve().parents:
             fail('Source contains a missing, symbolic, or out-of-directory file')
         files[relative.as_posix()] = full
-    if not any(name in files for name in candidates):
+    matching_handlers = [name for name in candidates if name in files]
+    if not matching_handlers:
         fail('Actual Lambda handler source is missing; import the existing source before deployment')
+    if len(matching_handlers) != 1:
+        fail('Ambiguous handler files; keep exactly one module for the configured Handler')
     if 'package.json' in files:
         if 'package-lock.json' not in files:
             fail('package.json requires a committed package-lock.json for npm ci')
@@ -94,11 +102,12 @@ def package(root, config, output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--function', required=True, choices=FUNCTIONS)
     parser.add_argument('--config', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
     args = parser.parse_args()
     try:
-        package(Path.cwd(), json.loads(args.config.read_text()), args.output)
+        package(Path.cwd(), json.loads(args.config.read_text()), args.output, args.function)
     except (ValueError, OSError, subprocess.CalledProcessError, json.JSONDecodeError) as error:
         print(f'Packaging failed: {error}', file=sys.stderr)
         return 1
