@@ -11,7 +11,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="preload" as="image" href="resources/login-prism.png">
     <link rel="stylesheet" href="assets/login.css?v=4">
-    <script src="assets/login.js?v=2" defer></script>
+    <script src="assets/auth-config.js" defer></script>
+    <script src="assets/auth-client.js" defer></script>
+    <script src="assets/login.js?v=3" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#login-form">ข้ามไปยังแบบฟอร์มเข้าสู่ระบบ</a>
@@ -30,8 +32,8 @@
                 <h2 id="login-title">เข้าสู่ระบบ</h2>
                 <form id="login-form" action="login.html" method="post" aria-describedby="login-status">
                     <div class="login-field">
-                        <label for="student-id">รหัสนักศึกษา <span aria-hidden="true">*</span></label>
-                        <input id="student-id" name="studentId" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="username" placeholder="กรอกรหัสนักศึกษา" required spellcheck="false">
+                        <label for="student-id">บัญชี TU <span aria-hidden="true">*</span></label>
+                        <input id="student-id" name="studentId" type="text" maxlength="128" autocomplete="username" placeholder="กรอกบัญชี TU" required spellcheck="false">
                     </div>
                     <div class="login-field">
                         <label for="student-password">รหัสผ่าน <span aria-hidden="true">*</span></label>

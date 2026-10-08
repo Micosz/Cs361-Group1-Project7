@@ -759,81 +759,52 @@ function adjustSelectWidth(selectElement) {
 
 document.addEventListener('DOMContentLoaded', initBrowseFilters);
 
-async function fetchCurrentSession() {
-    const token = localStorage.getItem('cstuhub_token');
-
-    if (!token) {
-        return { isAuthenticated: false, roles: ['anonymous'] };
-    }
-
-    try {
-        const response = await fetch('/api/auth/session', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error('Session invalid');
-        return await response.json();
-    } catch (error) {
-        return { isAuthenticated: false, roles: ['anonymous'] };
-    }
-}
-
-function renderRoleNavigation(roles = ['anonymous']) {
+// #80 consumes the same cookie Session contract as Login and Logout.
+let navigationVersion = 0;
+async function renderCurrentNavigation() {
+    const currentVersion = ++navigationVersion;
     const container = document.getElementById('dynamic-nav-links');
-    if (!container) return;
-
-    let html = '';
-
-    // 1. สิทธิ์ทุกคน: ดูและค้นหาข้อมูลสาธารณะ
-    html += `<a href="/index.html" class="nav-link" style="color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 4px; background: rgba(255,255,255,0.1);">ข้อมูลสาธารณะ</a>`;
-
-    // 2. นักศึกษา (student): ดูข้อมูลการแลกเปลี่ยนของตนเอง
-    if (roles.includes('student')) {
-        html += `<a href="/my-exchange.html" class="nav-link" style="color: #4ade80; text-decoration: none; padding: 6px 12px; border-radius: 4px; background: rgba(74,222,128,0.1);">My Exchange</a>`;
+    const nav = container?.parentElement;
+    if (!container || !window.CstuAuth?.enabled()) {
+        if (nav) nav.style.display = 'none';
+        return;
     }
-
-    // 3. อาจารย์ / ผู้ประสานงาน (coordinator): งานที่รับผิดชอบ
-    if (roles.includes('coordinator')) {
-        html += `<a href="/assigned-work.html" class="nav-link" style="color: #38bdf8; text-decoration: none; padding: 6px 12px; border-radius: 4px; background: rgba(56,189,248,0.1);">Assigned Work</a>`;
+    if (nav) nav.style.display = 'flex';
+    const original = document.getElementById('authNavButtons');
+    if (original) original.hidden = true;
+    container.replaceChildren();
+    const link = (text, href) => {
+        const node = document.createElement('a');
+        node.textContent = text; node.href = href; node.className = 'nav-link';
+        container.append(node);
+    };
+    link('ข้อมูลสาธารณะ', 'index.html');
+    try {
+        const session = await window.CstuAuth.refresh();
+        if (currentVersion !== navigationVersion) return;
+        if (!session?.user) { link('เข้าสู่ระบบ', 'login.html'); return; }
+        const labels = { student: 'My Exchange', coordinator: 'งานที่รับผิดชอบ',
+            staff: 'งานเจ้าหน้าที่', executive: 'ภาพรวมผู้บริหาร' };
+        const roles = window.CstuAuth.roles(session);
+        for (const role of roles) if (labels[role]) link(labels[role], 'workspace.html?view=' + role);
+        if (!roles.length) link('รอมอบหมายสิทธิ์', 'workspace.html');
+        if (session.capabilities.some(c => c.name === 'manageRoles')) link('จัดการสิทธิ์', 'workspace.html?view=roles');
+        const logout = document.createElement('button');
+        logout.textContent = 'ออกจากระบบ';
+        logout.onclick = async () => {
+            logout.disabled = true;
+            try { await window.CstuAuth.logout(); window.location.href = 'index.html'; }
+            catch { logout.textContent = 'ออกจากระบบไม่สำเร็จ ลองอีกครั้ง'; logout.disabled = false; }
+        };
+        container.append(logout);
+    } catch {
+        if (currentVersion !== navigationVersion) return;
+        const message = document.createElement('span');
+        message.textContent = 'ตรวจสถานะเข้าสู่ระบบไม่ได้ กรุณาลองใหม่';
+        container.append(message);
     }
-
-    // 4. เจ้าหน้าที่หลักสูตร (staff): จัดการข้อมูล/ข้อตกลง
-    if (roles.includes('staff')) {
-        html += `<a href="/staff-workspace.html" class="nav-link" style="color: #facc15; text-decoration: none; padding: 6px 12px; border-radius: 4px; background: rgba(250,204,21,0.1);">Staff Workspace</a>`;
-    }
-
-    // 5. ผู้บริหาร (executive): ภาพรวมผู้บริหาร
-    if (roles.includes('executive')) {
-        html += `<a href="/executive-overview.html" class="nav-link" style="color: #f472b6; text-decoration: none; padding: 6px 12px; border-radius: 4px; background: rgba(244,114,182,0.1);">ภาพรวมผู้บริหาร</a>`;
-    }
-
-    // 6. สิทธิ์รอง: ส่ง Feedback (นักศึกษา, ผู้ประสานงาน, เจ้าหน้าที่)
-    if (roles.some(r => ['student', 'coordinator', 'staff'].includes(r))) {
-        html += `<a href="/feedback.html" class="nav-link" style="color: #cbd5e1; text-decoration: none; padding: 6px 12px; border-radius: 4px; border: 1px dashed rgba(255,255,255,0.3);">ส่ง Feedback</a>`;
-    }
-
-    // 7. สิทธิ์รอง: รายงานสรุป (เจ้าหน้าที่, ผู้บริหาร)
-    if (roles.some(r => ['staff', 'executive'].includes(r))) {
-        html += `<a href="/reports.html" class="nav-link" style="color: #cbd5e1; text-decoration: none; padding: 6px 12px; border-radius: 4px; border: 1px dashed rgba(255,255,255,0.3);">รายงานสรุป</a>`;
-    }
-
-    // 8. ปุ่ม Login หรือ Logout
-    html += `<div style="margin-left: auto;">`;
-    if (roles.includes('anonymous')) {
-        html += `<a href="/login.html" style="color: #fff; background: #2563eb; padding: 6px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">เข้าสู่ระบบ</a>`;
-    } else {
-        html += `<button onclick="handleUserLogout()" style="color: #fff; background: #dc2626; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">ออกจากระบบ</button>`;
-    }
-    html += `</div>`;
-
-    container.innerHTML = html;
 }
-
-function handleUserLogout() {
-    localStorage.removeItem('cstuhub_token');
-    window.location.href = '/index.html';
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-    const session = await fetchCurrentSession();
-    renderRoleNavigation(session.roles);
-});
+document.addEventListener('DOMContentLoaded', renderCurrentNavigation);
+window.addEventListener('focus', renderCurrentNavigation);
+window.addEventListener('pageshow', renderCurrentNavigation);
+window.addEventListener('authchange', renderCurrentNavigation);
