@@ -43,14 +43,15 @@ def error_response(code, status, event):
                     clear_cookie() if status == 401 else None)
 
 
-def handle(event, service):
+def handle(event, service, repository=None):
     try:
         if event.get("version") != "2.0":
             return error_response("UNSUPPORTED_EVENT", 400, event)
         method = event.get("requestContext", {}).get("http", {}).get("method")
         path = event.get("rawPath")
         if path not in {"/api/auth/session", "/api/auth/logout"}:
-            return error_response("NOT_FOUND", 404, event)
+            from .permissions.gateway import PermissionGateway
+            return PermissionGateway(service, repository).handle(event)
         expected = "GET" if path.endswith("session") else "POST"
         if method != expected:
             return error_response("METHOD_NOT_ALLOWED", 405, event)

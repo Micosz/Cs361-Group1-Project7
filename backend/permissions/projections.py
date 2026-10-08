@@ -30,7 +30,7 @@ def pick(record, fields):
 
 def project(context, kind, record, parent=None):
     roles = require_record(context, kind, 'read', record, parent)
-    if roles == {'student'}:
+    if kind == 'exchange' and roles == {'student'}:
         return pick(record, STUDENT)
     fields = COMMON | FIELDS[kind]
     editor = bool(roles & {'staff', 'coordinator'})
