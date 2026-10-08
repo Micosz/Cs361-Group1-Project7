@@ -6,6 +6,7 @@ const client = new DynamoDBClient({ region: "us-east-1" });
 const docClient = DynamoDBDocumentClient.from(client);
 
 // ใช้ชื่อ Table ตามที่จะกำหนดร่วมกันใน Issue #91
+//test
 const TABLE_NAME = process.env.TABLE_NAME || "CSTUHub-Users"; 
 
 /**
