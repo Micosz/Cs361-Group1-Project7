@@ -20,8 +20,8 @@
 | DynamoDB Table ในสคริปต์ Migration | `Partner` — ต้องตรวจว่าตรงกับตารางที่ Lambda ใช้งานจริง |
 | Deployment Source Branch | `main` |
 | Frontend Entry File | `public/index.html` |
-| Frontend Build | Static HTML/CSS/JavaScript; ไม่มี build script ใน `package.json` |
-| Amplify Build Command / Output Directory | `npm test` / `public` ตาม `amplify.yml` ใน repository; ตรวจ deployment log หลัง merge |
+| Frontend Build | Static HTML/CSS/JavaScript; `npm run build` สร้างหน้า `/login/` จาก `public/login.html` |
+| Amplify Build Command / Output Directory | `npm test` (เรียก build ผ่าน `pretest`) / `public` ตาม `amplify.yml` ใน repository; ตรวจ deployment log หลัง merge |
 | Public URL | [https://main.d2q46seuxuluap.amplifyapp.com/](https://main.d2q46seuxuluap.amplifyapp.com/) |
 | Public API URL | `https://eb49u61kph.execute-api.us-east-1.amazonaws.com/default/fetchPartnersData` |
 | API Configuration | `API_URL` ใน `public/assets/script.js` |
