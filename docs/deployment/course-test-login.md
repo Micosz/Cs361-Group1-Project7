@@ -1,14 +1,14 @@
 # บัญชีทดสอบเข้าผ่านหน้า Login ปกติ — #81
 
-สำหรับงานวิชา: มี username/password แยกตาม role ให้กรอกใน `login.html` ปกติ ไม่มีหน้าเลือก role บนเว็บออนไลน์ และไม่ต้องมีบัญชี TU สำหรับบัญชีชุดนี้
+สำหรับงานวิชา: มี username/password แยกตาม role ให้กรอกใน `login.html` ปกติ เมนูเปิดเต็มหน้าจอหลัง Login แสดงเฉพาะสิทธิ์จาก Session และไม่ต้องมีบัญชี TU สำหรับบัญชีชุดนี้
 
 ## สิ่งที่เพิ่ม
 
-- บัญชีออนไลน์ใช้ชื่อและรหัสเหมือนกัน: `studenta`, `studentb`, `coordinator`, `staff`, `executive`, `employee`, `manager`, `multi`
-- แต่ละบัญชียังคง user ID, role และ scope เดิม เปลี่ยนเฉพาะชื่อเข้าใช้และรหัสผ่าน
-- `employee` ไม่มี role; `manager` มี scoped manageRoles แต่ไม่มีสิทธิ์ธุรกิจอัตโนมัติ; `multi` มี student + coordinator
+- บัญชีออนไลน์ใช้ชื่อและรหัสเหมือนกัน: `studenta`, `coordinator`, `staff`, `executive` และ `employee` สำหรับกรณีรอมอบหมายสิทธิ์
+- บัญชีหลักคง user ID และ scope เดิม; `executive` เป็นผู้บริหาร / ผู้ดูแลระบบของชุดทดสอบ มี scoped manageRoles ใน `cs-demo`
+- `employee` ไม่มี role สำหรับทดสอบกรณียังไม่ได้รับสิทธิ์; ปิด `studentb`, `manager`, `multi` และยกเลิก Session เดิมผ่าน active/authzVersion
 - ตรวจ PBKDF2-SHA256 (600,000 รอบ, salt แยกบัญชี) ฝั่ง backend ค่า hash เก็บใน Lambda environment; บัญชีจำง่ายชุดนี้ใช้สำหรับงานวิชาเท่านั้น
-- ชื่อจำง่ายทั้ง 8 ชื่อและ prefix `course.` สงวนสำหรับบัญชีทดสอบ รหัสผิด/บัญชีหาย/ปิดโหมดไม่ส่งรหัสผ่านต่อไป TU ส่วนชื่อ TU ปกติยังใช้ adapter #75
+- ชื่อทดสอบปัจจุบันและชื่อเก่าทั้ง 8 ชื่อและ prefix `course.` สงวนสำหรับบัญชีทดสอบ รหัสผิด/บัญชีหาย/ปิดโหมดไม่ส่งรหัสผ่านต่อไป TU ส่วนชื่อ TU ปกติยังใช้ adapter #75
 - ใช้ User/grants/authzVersion จากฐานข้อมูลปัจจุบันและสร้าง Session ผ่าน flow เดิม มี Origin/CSRF/rate limit ก่อนตรวจรหัส บัญชีทดสอบไม่ได้ข้ามตัวตรวจ API #79
 - Login ซ้ำไม่เพิ่ม role คืนและไม่เปิดบัญชีที่ถูกปิด การมอบ/ถอนสิทธิ์ #77 ใช้กับ IdentityLink provider `course-test` ได้
 - `COURSE_TEST_ENABLED` ไม่ใช่ `true` ปิดทั้ง Login และการยืนยัน Session ของบัญชีทดสอบเมื่อมี request ครั้งถัดไป บัญชี TU ปกติไม่ถูกปิดไปด้วย
@@ -53,3 +53,13 @@ python3 scripts/course_test_accounts.py --scope cs-demo --simple-login
 - ทดสอบผ่าน `https://main.d2q46seuxuluap.amplifyapp.com/api/*` จริงครบทั้ง 8 บัญชี: Login 200, Session 200, Logout 200, หลัง Logout กลับเป็น anonymous; cookie Secure/HttpOnly และ Cache-Control no-store; anonymous browsers คนละชุดได้ CSRF ต่างกัน
 - อัปเดต source `tuAuthLogin` จาก #75 โดยคง TU_APP_KEY/runtime เดิม และตรวจ invalid input ได้ 400 ไม่ได้ทดสอบบัญชี TU จริง
 - เปิด `public/assets/auth-config.js` หลัง API ผ่านแล้ว การใช้บัญชีทดสอบนี้ไม่ถือว่า #81 ผ่านทุกเกณฑ์: TU จริง, business API adapters และหน้าธุรกิจอื่นยังต้องทำต่อ
+
+## เมนูตามสิทธิ์
+
+- ผู้ใช้ทั่วไปไม่ต้องมีบัญชี: ดูข้อมูลเผยแพร่ผ่านหน้าแรก ปุ่มขวาบนเป็น Log in
+- Login สำเร็จกลับหน้าแรก ปุ่มเดิมเปลี่ยนเป็น Menu; เปิดแผงเต็มหน้าจอสีแดง เมนูเลื่อนลงและข้อความปรากฏตามลำดับ ใช้รูปแบบการเคลื่อนไหวอ้างอิง Agrumea Farm
+- นักศึกษา / ผู้เข้าร่วมโครงการ, อาจารย์ / ผู้ประสานงาน, เจ้าหน้าที่หลักสูตร และผู้บริหาร / ผู้ดูแลระบบ เห็นลิงก์ของ role ตนเองเท่านั้น
+- ลิงก์จัดการสิทธิ์เพิ่มเฉพาะบัญชีที่มี capability manageRoles; ไม่อนุมานสิทธิ์จากชื่อบัญชีหรือ role executive อย่างเดียว
+- หน้าธุรกิจยังใช้ workspace เดิมเป็นปลายทาง ไม่สร้างหน้าหรือ API ธุรกิจที่ยังไม่มี
+- กด Close หรือ Escape เพื่อปิด คืน focus และ scroll; รองรับคีย์บอร์ดและ prefers-reduced-motion
+- รหัสผิดแสดงข้อความในหน้า Login เดิม; employee ใช้ตรวจสถานะรอมอบหมายสิทธิ์; บัญชีที่เลิกใช้ถูกปิดและ Session เดิมใช้ต่อไม่ได้

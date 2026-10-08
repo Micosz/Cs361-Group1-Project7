@@ -11,9 +11,8 @@ import uuid
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from backend.auth.course_accounts import password_digest
 
-CATALOG = [('student-a',['student']), ('student-b',['student']), ('coordinator',['coordinator']),
-           ('staff',['staff']), ('executive',['executive']), ('employee',[]),
-           ('manager',[]), ('multi',['student','coordinator'])]
+CATALOG = [('student-a',['student']), ('coordinator',['coordinator']),
+           ('staff',['staff']), ('executive',['executive']), ('employee',[])]
 
 
 def private_file(path, value):
@@ -36,7 +35,7 @@ def generate(directory, scope, simple_login=False):
             authzVersion=1, authProvider='course-test', subjectKey=subject, capabilities=[],
             grants=[dict(id=str(uuid.uuid4()),role=role,scopeId=scope,active=True,
                          grantedBy='system:course-test-setup',grantedAt=now) for role in roles])
-        if short == 'manager': user['capabilities'] = [dict(name='manageRoles',scopeId=scope,active=True)]
+        if short == 'executive': user['capabilities'] = [dict(name='manageRoles',scopeId=scope,active=True)]
         manifest.append(dict(user=user, identity=dict(subjectKey=subject,provider='course-test',userId=user_id,verification='verified')))
         configuration.append(dict(username=username,userId=user_id,salt=salt,passwordHash=password_digest(password,salt)))
         handoff.append(username+'\t'+password+'\t'+','.join(roles)+'\t'+user_id)
