@@ -758,3 +758,82 @@ function adjustSelectWidth(selectElement) {
 }
 
 document.addEventListener('DOMContentLoaded', initBrowseFilters);
+
+async function fetchCurrentSession() {
+    const token = localStorage.getItem('cstuhub_token');
+
+    if (!token) {
+        return { isAuthenticated: false, roles: ['anonymous'] };
+    }
+
+    try {
+        const response = await fetch('/api/auth/session', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Session invalid');
+        return await response.json();
+    } catch (error) {
+        return { isAuthenticated: false, roles: ['anonymous'] };
+    }
+}
+
+function renderRoleNavigation(roles = ['anonymous']) {
+    const container = document.getElementById('dynamic-nav-links');
+    if (!container) return;
+
+    let html = '';
+
+    // 1. สิทธิ์ทุกคน: ดูและค้นหาข้อมูลสาธารณะ
+    html += `<a href="/index.html" class="nav-link" style="color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 4px; background: rgba(255,255,255,0.1);">ข้อมูลสาธารณะ</a>`;
+
+    // 2. นักศึกษา (student): ดูข้อมูลการแลกเปลี่ยนของตนเอง
+    if (roles.includes('student')) {
+        html += `<a href="/my-exchange.html" class="nav-link" style="color: #4ade80; text-decoration: none; padding: 6px 12px; border-radius: 4px; background: rgba(74,222,128,0.1);">My Exchange</a>`;
+    }
+
+    // 3. อาจารย์ / ผู้ประสานงาน (coordinator): งานที่รับผิดชอบ
+    if (roles.includes('coordinator')) {
+        html += `<a href="/assigned-work.html" class="nav-link" style="color: #38bdf8; text-decoration: none; padding: 6px 12px; border-radius: 4px; background: rgba(56,189,248,0.1);">Assigned Work</a>`;
+    }
+
+    // 4. เจ้าหน้าที่หลักสูตร (staff): จัดการข้อมูล/ข้อตกลง
+    if (roles.includes('staff')) {
+        html += `<a href="/staff-workspace.html" class="nav-link" style="color: #facc15; text-decoration: none; padding: 6px 12px; border-radius: 4px; background: rgba(250,204,21,0.1);">Staff Workspace</a>`;
+    }
+
+    // 5. ผู้บริหาร (executive): ภาพรวมผู้บริหาร
+    if (roles.includes('executive')) {
+        html += `<a href="/executive-overview.html" class="nav-link" style="color: #f472b6; text-decoration: none; padding: 6px 12px; border-radius: 4px; background: rgba(244,114,182,0.1);">ภาพรวมผู้บริหาร</a>`;
+    }
+
+    // 6. สิทธิ์รอง: ส่ง Feedback (นักศึกษา, ผู้ประสานงาน, เจ้าหน้าที่)
+    if (roles.some(r => ['student', 'coordinator', 'staff'].includes(r))) {
+        html += `<a href="/feedback.html" class="nav-link" style="color: #cbd5e1; text-decoration: none; padding: 6px 12px; border-radius: 4px; border: 1px dashed rgba(255,255,255,0.3);">ส่ง Feedback</a>`;
+    }
+
+    // 7. สิทธิ์รอง: รายงานสรุป (เจ้าหน้าที่, ผู้บริหาร)
+    if (roles.some(r => ['staff', 'executive'].includes(r))) {
+        html += `<a href="/reports.html" class="nav-link" style="color: #cbd5e1; text-decoration: none; padding: 6px 12px; border-radius: 4px; border: 1px dashed rgba(255,255,255,0.3);">รายงานสรุป</a>`;
+    }
+
+    // 8. ปุ่ม Login หรือ Logout
+    html += `<div style="margin-left: auto;">`;
+    if (roles.includes('anonymous')) {
+        html += `<a href="/login.html" style="color: #fff; background: #2563eb; padding: 6px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">เข้าสู่ระบบ</a>`;
+    } else {
+        html += `<button onclick="handleUserLogout()" style="color: #fff; background: #dc2626; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">ออกจากระบบ</button>`;
+    }
+    html += `</div>`;
+
+    container.innerHTML = html;
+}
+
+function handleUserLogout() {
+    localStorage.removeItem('cstuhub_token');
+    window.location.href = '/index.html';
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const session = await fetchCurrentSession();
+    renderRoleNavigation(session.roles);
+});
