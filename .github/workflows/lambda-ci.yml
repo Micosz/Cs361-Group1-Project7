@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'backend/lambda/**'
+      - 'backend/relationships/**'
+      - 'backend/tests/test_activity_links.py'
       - '.github/scripts/**'
       - '.github/workflows/deploy-lambda.yml'
       - '.github/workflows/lambda-ci.yml'
@@ -26,6 +28,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Activity relationship checks (issue 97)
+        if: ${{ hashFiles('backend/tests/test_activity_links.py') != '' }}
+        run: python3 -m unittest discover -s backend/tests -p 'test_activity_links.py' -v
       - name: Packaging and changed-function selection tests
         run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
       - name: Source behavior with AWS and TU test doubles
