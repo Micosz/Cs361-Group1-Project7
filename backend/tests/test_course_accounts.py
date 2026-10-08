@@ -21,6 +21,10 @@ class CourseAccountTests(unittest.TestCase):
         for name,password in [('course.staff','wrong'),('course.missing','test-only-password')]:
             with self.assertRaises(AuthError): provider.authenticate(name,password)
         with self.assertRaises(AuthError): CourseProvider(self.tu).authenticate('course.staff','test-only-password')
+        simple = dict(self.entry, username='studenta', passwordHash=password_digest('studenta',self.entry['salt']))
+        self.assertEqual(CourseProvider(self.tu,True,json.dumps([simple])).authenticate('studenta','studenta')['userId'],self.entry['userId'])
+        with self.assertRaises(AuthError): provider.authenticate('studenta','wrong')
+        with self.assertRaises(AuthError): CourseProvider(self.tu).authenticate('studenta','studenta')
         self.assertEqual(self.calls,[])
         self.assertEqual(provider.authenticate('tu-user','tu-pass'),{'type':'student'})
         self.assertEqual(len(self.calls),1)
