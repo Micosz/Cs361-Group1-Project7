@@ -1,11 +1,9 @@
-# Source ของ fetchPartnersData
+# fetchPartnersData
 
-ตำแหน่งนี้สงวนไว้สำหรับ **source จริงของ Lambda เดิม** ใน `us-east-1` ตาม #120
+Source จาก Lambda เดิมใน `us-east-1` ตรวจเมื่อ 8 ตุลาคม 2026: Node.js 24, Handler `index.handler`, architecture x86_64, ไม่มี layer
 
-ยังไม่พบ source ใน repository และยังไม่ได้รับไฟล์จาก AWS จึงไม่มีการใส่ implementation สมมติหรือโค้ดทดแทน
+`index.mjs` คัดลอก source bytes เดิมโดยไม่เปลี่ยน behavior ใช้ AWS SDK v3 ที่มีใน Lambda runtime เดิม จึงไม่มี package.json ที่ไม่จำเป็น
 
-ก่อน merge #120 ผู้รับผิดชอบต้องนำ source จาก Lambda Console → `fetchPartnersData` → Code หรือ deployment package ปัจจุบันมาใส่ที่นี่ พร้อมยืนยัน Runtime/Handler และ dependencies/layers เดิม ถ้าเป็น ESM ให้คง `.mjs` หรือ `package.json` ที่กำหนด type เดิม ห้ามเปลี่ยนเป็น `.js` โดยไม่มีเหตุผล
-
-เก็บเฉพาะ source และ dependency manifests/lockfile ที่จำเป็น ห้ามเก็บ ZIP, node_modules, credentials, `.env`, AWS CLI configuration หรือไฟล์ชั่วคราว Workflow จะไม่ deploy หากไม่พบ handler file ตาม configuration จริงของ Lambda
+ชื่อ AWS ที่ตรวจพบคือ `fetchPartnersData` (มี s) ไม่ใช่ `fetchPartnerData`
 
 ดู [คู่มือ CI/CD](../../../docs/deployment/lambda-cicd.md)
