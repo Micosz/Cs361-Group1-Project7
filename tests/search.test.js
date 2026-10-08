@@ -78,7 +78,7 @@ function page(fetchImpl = async () => response()) {
         addEventListener: (name, fn) => listeners.set(name, [...(listeners.get(name) || []), fn])
     };
     const context = vm.createContext({
-        document, window: { getComputedStyle: () => ({}) },
+        document, window: { getComputedStyle: () => ({}), addEventListener() {} },
         console: { error() {}, warn() {} }, AbortController,
         fetch: (...args) => { requests++; return fetchImpl(...args); },
         setTimeout: (fn, delay) => { timeouts.set(++timerId, { fn, due: now + delay }); return timerId; },

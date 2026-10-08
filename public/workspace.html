@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>พื้นที่ผู้ใช้ — CSTUHub</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/auth-config.js" defer></script>
+    <script src="assets/auth-client.js" defer></script>
+    <script src="assets/workspace.js" defer></script>
+</head>
+<body>
+<main class="container" style="padding:2rem;max-width:800px">
+    <a href="index.html">กลับหน้าหลัก</a>
+    <h1>พื้นที่ผู้ใช้</h1>
+    <p id="workspace-status" role="status">กำลังตรวจสถานะ</p>
+    <button id="open-roles" type="button" hidden>จัดการสิทธิ์ผู้ใช้</button>
+    <dialog id="role-dialog" style="padding:2rem;max-width:600px">
+        <form id="role-form">
+            <h2>จัดการสิทธิ์ผู้ใช้</h2>
+            <p>มอบหมายหรือถอนบทบาทเฉพาะขอบเขตที่คุณจัดการได้ การถอนบทบาทไม่ปิดบัญชี</p>
+            <p><label>ขอบเขต <select id="role-scope" required></select></label></p>
+            <p><label>รหัสผู้ใช้ภายใน <input id="role-target" required maxlength="128"></label>
+                <button id="load-user" type="button">ค้นหาบัญชี</button></p>
+            <p id="role-user"></p>
+            <fieldset id="role-choices" disabled><legend>บทบาทในขอบเขตนี้</legend>
+                <label><input type="checkbox" name="role" value="student"> นักศึกษา</label>
+                <label><input type="checkbox" name="role" value="coordinator"> ผู้ประสานงาน</label>
+                <label><input type="checkbox" name="role" value="staff"> เจ้าหน้าที่</label>
+                <label><input type="checkbox" name="role" value="executive"> ผู้บริหาร</label>
+            </fieldset>
+            <p><label><input id="confirm-identity" type="checkbox"> ตรวจหลักฐานและยืนยันการผูกตัวตนของบัญชีนี้แล้ว</label></p>
+            <p>ไม่เลือกบทบาทใดเลยเพื่อถอนทุกบทบาทในขอบเขตที่เลือก</p>
+            <p id="role-status" role="status"></p>
+            <button id="save-roles" type="submit" disabled>บันทึกสิทธิ์</button>
+            <button id="close-roles" type="button">ปิด</button>
+        </form>
+    </dialog>
+</main>
+</body>
+</html>

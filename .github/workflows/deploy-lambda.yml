@@ -21,6 +21,7 @@ concurrency:
 
 jobs:
   changes:
+    if: vars.LAMBDA_DEPLOYMENT_PAUSED != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
