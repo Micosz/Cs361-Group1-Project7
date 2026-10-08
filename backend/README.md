@@ -1,6 +1,6 @@
 # Authentication backend — #74–#80
 
-เอกสารการรวมล่าสุดและขั้นตอนเปิดใช้ใน #81: [auth-integration.md](../docs/deployment/auth-integration.md). `application.py` เชื่อม Login, account linking และ role management แล้ว แต่ยังปิดไว้จนตั้ง AWS; ส่วนด้านล่างเป็น baseline API ของ #78 ที่นำกลับมาใช้ร่วมกัน
+เอกสารการรวมล่าสุดและขั้นตอนเปิดใช้ใน #81: [auth-integration.md](../docs/deployment/auth-integration.md). `application.py` เชื่อม Login, account linking และ role management แล้ว; สถานะล่าสุดตั้ง AWS และเปิดบัญชีทดสอบผ่านหน้า Login ปกติ ตาม [course-test-login.md](../docs/deployment/course-test-login.md); ส่วนด้านล่างเป็น baseline API ของ #78 ที่นำกลับมาใช้ร่วมกัน
 
 Python implementation of the [session baseline](../docs/design/v3/authentication-session.md).
 This directory is server code; Amplify currently publishes `public/` only. No AWS
