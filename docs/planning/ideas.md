@@ -1,1 +1,0 @@
-This project is build as i as a Project Lead, Don't do much code but when do it need to be the future website, Full of new technology design example 3d animation, move wallpaper, scroll animation like this web https://pear.no/?ref=siteinspire

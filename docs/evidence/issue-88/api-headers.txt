@@ -1,0 +1,5 @@
+HTTP/2 500
+date: Thu, 08 Oct 2026 08:46:04 GMT
+content-type: text/plain; charset=utf-8
+content-length: 35
+apigw-requestid: E6q8CiqjIAMEaEQ=

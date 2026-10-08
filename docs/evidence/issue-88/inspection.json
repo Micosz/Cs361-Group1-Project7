@@ -1,0 +1,64 @@
+{
+  "checked_date": "2026-10-08 Asia/Bangkok",
+  "local_commit": "4c90fdd51cbf9fba44360f06981b188bd263c365",
+  "remote_main_commit": "4c90fdd51cbf9fba44360f06981b188bd263c365",
+  "node_version": "v24.18.0",
+  "api": {
+    "http_status": 500,
+    "total_seconds": 0.902296,
+    "body": {
+      "message": "Internal Server Error"
+    }
+  },
+  "live_url": "https://main.d2q46seuxuluap.amplifyapp.com/",
+  "live_index_http_status": 200,
+  "backup_workflow_recent_runs": [],
+  "files": [
+    {
+      "local_path": "public/index.html",
+      "sha256": "41ab81e9b08b12ad3de7866261b837ba9bb01897003bb4749d6670334016a3a3",
+      "live_sha256": "41ab81e9b08b12ad3de7866261b837ba9bb01897003bb4749d6670334016a3a3",
+      "bytes_equal": true
+    },
+    {
+      "local_path": "public/assets/script.js",
+      "sha256": "2572c2dc2d7b1530364539c41d976ffb8d4352fea2f7c8e12848ae42053f065d",
+      "live_sha256": "2572c2dc2d7b1530364539c41d976ffb8d4352fea2f7c8e12848ae42053f065d",
+      "bytes_equal": true
+    },
+    {
+      "local_path": "public/data/partner-data-backup.json",
+      "sha256": "24f9ecd994db26add933ac943f3a0b7234c51186819b375b3d9944019044da2c",
+      "live_sha256": "24f9ecd994db26add933ac943f3a0b7234c51186819b375b3d9944019044da2c",
+      "bytes_equal": true
+    }
+  ],
+  "backup": {
+    "records": 26,
+    "partners": 13,
+    "events": 13,
+    "non_public_records": 0,
+    "duplicate_ids": 0,
+    "events_missing_period_date": 0,
+    "top_level_fields": [
+      "access_level",
+      "co_hosts",
+      "coordinators",
+      "full_description",
+      "id",
+      "image_path",
+      "location",
+      "logo_path",
+      "name",
+      "partnerId",
+      "partnerName",
+      "period",
+      "period_date",
+      "summary",
+      "title",
+      "type",
+      "visibility",
+      "website_url"
+    ]
+  }
+}

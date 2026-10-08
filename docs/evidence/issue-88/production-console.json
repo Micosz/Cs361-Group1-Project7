@@ -1,0 +1,8 @@
+[
+  {
+    "level": "warn",
+    "message": "API unavailable; loading backup: Error: HTTP 500\n    at loadJson (https://main.d2q46seuxuluap.amplifyapp.com/assets/script.js?v=4:29:23)\n    at async https://main.d2q46seuxuluap.amplifyapp.com/assets/script.js?v=4:53:23",
+    "timestamp": "2026-10-08T08:46:12.572Z",
+    "url": "https://main.d2q46seuxuluap.amplifyapp.com/assets/script.js?v=4"
+  }
+]

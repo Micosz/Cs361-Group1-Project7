@@ -1,0 +1,45 @@
+- status: กำลังแสดงข้อมูลสำรอง ข้อมูลอาจไม่ใช่ข้อมูลล่าสุด
+- navigation:
+  - generic: CSTUHub
+  - textbox "ค้นหาโปรเจกต์, องค์กร, หรือกิจกรรมต่างๆ":
+    - /placeholder: ค้นหาโปรเจกต์, องค์กร, หรือกิจกรรมต่างๆ...
+    - text: KBTG
+  - button "Search"
+  - link "Log in":
+    - /url: login.html
+- button "COLLABORATOR"
+- button "EVENT & ACTIVITIES"
+- heading "Computer Science" [level=1]
+- heading "Information Board" [level=2]
+- main:
+  - text:     
+  - generic: 
+  - text: ตัวกรอง
+  - combobox "ประเภทกิจกรรม":
+    - option "กิจกรรมทั้งหมด"
+    - option "โครงการฝึกงานและสหกิจฯ"
+    - option "กิจกรรมวิชาการ (MoU)"
+    - option "กิจกรรมทั่วไปและสัมมนา" [selected]
+    - option "งานวิจัยและแลกเปลี่ยน"
+  - button "ล้างประเภทกิจกรรม":
+    - generic: 
+  - generic: เริ่มต้น
+  - textbox "วันที่เริ่มต้นกิจกรรม วัน/เดือน/ปี พ.ศ.":
+    - /placeholder: วัน/เดือน/พ.ศ.
+    - text: 17/10/2563
+  - button "เลือกวันที่จากปฏิทิน":
+    - generic: 
+  - textbox: 2020-10-17
+  - generic: สิ้นสุด
+  - textbox "วันที่สิ้นสุดกิจกรรม วัน/เดือน/ปี พ.ศ.":
+    - /placeholder: วัน/เดือน/พ.ศ.
+    - text: 14/10/2563
+  - button "เลือกวันที่จากปฏิทิน" [active]:
+    - generic: 
+  - textbox: 2020-10-14
+  - button "ล้างวันที่":
+    - generic: 
+  - status: วันที่สิ้นสุดต้องไม่น้อยกว่าวันที่เริ่มต้น
+  - generic: 
+  - heading "ไม่พบกิจกรรม" [level=3]
+  - paragraph: ลองเปลี่ยนคำค้นหา หรือล้างตัวกรองเพื่อดูข้อมูลทั้งหมด
