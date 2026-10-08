@@ -1,0 +1,155 @@
+name: Deploy changed Lambda functions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/lambda/fetchPartnersData/**'
+      - 'backend/lambda/getPublicPartners/**'
+      - 'backend/lambda/tuAuthLogin/**'
+      - '.github/scripts/package-lambda.py'
+      - '.github/scripts/select-lambdas.py'
+      - '.github/workflows/deploy-lambda.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-lambdas-us-east-1
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+      has-changes: ${{ steps.select.outputs.has-changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select changed functions
+        id: select
+        run: python3 .github/scripts/select-lambdas.py
+
+  deploy:
+    needs: changes
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.changes.outputs.matrix) }}
+    if: github.ref == 'refs/heads/main' && needs.changes.outputs.has-changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AWS_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_PAGER: ''
+      LAMBDA_FUNCTION: ${{ matrix.function }}
+      SOURCE_DIR: backend/lambda/${{ matrix.function }}
+    steps:
+      - name: Checkout commit
+        uses: actions/checkout@v4
+
+      - name: Require Learner Lab temporary credentials
+        env:
+          LAB_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          LAB_SECRET_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAB_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$LAB_ACCESS_KEY" || -z "$LAB_SECRET_KEY" || -z "$LAB_SESSION_TOKEN" ]]; then
+            echo '::error::Configure all three AWS secrets from an active Learner Lab session.'
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          unset-current-credentials: true
+          retry-max-attempts: 2
+
+      - name: Read existing Lambda configuration
+        id: configuration
+        run: |
+          set -euo pipefail
+          aws lambda wait function-updated-v2 --function-name "$LAMBDA_FUNCTION"
+          aws lambda get-function-configuration \
+            --function-name "$LAMBDA_FUNCTION" \
+            --query '{Runtime:Runtime,Handler:Handler,PackageType:PackageType,RevisionId:RevisionId}' \
+            --output json > "$RUNNER_TEMP/lambda-config.json"
+          python3 <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+          config = json.loads(Path(os.environ['RUNNER_TEMP'], 'lambda-config.json').read_text())
+          runtime = re.fullmatch(r'nodejs(\d+)\.x', config.get('Runtime', ''))
+          if config.get('PackageType') != 'Zip' or not runtime:
+              raise SystemExit('Expected existing Node.js Zip Lambda; confirm runtime/source before merge')
+          if not config.get('RevisionId') or not config.get('Handler'):
+              raise SystemExit('Missing existing Lambda handler/revision; refusing deployment')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'node-version={runtime.group(1)}\n')
+          PY
+
+      - name: Use existing Lambda Node.js major version
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.configuration.outputs.node-version }}
+
+      - name: Install Lambda production dependencies if required
+        run: |
+          set -euo pipefail
+          if [[ -f "$SOURCE_DIR/package.json" ]]; then
+            test -f "$SOURCE_DIR/package-lock.json"
+            npm ci --omit=dev --ignore-scripts --prefix "$SOURCE_DIR"
+          fi
+
+      - name: Package and verify handler at ZIP root
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/package-lambda.py \
+            --function "$LAMBDA_FUNCTION" \
+            --config "$RUNNER_TEMP/lambda-config.json" \
+            --output "$RUNNER_TEMP/$LAMBDA_FUNCTION.zip"
+
+      - name: Update selected existing Lambda code
+        run: |
+          set -euo pipefail
+          revision=$(python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "lambda-config.json")))["RevisionId"])')
+          aws lambda update-function-code \
+            --function-name "$LAMBDA_FUNCTION" \
+            --zip-file "fileb://$RUNNER_TEMP/$LAMBDA_FUNCTION.zip" \
+            --revision-id "$revision" \
+            --query '{CodeSha256:CodeSha256,RevisionId:RevisionId}' \
+            --output json > "$RUNNER_TEMP/lambda-update.json"
+          aws lambda wait function-updated-v2 --function-name "$LAMBDA_FUNCTION"
+
+      - name: Verify deployed package checksum
+        run: |
+          set -euo pipefail
+          aws lambda get-function-configuration \
+            --function-name "$LAMBDA_FUNCTION" \
+            --query '{CodeSha256:CodeSha256,LastUpdateStatus:LastUpdateStatus}' \
+            --output json > "$RUNNER_TEMP/lambda-result.json"
+          python3 <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          temp = Path(os.environ['RUNNER_TEMP'])
+          result = json.loads((temp / 'lambda-result.json').read_text())
+          digest = base64.b64encode(hashlib.sha256((temp / (os.environ['LAMBDA_FUNCTION'] + '.zip')).read_bytes()).digest()).decode()
+          if result.get('LastUpdateStatus') != 'Successful' or result.get('CodeSha256') != digest:
+              raise SystemExit('Lambda update status/checksum verification failed')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f'Lambda: {os.environ["LAMBDA_FUNCTION"]}\n\nRegion: us-east-1\n\nCommit: {os.environ["GITHUB_SHA"]}\n\nCodeSha256: {digest}\n\nCode update and checksum verified; API smoke test still required.\n')
+          PY
