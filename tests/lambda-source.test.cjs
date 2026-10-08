@@ -89,7 +89,7 @@ test('tuAuthLogin validates input/config before calling TU; preflight stays avai
   for (const body of [undefined, '{}', 'malformed', 'null', '{"UserName":1,"PassWord":"x"}']) {
     assert.equal((await handler({ body })).statusCode, 400);
   }
-  for (const env of [{}, { TU_APP_KEY: 'fixture-key' }, { TU_AUTH_URL: tuEnv.TU_AUTH_URL },
+  for (const env of [{}, { TU_AUTH_URL: tuEnv.TU_AUTH_URL },
     { ...tuEnv, TU_AUTH_URL: 'https://example.invalid/auth' },
     { ...tuEnv, TU_AUTH_URL: tuEnv.TU_AUTH_URL + '?key=unsafe' }]) {
     const result = await (await load('tuAuthLogin', { env }))(request);
@@ -99,12 +99,17 @@ test('tuAuthLogin validates input/config before calling TU; preflight stays avai
 });
 
 test('TU student/employee succeeds using server config and ignores browser roles/type/id', async () => {
-  for (const type of ['student', 'employee']) {
+  for (const [type, env, expectedUrl] of [
+    ['student', { TU_APP_KEY: tuEnv.TU_APP_KEY }, tuEnv.TU_AUTH_URL],
+    ['student', { ...tuEnv, TU_AUTH_URL: '' }, tuEnv.TU_AUTH_URL],
+    ['employee', { ...tuEnv, TU_AUTH_URL: 'https://restapi.tu.ac.th/test-fixture-auth' },
+      'https://restapi.tu.ac.th/test-fixture-auth'],
+  ]) {
     let calls = 0;
-    const handler = await load('tuAuthLogin', { env: tuEnv,
+    const handler = await load('tuAuthLogin', { env,
       fetch: async (url, init) => {
         calls++;
-        assert.equal(url, tuEnv.TU_AUTH_URL);
+        assert.equal(url, expectedUrl);
         assert.equal(init.method, 'POST');
         assert.equal(init.redirect, 'error');
         assert.equal(init.headers['Content-Type'], 'application/json');

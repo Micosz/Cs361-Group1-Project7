@@ -10,7 +10,7 @@
 
 ตรวจ configuration และดาวน์โหลด source จาก AWS แบบ read-only เมื่อ 8 ตุลาคม 2026 ทุก function ใช้ Zip, ไม่มี layers และ source ใน Git ตรงกับ AWS เดิมหลังตัด trailing whitespace ของสอง data functions ชื่อจริงคือ `fetchPartnersData` มี s ส่วน `getPublicPartners` เดิมเป็น CommonJS ในไฟล์ `.mjs` จึงเปลี่ยนเฉพาะชื่อไฟล์เป็น `.cjs` เพื่อให้ module type ตรง โดยคงโค้ดและ Handler `index.handler` เดิม
 
-คงการพึ่ง AWS SDK v3 ของ runtime เดิมสำหรับสอง data functions จึงไม่เพิ่ม package.json ที่ไม่จำเป็น ส่วน `tuAuthLogin` ใช้ fetch ของ Node.js และอ่าน `TU_APP_KEY` จาก Lambda environment เดิม ก่อน deploy การปรับ TU Authentication ของ #75 ต้องตั้ง `TU_AUTH_URL` และตรวจ timeout ตาม [คู่มือ TU Authentication](tu-authentication.md) เพิ่มด้วย Workflow ไม่เปลี่ยน environment/runtime/handler/architecture/role หรือสร้าง resources ใหม่
+คงการพึ่ง AWS SDK v3 ของ runtime เดิมสำหรับสอง data functions จึงไม่เพิ่ม package.json ที่ไม่จำเป็น ส่วน `tuAuthLogin` ใช้ fetch ของ Node.js และอ่าน `TU_APP_KEY` จาก Lambda environment เดิม ก่อน deploy การปรับ TU Authentication ของ #75 ต้องตรวจ `TU_APP_KEY` และ timeout; `TU_AUTH_URL` เป็นตัวเลือกสำหรับ override endpoint เดิม ตาม [คู่มือ TU Authentication](tu-authentication.md) เพิ่มด้วย Workflow ไม่เปลี่ยน environment/runtime/handler/architecture/role หรือสร้าง resources ใหม่
 
 ## Secrets และข้อจำกัด Learner Lab
 

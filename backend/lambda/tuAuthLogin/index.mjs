@@ -1,4 +1,6 @@
 // #75: server-side TU adapter. Never log requests, provider bodies or exceptions.
+// Existing project endpoint; TU_AUTH_URL optionally overrides it server-side.
+const DEFAULT_TU_AUTH_URL = 'https://restapi.tu.ac.th/api/v1/auth/Ad/verify2';
 const TIMEOUT_MS = 8000;
 const MESSAGES = {
   INVALID_REQUEST: 'Username and Password are required in a valid JSON body',
@@ -34,7 +36,7 @@ function readConfig(env) {
   }
   let endpoint;
   try {
-    endpoint = new URL(env.TU_AUTH_URL);
+    endpoint = new URL(env.TU_AUTH_URL || DEFAULT_TU_AUTH_URL);
   } catch {
     throw new TuAuthError('AUTH_CONFIGURATION_UNAVAILABLE', 503);
   }

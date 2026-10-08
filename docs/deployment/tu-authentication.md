@@ -10,9 +10,9 @@
 
 - [TU Authentication](https://restapi.tu.ac.th/home/documents/Authen.html): POST JSON, headers `Content-Type: application/json` และ `Application-Key`, body `UserName`/`PassWord`; response มี boolean `status` และ `type` student/employee
 - [Getting started](https://restapi.tu.ac.th/home/documents/getting-started.html): สร้างและเปิด channel เพื่อรับ key; ไม่ต้องสร้างใหม่ถ้าทีมมีสิทธิ์อยู่แล้ว
-- [Developer Portal](https://restapi.tu.ac.th/tuapi/): ผู้มีสิทธิ์ต้องตรวจ endpoint และบริการของ channel ก่อนเปิดใช้งานจริง
+- [Developer Portal](https://restapi.tu.ac.th/tuapi/): ใช้ตรวจบริการและสิทธิ์ของ channel; ภาพค่าตั้ง channel ของทีมไม่มีช่อง Authentication endpoint
 
-หน้าเอกสารสาธารณะที่อ่านไม่ได้ยืนยัน URL endpoint ของบัญชีทีม ใน source เดิมของโครงการใช้ `https://restapi.tu.ac.th/api/v1/auth/Ad/verify2` ซึ่งเป็น URL ที่ผู้รับผิดชอบให้มา ไม่ใช่ URL ที่สร้างขึ้นใหม่ งานนี้ยังไม่ได้ยืนยันสิทธิ์ผ่าน Portal หรือทดสอบบัญชี TU จริง จึง **ไม่มี default URL ในโค้ด** ผู้รับผิดชอบต้องยืนยันก่อนตั้ง `TU_AUTH_URL` ห้ามลองเดา path หรือส่งรหัสผ่านไป endpoint อื่น
+หน้าเอกสารสาธารณะที่อ่านไม่ได้ยืนยัน URL endpoint ของบัญชีทีม ใน source เดิมของโครงการใช้ `https://restapi.tu.ac.th/api/v1/auth/Ad/verify2` ซึ่งเป็น URL ที่ผู้รับผิดชอบให้มา ไม่ใช่ URL ที่สร้างขึ้นใหม่ งานนี้ยังไม่ได้ยืนยันสิทธิ์ผ่าน Portal หรือทดสอบบัญชี TU จริง จึงใช้ **endpoint เดิมของโครงการเป็น default** โดยไม่ต้องตั้ง `TU_AUTH_URL` เพิ่ม ตัวแปรนี้เป็นตัวเลือกเมื่อทีมมี endpoint ใหม่ที่ยืนยันแล้วเท่านั้น ไม่ต้องสร้าง URL เฉพาะ channel; ยังต้องทดสอบการเรียกจริงก่อนอ้างว่า integration ผ่าน ห้ามลองเดา path หรือส่งรหัสผ่านไป endpoint อื่น
 
 เอกสารระบุ 1,000 requests/hour/user/key เป็นข้อมูลจากเอกสาร ไม่ใช่ผลตรวจ quota จริงของ channel ทีม
 
@@ -20,15 +20,15 @@
 
 1. เปิด Lambda `tuAuthLogin` ใน `us-east-1` → Configuration → Environment variables ของสภาพแวดล้อมที่จะใช้
 2. ตรวจและคง `TU_APP_KEY` ที่มีสิทธิ์ใช้ authentication ไว้ฝั่ง Lambda เท่านั้น อย่าคัดลอกลง source, issue, PR หรือ screenshot
-3. ตั้ง `TU_AUTH_URL` เป็น HTTPS endpoint ที่ยืนยันกับ Portal/ผู้ให้บริการแล้ว โค้ดยอมรับเฉพาะ origin `https://restapi.tu.ac.th` ไม่มี user/password ใน URL, query หรือ fragment และไม่ตาม redirect
+3. ไม่ต้องเพิ่ม `TU_AUTH_URL` หากใช้ endpoint เดิม หากต้อง override ให้ตั้งเป็น HTTPS endpoint ที่ยืนยันกับผู้ให้บริการแล้ว โค้ดยอมรับเฉพาะ origin `https://restapi.tu.ac.th` ไม่มี user/password ใน URL, query หรือ fragment และไม่ตาม redirect
 4. ตรวจ Lambda timeout ให้ **มากกว่า 8 วินาที** เช่น 12 วินาที เพื่อให้ adapter คืนข้อผิดพลาดได้ก่อน Lambda ถูกตัด ค่านี้เป็นข้อเลือกของระบบ ไม่ใช่ข้อบังคับ TU
 5. ตรวจ API Gateway/Lambda/APM ว่าไม่เก็บ request body, password, key หรือ raw provider response ใน logs ห้ามเปิด full request/response tracing สำหรับ Login
 6. ตรวจเพียงชื่อ environment variables และสถานะว่ามีค่า ไม่ dump configuration/environment ทั้งชุด ค่า key ของ dev/test/production เก็บแยกตาม environment และสิทธิ์ของทีม
 7. ให้เพื่อน Review แล้วจึง merge/deploy ตาม [Lambda CI/CD](lambda-cicd.md); workflow อัปเดตเฉพาะ source **ไม่ได้ตั้ง environment หรือ timeout ให้** ไม่ต้องเปลี่ยน Amplify เพื่อใช้ adapter นี้
 
-หากยังไม่ตั้ง URL/key โค้ดจะคืน 503 `AUTH_CONFIGURATION_UNAVAILABLE` และไม่เรียก TU การ deploy source ใหม่โดยไม่เตรียมค่าตั้งจะทำให้ Login ยังใช้งานไม่ได้
+หากไม่มี `TU_AUTH_URL` หรือเป็นค่าว่าง โค้ดใช้ endpoint เดิม หาก key หายหรือ URL override ไม่ผ่านกติกา โค้ดคืน 503 `AUTH_CONFIGURATION_UNAVAILABLE` และไม่เรียก TU
 
-`TU_APP_KEY`/`TU_AUTH_URL` เป็นค่า **Lambda Backend** ไม่ใช่ AWS credential secrets ของ GitHub Actions การ deploy ผ่าน Learner Lab ยังต้องใช้ GitHub Secrets `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` ที่ไม่หมดอายุ ตามคู่มือ CI/CD
+`TU_APP_KEY` (จำเป็น) และ `TU_AUTH_URL` (ตัวเลือก) เป็นค่า **Lambda Backend** ไม่ใช่ AWS credential secrets ของ GitHub Actions การ deploy ผ่าน Learner Lab ยังต้องใช้ GitHub Secrets `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` ที่ไม่หมดอายุ ตามคู่มือ CI/CD
 
 ## Request / response ที่ใช้ตอนนี้
 
@@ -54,7 +54,7 @@ TU request ใช้ POST JSON พร้อม key ฝั่ง Server; timeout 
 | --- | --- |
 | body/username/password ไม่ถูกต้อง | 400 `INVALID_REQUEST` |
 | TU `status === false` | 401 `INVALID_CREDENTIALS` |
-| key/URL หายหรือ URL ไม่ผ่านกติกา; TU HTTP 401/403 | 503 `AUTH_CONFIGURATION_UNAVAILABLE` |
+| key หายหรือ URL override ไม่ผ่านกติกา; TU HTTP 401/403 | 503 `AUTH_CONFIGURATION_UNAVAILABLE` |
 | TU JSON/status/type/profile ผิดรูปแบบ หรือ HTTP 4xx อื่น | 502 `AUTH_PROVIDER_INVALID_RESPONSE` |
 | network, timeout, redirect หรือ TU HTTP 5xx | 503 `AUTH_PROVIDER_UNAVAILABLE` |
 | TU HTTP 429 | 429 `RATE_LIMITED`; `Retry-After` 1–300 วินาที, fallback 60 |
@@ -68,7 +68,7 @@ HTTP 401/403 จาก TU ถูกจัดเป็นปัญหา channel/
 - **#77:** employee ยังต้องมอบหมายบทบาทภายในเอง ไม่เดาจากหน่วยงาน; student grant/scope อยู่ใน #76 ตามกติกา issue ปัจจุบัน
 - **#74/#78/#79:** ต่อ account linking → authenticated Session/Origin/CSRF → ตรวจ role/scope/participant ตามสัญญาของแต่ละงาน Adapter นี้ยังใช้ CORS เดิมสำหรับ API ปัจจุบัน จึงยังไม่ใช่ endpoint สำหรับ cookie Session ข้าม origin
 - **ก่อนเปิด Login V3:** ทำ local rate limit ตาม #90 (identity fingerprint/IP) ก่อนเรียก TU ใน Login orchestration; #75 รองรับผล quota จาก TU แล้ว แต่ไม่ได้เพิ่ม rate-limit store/resources ในงานนี้
-- **ผู้มีสิทธิ์ TU/AWS:** ยืนยัน endpoint/channel, ตั้ง env/timeout และตรวจ logs; ทดสอบ student/employee, wrong password, key ผิด/429 ด้วยวิธีที่ได้รับอนุญาต ไม่ยิงซ้ำจนติด quota ไม่เก็บรหัสผ่านหรือ key เป็นหลักฐาน
+- **ผู้มีสิทธิ์ TU/AWS:** ตรวจ channel/key, ตั้ง env/timeout และตรวจ logs; ทดสอบ student/employee, wrong password, key ผิด/429 ด้วยวิธีที่ได้รับอนุญาต ไม่ยิงซ้ำจนติด quota ไม่เก็บรหัสผ่านหรือ key เป็นหลักฐาน
 
 #76 branch ที่ตรวจยังไม่มี account-linking implementation เพิ่มจาก main; #78 เป็น Python และยังไม่มี Login route ที่เรียก Node adapter จึงต้องตกลง transport ภายในที่เชื่อถือได้ก่อนเชื่อม ห้ามให้ public API รับ verified profile หรือ userId เพื่อออก Session โดยตรง
 
