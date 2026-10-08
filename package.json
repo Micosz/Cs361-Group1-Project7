@@ -7,6 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
+    "build": "node scripts/build-public.cjs",
+    "pretest": "npm run build",
     "test": "node --test tests/search.test.js tests/date-presentation.test.js tests/login-presentation.test.js"
   },
   "repository": {

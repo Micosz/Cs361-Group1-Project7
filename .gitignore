@@ -1,1 +1,3 @@
 node_modules/
+# Generated clean URL entry; edit public/login.html instead
+/public/login/index.html
