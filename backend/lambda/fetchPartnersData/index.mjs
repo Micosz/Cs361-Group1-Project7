@@ -10,16 +10,16 @@ export const handler = async (event) => {
             TableName: "Partner"
         });
         const response = await docClient.send(command);
-        
+
         // คัดกรองเฉพาะข้อมูลที่เผยแพร่ได้ตาม Requirement
-        const publicData = response.Items.filter(item => 
+        const publicData = response.Items.filter(item =>
             item.access_level === 'public' || item.visibility === 'public'
         );
 
         return {
             statusCode: 200,
             headers: {
-                "Access-Control-Allow-Origin": "*", 
+                "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Headers": "Content-Type",
                 "Access-Control-Allow-Methods": "OPTIONS,GET"
             },

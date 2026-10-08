@@ -6,7 +6,7 @@
 
 ใช้ Learner Lab credentials ที่ผู้รับผิดชอบให้เพื่อตรวจ AWS แบบ read-only พบ `fetchPartnersData`, `getPublicPartners`, `tuAuthLogin` ใน us-east-1; ชื่อ `fetchPartnerData` ไม่มีใน account ที่ตรวจ ทั้งสามใช้ Node.js 24, Zip, Handler index.handler และไม่มี layers
 
-Source bytes ใน Git ตรงกับ index.mjs ที่ดาวน์โหลดจากแต่ละ function ตาม SHA-256:
+Source ใน Git เทียบกับ index.mjs ที่ดาวน์โหลดแล้วต่างเฉพาะ trailing whitespace ของสอง data functions และชื่อไฟล์ CommonJS ไม่มีการเปลี่ยน application logic; SHA-256 ด้านล่างเป็นของไฟล์ต้นฉบับ AWS:
 
 | Function | SHA-256 ของ source file | Packaging |
 | --- | --- | --- |
@@ -20,7 +20,7 @@ getPublicPartners มี mapping/CORS/query เดิม ไม่มีกา�
 
 - Python packaging/selection tests ผ่าน 15 tests: root/CRC/source isolation/dependencies/unsafe files, full push range, multi-function selection, deletion และ shared-tool changes
 - Actual Lambda source behavior ผ่าน Node tests 6 tests ด้วย AWS SDK/TU mocks ไม่มีคำขอฐานข้อมูลหรือ TU จริง
-- node --check ผ่านทั้งสามไฟล์; actual source ZIP ทั้งสามสร้างได้และมีเพียง handler file ที่ root
+- git diff --check ผ่านหลังตัด trailing whitespace ของ source ที่นำเข้า; node --check ผ่านทั้งสามไฟล์; actual source ZIP ทั้งสามสร้างได้และมีเพียง handler file ที่ root
 - actionlint 1.7.12 ตรวจ deploy/PR CI workflows ผ่าน; binary ตรวจ checksum จาก release ทางการ (`-shellcheck=` ไม่ได้อ้างผล shellcheck)
 - YAML triggers/paths/matrix และ Bash syntax ของ run steps ตรวจในเครื่อง; frontend regression และ credential scan ดูผลสรุปใน PR
 - หลังผู้รับผิดชอบอนุมัติ บันทึก repository Actions Secrets ทั้งสามค่าแล้ว ตรวจเฉพาะชื่อ ไม่แสดง secret values ใน logs/Git/PR

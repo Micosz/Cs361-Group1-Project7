@@ -8,7 +8,7 @@
 | `getPublicPartners` | `backend/lambda/getPublicPartners/index.cjs` | Node.js 24 / `index.handler` | arm64 |
 | `tuAuthLogin` | `backend/lambda/tuAuthLogin/index.mjs` | Node.js 24 / `index.handler` | arm64 |
 
-ตรวจ configuration และดาวน์โหลด source จาก AWS แบบ read-only เมื่อ 8 ตุลาคม 2026 ทุก function ใช้ Zip, ไม่มี layers และ source bytes ใน Git ตรงกับ AWS เดิม ชื่อจริงคือ `fetchPartnersData` มี s ส่วน `getPublicPartners` เดิมเป็น CommonJS ในไฟล์ `.mjs` จึงเปลี่ยนเฉพาะชื่อไฟล์เป็น `.cjs` เพื่อให้ module type ตรง โดยคงโค้ดและ Handler `index.handler` เดิม
+ตรวจ configuration และดาวน์โหลด source จาก AWS แบบ read-only เมื่อ 8 ตุลาคม 2026 ทุก function ใช้ Zip, ไม่มี layers และ source ใน Git ตรงกับ AWS เดิมหลังตัด trailing whitespace ของสอง data functions ชื่อจริงคือ `fetchPartnersData` มี s ส่วน `getPublicPartners` เดิมเป็น CommonJS ในไฟล์ `.mjs` จึงเปลี่ยนเฉพาะชื่อไฟล์เป็น `.cjs` เพื่อให้ module type ตรง โดยคงโค้ดและ Handler `index.handler` เดิม
 
 คงการพึ่ง AWS SDK v3 ของ runtime เดิมสำหรับสอง data functions จึงไม่เพิ่ม package.json ที่ไม่จำเป็น ส่วน `tuAuthLogin` ใช้ fetch ของ Node.js และอ่าน `TU_APP_KEY` จาก Lambda environment เดิม Workflow ไม่เปลี่ยน environment/runtime/handler/architecture/role หรือสร้าง resources ใหม่
 
@@ -47,6 +47,8 @@ Packager เก็บเฉพาะ tracked source ของ function ที่
 Deploy ด้วย `aws lambda update-function-code` เฉพาะชื่อใน matrix พร้อม RevisionId เพื่อกันเขียนทับ Console change ระหว่าง run รอ `function-updated-v2` และเทียบ CodeSha256 กับ ZIP ที่ส่ง ก่อนบันทึก Git SHA/function/hash ใน run summary ZIP อยู่ runner temp ไม่ commit/เผยแพร่ credentials หรือ ZIP artifact
 
 Workflow อัปเดต `$LATEST` เท่านั้น ไม่ publish version/ย้าย alias หาก API integration ใช้ alias/published version ต้องให้ผู้ดูแลยืนยัน release flow เพิ่มก่อนอ้างว่า API รับ code ใหม่
+
+หากเพิ่ม function ใหม่ ให้สร้างใน AWS ก่อน แล้วเพิ่ม source directory, allowlists ใน selector/packager, path filters และ tests ก่อนเปิด PR การเพิ่มไฟล์ชื่อใหม่อย่างเดียวจะไม่สร้างหรือ deploy Lambda ที่ไม่อยู่ใน allowlist
 
 ## Validation และการกู้คืน
 

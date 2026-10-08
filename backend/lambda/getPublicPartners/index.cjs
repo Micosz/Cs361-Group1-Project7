@@ -7,7 +7,7 @@ const docClient = DynamoDBDocumentClient.from(client);
 exports.handler = async (event) => {
     // ต้องใส่ CORS เสมอ เพื่อให้หน้าเว็บ (Browser) ยิงข้ามโดเมนมาขอข้อมูลได้
     const headers = {
-        "Access-Control-Allow-Origin": "*", 
+        "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Methods": "GET"
     };
@@ -16,9 +16,9 @@ exports.handler = async (event) => {
         const command = new ScanCommand({
             TableName: "Partner",
         });
-        
+
         const response = await docClient.send(command);
-        
+
         // คัดกรองข้อมูลก่อนส่งให้ Browser
         // (กรองเฉพาะฟิลด์ที่ปลอดภัย เผื่อในฐานข้อมูลมีข้อมูลภายใน)
         const publicData = response.Items.map(item => ({

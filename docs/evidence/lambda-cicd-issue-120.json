@@ -10,7 +10,7 @@
       "zipFiles": [
         "index.mjs"
       ],
-      "builtCodeSha256": "sPLU1NQCc2Hy8XCV2+AaDdlgeqMjEkZ5UQLOJnnAOSw="
+      "builtCodeSha256": "MYVBsesc2ihEtaJEmPvshVQM1J+F5HqGmMupxUxMCzE="
     },
     {
       "function": "getPublicPartners",
@@ -20,7 +20,7 @@
       "zipFiles": [
         "index.cjs"
       ],
-      "builtCodeSha256": "BomYdouSGnP5WD20TT6MdnfiUg5caF2hAeN2S67hBRQ="
+      "builtCodeSha256": "BKwhrLUG907FQpOnObZGT2EEl6eG7HOyK6pGejKQYIE="
     },
     {
       "function": "tuAuthLogin",
