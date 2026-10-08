@@ -106,3 +106,16 @@ h2 { margin: 0 40px 12px 0; color: #202020; font-size: clamp(32px,4.4svh,48px); 
 /* The additional card must remain reachable on short screens and mobile. */
 .login-main { justify-content: safe center; overflow-y: auto; }
 .login-layout { flex-shrink: 0; }
+
+.demo-accounts-trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; min-height: 52px; border: 1px solid #e1d3cf; border-radius: 16px; color: #a7002b; background: rgb(255 250 247 / 96%); font-size: 14px; font-weight: 500; }
+.demo-accounts { position: fixed; inset: 0; width: min(440px, calc(100% - 32px)); max-width: none; max-height: calc(100dvh - 40px); margin: auto; padding: 28px; color: var(--login-ink); overflow-y: auto; }
+.demo-accounts::backdrop { background: rgb(39 20 29 / 35%); backdrop-filter: blur(4px); }
+.demo-accounts h2 { margin-right: 28px; font-size: 20px; }
+.demo-accounts p, .demo-accounts dt, .demo-accounts code { font-size: 14px; }
+.demo-accounts dl { gap: 14px; margin-block: 20px; }
+.demo-accounts-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #6b4453; font-size: 26px; line-height: 1; }
+@media (hover: hover) and (pointer: fine) { .demo-accounts-trigger:hover, .demo-accounts-close:hover { background: #fff0f3; } }
+@media (prefers-reduced-motion: no-preference) {
+    .demo-accounts[open] { animation: demo-popup-in 180ms ease-out; }
+    @keyframes demo-popup-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+}
