@@ -184,6 +184,10 @@ npm test
 
 ## Documentation
 
+### V3 · Design baseline
+
+[เริ่มอ่าน V3-B1: Scope, Permissions, TU Login/Session, Data, API และ Architecture/Migration](docs/design/v3/README.md) — เอกสารออกแบบสำหรับ #72 และ 5 sub-issues; ยังไม่ใช่ implementation หรือผลยืนยันบริการจริง
+
 ### 📘 V2 · เวอร์ชันปัจจุบัน
 
 เริ่มจากภาพรวมระบบ แล้วอ่านเหตุผลการออกแบบและผลทดสอบเพิ่มเติม

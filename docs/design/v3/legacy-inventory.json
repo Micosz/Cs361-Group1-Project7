@@ -1,0 +1,115 @@
+{
+  "baseline": "V3-B1",
+  "checked_date": "2026-10-08 Asia/Bangkok",
+  "source_commit": "fb895bea7c21ab54fb3e4662854fbd181bb60a78",
+  "source_path": "public/data/partner-data-backup.json",
+  "source_sha256": "24f9ecd994db26add933ac943f3a0b7234c51186819b375b3d9944019044da2c",
+  "evidence_type": "offline repository snapshot inspection; not AWS export or migration execution",
+  "counts": {
+    "records": 26,
+    "partners": 13,
+    "activities": 13,
+    "duplicate_ids": 0,
+    "orphan_primary_partner_ids": 0,
+    "activities_without_period_date": 0
+  },
+  "entities": {
+    "partner": {
+      "type_counts": {
+        "university": 4,
+        "company": 7,
+        "government": 1,
+        "internship": 1
+      },
+      "field_occurrences": {
+        "access_level": 13,
+        "coordinators": 13,
+        "full_description": 1,
+        "id": 13,
+        "location": 13,
+        "logo_path": 13,
+        "name": 13,
+        "summary": 13,
+        "type": 13,
+        "website_url": 13
+      },
+      "ids": [
+        "partner-agicafet-001",
+        "partner-ascend-001",
+        "partner-coop-main-001",
+        "partner-cp-001",
+        "partner-embeddedllm-001",
+        "partner-ipb-001",
+        "partner-kansai-001",
+        "partner-kbtg-001",
+        "partner-kingpower-001",
+        "partner-nectec-001",
+        "partner-set-001",
+        "partner-tudublin-001",
+        "partner-ucsd-001"
+      ]
+    },
+    "activity": {
+      "type_counts": {
+        "academic_activity": 5,
+        "internship": 3,
+        "event": 2,
+        "research": 3
+      },
+      "field_occurrences": {
+        "co_hosts": 1,
+        "full_description": 13,
+        "id": 13,
+        "image_path": 13,
+        "partnerId": 13,
+        "partnerName": 13,
+        "period": 13,
+        "period_date": 13,
+        "summary": 13,
+        "title": 13,
+        "type": 13,
+        "visibility": 13
+      },
+      "ids": [
+        "collab-ascend-001",
+        "collab-ascend-002",
+        "collab-ipb-001",
+        "collab-kbtg-002",
+        "collab-nectec-001",
+        "event-aist-001",
+        "event-cp-001",
+        "event-ipb-001",
+        "event-kansai-exchange-001",
+        "event-kbtg-001",
+        "event-sparkcamp-001",
+        "event-tudublin-001",
+        "event-ucsd-001"
+      ]
+    }
+  },
+  "cohost_mapping_candidates": [
+    {
+      "activity_id": "event-sparkcamp-001",
+      "legacy_name": "AGICAFET",
+      "candidate_partner_ids": [
+        "partner-agicafet-001"
+      ],
+      "status": "manual verification required; substring is not an approved identity link"
+    },
+    {
+      "activity_id": "event-sparkcamp-001",
+      "legacy_name": "Embedded LLM",
+      "candidate_partner_ids": [
+        "partner-embeddedllm-001"
+      ],
+      "status": "manual verification required; substring is not an approved identity link"
+    }
+  ],
+  "unverified": [
+    "actual DynamoDB schema/key/index layout",
+    "source freshness against AWS",
+    "curriculum scope ID",
+    "cohost identity mapping approval",
+    "user/responsibility/participant account mapping"
+  ]
+}

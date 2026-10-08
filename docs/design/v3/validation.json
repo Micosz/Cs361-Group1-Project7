@@ -1,0 +1,49 @@
+{
+  "baseline": "V3-B1",
+  "date": "2026-10-08 Asia/Bangkok",
+  "verification_type": "documentation/static artifact checks only",
+  "markdown_files": 7,
+  "relative_links_checked": 29,
+  "tables_checked": 16,
+  "json_examples_parsed": 2,
+  "legacy_inventory_sha256_matches": true,
+  "legacy_counts": {
+    "records": 26,
+    "partners": 13,
+    "activities": 13,
+    "duplicate_ids": 0,
+    "orphan_primary_partner_ids": 0,
+    "activities_without_period_date": 0
+  },
+  "decision_ids": [
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5",
+    "B6",
+    "B7"
+  ],
+  "contract_acceptance_ids": [
+    "A01",
+    "A02",
+    "A03",
+    "A04",
+    "A05",
+    "A06",
+    "A07",
+    "A08",
+    "A09",
+    "A10",
+    "A11",
+    "A12"
+  ],
+  "result": "PASS",
+  "not_run": [
+    "TU authentication",
+    "V3 runtime/permission tests",
+    "AWS changes",
+    "migration execution",
+    "Production smoke"
+  ]
+}
