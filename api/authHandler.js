@@ -6,7 +6,6 @@ const client = new DynamoDBClient({ region: "us-east-1" });
 const docClient = DynamoDBDocumentClient.from(client);
 
 // ใช้ชื่อ Table ตามที่จะกำหนดร่วมกันใน Issue #91
-//test
 const TABLE_NAME = process.env.TABLE_NAME || "CSTUHub-Users"; 
 
 /**
@@ -14,14 +13,14 @@ const TABLE_NAME = process.env.TABLE_NAME || "CSTUHub-Users";
  * ต้องเรียกใช้ที่ฝั่ง Backend เท่านั้น ห้ามเรียกจาก Browser
  * 
  * @param {Object} tuPayload - ข้อมูลที่ยืนยันแล้วจากฝั่ง Backend ที่ไปคุยกับ TU
- * @param {boolean} tuPayload.success - สถานะการยืนยัน ต้องเป็น true เท่านั้น (อิงตาม api เพื่อนที่ใช้ success)
+ * @param {boolean} tuPayload.status - สถานะการยืนยัน ต้องเป็น true เท่านั้น
  * @param {string} tuPayload.tu_identifier - รหัสประจำตัว (Immutable ID) เช่น username จาก TU
  * @param {string} [tuPayload.type] - ประเภทบุคคล "student" หรือ "employee" (เดี๋ยวเพื่อนจะดึงมาใส่ทีหลัง)
  */
 async function handleTULogin(tuPayload) {
     // 1. Validation (กติกา: ใช้เฉพาะผลที่ Backend เรียก TU เองและตรวจ status === true)
     if (!tuPayload || tuPayload.status !== true) {
-    throw new Error("Unauthorized: Invalid TU login status. ไม่ได้รับอนุญาต");
+        throw new Error("Unauthorized: Invalid TU login status. ไม่ได้รับอนุญาต");
     }
 
     const { tu_identifier, type } = tuPayload;
@@ -94,9 +93,14 @@ async function handleTULogin(tuPayload) {
 
     } catch (error) {
         // 3. การจัดการ "บัญชีเดิม" (Update / Return)
-        // ถ้าเกิด Error TransactionCanceled แสดงว่า ConditionExpression ไม่ผ่าน = "มี Mapping อยู่แล้ว"
         if (error.name === "TransactionCanceledException" || error.message.includes("ConditionalCheckFailed")) {
             
+            // เช็คว่า Item แรก (Mapping) พังเพราะ ConditionalCheckFailed จริงๆ
+            const reasons = error.CancellationReasons || [];
+            if (reasons.length > 0 && reasons[0]?.Code !== "ConditionalCheckFailed") {
+                throw error; // พังเพราะสาเหตุอื่นของ Transaction
+            }
+
             console.log(`[Auth] Found existing mapping for TU ID: ${tu_identifier}. Fetching existing user...`);
             
             // ดึงข้อมูล Mapping เดิม
