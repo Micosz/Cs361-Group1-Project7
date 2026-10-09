@@ -172,6 +172,100 @@
     {
       "path": "resources/KPC_logo.jpg",
       "status": "คืนโลโก้ King Power Click เดิมเพื่อแสดงองค์กร; ไม่ใช้ KPCp.jpg เป็นภาพกิจกรรม AIST"
+    },
+    {
+      "path": "resources/sources/tudublin-logo.svg",
+      "record_id": "partner-tudublin-001",
+      "source_page": "https://www.tudublin.ie/",
+      "source_image_url": "https://pxl01-tudublinie.terminalfour.net/prod01/tudublin-cdn-pxl/media/website/site-assets/images/tu-dublin-logo-blue.svg",
+      "checked_on": "2026-10-09",
+      "sha256": "f4dfc3a2437203ae85664b0668a188900cb83a60f0f945b683f99ddda7376ed5",
+      "status": "โลโก้จากเว็บทางการ"
+    },
+    {
+      "path": "resources/sources/aist-logo.gif",
+      "record_id": "partner-aist-001",
+      "source_page": "https://www.aist.go.jp/index_en.html",
+      "source_image_url": "https://www.aist.go.jp/Portals/0/Skins/AIS_en/images/logo.gif",
+      "checked_on": "2026-10-09",
+      "sha256": "1de2ebdeb00c2b8219c5f59654ad6e6a9bff28f6422bb346ab81fc3542ab0dba",
+      "status": "โลโก้จากเว็บทางการ"
+    },
+    {
+      "path": "resources/sources/agicafet-logo.webp",
+      "record_id": "partner-agicafet-001",
+      "source_page": "https://agicafet.com",
+      "source_image_url": "https://agicafet.com/img/agicafet-logo-72.webp",
+      "checked_on": "2026-10-09",
+      "sha256": "ffbb00d61b262c5fa1e4ad4633a366aa3cd574ba458a08cc18660f9e74a0e07c",
+      "status": "โลโก้จากเว็บทางการ"
+    },
+    {
+      "path": "resources/sources/yarsi-logo.jpg",
+      "record_id": "partner-yarsi-001",
+      "source_page": "https://www.yarsi.ac.id/",
+      "source_image_url": "https://www.yarsi.ac.id/wp-content/uploads/2019/07/cropped-Lambang_Universitas_YARSI.jpg",
+      "checked_on": "2026-10-09",
+      "sha256": "c026a8775f097a069909f7529e573949c451dee05222dd3d4a1489b21812c048",
+      "status": "โลโก้จากเว็บทางการ"
+    },
+    {
+      "path": "resources/sources/uf-logo.png",
+      "record_id": "partner-uf-001",
+      "source_page": "https://brandcenter.ufl.edu/the-university-logo/",
+      "source_image_url": "https://brandcenter.p01.wp.it.ufl.edu/wp-content/uploads/sites/57/2023/06/UF_Monogram_Orange.png",
+      "checked_on": "2026-10-09",
+      "sha256": "4cf296b3828f96484411ef7145088fc74b326bc8cc1f08b5c54012ee42756819",
+      "status": "โลโก้จากเว็บทางการ"
+    },
+    {
+      "path": "resources/sources/inesctec-logo.svg",
+      "record_id": "partner-inesctec-001",
+      "source_page": "https://www.inesctec.pt/en",
+      "source_image_url": "https://www.inesctec.pt/assets/images/logo-black.svg",
+      "checked_on": "2026-10-09",
+      "sha256": "fc9992e2ebbb19d0fcc5ff8c357a3d77852a7c35d846125c05398fec5427dc1b",
+      "status": "โลโก้จากเว็บทางการ"
+    },
+    {
+      "path": "resources/sources/aist-yutthana-siwakorn.jpg",
+      "record_id": "event-aist-001",
+      "source_page": "https://cs.sci.tu.ac.th/partnership-th/",
+      "source_image_url": "https://sci.tu.ac.th/wp-content/uploads/2020/04/66579979_10157797745942275_9040536524604571648_o-1.jpg",
+      "checked_on": "2026-10-09",
+      "sha256": "65b2348a7378c2dee4e889953f8b0f0ff199130e35f6479b1702180dc6ef44b6",
+      "status": "ภาพจากข่าว/โพสต์ต้นทางของกิจกรรม"
+    },
+    {
+      "path": "resources/sources/nvidia-workshop-2026.jpg",
+      "record_id": "event-nvidia-ai-001",
+      "source_page": "https://sci.tu.ac.th/%E0%B8%84%E0%B8%93%E0%B8%B0%E0%B8%A7%E0%B8%B4%E0%B8%97%E0%B8%A2%E0%B8%B2%E0%B8%A8%E0%B8%B2%E0%B8%AA%E0%B8%95%E0%B8%A3%E0%B9%8C%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B9%80%E0%B8%97%E0%B8%84%E0%B9%82-43/",
+      "source_image_url": "https://sci.tu.ac.th/wp-content/uploads/2026/07/SCITU-2-1-980x653.jpg",
+      "checked_on": "2026-10-09",
+      "sha256": "b04410085446a392fc1618ea2702833ea899b3fe09511efb8be845df55ee0df3",
+      "status": "ภาพจากข่าว/โพสต์ต้นทางของกิจกรรม"
+    },
+    {
+      "path": "resources/sources/cnc-discussion-2026.jpg",
+      "record_id": "event-cnc-discussion-001",
+      "source_page": "https://lnkd.in/p/gAqkfXX9",
+      "source_image_url": "https://media.licdn.com/dms/image/v2/D5622AQFqpVgaZ4nQLw/feedshare-shrink_480/B56aB8eVzpGQAg-/0/1788794724140?e=1793232000&v=beta&t=afi-qc61jbkKP916_pQknoRRmTcafmsVzNtFdwCnhMU",
+      "checked_on": "2026-10-09",
+      "sha256": "da97a2b4cef923aaee1abb86e6cc61fb6f3822bf392cca76648edc40c58754ed",
+      "status": "ภาพจากข่าว/โพสต์ต้นทางของกิจกรรม"
+    },
+    {
+      "path": "resources/sources/nvidia-logo.svg",
+      "record_id": "partner-nvidia-001",
+      "source_page": "https://www.nvidia.com/en-us/",
+      "source_image_url": "https://www.nvidia.com/en-us/#inline-nvidia-logo",
+      "checked_on": "2026-10-09",
+      "sha256": "3a42aa59d0b0351b2b892662e85da97af59ef7fb4bf77a5c371fe880220e73d0",
+      "status": "โลโก้จากเว็บทางการ"
+    },
+    {
+      "record_id": "partner-yarsi-001",
+      "status": "ใช้ตรามหาวิทยาลัย YARSI แสดงสังกัด Faculty of Information Technology; ไม่อ้างเป็นตราคณะเฉพาะ"
     }
   ],
   "restored_collaborators": [
@@ -292,5 +386,23 @@
         ]
       }
     ]
-  }
+  },
+  "image_gaps": [
+    {
+      "record_id": "partner-cnc-001",
+      "field": "logo_path",
+      "reason": "ยังไม่พบตราหน่วยบัญชาการไซเบอร์ทหารจากแหล่งทางการที่ยืนยันได้; มีรูปกิจกรรม CNC แล้ว"
+    },
+    {
+      "record_id": "partner-nchc-001",
+      "field": "logo_path",
+      "reason": "ตรา header เว็บทางการเป็นตัวหนังสือสีขาว จึงยังไม่ใช้บนการ์ดพื้นขาว; ไม่ใช้ตรา Taiwan AI RAP หรือ Free Software Lab แทน"
+    },
+    {
+      "record_id": "event-aist-parinya-001",
+      "field": "image_path",
+      "source_page": "https://sci.tu.ac.th/exchange-student-outbound-eu-6-th/",
+      "reason": "ภาพทั้ง 8 ในหน้าข่าวโหลดไม่ได้ใน browser; ขอเก็บรูปจากสาขาหรือไฟล์ต้นฉบับก่อน ไม่ใช้รูปแลกเปลี่ยนรอบอื่นแทน"
+    }
+  ]
 }
