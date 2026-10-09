@@ -526,3 +526,51 @@ test('main public-only loading excludes records without explicit publication and
     assert.ok(beta.collaborations.some(activity => activity.id === 'safe-event'));
     assert.equal((await p.context.getPublicActivityById('safe-event')).partnerId, 'alpha');
 });
+
+test('MoU filter uses verified tags and combines with search and dates without duplicating Spark Camp', async () => {
+    const catalog = JSON.parse(readFileSync(require.resolve('../public/data/partner-data-backup.json'), 'utf8'));
+    const p = page(async () => response(catalog));
+    const records = await p.context.getPublicActivities();
+    const ids = () => Array.from(p.context.filterBrowseRecords(records, 'title', 'filterEvent'), r => r.id).sort();
+    p.get('filterEvent').value = 'mou';
+    assert.deepEqual(ids(), ['event-sparkcamp-001', 'event-yarsi-mou-001']);
+    await p.context.applyEventFilters();
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /event-cnc-discussion-001|event-tudublin-001/);
+    p.get('searchInput').value = 'Yarsi';
+    await p.context.handleSearch();
+    await p.context.showSuggestions();
+    assert.match(p.get('eventGrid').innerHTML, /event-yarsi-mou-001/);
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /event-sparkcamp-001/);
+    assert.match(p.get('searchSuggestions').innerHTML, /SCI-TU ลงนาม MoU/);
+    await p.context.setBrowseKeyword('');
+    p.get('filterEventDate').value = '2022-06-22';
+    p.get('filterEventDateEnd').value = '2022-06-22';
+    assert.deepEqual(ids(), ['event-yarsi-mou-001']);
+    p.get('filterEventDate').value = p.get('filterEventDateEnd').value = '';
+    p.get('filterEvent').value = 'academic_activity';
+    assert.ok(ids().includes('event-cnc-discussion-001'));
+    assert.ok(!ids().includes('event-yarsi-mou-001'));
+    p.get('filterEvent').value = 'event';
+    assert.ok(ids().includes('event-sparkcamp-001'));
+    p.get('filterEvent').value = 'all';
+    assert.equal(ids().length, 12);
+    assert.equal(new Set(ids()).size, 12);
+});
+
+test('event dates use compact Thai calendar days without time across cards and details', async () => {
+    const catalog = JSON.parse(readFileSync(require.resolve('../public/data/partner-data-backup.json'), 'utf8'));
+    const p = page(async () => response(catalog));
+    await p.context.renderEventCards();
+    assert.match(p.get('eventGrid').innerHTML, /9 ก.ค. 69/);
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /09\.00|16\.00|เวลา/);
+    await p.context.openModal('event-nvidia-ai-001', 'activity');
+    assert.equal(p.get('modalInfo').textContent, '9 ก.ค. 69');
+    assert.match(p.get('modalDetails').innerHTML, /09\.00–16\.00/, 'source-backed time stays in the full description');
+    await p.context.openModal('partner-nvidia-001', 'partner');
+    assert.match(p.get('modalDetails').innerHTML, /9 ก.ค. 69/);
+    assert.equal(p.context.formatActivityDate({ period_date: '2025-08-28' }), '28 ส.ค. 68');
+    assert.equal(p.context.formatActivityDate({ period_date: '2022-09-09', period_end_date: '2022-09-17' }), '9 ก.ย. 65');
+    assert.equal(p.context.formatActivityDate({ period_date: '2026-02-30' }), 'ไม่ระบุวันที่');
+    assert.equal(p.context.formatActivityDate({ period: 'แหล่งข้อมูลไม่ระบุวันที่' }), 'ไม่ระบุวันที่');
+    assert.equal(p.context.formatActivityDate({ period_date: null, date_precision: 'month', period: 'ต.ค. 2563' }), 'ต.ค. 63');
+});

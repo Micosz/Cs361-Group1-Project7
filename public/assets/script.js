@@ -289,6 +289,24 @@ function getColorClass(type) {
     }
 }
 
+function formatActivityDate(activity) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(activity.period_date || '');
+    if (match) {
+        const [, year, month, day] = match;
+        const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
+        if (!Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === match[0]) {
+            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+                'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            return `${Number(day)} ${months[Number(month) - 1]} ${String(Number(year) + 543).slice(-2)}`;
+        }
+    }
+    // Preserve a source's month precision; never invent a calendar day.
+    if (activity.date_precision === 'month') {
+        return activity.period?.replace(/\b(\d{2})(\d{2})\b$/, '$2') || 'ไม่ระบุวันที่';
+    }
+    return 'ไม่ระบุวันที่';
+}
+
 // สร้างการ์ดหน้า Collaborator
 async function renderCollaboratorCards() {
     const container = document.getElementById('collaboratorGrid');
@@ -389,7 +407,7 @@ async function renderEventCards() {
                     <p class="card-desc">${activity.summary}</p>
                     <div class="card-footer">
                         <div class="author"><span class="author-name">${hostNames}</span></div>
-                        <div class="stats">${activity.period}</div>
+                        <div class="stats event-date">${formatActivityDate(activity)}</div>
                     </div>
                 </div>
             </div>
@@ -525,7 +543,7 @@ async function openModal(id, type) {
                     <p class="card-desc" style="font-size: 0.85rem; margin-bottom: 0.5rem;">${collab.summary}</p>
                     <div class="card-footer" style="font-size: 0.8rem; border-top: 1px solid #eee; padding-top: 0.5rem; display: flex; justify-content: space-between;">
                         <span class="author-name" style="color: #666;">${partnerName}</span>
-                        <span class="stats" style="color: #999;">${collab.period}</span>
+                        <span class="stats event-date" style="color: #999;">${formatActivityDate(collab)}</span>
                     </div>
                 </div>
             </div>
@@ -626,10 +644,18 @@ function filterBrowseRecords(records, field, selectId, searchKeyword = browseKey
         typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) &&
         (!start || day >= start) && (!end || day <= end)
     );
+    const matchesType = record => {
+        const hasMoU = Array.isArray(record.activity_tags) && record.activity_tags.includes('mou');
+        if (selectId === 'filterEvent' && type === 'mou') return hasMoU;
+        if (selectId === 'filterEvent' && type === 'academic_activity') {
+            return record.type === type && !hasMoU;
+        }
+        return type === 'all' || record.type === type;
+    };
     // V2 specifies name/title search; suggestions and cards share these rules.
     // Preserve dates, co_hosts and relationships from the data source.
     return records.filter(record =>
-        (type === 'all' || record.type === type) &&
+        matchesType(record) &&
         String(record[field] ?? '').toLowerCase().includes(keyword) &&
         // Compare the stored calendar day directly, without timezone conversion.
         ((!start && !end) || (selectId === 'filterCollab'

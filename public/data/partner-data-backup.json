@@ -356,6 +356,9 @@
     ],
     "source_checked_on": "2026-10-09",
     "evidence_note": "เป็นกิจกรรมและพิธีในข่าวเดียวกัน ยังไม่ยืนยันวันที่หรือสถานะข้อตกลงปัจจุบัน",
+    "activity_tags": [
+      "mou"
+    ],
     "partnerId": "partner-embeddedllm-001",
     "partnerName": "Embedded LLM"
   },
@@ -440,6 +443,9 @@
     ],
     "source_checked_on": "2026-10-09",
     "evidence_note": "",
+    "activity_tags": [
+      "mou"
+    ],
     "partnerId": "partner-yarsi-001",
     "partnerName": "Faculty of Information Technology, Yarsi University"
   },
