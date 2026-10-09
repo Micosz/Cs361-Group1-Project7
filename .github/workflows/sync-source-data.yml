@@ -1,0 +1,87 @@
+name: Sync GitHub source catalog to DynamoDB
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/partners.json'
+      - 'data/source-sync-config.json'
+      - 'public/data/partner-data-backup.json'
+      - 'scripts/build-source-backup.cjs'
+      - 'scripts/sync-source-data.cjs'
+      - '.github/workflows/sync-source-data.yml'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Apply to Partner or inspect the plan only'
+        type: choice
+        options: [apply, dry-run]
+        default: apply
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-catalog-partner-us-east-1
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.ref == 'refs/heads/main' && vars.SOURCE_DATA_SYNC_PAUSED != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Read current main (including queued runs)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Validate source data and sync safety
+        run: |
+          node scripts/build-source-backup.cjs --check
+          node --test tests/source-sync.test.cjs
+      - name: Require an active AWS session
+        env:
+          LAB_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          LAB_SECRET_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          LAB_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$LAB_ACCESS_KEY" || -z "$LAB_SECRET_KEY" || -z "$LAB_SESSION_TOKEN" ]]; then
+            echo '::error::Set all three AWS secrets from an active Learner Lab session.'
+            exit 1
+          fi
+      - name: Configure existing AWS session
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+          allowed-account-ids: '379130028573'
+          mask-aws-account-id: true
+          unset-current-credentials: true
+          retry-max-attempts: 2
+      - name: Confirm source is still main and sync
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SYNC_MODE: ${{ inputs.mode || 'apply' }}
+        run: |
+          set -euo pipefail
+          SOURCE_COMMIT=$(git rev-parse HEAD)
+          export SOURCE_COMMIT
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [[ "$latest" != "$SOURCE_COMMIT" ]]; then
+            echo '::error::Main changed during preparation; rerun to sync its current catalog.'
+            exit 1
+          fi
+          if [[ "$SYNC_MODE" == 'apply' ]]; then
+            node scripts/sync-source-data.cjs --apply
+          else
+            node scripts/sync-source-data.cjs
+          fi
