@@ -1,0 +1,113 @@
+{
+  "region": "us-east-1",
+  "account_id": "379130028573",
+  "table": "Partner",
+  "owner": "github-public-catalog",
+  "legacy_keys": [
+    {
+      "id": "collab-ascend-001",
+      "type": "internship"
+    },
+    {
+      "id": "collab-ascend-002",
+      "type": "academic_activity"
+    },
+    {
+      "id": "collab-ipb-001",
+      "type": "academic_activity"
+    },
+    {
+      "id": "collab-kbtg-002",
+      "type": "internship"
+    },
+    {
+      "id": "collab-nectec-001",
+      "type": "internship"
+    },
+    {
+      "id": "event-aist-001",
+      "type": "research"
+    },
+    {
+      "id": "event-cp-001",
+      "type": "academic_activity"
+    },
+    {
+      "id": "event-ipb-001",
+      "type": "academic_activity"
+    },
+    {
+      "id": "event-kansai-exchange-001",
+      "type": "research"
+    },
+    {
+      "id": "event-kbtg-001",
+      "type": "event"
+    },
+    {
+      "id": "event-sparkcamp-001",
+      "type": "event"
+    },
+    {
+      "id": "event-tudublin-001",
+      "type": "academic_activity"
+    },
+    {
+      "id": "event-ucsd-001",
+      "type": "research"
+    },
+    {
+      "id": "partner-agicafet-001",
+      "type": "company"
+    },
+    {
+      "id": "partner-ascend-001",
+      "type": "company"
+    },
+    {
+      "id": "partner-coop-main-001",
+      "type": "internship"
+    },
+    {
+      "id": "partner-cp-001",
+      "type": "company"
+    },
+    {
+      "id": "partner-embeddedllm-001",
+      "type": "company"
+    },
+    {
+      "id": "partner-ipb-001",
+      "type": "university"
+    },
+    {
+      "id": "partner-kansai-001",
+      "type": "university"
+    },
+    {
+      "id": "partner-kbtg-001",
+      "type": "company"
+    },
+    {
+      "id": "partner-kingpower-001",
+      "type": "company"
+    },
+    {
+      "id": "partner-nectec-001",
+      "type": "government"
+    },
+    {
+      "id": "partner-set-001",
+      "type": "company"
+    },
+    {
+      "id": "partner-tudublin-001",
+      "type": "university"
+    },
+    {
+      "id": "partner-ucsd-001",
+      "type": "university"
+    }
+  ],
+  "backup_table": "PartnerSourceSync"
+}

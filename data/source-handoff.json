@@ -144,7 +144,7 @@
       ]
     }
   ],
-  "deployment_note": "ยังไม่แก้ DynamoDB/API หรือรัน migrate.js; PutCommand ไม่ลบรายการเก่า ต้องตรวจรายการที่จะลบและสำรองฐานข้อมูลก่อนนำเข้าจริง; เปลี่ยนไฟล์ fallback อย่างเดียวไม่แทนข้อมูลที่ API ตอบสำเร็จ",
+  "deployment_note": "เมื่อรวมชุดข้อมูลบน main จะ sync ตาราง Partner ผ่าน sync-source-data.yml โดยตรวจ ownership และสำรองใน PartnerSourceSync; ใช้แผนใหม่แทน migrate.js; AWS session หมดอายุต้องปรับ Secrets และ rerun; ดู docs/data/v1-data.md",
   "image_sources": [
     {
       "path": "resources/IPB2.jpg",

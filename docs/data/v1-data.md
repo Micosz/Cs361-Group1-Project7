@@ -52,7 +52,22 @@ node scripts/build-source-backup.cjs
 node scripts/build-source-backup.cjs --check
 ```
 
-เว็บยังอ่าน API ก่อน fallback จึงยังไม่ยืนยันว่าข้อมูลบนเว็บที่ deploy หรือ DynamoDB เปลี่ยนแล้ว **อย่ารัน `migrate.js` เพียงเพื่อทดลองดูเว็บ**: สคริปต์นั้นเขียน DynamoDB จริงด้วย PutCommand และไม่ได้ลบรายการเก่าที่ถูกนำออก ต้องสำรองและวางแผนจัดการรายการเดิมก่อนนำเข้าจริง การกรองวันที่ปัจจุบันยังใช้วันเริ่ม ไม่ได้ตรวจช่วงวันที่ทับซ้อนหรือเดือนที่ไม่รู้วัน
+## Sync GitHub ไป DynamoDB
+
+เมื่อเปลี่ยน `data/partners.json` ให้รันคำสั่งด้านบนแล้ว commit ทั้งไฟล์ต้นทางและ fallback เมื่อรวมเข้า `main` workflow **Sync GitHub source catalog to DynamoDB** จะ sync ไปตาราง `Partner` ใน `us-east-1` โดยอัตโนมัติ ใช้ค่าบัญชี/ตารางจาก `data/source-sync-config.json` และทดสอบข้อมูลก่อนเชื่อม AWS มี Run workflow แบบ `apply` และ `dry-run` สำหรับ main เท่านั้น
+
+- ใช้ GitHub Secrets เดิม: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` ไม่ใส่คีย์ในไฟล์หรือ log; session ของ Learner Lab หมดอายุได้ ต้องอัปเดตทั้งสามค่าแล้ว rerun งานที่ล้มเหลว
+- GitHub เป็นต้นทาง ไม่ดึง API กลับมาเขียนทับข้อมูลใน repository อีกต่อไป Workflow เดิม `update-data-backup.yml` เปลี่ยนเป็นตรวจข้อมูลอย่างเดียว
+- key จริงของ Partner คือ `id` + `type` การเปลี่ยน type จึงเลิกเผยแพร่ key เก่าและเพิ่ม key ใหม่ รายการที่ถูกนำออกใช้ `source_state: retired` และตั้งทั้ง `access_level`/`visibility` เป็น `private`; ไม่ลบเนื้อหาเก่า
+- sync เฉพาะ key เดิม 26 รายการที่ตรวจว่าเป็นสาธารณะ หรือรายการที่ automation นี้ดูแลแล้ว ไม่ scan/แทนที่ทั้งตาราง ไม่รับข้อมูลส่วนตัว ชื่อผู้ประสานงานใหม่ หรือฟิลด์สิทธิ์ผ่านชุดข้อมูลนี้ หากพบข้อมูลภายใน ฟิลด์ที่ไม่รู้จัก หรือรายการที่ระบบอื่นดูแลใน key เป้าหมาย จะหยุดทั้งชุด
+- ก่อนเปลี่ยนรายการ จะสำรอง snapshot ในตาราง **PartnerSourceSync** และบันทึก control/revision ที่นั่น ครั้งแรกจะสร้างตารางนี้แบบ on-demand หากยังไม่มี ข้อมูลสำรองไม่อยู่ใน Partner และไม่ส่งผ่าน API สาธารณะ ไม่มีการอัปโหลด snapshot เป็น artifact ของ Actions
+- เขียนข้อมูล สำรอง และปรับ control ด้วย transaction เดียวพร้อมเงื่อนไขตรวจค่าก่อนหน้า ถ้ามีใครแก้ข้อมูลระหว่างเตรียมและเขียน จะไม่เขียนบางส่วน จากนั้นอ่านกลับแบบ consistent เพื่อตรวจผล กรณีเกิน 100 operations/ขนาดที่รองรับจะหยุดเพื่อทบทวน ไม่แบ่งเขียนจนเกิดข้อมูลครึ่งชุด
+
+หยุด automation ได้ด้วย repository variable `SOURCE_DATA_SYNC_PAUSED=true` เมื่อแก้ไขเหตุขัดข้องแล้วลบ variable/ตั้ง `false` และ Run workflow อีกครั้ง งานที่ค้างจะอ่าน main ล่าสุดก่อน sync การแก้ไฟล์ที่ไม่ได้อยู่ในชุดข้อมูลนี้ไม่แตะฐานข้อมูล
+
+การย้อนข้อมูล: revert การเปลี่ยนชุดข้อมูลใน GitHub แล้วสร้าง fallback ให้ตรงกันก่อนรวมเข้า main ระบบจะนำชุดนั้นกลับขึ้น Partner และเลิกเผยแพร่รายการที่ถูกนำออก หากต้องกลับไปข้อมูลก่อนเปิด automation ซึ่งยังไม่มี evidence fields ตามชุดใหม่ ให้หยุด automation และใช้ `snapshot`/`original_key` ของ revision ใน PartnerSourceSync โดยตรวจ scope/ค่าปัจจุบันก่อน restore ห้ามเขียน snapshot ทับการแก้ไขใหม่ของเพื่อนโดยไม่ตรวจ
+
+`migrate.js` ยังเป็นเครื่องมือเก่าและไม่ใช้ใน workflow ใหม่นี้ ไม่ควรรันซ้ำ เพราะจะข้าม ownership/backup/transaction checks การกรองวันที่ในหน้าเว็บปัจจุบันยังใช้วันเริ่ม ไม่ได้ตรวจช่วงวันที่ทับซ้อนหรือเดือนที่ไม่รู้วัน การ sync สำเร็จในฐานข้อมูลไม่ได้ยืนยันว่า Amplify deploy รูปใหม่แล้ว
 
 ## JSON Structure
 
