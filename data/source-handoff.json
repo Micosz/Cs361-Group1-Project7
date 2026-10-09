@@ -196,5 +196,101 @@
       "basis": "ความร่วมมือกับคณาจารย์ในหลักสูตรและโอกาสแลกเปลี่ยนวิจัย",
       "unconfirmed": "MoU รายฉบับและกิจกรรมรายบุคคล"
     }
-  ]
+  ],
+  "removed_items_review": {
+    "checked_on": "2026-10-09",
+    "scope": "เทียบทุกองค์กรและกิจกรรมจากชุดเดิมก่อน SourcesEditation; ไม่รวมสหกิจในหน้าหลัก",
+    "items": [
+      {
+        "ids": [
+          "partner-ascend-001",
+          "collab-ascend-001",
+          "collab-ascend-002"
+        ],
+        "decision": "ยังไม่คืนหน้าหลัก",
+        "evidence": "ทะเบียนสหกิจ 2569 รหัส C75; พบ Ascend Money แยกอีกหน่วยงาน C111 ห้ามรวมกับ Ascend Group",
+        "limit": "ยังไม่พบหลักฐานนอกสหกิจหรือ MoU 1 ส.ค. 2566 และวันเริ่มฝึกงาน 11 พ.ย. 2569 ในสามแหล่งที่ตรวจ",
+        "source_urls": [
+          "https://docs.google.com/spreadsheets/d/1mrexRW94TkVQUK91wLhqQtbEBResL4OBc9BWzcsvOjE/edit?usp=sharing"
+        ]
+      },
+      {
+        "ids": [
+          "partner-set-001"
+        ],
+        "decision": "ยังไม่คืนหน้าหลัก",
+        "evidence": "ทะเบียนสหกิจ 2569 รหัส C03",
+        "limit": "ทะเบียนรายชื่อสถานประกอบการที่หลักสูตรอนุญาต ไม่ยืนยันการรับนักศึกษาจริงหรือ MoU และยังแยกสหกิจออก",
+        "source_urls": [
+          "https://docs.google.com/spreadsheets/d/1mrexRW94TkVQUK91wLhqQtbEBResL4OBc9BWzcsvOjE/edit?usp=sharing"
+        ]
+      },
+      {
+        "ids": [
+          "partner-tudublin-001",
+          "event-tudublin-001"
+        ],
+        "decision": "เก็บหน่วยงานและกิจกรรมเดิมไว้แล้ว; ถอดเฉพาะโลโก้ DIT เดิม",
+        "evidence": "หน้าเครือข่ายระบุ Technological University Dublin และการหารือ 5 พ.ย. 2562",
+        "limit": "ไม่สร้าง DIT เป็นองค์กรซ้ำ และยังไม่ยืนยัน MoU",
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/partnership-th/"
+        ]
+      },
+      {
+        "ids": [
+          "partner-nectec-001",
+          "collab-nectec-001"
+        ],
+        "decision": "เก็บ NECTEC เป็นเครือข่ายวิจัย; ยังไม่คืนกิจกรรมสหกิจ",
+        "evidence": "หน้าเครือข่ายวิจัยหลักสูตรระบุ NECTEC; ทะเบียนสหกิจ C02/C42",
+        "limit": "ยังไม่ยืนยันวันฝึกงานเดิม",
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/phd-comsci-th/"
+        ]
+      },
+      {
+        "ids": [
+          "partner-kbtg-001",
+          "event-kbtg-001",
+          "collab-kbtg-002"
+        ],
+        "decision": "เก็บ KBTG กับ Roadshow; ยังไม่คืนกิจกรรมสหกิจ",
+        "evidence": "หน้าเครือข่ายระบุ Roadshow ต.ค. 2563",
+        "limit": "ยังไม่ยืนยันวันสหกิจ 1 ส.ค. 2566",
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/partnership-th/"
+        ]
+      },
+      {
+        "ids": [
+          "partner-coop-main-001"
+        ],
+        "decision": "แยกหน้ารวมสหกิจออกจากองค์กร",
+        "limit": "สหกิจศึกษาเป็นส่วนงาน ไม่ใช่องค์กรหนึ่งแห่ง"
+      },
+      {
+        "ids": [
+          "collab-ipb-001",
+          "event-ipb-001"
+        ],
+        "decision": "เก็บกิจกรรมเดียว event-ipb-001",
+        "evidence": "สองรายการเดิมอ้างหลักสูตร CSAgri 2022 เดียวกัน; รวมช่วง 9–17 ก.ย. 2565",
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/partnership-th/"
+        ]
+      },
+      {
+        "ids": [
+          "partner-kingpower-001",
+          "event-aist-001"
+        ],
+        "decision": "คืน King Power Click; เก็บกิจกรรมแลกเปลี่ยนไว้กับ AIST",
+        "limit": "ชื่อเครือข่ายยืนยันได้ แต่ไม่ยืนยันบทบาทบริษัทในกิจกรรม AIST",
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/partnership-th/"
+        ]
+      }
+    ]
+  }
 }
