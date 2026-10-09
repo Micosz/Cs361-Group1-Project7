@@ -1,0 +1,199 @@
+{
+  "checked_on": "2026-10-09",
+  "scope": "ข้อมูลสาธารณะจาก LinkedIn CSTU เว็บสาขา และเว็บคณะที่เกี่ยวกับ CSTU; ไม่รวมสหกิจ; ไม่อ้างว่าตรวจครบทุกหน้า",
+  "runtime_data": "public/data/partner-data-backup.json",
+  "migration_input": "data/partners.json",
+  "counts": {
+    "organizations": 14,
+    "activities": 12
+  },
+  "field_notes": {
+    "relationship_basis": "แยกบทบาทจากหลักฐาน ไม่ถือว่าหน่วยงานทุกแห่งมี MoU",
+    "source_urls": "ข่าวหลักฐานความสัมพันธ์ ไม่ใช่แค่เว็บบริษัท",
+    "coordinators": "ว่างเมื่อไม่มีผู้ประสานงานที่ยืนยัน ไม่ใช้ชื่อผู้ลงนาม/วิทยากรแทน",
+    "period_date": "วันเริ่มเมื่อแหล่งระบุวันแน่นอน; null เมื่อรู้แค่เดือน ไม่ระบุ หรือวันที่ขัดกัน",
+    "period_end_date": "วันสิ้นสุดช่วงที่มีหลักฐาน; UI ปัจจุบันกรองด้วยวันเริ่มเท่านั้น",
+    "organization_roles": "บทบาทต่อกิจกรรม; ไม่ได้สร้างความสัมพันธ์ V3 อัตโนมัติ",
+    "co_hosts": "ใช้เฉพาะผู้ร่วมจัด/ความร่วมมือที่ยืนยัน; ไม่ใส่หน่วยงานของวิทยากรหรือผู้ให้คำปรึกษา"
+  },
+  "removed_from_main": [
+    {
+      "ids": [
+        "partner-ascend-001",
+        "collab-ascend-001",
+        "collab-ascend-002",
+        "partner-set-001",
+        "partner-coop-main-001",
+        "collab-nectec-001",
+        "collab-kbtg-002"
+      ],
+      "reason": "แยกสหกิจออก; ไม่พบหลักฐานในสามแหล่งสำหรับ MoU Ascend หรือวันที่ฝึกงานที่ใส่ไว้ ไม่ได้ยืนยันว่าไม่มีความร่วมมือจริง"
+    },
+    {
+      "ids": [
+        "partner-kingpower-001"
+      ],
+      "reason": "หัวข้อ King Power Click ปะปนเนื้อหา AIST; ย้าย event-aist-001 ไป AIST และไม่ใช้รูป King Power"
+    },
+    {
+      "ids": [
+        "collab-ipb-001"
+      ],
+      "replacement_id": "event-ipb-001",
+      "reason": "รวมรายการซ้ำหลักสูตรเดียวกันและใช้ช่วง 9–17 ก.ย. 2565"
+    },
+    {
+      "reason": "ลบชื่อผู้ประสานงานตัวอย่างทุกองค์กร และลบวันสมมติของ KBTG, Spark Camp, Kansai"
+    },
+    {
+      "reason": "ถอดโลโก้ DIT ที่ไม่ใช่ชื่อองค์กร TU Dublin ปัจจุบัน และรูป NVIDIA ที่เดิมถูกใส่เป็นโลโก้ AGICAFET"
+    }
+  ],
+  "pending_for_teammates": [
+    {
+      "related_issues": [
+        82,
+        94,
+        95,
+        97
+      ],
+      "task": "แยกองค์กรที่เป็นคู่ความร่วมมือกับหน่วยงานที่เกี่ยวข้องเฉพาะกิจกรรมในแบบข้อมูล/การแสดงผล; partnerId ใน V2 เป็นจุดผูกเพื่อแสดงผล ไม่ใช่หลักฐาน MoU"
+    },
+    {
+      "related_issues": [
+        83,
+        98,
+        99,
+        100,
+        102
+      ],
+      "task": "ใช้ข่าว Embedded LLM/AGICAFET และ Yarsi เตรียมข้อตกลงเมื่อแบบ/สิทธิ์พร้อม; ห้ามตั้งสถานะ active หรือวันเริ่ม/หมดอายุจากวันข่าว; ข่าวไม่ใช่เอกสารสัญญา",
+      "source_urls": [
+        "https://lnkd.in/p/gSXtuQDq",
+        "https://sci.tu.ac.th/news-2022-6-22/"
+      ]
+    },
+    {
+      "related_issues": [
+        85,
+        104,
+        105,
+        106,
+        107
+      ],
+      "task": "ข่าวแลกเปลี่ยนเป็นข้อมูลกิจกรรมสาธารณะ ไม่ได้สร้างระเบียนนักศึกษาหรือสิทธิ์ส่วนบุคคลในรอบนี้"
+    },
+    {
+      "related_issues": [
+        91,
+        94
+      ],
+      "organizations": [
+        {
+          "name": "INESC TEC",
+          "location": "โปรตุเกส"
+        },
+        {
+          "name": "NCHC",
+          "location": "ไต้หวัน"
+        }
+      ],
+      "source_urls": [
+        "https://cs.sci.tu.ac.th/phd-comsci-th/"
+      ],
+      "task": "เครือข่ายร่วมวิจัยมีหลักฐาน แต่รอประเภทองค์กรที่ตรงกับสถาบันวิจัย ไม่เดาว่าเป็นบริษัทหรือมหาวิทยาลัย; ไม่มีหลักฐานกิจกรรมรายบุคคล"
+    },
+    {
+      "related_issues": [
+        96,
+        97
+      ],
+      "activity": {
+        "id": "event-pragma34-001",
+        "title": "The PRAGMA34 Workshop Meeting",
+        "summary": "นักศึกษา/อาจารย์ CSTU นำเสนอโครงงานที่ Akihabara โตเกียว; สุชานาถ มั่งคั่งเจริญได้รางวัลโปสเตอร์อันดับ 3",
+        "period_date": null,
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/2021/02/15/the-pragma34-workshop-meeting/"
+        ],
+        "organization_roles": [
+          {
+            "name": "PRAGMA34",
+            "role": "conference_venue"
+          }
+        ]
+      },
+      "task": "รอระบบกิจกรรมที่ไม่บังคับผูกคู่ความร่วมมือ; PRAGMA34 เป็นเวทีประชุม ไม่สร้างองค์กรคู่สัญญาสมมติ; ยืนยันวันเพราะปีเผยแพร่และวันที่ในเนื้อหา/วันในสัปดาห์ไม่สอดคล้องกัน"
+    },
+    {
+      "task": "ยืนยันช่วงแลกเปลี่ยน ยุทธนา/ศิวกร ก่อนกรอกวันที่",
+      "ids": [
+        "event-aist-001"
+      ],
+      "source_urls": [
+        "https://cs.sci.tu.ac.th/partnership-th/",
+        "https://sci.tu.ac.th/all-exchange-students-th/"
+      ]
+    },
+    {
+      "task": "เปลี่ยนป้ายตัวกรอง กิจกรรมวิชาการ (MoU) เมื่อแก้งานกิจกรรม เพราะการหารือ/หลักสูตรระยะสั้นไม่ใช่ MoU ทั้งหมด",
+      "related_issues": [
+        82,
+        96,
+        111
+      ]
+    }
+  ],
+  "deployment_note": "ยังไม่แก้ DynamoDB/API หรือรัน migrate.js; PutCommand ไม่ลบรายการเก่า ต้องตรวจรายการที่จะลบและสำรองฐานข้อมูลก่อนนำเข้าจริง; เปลี่ยนไฟล์ fallback อย่างเดียวไม่แทนข้อมูลที่ API ตอบสำเร็จ",
+  "image_sources": [
+    {
+      "path": "resources/IPB2.jpg",
+      "source_page": "https://cs.sci.tu.ac.th/partnership-th/",
+      "source_image_url": "https://cs.sci.tu.ac.th/wp-content/uploads/2022/10/tanakit-1280x960.png",
+      "status": "ภาพเดิมตรงบริบทหลักสูตร; คงไว้"
+    },
+    {
+      "path": "resources/UCSDp.jpg",
+      "source_page": "https://cs.sci.tu.ac.th/partnership-th/",
+      "source_image_url": "https://cs.sci.tu.ac.th/wp-content/uploads/2022/10/premika-1280x960.jpg",
+      "status": "ภาพเดิมตรงบันทึก; คงไว้"
+    },
+    {
+      "path": "resources/kbtg1.jpg",
+      "source_page": "https://cs.sci.tu.ac.th/partnership-th/",
+      "source_image_url": "https://cs.sci.tu.ac.th/wp-content/uploads/2020/12/120162676_2029461857187170_95658798803090589_o-300x200.jpg",
+      "status": "ภาพเดิมตรงกิจกรรม; คงไว้"
+    },
+    {
+      "path": "resources/Demo_ai.jpg",
+      "source_page": "https://cs.sci.tu.ac.th/partnership-th/",
+      "source_image_url": "https://sci.tu.ac.th/wp-content/uploads/2020/04/88129147_2183166985120174_6817361027269656576_o.jpg",
+      "status": "ภาพเดิมตรงสัมมนา; คงไว้"
+    },
+    {
+      "path": "resources/TU dublin.jpg",
+      "source_page": "https://cs.sci.tu.ac.th/partnership-th/",
+      "source_image_url": "https://sci.tu.ac.th/wp-content/uploads/2020/04/74956751_1962728643830677_4995543235834150912_o-1.jpg",
+      "status": "ภาพเดิมตรงการหารือ; คงไว้"
+    },
+    {
+      "path": "resources/CSTU_sparkcamp.jpg",
+      "source_page": "https://lnkd.in/p/gSXtuQDq",
+      "status": "ภาพเดิมพิธี MoU และ Pitching Day; คงไว้"
+    },
+    {
+      "path": "resources/kansai1.jpg",
+      "source_page": "https://lnkd.in/p/gxEmjuZD",
+      "status": "ภาพเดิมโครงการ Kansai; คงไว้"
+    },
+    {
+      "path": "resources/sources/yarsi-mou-2022.jpg",
+      "source_page": "https://sci.tu.ac.th/news-2022-6-22/",
+      "source_image_url": "https://sci.tu.ac.th/wp-content/uploads/2022/06/HUT08383-980x653.jpg",
+      "status": "ดาวน์โหลดจากรูปข่าวเว็บคณะ"
+    },
+    {
+      "status": "รายการใหม่ที่ยังไม่มีภาพยืนยันใช้ image_path/logo_path ว่าง ไม่ใช้ภาพจากองค์กรอื่นแทน"
+    }
+  ]
+}
