@@ -48,6 +48,17 @@ test('owned active records with identical public data do not rewrite or create m
     const owned = { ...record, data_source: config.owner, source_state: 'active', source_commit: commit, source_revision: 'first' };
     assert.equal(plan({ current: new Map([[keyString(owned), owned]]) }).transaction.length, 0);
 });
+test('retired collaborators can return without inventing an agreement or activity', () => {
+    const restored = { ...record, id: 'partner-kingpower-001', name: 'King Power Click', relationship_basis: 'listed_collaborator' };
+    const retired = { ...restored, access_level: 'private', visibility: 'private', data_source: config.owner,
+        source_state: 'retired', source_revision: 'before' };
+    const result = plan({ records: [restored], current: new Map([[keyString(retired), retired]]) });
+    const active = result.transaction.find(x => x.Put.Item.id === restored.id).Put.Item;
+    assert.equal(active.source_state, 'active'); assert.equal(active.access_level, 'public');
+    assert.equal(active.visibility, undefined); assert.equal(result.summary.retired, 0);
+    assert.equal(active.relationship_basis, 'listed_collaborator');
+    assert.equal(plan({ records: [{ ...record, type: 'research_institute' }] }).summary.written, 1);
+});
 test('updates and the control record carry snapshot conditions to reject concurrent edits', () => {
     const old = { ...record, summary: 'Before', data_source: config.owner, source_state: 'active', source_revision: 'first' };
     const control = { ...CONTROL_KEY, data_source: config.owner, source_revision: 'first', managed_keys: [] };

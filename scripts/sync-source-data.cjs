@@ -34,7 +34,7 @@ function validateDesired(records) {
     for (const row of records) {
         assert.match(row.id, /^(partner-|event-|collab-)[a-z0-9-]+$/);
         assert.ok(!ids.has(row.id), `Duplicate ID: ${row.id}`); ids.add(row.id);
-        assert.ok(row.name ? ['company', 'university', 'government', 'internship'].includes(row.type)
+        assert.ok(row.name ? ['company', 'university', 'government', 'internship', 'research_institute'].includes(row.type)
             : ['academic_activity', 'event', 'research', 'internship'].includes(row.type), `Invalid type: ${row.id}`);
         assert.ok(row.name ? typeof row.name === 'string' && !row.title : typeof row.title === 'string' && row.title.length, `Invalid record: ${row.id}`);
         for (const field of Object.keys(row)) assert.ok(FIELDS.has(field), `Unapproved field: ${field}`);

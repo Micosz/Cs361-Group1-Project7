@@ -567,5 +567,59 @@
     ],
     "source_checked_on": "2026-10-09",
     "evidence_note": "ข่าว Kansai ระบุบทบาท Prof. José Fortes เป็นผู้ร่วมให้คำปรึกษา ไม่ใช่สถาบันปลายทางแลกเปลี่ยนในรอบนั้น"
+  },
+  {
+    "id": "partner-kingpower-001",
+    "name": "King Power Click",
+    "type": "company",
+    "summary": "หน่วยงานที่เว็บสาขาระบุชื่อในเครือข่ายความร่วมมือ",
+    "location": "",
+    "website_url": "",
+    "logo_path": "resources/KPC_logo.jpg",
+    "coordinators": [],
+    "access_level": "public",
+    "relationship_basis": "listed_collaborator",
+    "full_description": "หน่วยงานที่เว็บสาขาระบุชื่อในเครือข่ายความร่วมมือ ยืนยันรายชื่อ Collaborator ตามหน้าเครือข่าย แต่ยังไม่พบหลักฐาน MoU เฉพาะฉบับ คำบรรยายใต้หัวข้อปะปนกับ AIST จึงยังไม่ระบุกิจกรรมหรือบทบาทสนับสนุนของ King Power Click<br>หลักฐาน: <a href=\"https://cs.sci.tu.ac.th/partnership-th/\" target=\"_blank\" rel=\"noopener noreferrer\">เว็บสาขา</a>",
+    "source_urls": [
+      "https://cs.sci.tu.ac.th/partnership-th/"
+    ],
+    "source_checked_on": "2026-10-09",
+    "evidence_note": "ยืนยันรายชื่อ Collaborator ตามหน้าเครือข่าย แต่ยังไม่พบหลักฐาน MoU เฉพาะฉบับ คำบรรยายใต้หัวข้อปะปนกับ AIST จึงยังไม่ระบุกิจกรรมหรือบทบาทสนับสนุนของ King Power Click"
+  },
+  {
+    "id": "partner-inesctec-001",
+    "name": "INESC TEC",
+    "type": "research_institute",
+    "summary": "เครือข่ายร่วมวิจัยกับคณาจารย์ในหลักสูตรวิทยาการคอมพิวเตอร์ตามเว็บสาขา",
+    "location": "โปรตุเกส",
+    "website_url": "https://www.inesctec.pt/en",
+    "logo_path": "",
+    "coordinators": [],
+    "access_level": "public",
+    "relationship_basis": "research_network",
+    "full_description": "เครือข่ายร่วมวิจัยกับคณาจารย์ในหลักสูตรวิทยาการคอมพิวเตอร์ตามเว็บสาขา เว็บหลักสูตรระบุโอกาสแลกเปลี่ยนวิจัยกับ INESC TEC ยังไม่พบหลักฐาน MoU เฉพาะฉบับหรือกิจกรรมแลกเปลี่ยนรายบุคคล<br>หลักฐาน: <a href=\"https://cs.sci.tu.ac.th/phd-comsci-th/\" target=\"_blank\" rel=\"noopener noreferrer\">เว็บสาขา</a>",
+    "source_urls": [
+      "https://cs.sci.tu.ac.th/phd-comsci-th/"
+    ],
+    "source_checked_on": "2026-10-09",
+    "evidence_note": "เว็บหลักสูตรระบุโอกาสแลกเปลี่ยนวิจัยกับ INESC TEC ยังไม่พบหลักฐาน MoU เฉพาะฉบับหรือกิจกรรมแลกเปลี่ยนรายบุคคล"
+  },
+  {
+    "id": "partner-nchc-001",
+    "name": "NCHC",
+    "type": "research_institute",
+    "summary": "เครือข่ายร่วมวิจัยกับคณาจารย์ในหลักสูตรวิทยาการคอมพิวเตอร์ตามเว็บสาขา",
+    "location": "ไต้หวัน",
+    "website_url": "https://www.nchc.org.tw/",
+    "logo_path": "",
+    "coordinators": [],
+    "access_level": "public",
+    "relationship_basis": "research_network",
+    "full_description": "เครือข่ายร่วมวิจัยกับคณาจารย์ในหลักสูตรวิทยาการคอมพิวเตอร์ตามเว็บสาขา เว็บหลักสูตรระบุโอกาสแลกเปลี่ยนวิจัยกับ NCHC ยังไม่พบหลักฐาน MoU เฉพาะฉบับหรือกิจกรรมแลกเปลี่ยนรายบุคคล<br>หลักฐาน: <a href=\"https://cs.sci.tu.ac.th/phd-comsci-th/\" target=\"_blank\" rel=\"noopener noreferrer\">เว็บสาขา</a>",
+    "source_urls": [
+      "https://cs.sci.tu.ac.th/phd-comsci-th/"
+    ],
+    "source_checked_on": "2026-10-09",
+    "evidence_note": "เว็บหลักสูตรระบุโอกาสแลกเปลี่ยนวิจัยกับ NCHC ยังไม่พบหลักฐาน MoU เฉพาะฉบับหรือกิจกรรมแลกเปลี่ยนรายบุคคล"
   }
 ]
