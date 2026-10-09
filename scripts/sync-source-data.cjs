@@ -10,7 +10,7 @@ const FIELDS = new Set([
     'coordinators', 'access_level', 'visibility', 'relationship_basis', 'full_description',
     'source_urls', 'source_checked_on', 'evidence_note', 'period', 'period_date',
     'period_end_date', 'date_precision', 'image_path', 'co_hosts', 'organization_roles',
-    'partnerId', 'partnerName'
+    'partnerId', 'partnerName', 'activity_tags'
 ]);
 const META = new Set(['data_source', 'source_commit', 'source_revision', 'source_state']);
 const PROTECTED = ['publication', 'scopeId', 'createdBy', 'responsibleUserIds',
@@ -38,6 +38,13 @@ function validateDesired(records) {
             : ['academic_activity', 'event', 'research', 'internship'].includes(row.type), `Invalid type: ${row.id}`);
         assert.ok(row.name ? typeof row.name === 'string' && !row.title : typeof row.title === 'string' && row.title.length, `Invalid record: ${row.id}`);
         for (const field of Object.keys(row)) assert.ok(FIELDS.has(field), `Unapproved field: ${field}`);
+        if (row.activity_tags !== undefined) {
+            assert.ok(row.title && Array.isArray(row.activity_tags)
+                && row.activity_tags.length > 0
+                && row.activity_tags.every(tag => tag === 'mou')
+                && new Set(row.activity_tags).size === row.activity_tags.length,
+            `Invalid activity tags: ${row.id}`);
+        }
         checkPublic(row);
         assert.ok(typeof row.summary === 'string' && row.summary.length, `Missing summary: ${row.id}`);
         assert.ok(Array.isArray(row.source_urls) && row.source_urls.length, `Missing evidence: ${row.id}`);
