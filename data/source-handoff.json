@@ -266,6 +266,33 @@
     {
       "record_id": "partner-yarsi-001",
       "status": "ใช้ตรามหาวิทยาลัย YARSI แสดงสังกัด Faculty of Information Technology; ไม่อ้างเป็นตราคณะเฉพาะ"
+    },
+    {
+      "record_id": "partner-cnc-001",
+      "path": "resources/sources/cnc-logo.png",
+      "source_kind": "user_supplied",
+      "source_file_name": "codex-clipboard-ec10c495-d075-432c-90bb-5bf500a53fa1.png",
+      "checked_on": "2026-10-09",
+      "sha256": "adf0063797c42b01d193d40f057c2e7977907d73a2bd01d4a97e84cfc00b97ad",
+      "status": "โลโก้ผู้ใช้ส่งมาและอนุญาตให้ใช้; เก็บไฟล์เดิมไม่แก้ไข; ไม่ใช่หลักฐานความร่วมมือหรือ MoU เพิ่มเติม"
+    },
+    {
+      "record_id": "partner-nchc-001",
+      "path": "resources/sources/nchc-logo.png",
+      "source_kind": "user_supplied",
+      "source_file_name": "codex-clipboard-d5386c48-e36e-4657-a6d7-d6c67b70df09.png",
+      "checked_on": "2026-10-09",
+      "sha256": "463168aded58d69fd0b27c6c3a51acf8637a28188cecbc70930807b6d3d8826c",
+      "status": "โลโก้ผู้ใช้ส่งมาและอนุญาตให้ใช้; เก็บไฟล์เดิมไม่แก้ไข; ไม่ใช่หลักฐานความร่วมมือหรือ MoU เพิ่มเติม"
+    },
+    {
+      "record_id": "partner-aist-001",
+      "path": "resources/sources/aist-logo.png",
+      "source_kind": "user_supplied",
+      "source_file_name": "codex-clipboard-ad33754d-b0c2-40bd-bc6b-88693c02c47e.png",
+      "checked_on": "2026-10-09",
+      "sha256": "3ad52eb38751a6b1e8e0e24fa74bbbc918cdf3af5ead1b19cfe75d72d58e531d",
+      "status": "โลโก้ผู้ใช้ส่งมาและอนุญาตให้ใช้; เก็บไฟล์เดิมไม่แก้ไข; ไม่ใช่หลักฐานความร่วมมือหรือ MoU เพิ่มเติม"
     }
   ],
   "restored_collaborators": [
@@ -388,16 +415,6 @@
     ]
   },
   "image_gaps": [
-    {
-      "record_id": "partner-cnc-001",
-      "field": "logo_path",
-      "reason": "ยังไม่พบตราหน่วยบัญชาการไซเบอร์ทหารจากแหล่งทางการที่ยืนยันได้; มีรูปกิจกรรม CNC แล้ว"
-    },
-    {
-      "record_id": "partner-nchc-001",
-      "field": "logo_path",
-      "reason": "ตรา header เว็บทางการเป็นตัวหนังสือสีขาว จึงยังไม่ใช้บนการ์ดพื้นขาว; ไม่ใช้ตรา Taiwan AI RAP หรือ Free Software Lab แทน"
-    },
     {
       "record_id": "event-aist-parinya-001",
       "field": "image_path",
