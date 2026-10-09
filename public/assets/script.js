@@ -295,11 +295,15 @@ function formatActivityDate(activity) {
         const [, year, month, day] = match;
         const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
         if (!Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === match[0]) {
-            return `${day}/${month}/${Number(year) + 543}`;
+            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+                'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            return `${Number(day)} ${months[Number(month) - 1]} ${String(Number(year) + 543).slice(-2)}`;
         }
     }
     // Preserve a source's month precision; never invent a calendar day.
-    if (activity.date_precision === 'month') return activity.period || 'ไม่ระบุวันที่';
+    if (activity.date_precision === 'month') {
+        return activity.period?.replace(/\b(\d{2})(\d{2})\b$/, '$2') || 'ไม่ระบุวันที่';
+    }
     return 'ไม่ระบุวันที่';
 }
 
