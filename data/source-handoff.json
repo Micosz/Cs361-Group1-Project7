@@ -4,11 +4,11 @@
   "runtime_data": "public/data/partner-data-backup.json",
   "migration_input": "data/partners.json",
   "counts": {
-    "organizations": 14,
+    "organizations": 17,
     "activities": 12
   },
   "field_notes": {
-    "relationship_basis": "แยกบทบาทจากหลักฐาน ไม่ถือว่าหน่วยงานทุกแห่งมี MoU",
+    "relationship_basis": "บทบาท/ระดับหลักฐานความสัมพันธ์; listed_collaborator คือชื่อในหน้าเครือข่าย, research_network คือความร่วมมือวิจัยที่หลักสูตรระบุ; Collaborator ไม่ต้องมี MoU และ reported_mou/faculty_mou ไม่ยืนยันอายุหรือสถานะปัจจุบัน",
     "source_urls": "ข่าวหลักฐานความสัมพันธ์ ไม่ใช่แค่เว็บบริษัท",
     "coordinators": "ว่างเมื่อไม่มีผู้ประสานงานที่ยืนยัน ไม่ใช้ชื่อผู้ลงนาม/วิทยากรแทน",
     "period_date": "วันเริ่มเมื่อแหล่งระบุวันแน่นอน; null เมื่อรู้แค่เดือน ไม่ระบุ หรือวันที่ขัดกัน",
@@ -28,12 +28,6 @@
         "collab-kbtg-002"
       ],
       "reason": "แยกสหกิจออก; ไม่พบหลักฐานในสามแหล่งสำหรับ MoU Ascend หรือวันที่ฝึกงานที่ใส่ไว้ ไม่ได้ยืนยันว่าไม่มีความร่วมมือจริง"
-    },
-    {
-      "ids": [
-        "partner-kingpower-001"
-      ],
-      "reason": "หัวข้อ King Power Click ปะปนเนื้อหา AIST; ย้าย event-aist-001 ไป AIST และไม่ใช้รูป King Power"
     },
     {
       "ids": [
@@ -82,26 +76,6 @@
         107
       ],
       "task": "ข่าวแลกเปลี่ยนเป็นข้อมูลกิจกรรมสาธารณะ ไม่ได้สร้างระเบียนนักศึกษาหรือสิทธิ์ส่วนบุคคลในรอบนี้"
-    },
-    {
-      "related_issues": [
-        91,
-        94
-      ],
-      "organizations": [
-        {
-          "name": "INESC TEC",
-          "location": "โปรตุเกส"
-        },
-        {
-          "name": "NCHC",
-          "location": "ไต้หวัน"
-        }
-      ],
-      "source_urls": [
-        "https://cs.sci.tu.ac.th/phd-comsci-th/"
-      ],
-      "task": "เครือข่ายร่วมวิจัยมีหลักฐาน แต่รอประเภทองค์กรที่ตรงกับสถาบันวิจัย ไม่เดาว่าเป็นบริษัทหรือมหาวิทยาลัย; ไม่มีหลักฐานกิจกรรมรายบุคคล"
     },
     {
       "related_issues": [
@@ -194,6 +168,129 @@
     },
     {
       "status": "รายการใหม่ที่ยังไม่มีภาพยืนยันใช้ image_path/logo_path ว่าง ไม่ใช้ภาพจากองค์กรอื่นแทน"
+    },
+    {
+      "path": "resources/KPC_logo.jpg",
+      "status": "คืนโลโก้ King Power Click เดิมเพื่อแสดงองค์กร; ไม่ใช้ KPCp.jpg เป็นภาพกิจกรรม AIST"
     }
-  ]
+  ],
+  "restored_collaborators": [
+    {
+      "ids": [
+        "partner-kingpower-001"
+      ],
+      "source_urls": [
+        "https://cs.sci.tu.ac.th/partnership-th/"
+      ],
+      "basis": "ชื่อหน่วยงานในหน้าเครือข่ายความร่วมมือ ไม่ต้องมี MoU จึงจะเป็น Collaborator",
+      "unconfirmed": "MoU รายฉบับและกิจกรรมเฉพาะ; ไม่ผูกกับแลกเปลี่ยน AIST"
+    },
+    {
+      "ids": [
+        "partner-inesctec-001",
+        "partner-nchc-001"
+      ],
+      "source_urls": [
+        "https://cs.sci.tu.ac.th/phd-comsci-th/"
+      ],
+      "basis": "ความร่วมมือกับคณาจารย์ในหลักสูตรและโอกาสแลกเปลี่ยนวิจัย",
+      "unconfirmed": "MoU รายฉบับและกิจกรรมรายบุคคล"
+    }
+  ],
+  "removed_items_review": {
+    "checked_on": "2026-10-09",
+    "scope": "เทียบทุกองค์กรและกิจกรรมจากชุดเดิมก่อน SourcesEditation; ไม่รวมสหกิจในหน้าหลัก",
+    "items": [
+      {
+        "ids": [
+          "partner-ascend-001",
+          "collab-ascend-001",
+          "collab-ascend-002"
+        ],
+        "decision": "ยังไม่คืนหน้าหลัก",
+        "evidence": "ทะเบียนสหกิจ 2569 รหัส C75; พบ Ascend Money แยกอีกหน่วยงาน C111 ห้ามรวมกับ Ascend Group",
+        "limit": "ยังไม่พบหลักฐานนอกสหกิจหรือ MoU 1 ส.ค. 2566 และวันเริ่มฝึกงาน 11 พ.ย. 2569 ในสามแหล่งที่ตรวจ",
+        "source_urls": [
+          "https://docs.google.com/spreadsheets/d/1mrexRW94TkVQUK91wLhqQtbEBResL4OBc9BWzcsvOjE/edit?usp=sharing"
+        ]
+      },
+      {
+        "ids": [
+          "partner-set-001"
+        ],
+        "decision": "ยังไม่คืนหน้าหลัก",
+        "evidence": "ทะเบียนสหกิจ 2569 รหัส C03",
+        "limit": "ทะเบียนรายชื่อสถานประกอบการที่หลักสูตรอนุญาต ไม่ยืนยันการรับนักศึกษาจริงหรือ MoU และยังแยกสหกิจออก",
+        "source_urls": [
+          "https://docs.google.com/spreadsheets/d/1mrexRW94TkVQUK91wLhqQtbEBResL4OBc9BWzcsvOjE/edit?usp=sharing"
+        ]
+      },
+      {
+        "ids": [
+          "partner-tudublin-001",
+          "event-tudublin-001"
+        ],
+        "decision": "เก็บหน่วยงานและกิจกรรมเดิมไว้แล้ว; ถอดเฉพาะโลโก้ DIT เดิม",
+        "evidence": "หน้าเครือข่ายระบุ Technological University Dublin และการหารือ 5 พ.ย. 2562",
+        "limit": "ไม่สร้าง DIT เป็นองค์กรซ้ำ และยังไม่ยืนยัน MoU",
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/partnership-th/"
+        ]
+      },
+      {
+        "ids": [
+          "partner-nectec-001",
+          "collab-nectec-001"
+        ],
+        "decision": "เก็บ NECTEC เป็นเครือข่ายวิจัย; ยังไม่คืนกิจกรรมสหกิจ",
+        "evidence": "หน้าเครือข่ายวิจัยหลักสูตรระบุ NECTEC; ทะเบียนสหกิจ C02/C42",
+        "limit": "ยังไม่ยืนยันวันฝึกงานเดิม",
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/phd-comsci-th/"
+        ]
+      },
+      {
+        "ids": [
+          "partner-kbtg-001",
+          "event-kbtg-001",
+          "collab-kbtg-002"
+        ],
+        "decision": "เก็บ KBTG กับ Roadshow; ยังไม่คืนกิจกรรมสหกิจ",
+        "evidence": "หน้าเครือข่ายระบุ Roadshow ต.ค. 2563",
+        "limit": "ยังไม่ยืนยันวันสหกิจ 1 ส.ค. 2566",
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/partnership-th/"
+        ]
+      },
+      {
+        "ids": [
+          "partner-coop-main-001"
+        ],
+        "decision": "แยกหน้ารวมสหกิจออกจากองค์กร",
+        "limit": "สหกิจศึกษาเป็นส่วนงาน ไม่ใช่องค์กรหนึ่งแห่ง"
+      },
+      {
+        "ids": [
+          "collab-ipb-001",
+          "event-ipb-001"
+        ],
+        "decision": "เก็บกิจกรรมเดียว event-ipb-001",
+        "evidence": "สองรายการเดิมอ้างหลักสูตร CSAgri 2022 เดียวกัน; รวมช่วง 9–17 ก.ย. 2565",
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/partnership-th/"
+        ]
+      },
+      {
+        "ids": [
+          "partner-kingpower-001",
+          "event-aist-001"
+        ],
+        "decision": "คืน King Power Click; เก็บกิจกรรมแลกเปลี่ยนไว้กับ AIST",
+        "limit": "ชื่อเครือข่ายยืนยันได้ แต่ไม่ยืนยันบทบาทบริษัทในกิจกรรม AIST",
+        "source_urls": [
+          "https://cs.sci.tu.ac.th/partnership-th/"
+        ]
+      }
+    ]
+  }
 }
