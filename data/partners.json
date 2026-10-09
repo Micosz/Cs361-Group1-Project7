@@ -350,7 +350,10 @@
           "https://lnkd.in/p/gSXtuQDq"
         ],
         "source_checked_on": "2026-10-09",
-        "evidence_note": "เป็นกิจกรรมและพิธีในข่าวเดียวกัน ยังไม่ยืนยันวันที่หรือสถานะข้อตกลงปัจจุบัน"
+        "evidence_note": "เป็นกิจกรรมและพิธีในข่าวเดียวกัน ยังไม่ยืนยันวันที่หรือสถานะข้อตกลงปัจจุบัน",
+        "activity_tags": [
+          "mou"
+        ]
       }
     ],
     "source_urls": [
@@ -434,7 +437,10 @@
           "https://sci.tu.ac.th/news-2022-6-22/"
         ],
         "source_checked_on": "2026-10-09",
-        "evidence_note": ""
+        "evidence_note": "",
+        "activity_tags": [
+          "mou"
+        ]
       }
     ],
     "source_urls": [

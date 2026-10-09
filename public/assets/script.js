@@ -628,10 +628,18 @@ function filterBrowseRecords(records, field, selectId, searchKeyword = browseKey
         typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) &&
         (!start || day >= start) && (!end || day <= end)
     );
+    const matchesType = record => {
+        const hasMoU = Array.isArray(record.activity_tags) && record.activity_tags.includes('mou');
+        if (selectId === 'filterEvent' && type === 'mou') return hasMoU;
+        if (selectId === 'filterEvent' && type === 'academic_activity') {
+            return record.type === type && !hasMoU;
+        }
+        return type === 'all' || record.type === type;
+    };
     // V2 specifies name/title search; suggestions and cards share these rules.
     // Preserve dates, co_hosts and relationships from the data source.
     return records.filter(record =>
-        (type === 'all' || record.type === type) &&
+        matchesType(record) &&
         String(record[field] ?? '').toLowerCase().includes(keyword) &&
         // Compare the stored calendar day directly, without timezone conversion.
         ((!start && !end) || (selectId === 'filterCollab'

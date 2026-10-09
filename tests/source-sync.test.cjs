@@ -74,3 +74,14 @@ test('empty catalogs, duplicate IDs, missing relationships and oversized transac
     assert.throws(() => plan({ records: [{ id: 'event-orphan-001', type: 'event', title: 'Orphan', summary: 'x', visibility: 'public', source_urls: record.source_urls }] }));
     assert.throws(() => plan({ records: Array.from({ length: 100 }, (_, i) => ({ ...record, id: `partner-example-${i}` })) }));
 });
+
+test('public MoU tags are preserved but malformed tags and partner tags are rejected', () => {
+    const event = { id: 'event-example-001', type: 'event', title: 'Signing', summary: 'Source-backed signing',
+        visibility: 'public', source_urls: record.source_urls, partnerId: record.id, partnerName: record.name, activity_tags: ['mou'] };
+    const result = plan({ records: [record, event] });
+    assert.deepEqual(result.transaction.find(x => x.Put.Item.id === event.id).Put.Item.activity_tags, ['mou']);
+    for (const tags of ['mou', ['unknown'], ['mou', 'mou'], [], [{ type: 'mou' }]]) {
+        assert.throws(() => plan({ records: [record, { ...event, activity_tags: tags }] }), /Invalid activity tags/);
+    }
+    assert.throws(() => plan({ records: [{ ...record, activity_tags: ['mou'] }] }), /Invalid activity tags/);
+});
