@@ -289,6 +289,20 @@ function getColorClass(type) {
     }
 }
 
+function formatActivityDate(activity) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(activity.period_date || '');
+    if (match) {
+        const [, year, month, day] = match;
+        const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
+        if (!Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === match[0]) {
+            return `${day}/${month}/${Number(year) + 543}`;
+        }
+    }
+    // Preserve a source's month precision; never invent a calendar day.
+    if (activity.date_precision === 'month') return activity.period || 'ไม่ระบุวันที่';
+    return 'ไม่ระบุวันที่';
+}
+
 // สร้างการ์ดหน้า Collaborator
 async function renderCollaboratorCards() {
     const container = document.getElementById('collaboratorGrid');
@@ -391,7 +405,7 @@ async function renderEventCards() {
                     <p class="card-desc">${activity.summary}</p>
                     <div class="card-footer">
                         <div class="author"><span class="author-name">${hostNames}</span></div>
-                        <div class="stats">${activity.period}</div>
+                        <div class="stats event-date">${formatActivityDate(activity)}</div>
                     </div>
                 </div>
             </div>
@@ -527,7 +541,7 @@ async function openModal(id, type) {
                     <p class="card-desc" style="font-size: 0.85rem; margin-bottom: 0.5rem;">${collab.summary}</p>
                     <div class="card-footer" style="font-size: 0.8rem; border-top: 1px solid #eee; padding-top: 0.5rem; display: flex; justify-content: space-between;">
                         <span class="author-name" style="color: #666;">${partnerName}</span>
-                        <span class="stats" style="color: #999;">${collab.period}</span>
+                        <span class="stats event-date" style="color: #999;">${formatActivityDate(collab)}</span>
                     </div>
                 </div>
             </div>
@@ -571,7 +585,7 @@ async function openModal(id, type) {
 
         document.getElementById('modalTitle').textContent = data.title;
         document.getElementById('modalName').textContent = hostNames;
-        document.getElementById('modalInfo').textContent = data.period || data.type.toUpperCase();
+        document.getElementById('modalInfo').textContent = formatActivityDate(data);
         
         if (data.image_path) {
             modalImage.style.backgroundImage = `url('${data.image_path}')`;

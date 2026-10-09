@@ -556,3 +556,20 @@ test('MoU filter uses verified tags and combines with search and dates without d
     assert.equal(ids().length, 12);
     assert.equal(new Set(ids()).size, 12);
 });
+
+test('event dates use compact Thai calendar days without time across cards and details', async () => {
+    const catalog = JSON.parse(readFileSync(require.resolve('../public/data/partner-data-backup.json'), 'utf8'));
+    const p = page(async () => response(catalog));
+    await p.context.renderEventCards();
+    assert.match(p.get('eventGrid').innerHTML, /09\/07\/2569/);
+    assert.doesNotMatch(p.get('eventGrid').innerHTML, /09\.00|16\.00|เวลา/);
+    await p.context.openModal('event-nvidia-ai-001', 'activity');
+    assert.equal(p.get('modalInfo').textContent, '09/07/2569');
+    assert.match(p.get('modalDetails').innerHTML, /09\.00–16\.00/, 'source-backed time stays in the full description');
+    await p.context.openModal('partner-nvidia-001', 'partner');
+    assert.match(p.get('modalDetails').innerHTML, /09\/07\/2569/);
+    assert.equal(p.context.formatActivityDate({ period_date: '2022-09-09', period_end_date: '2022-09-17' }), '09/09/2565');
+    assert.equal(p.context.formatActivityDate({ period_date: '2026-02-30' }), 'ไม่ระบุวันที่');
+    assert.equal(p.context.formatActivityDate({ period: 'แหล่งข้อมูลไม่ระบุวันที่' }), 'ไม่ระบุวันที่');
+    assert.equal(p.context.formatActivityDate({ period_date: null, date_precision: 'month', period: 'ต.ค. 2563' }), 'ต.ค. 2563');
+});
