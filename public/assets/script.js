@@ -587,7 +587,7 @@ async function openModal(id, type) {
 
         document.getElementById('modalTitle').textContent = data.title;
         document.getElementById('modalName').innerHTML = hostNames;
-        document.getElementById('modalInfo').textContent = data.period || data.type.toUpperCase();
+        document.getElementById('modalInfo').textContent = formatActivityDate(data);
         
         if (data.image_path) {
             modalImage.style.backgroundImage = `url('${data.image_path}')`;
@@ -807,26 +807,30 @@ function handlePartnerClick(event, partnerId) {
 /**
  * ฟังก์ชันสำหรับสร้างลิงก์ชื่อบริษัท โดยแยกกดทีละบริษัทได้ถ้ามีหลายอัน
  */
+function escapePartnerLinkText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[char]));
+}
+
 function generatePartnerLinks(coHosts, partnerName, partnerId) {
-    if (coHosts && coHosts.length > 0) {
-        return coHosts.map(hostName => {
-            // หา partnerId ที่ตรงกับชื่อ hostName
-            const foundPartner = typeof partnersDataCache !== 'undefined' && partnersDataCache 
-                ? partnersDataCache.find(p => p.name.includes(hostName) || (p.short_name && p.short_name.includes(hostName))) 
-                : null;
-            
-            // ถ้าเจอในระบบให้ใส่ลิงก์
-            if (foundPartner) {
-                return `<a class="partner-link" onclick="handlePartnerClick(event, '${foundPartner.id}')">${hostName}&nbsp;<span class="icon">&#x2197;</span></a>`;
-            }
-            // ถ้าไม่เจอให้แสดงเป็นข้อความธรรมดา
-            return hostName;
+    const link = (name, id) => {
+        const label = escapePartnerLinkText(name);
+        if (!id) return label;
+        const encodedId = escapePartnerLinkText(encodeURIComponent(id));
+        return `<a class="partner-link" href="#partner-${encodedId}" data-partner-id="${encodedId}" onclick="handlePartnerClick(event, decodeURIComponent(this.dataset.partnerId))">${label}&nbsp;<span class="icon" aria-hidden="true">&#x2197;</span></a>`;
+    };
+    const hosts = Array.isArray(coHosts)
+        ? coHosts.filter(name => typeof name === 'string' && name.trim()) : [];
+    if (hosts.length) {
+        return hosts.map(name => {
+            const matches = (partnersDataCache || []).filter(partner =>
+                (typeof partner.name === 'string' && partner.name.includes(name)) ||
+                (typeof partner.short_name === 'string' && partner.short_name.includes(name))
+            );
+            // Ambiguous legacy names remain text rather than opening the wrong partner.
+            return link(name, matches.length === 1 ? matches[0].id : null);
         }).join(' และ ');
-    } else {
-        // กรณีไม่มี co_hosts ให้ใช้ partnerName
-        if (partnerId && partnerName) {
-            return `<a class="partner-link" onclick="handlePartnerClick(event, '${partnerId}')">${partnerName}&nbsp;<span class="icon">&#x2197;</span></a>`;
-        }
-        return partnerName || '';
     }
+    return link(partnerName, partnerId);
 }
