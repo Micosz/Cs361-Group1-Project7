@@ -395,9 +395,7 @@ async function renderEventCards() {
             : `<h2 style="color:white; font-size:1.5rem; text-align:center; padding:0 1.5rem; margin: auto;">${activity.title}</h2>`;
 
         // --- เช็คผู้จัดร่วม (co_hosts) ---
-        const hostNames = (activity.co_hosts && activity.co_hosts.length > 0)
-            ? activity.co_hosts.join(' และ ') 
-            : activity.partnerName;
+        let hostNames = generatePartnerLinks(activity.co_hosts, activity.partnerName, activity.partnerId);
 
         return `
             <div class="card" id="${activity.id}" onclick="openModal('${activity.id}', 'activity')">
@@ -585,10 +583,10 @@ async function openModal(id, type) {
 
     } else {
         // --- 2. ส่วนของ Activity (แสดง Event อื่นๆ ของบริษัทเดียวกัน) ---
-        const hostNames = (data.co_hosts && data.co_hosts.length > 0) ? data.co_hosts.join(' และ ') : data.partnerName;
+        let hostNames = generatePartnerLinks(data.co_hosts, data.partnerName, data.partnerId);
 
         document.getElementById('modalTitle').textContent = data.title;
-        document.getElementById('modalName').textContent = hostNames;
+        document.getElementById('modalName').innerHTML = hostNames;
         document.getElementById('modalInfo').textContent = formatActivityDate(data);
         
         if (data.image_path) {
@@ -784,3 +782,55 @@ function adjustSelectWidth(selectElement) {
 }
 
 document.addEventListener('DOMContentLoaded', initBrowseFilters);
+
+/**
+ * ฟังก์ชันสำหรับเปิด Popup คู่ความร่วมมือเมื่อคลิกลิงก์บนการ์ดกิจกรรม
+ * @param {Event} event - Event object จากการคลิก
+ * @param {string} partnerId - ID ของคู่ความร่วมมือที่จะเปิด
+ */
+function handlePartnerClick(event, partnerId) {
+    // ป้องกันการ Reload หรือ Redirect หน้าเว็บ
+    event.preventDefault();
+    
+    // ป้องกันไม่ให้ Event ทะลุไปทริกเกอร์ OnClick ของหน้าการ์ดหลัก
+    event.stopPropagation();
+    
+    // เรียกฟังก์ชันเปิด Popup ที่มีอยู่แล้วใน V1 (detailModal)
+    if (partnerId) {
+        openModal(partnerId, 'partner');
+    } else {
+        console.warn("ไม่พบ partnerId สำหรับเปิด Popup");
+    }
+}
+
+
+/**
+ * ฟังก์ชันสำหรับสร้างลิงก์ชื่อบริษัท โดยแยกกดทีละบริษัทได้ถ้ามีหลายอัน
+ */
+function escapePartnerLinkText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[char]));
+}
+
+function generatePartnerLinks(coHosts, partnerName, partnerId) {
+    const link = (name, id) => {
+        const label = escapePartnerLinkText(name);
+        if (!id) return label;
+        const encodedId = escapePartnerLinkText(encodeURIComponent(id));
+        return `<a class="partner-link" href="#partner-${encodedId}" data-partner-id="${encodedId}" onclick="handlePartnerClick(event, decodeURIComponent(this.dataset.partnerId))">${label}&nbsp;<span class="icon" aria-hidden="true">&#x2197;</span></a>`;
+    };
+    const hosts = Array.isArray(coHosts)
+        ? coHosts.filter(name => typeof name === 'string' && name.trim()) : [];
+    if (hosts.length) {
+        return hosts.map(name => {
+            const matches = (partnersDataCache || []).filter(partner =>
+                (typeof partner.name === 'string' && partner.name.includes(name)) ||
+                (typeof partner.short_name === 'string' && partner.short_name.includes(name))
+            );
+            // Ambiguous legacy names remain text rather than opening the wrong partner.
+            return link(name, matches.length === 1 ? matches[0].id : null);
+        }).join(' และ ');
+    }
+    return link(partnerName, partnerId);
+}

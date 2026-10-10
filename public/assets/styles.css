@@ -247,3 +247,26 @@ main { flex: 1; }
     .main-image { height: 200px; }
     .details-section > div { grid-template-columns: minmax(0, 1fr) !important; }
 }
+
+/* =========================================
+   สไตล์ลิงก์คู่ความร่วมมือ
+   ========================================= */
+.partner-link {
+  color: var(--text-gray);
+  text-decoration: underline;
+  cursor: pointer;
+  display: inline;
+  transition: color 0.2s ease-in-out;
+}
+
+.partner-link:hover {
+  color: var(--tu-red);
+}
+
+.partner-link .icon {
+  font-size: 0.85em;
+  line-height: inherit;
+  vertical-align: baseline;
+  display: inline-block;
+  white-space: nowrap;
+}

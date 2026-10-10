@@ -300,7 +300,9 @@ test('public visibility, primary host, co-host links, and related modal cards su
     assert.match(p.get('modalDetails').innerHTML, /Alpha Workshop|Beta Talk/);
     assert.doesNotMatch(p.get('modalDetails').innerHTML, /Private/);
     await p.context.openModal('joint', 'activity');
-    assert.equal(p.get('modalName').textContent, 'Beta และ Alpha');
+    assert.match(p.get('modalName').innerHTML, /data-partner-id="beta"/);
+    assert.match(p.get('modalName').innerHTML, /data-partner-id="alpha"/);
+    assert.match(p.get('modalName').innerHTML, / และ /);
     assert.match(p.get('modalDetails').innerHTML, /Research Day/);
     assert.doesNotMatch(p.get('modalDetails').innerHTML, /Private|Beta Talk/);
     p.context.closeModal();
@@ -573,4 +575,15 @@ test('event dates use compact Thai calendar days without time across cards and d
     assert.equal(p.context.formatActivityDate({ period_date: '2026-02-30' }), 'ไม่ระบุวันที่');
     assert.equal(p.context.formatActivityDate({ period: 'แหล่งข้อมูลไม่ระบุวันที่' }), 'ไม่ระบุวันที่');
     assert.equal(p.context.formatActivityDate({ period_date: null, date_precision: 'month', period: 'ต.ค. 2563' }), 'ต.ค. 63');
+});
+
+ test('partner links escape labels and support keyboard links without bubbling card clicks', async () => {
+    const p = page();
+    const html = p.context.generatePartnerLinks(null, '<img onerror="bad()">', "id'quoted");
+    assert.doesNotMatch(html, /<img/);
+    assert.match(html, /&lt;img/);
+    assert.match(html, /href="#partner-/);
+    let prevented = false, stopped = false;
+    p.context.handlePartnerClick({ preventDefault() { prevented = true; }, stopPropagation() { stopped = true; } }, null);
+    assert.ok(prevented && stopped);
 });
