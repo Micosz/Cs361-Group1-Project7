@@ -6,6 +6,8 @@
 
 ## อ่านตามลำดับ
 
+ผู้เริ่มทำ #82/#94–#97 อ่าน [คู่มือ Partners and Activities](partners-activities-handoff.md) และ [โค้ดฐานร่วม](../../../backend/business/README.th.md) เพื่อดูขั้นตอน ไฟล์ที่ต้องต่อ และส่วนที่ยังไม่มี adapter จริง
+
 | Issue | เอกสาร | สิ่งที่ได้ |
 | --- | --- | --- |
 | #66 | [Scope และ Permission Matrix](scope-permissions.md) | ฟีเจอร์ส่งจริง, บทบาท, action/scope, bootstrap และ allow/deny |

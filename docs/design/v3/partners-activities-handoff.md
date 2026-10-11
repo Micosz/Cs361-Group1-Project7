@@ -32,6 +32,8 @@
 | `public/assets/script.js` | Public browse/detail เดิม, Search/date/MoU และลิงก์ Partner จาก PR #145 | เป็น public reader ไม่ใช่ protected CRUD; อย่าใช้ public cache เป็นข้อมูลแก้ไขภายใน |
 | PR #123 / `backend/relationships/activity_links.py` | `plan_patch`, `internal_links`, `public_links`, `legacy_relationships` | Draft ไม่อยู่บน main, ไม่บันทึกจริง, ไม่มี API/UI และรองรับแผน PATCH ของ activity ที่มี version แล้ว |
 
+ชุดเตรียม #82 ใน PR นี้เพิ่ม [โค้ดฐานร่วมและตัวอย่างใช้](../../../backend/business/README.th.md): `backend/business/validation.py`, typing port ใน `ports.py`, synthetic fixtures ใน `backend/tests/fixtures/partners_activities.py` และ `CstuAuth.create` ส่วนนี้ยังไม่อยู่ใน main จน PR ถูก review/merge ไม่ใช่ business repository ที่ใช้งานจริง
+
 ## จุดที่ต้องตกลงร่วมกันก่อนต่อของจริง
 
 ให้ #94/#96 กับผู้รับผิดชอบ #79/#98 บันทึกข้อสรุปใน #82; ช่องว่างต่อไปนี้ไม่ใช่สิ่งที่เพื่อนต้องเดาเอง:
@@ -42,7 +44,7 @@
 - [ ] ระบุช่องทางเลือก active verified responsible users ใน scope ของ staff สำหรับ #96; role-manager API ไม่ใช่ user directory และ `/users` selector ใน #92 ยังไม่ใช่ endpoint ที่ทำแล้ว
 - [ ] รักษา `activity_tags: ["mou"]` จาก PR #142: แบบข้อมูล/allowlist ใน #91/#92/#79 ยังไม่มีฟิลด์นี้ ต้องตกลง internal field + validation + public alias ร่วมกันก่อนเปิด V3 writer/export ไม่ตัด tag ทิ้งหรือจัด MoU จากชื่อ
 - [ ] #95 ใช้ history เป็น **internal** ตาม dictionary ปัจจุบัน ไม่มี publication field สำหรับ history; ข้อความ “สาธารณะ/ภายใน” ใน Issue ไม่ได้อนุญาต export history อัตโนมัติ หากต้องการ public history ให้ทบทวน #91/#92/#79 ก่อน
-- [ ] ยืนยันชนิด Activity ที่อนุญาตจากข้อมูล/ตัวกรองเดิม และรายละเอียด required fields ของ Contact/History ไม่เพิ่ม enum คนละชุดใน frontend/backend
+- [ ] Review ชนิดที่ helper เริ่มต้นใช้: Partner เป็น union ของ #91 และ V2 (รวม research_institute/internship), Activity academic_activity/event/research และข้อจำกัด asset `resources/<filename>.jpg/jpeg/png/webp`; หากขยายให้ frontend/backend ใช้ชุดเดียวกัน
 - [ ] ยืนยันกติกาเรียง history: baseline ใช้ occurredOn แล้ว createdAt/id; ข้อเสนอสำหรับ UI คือใหม่ไปเก่า และ tie-break คงที่ ต้องตกลงทิศทางเดียวกันก่อน acceptance
 
 เตรียม local validators/forms ได้ก่อนข้อสรุปเหล่านี้ แต่ PR ต้องระบุจุด pending ไม่ประกาศ API/storage พร้อมแล้ว
@@ -132,7 +134,7 @@ Local/mock ผ่านยังไม่ยืนยัน DynamoDB/HTTPS จ�
 
 - อ่านข้อมูลผ่าน `CstuAuth.request('/partners/...')` path ไม่เติม `/api` ซ้ำ; protected ไม่มี fallback JSON
 - PATCH ใช้ `CstuAuth.mutate(path, payload, version)` ซึ่งเติม CSRF/If-Match แล้ว ขาด version ห้ามกดบันทึก
-- POST business create ยังต้องเพิ่ม helper ร่วม: refresh Session, method POST, X-CSRF-Token, Idempotency-Key 16–128 ตัว `[A-Za-z0-9_-]`, body allowlist; retry payload เดิมใช้ key เดิมและเปลี่ยน key เมื่อเริ่มรายการใหม่ ไม่มี token/password ใน localStorage
+- ชุดเตรียมนี้เพิ่ม `CstuAuth.create(path, payload, submissionKey)` ให้แล้ว: refresh Session, POST, X-CSRF-Token, Idempotency-Key 16–128 ตัว `[A-Za-z0-9_-]`; form ส่งเฉพาะ allowlist, retry payload เดิมใช้ key เดิมและเปลี่ยน key เมื่อแก้ payload/เริ่มรายการใหม่ ไม่มี token/password ใน localStorage ส่วน storage replay ยังต้องทำ
 - Browser ส่ง Origin เอง; ฟอร์มแสดง saving/กันกดซ้ำ, 401 กลับ Login/ล้าง protected state, 403 แสดงไม่มีสิทธิ์, 409 โหลดรุ่นล่าสุดให้ผู้ใช้ทบทวน, 422 แสดง validation, 503 แสดง retry ไม่แทนด้วยรายการว่าง
 - Response ตอนนี้ไม่ได้มี `allowedActions`/`writableFields` โดยอัตโนมัติ หาก UI ต้องใช้ให้ตกลงกับ #92/#79 ก่อน ปุ่มซ่อนไม่แทน backend authorization
 - Render ชื่อ/หมายเหตุด้วย textContent หรือ DOM ที่ปลอดภัย; คง Search/filter เมื่อกลับ detail ไม่เก็บ protected payload ใน URL
