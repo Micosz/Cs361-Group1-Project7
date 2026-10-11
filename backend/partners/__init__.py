@@ -5,7 +5,7 @@ from .validators import (
     validate_history_payload,
     validate_activity_payload,
 )
-from .repository import PartnerRepository
+from .repository import PartnerRepository, ActivityRepository
 
 __all__ = [
     'validate_partner_payload',
@@ -13,5 +13,6 @@ __all__ = [
     'validate_history_payload',
     'validate_activity_payload',
     'PartnerRepository',
+    'ActivityRepository',
 ]
 
