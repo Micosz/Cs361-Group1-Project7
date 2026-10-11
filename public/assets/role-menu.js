@@ -70,13 +70,7 @@
                 link.append(title, small); links.append(link);
             };
             const roles = window.CstuAuth.roles(session);
-            const labels = {
-                student: ['นักศึกษา / ผู้เข้าร่วมโครงการ', 'การสมัครและข้อมูลการแลกเปลี่ยนของตนเอง'],
-                coordinator: ['อาจารย์ / ผู้ประสานงาน', 'ข้อมูลความร่วมมือและงานในความรับผิดชอบ'],
-                staff: ['เจ้าหน้าที่หลักสูตร', 'ข้อมูล เอกสาร และสถานะกระบวนการ'],
-                executive: ['ผู้บริหาร / ผู้ดูแลระบบ', 'ภาพรวมความร่วมมือและ Stakeholder']
-            };
-            for (const role of roles) if (labels[role]) append(labels[role][0], 'workspace.html?view=' + role, labels[role][1]);
+            for (const item of window.CstuWork.menu(session)) append(item.label, item.href, item.description);
             if (session.capabilities.some(c => c.name === 'manageRoles')) append('จัดการสิทธิ์ผู้ใช้', 'workspace.html?view=roles', 'มอบหมายและถอนบทบาทในขอบเขตที่ดูแล');
             if (!roles.length) append('รอมอบหมายสิทธิ์', 'workspace.html', 'บัญชีของคุณยังไม่ได้รับบทบาทงานภายใน');
         } catch {
