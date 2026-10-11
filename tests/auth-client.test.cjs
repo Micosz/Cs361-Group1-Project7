@@ -53,6 +53,34 @@ test('malformed session never becomes authenticated; pagehide abort cancels logi
     await ready; controller.abort();
     await assert.rejects(pending, {name:'AbortError'});
 });
+test('business create sends CSRF and preserves caller key on retries; rejects invalid/anonymous calls', async () => {
+    const calls = [];
+    const auth = setup(async (url, options) => {
+        calls.push({url, options});
+        return ok(url.endsWith('/session') ? state({id:'u1'}) : {data:{id:'p1'}});
+    });
+    const key = 'demo-create-key-0001';
+    await auth.create('/partners', {name:'Demo'}, key);
+    await auth.create('/partners', {name:'Demo'}, key);
+    const writes = calls.filter(c => c.options.method === 'POST');
+    assert.equal(writes.length, 2);
+    for (const call of writes) {
+        assert.equal(call.url, '/api/partners');
+        assert.equal(call.options.headers['Idempotency-Key'], key);
+        assert.equal(call.options.headers['X-CSRF-Token'], 'a'.repeat(64));
+        assert.equal(call.options.credentials, 'same-origin');
+        assert.equal(call.options.headers['If-Match'], undefined);
+        assert.deepEqual(JSON.parse(call.options.body), {name:'Demo'});
+    }
+    const count = calls.length;
+    await assert.rejects(() => auth.create('/partners', {}, 'short'), /INVALID_IDEMPOTENCY_KEY/);
+    assert.equal(calls.length, count);
+    const anonymous = setup(async url => {
+        assert.equal(url, '/api/auth/session');
+        return ok(state(null));
+    });
+    await assert.rejects(() => anonymous.create('/partners', {}, key), /AUTH_REQUIRED/);
+});
 test('CstuAuth.create sends same-origin POST with CSRF and Idempotency-Key', async () => {
     const calls = [];
     const auth = setup(async (url, options) => {
