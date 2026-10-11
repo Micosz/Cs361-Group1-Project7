@@ -65,6 +65,40 @@ class PartnerContactTests(unittest.TestCase):
     def call(self, event):
         return handle(event, self.service, self.repo)
 
+    def test_contact_idempotency_is_scoped_to_parent_route(self):
+        parent_ids = []
+        for index in (1, 2):
+            result = self.call(self.event('/api/partners', 'POST', {
+                'name': f'Parent {index}', 'type': 'company', 'summary': 'Demo',
+                'location': 'Bangkok', 'scopeId': 'c1',
+            }, **{'idempotency-key': f'parent-create-key-{index}'}))
+            parent_ids.append(json.loads(result['body'])['data']['id'])
+        contacts = []
+        for parent_id in parent_ids:
+            result = self.call(self.event(f'/api/partners/{parent_id}/contacts', 'POST',
+                {'name': 'Demo'}, **{'idempotency-key': 'same-contact-key-0001'}))
+            self.assertEqual(201, result['statusCode'])
+            contacts.append(json.loads(result['body'])['data'])
+        self.assertNotEqual(contacts[0]['id'], contacts[1]['id'])
+        self.assertEqual(parent_ids, [row['partnerId'] for row in contacts])
+
+    def test_malformed_partner_values_return_validation_error_without_writes(self):
+        payload = {'name': 'Demo', 'type': 'company', 'summary': 'Demo',
+                   'location': 'Bangkok', 'scopeId': 'c1'}
+        for patch in ({'responsibleUserIds': [{}]}, {'publication': []}):
+            result = self.call(self.event('/api/partners', 'POST', {**payload, **patch}))
+            self.assertEqual(422, result['statusCode'])
+            self.assertEqual(0, self.repo.writes)
+        validate_partner_payload({**payload, 'type': 'research_institute'})
+
+    def test_prototype_rejects_unimplemented_feature_writes(self):
+        result = self.call(self.event('/api/activities', 'POST', {
+            'scopeId': 'c1', 'title': 'Demo', 'type': 'event', 'summary': 'Demo',
+            'partnerId': 'p1',
+        }))
+        self.assertEqual(503, result['statusCode'])
+        self.assertEqual(0, self.repo.writes)
+
     # -------------------------------------------------------------
     # 1. Partner Create, Read-back, and Field Validation
     # -------------------------------------------------------------

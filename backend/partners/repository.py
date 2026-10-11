@@ -1,14 +1,9 @@
-"""Concrete repository adapter for Partner, Contact, and related entities (Issue #94).
+"""In-memory prototype for #94 local tests, NOT a production storage adapter.
 
-Implements PermissionGateway port contract:
-  - get(kind, id)
-  - list(kind, context, parent=None)
-  - mutate(kind, action, payload, record, parent, conditions, idempotency_key, upload=None)
-  - parse_upload(event)
-  - content(document, disposition)
-
-Enforces atomic precondition checks, optimistic concurrency (If-Match),
-24-hour idempotency caching, and strict server-side validation.
+Rows, locks and idempotency are process-local and disappear on restart. They do
+not make user/session reads atomic with business writes across Lambda instances.
+Do not inject this repository into the deployed application. Production requires
+persistent scoped storage and atomic user/session/target/parent/reference checks.
 """
 
 import copy
@@ -27,14 +22,14 @@ from .validators import (
 
 
 class PartnerRepository:
-    """Thread-safe concrete repository adapter for Partner & Contact business operations."""
+    """Local Partner/Contact prototype; its lock protects only this process."""
 
     def __init__(self, service=None, initial_records=None, clock=None):
         self.service = service
         self.clock = clock or time.time
         self._lock = threading.Lock()
         self.rows = {}
-        # (user_id, kind, idempotency_key) -> (payload_copy, result_copy, created_at_timestamp)
+        # (user_id, kind, parent_id, idempotency_key) -> (payload_copy, result_copy, created_at_timestamp)
         self.idempotency_cache = {}
         self.writes = 0
 
@@ -69,6 +64,8 @@ class PartnerRepository:
     def mutate(self, kind: str, action: str, payload: dict, record: dict | None,
                parent: dict | None, conditions, idempotency_key: str | None,
                upload=None) -> dict:
+        if kind not in {'partner', 'contact'} or action not in {'create', 'update'} or upload is not None:
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
         with self._lock:
             # 1. Preconditions & Concurrency Checks
             if self.service is not None:
@@ -95,7 +92,7 @@ class PartnerRepository:
 
             # 2. Idempotency Check for Create (24 hours = 86400 seconds)
             if action == 'create' and idempotency_key:
-                cache_key = (conditions.user_id, kind, idempotency_key)
+                cache_key = (conditions.user_id, kind, conditions.parent_id, idempotency_key)
                 cached = self.idempotency_cache.get(cache_key)
                 if cached:
                     cached_payload, cached_result, timestamp = cached
@@ -159,7 +156,7 @@ class PartnerRepository:
 
             # 6. Cache Idempotency for Create
             if action == 'create' and idempotency_key:
-                cache_key = (conditions.user_id, kind, idempotency_key)
+                cache_key = (conditions.user_id, kind, conditions.parent_id, idempotency_key)
                 self.idempotency_cache[cache_key] = (
                     copy.deepcopy(payload),
                     copy.deepcopy(saved),
@@ -169,7 +166,7 @@ class PartnerRepository:
             return copy.deepcopy(saved)
 
     def parse_upload(self, event):
-        return {}, b''
+        raise AuthError('PERMISSION_UNAVAILABLE', 503)
 
     def content(self, document: dict, disposition: str):
         raise AuthError('NOT_FOUND', 404)

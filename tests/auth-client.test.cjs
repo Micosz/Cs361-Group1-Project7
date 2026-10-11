@@ -68,3 +68,8 @@ test('CstuAuth.create sends same-origin POST with CSRF and Idempotency-Key', asy
     assert.equal(createCall.options.headers['Idempotency-Key'], 'idem-key-1234567890');
     assert.deepEqual(JSON.parse(createCall.options.body), {name:'New Partner'});
 });
+test('business create rejects invalid replay keys before making requests', async () => {
+    const auth = setup(() => { throw Error('Unexpected request'); });
+    await assert.rejects(() => auth.create('/partners', {}, undefined), /INVALID_IDEMPOTENCY_KEY/);
+    await assert.rejects(() => auth.create('/partners', {}, 'short'), /INVALID_IDEMPOTENCY_KEY/);
+});

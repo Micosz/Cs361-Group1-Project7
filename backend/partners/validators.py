@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 
 from ..auth.session_service import AuthError
 
-PARTNER_TYPES = {'company', 'university', 'government', 'internship'}
+PARTNER_TYPES = {'company', 'university', 'government', 'internship', 'research_institute'}
 PUBLICATION_TYPES = {'public', 'internal'}
 HISTORY_KINDS = {'meeting', 'agreement', 'activity', 'other'}
 REFERENCE_TYPES = {'agreement', 'activity'}
@@ -119,15 +119,15 @@ def validate_partner_payload(payload: dict, is_create: bool = True):
         resp = payload['responsibleUserIds']
         if not isinstance(resp, list) or len(resp) > 20:
             raise AuthError('INVALID_FIELDS', 422)
-        if len(set(resp)) != len(resp):
-            raise AuthError('INVALID_FIELDS', 422)
         for uid in resp:
             if not isinstance(uid, str) or not uid.strip():
                 raise AuthError('INVALID_FIELDS', 422)
+        if len(set(resp)) != len(resp):
+            raise AuthError('INVALID_FIELDS', 422)
 
     if 'publication' in payload:
         pub = payload['publication']
-        if pub not in PUBLICATION_TYPES:
+        if not isinstance(pub, str) or pub not in PUBLICATION_TYPES:
             raise AuthError('INVALID_FIELDS', 422)
 
 
@@ -170,14 +170,14 @@ def validate_history_payload(payload: dict, is_create: bool = True):
             raise AuthError('INVALID_FIELDS', 422)
 
     if 'kind' in payload:
-        if payload['kind'] not in HISTORY_KINDS:
+        if not isinstance(payload['kind'], str) or payload['kind'] not in HISTORY_KINDS:
             raise AuthError('INVALID_FIELDS', 422)
 
     if 'note' in payload:
         validate_string(payload['note'], max_len=20000, min_len=1, required=True)
 
     if 'referenceType' in payload and payload['referenceType'] is not None:
-        if payload['referenceType'] not in REFERENCE_TYPES:
+        if not isinstance(payload['referenceType'], str) or payload['referenceType'] not in REFERENCE_TYPES:
             raise AuthError('INVALID_FIELDS', 422)
 
 
@@ -227,6 +227,6 @@ def validate_activity_payload(payload: dict, is_create: bool = True):
             raise AuthError('INVALID_FIELDS', 422)
 
     if 'publication' in payload and payload['publication'] is not None:
-        if payload['publication'] not in PUBLICATION_TYPES:
+        if not isinstance(payload['publication'], str) or payload['publication'] not in PUBLICATION_TYPES:
             raise AuthError('INVALID_FIELDS', 422)
 

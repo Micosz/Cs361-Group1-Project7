@@ -64,11 +64,15 @@
         }, body: JSON.stringify(body) });
     }
     async function create(path, body, idempotencyKey) {
+        // The form owns this key: retain it for retries of the SAME submission.
+        if (typeof idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{16,128}$/.test(idempotencyKey)) {
+            throw new Error('INVALID_IDEMPOTENCY_KEY');
+        }
         const current = await refresh();
         if (!current?.user) throw new Error('AUTH_REQUIRED');
-        const headers = { 'X-CSRF-Token': current.csrfToken };
-        if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
-        return request(path, { method: 'POST', headers, body: JSON.stringify(body) });
+        return request(path, { method: 'POST', headers: {
+            'X-CSRF-Token': current.csrfToken, 'Idempotency-Key': idempotencyKey
+        }, body: JSON.stringify(body) });
     }
     async function logout() {
         const current = await refresh();
