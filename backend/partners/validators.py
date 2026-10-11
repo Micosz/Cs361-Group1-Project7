@@ -230,3 +230,77 @@ def validate_activity_payload(payload: dict, is_create: bool = True):
         if not isinstance(payload['publication'], str) or payload['publication'] not in PUBLICATION_TYPES:
             raise AuthError('INVALID_FIELDS', 422)
 
+
+def validate_exchange_payload(payload: dict, is_create: bool = True):
+    """Validate exchange mutation payload (Issue #104 / Parent #85).
+
+    Contract:
+    - title: required on create, 1..200 chars.
+    - partnerIds: required on create, list of strings, 1..20 items, unique, non-empty strings.
+    - agreementId: optional string, max 200 chars.
+    - participantUserIds: optional/draft list of user IDs, 0..200 items, unique.
+    - startDate / endDate: optional ISO YYYY-MM-DD dates, startDate <= endDate when both present.
+    - supportingInfo / supportingInfoForParticipant: optional strings, max 20000 chars.
+    - responsibleUserIds: optional list of user IDs, 1..20 items (staff only).
+    """
+    if not isinstance(payload, dict):
+        raise AuthError('INVALID_BODY', 400)
+
+    if is_create:
+        required = {'title', 'partnerIds'}
+        if not required.issubset(set(payload)):
+            raise AuthError('INVALID_FIELDS', 422)
+
+    if 'title' in payload:
+        validate_string(payload['title'], max_len=200, min_len=1, required=True)
+
+    if 'partnerIds' in payload:
+        p_ids = payload['partnerIds']
+        if not isinstance(p_ids, list) or len(p_ids) < 1 or len(p_ids) > 20:
+            raise AuthError('INVALID_FIELDS', 422)
+        if len(set(p_ids)) != len(p_ids):
+            raise AuthError('INVALID_FIELDS', 422)
+        for pid in p_ids:
+            validate_string(pid, max_len=200, min_len=1, required=True)
+
+    if 'agreementId' in payload and payload['agreementId'] is not None:
+        validate_string(payload['agreementId'], max_len=200, min_len=1, required=True)
+
+    if 'participantUserIds' in payload and payload['participantUserIds'] is not None:
+        p_users = payload['participantUserIds']
+        if not isinstance(p_users, list) or len(p_users) > 200:
+            raise AuthError('INVALID_FIELDS', 422)
+        if len(set(p_users)) != len(p_users):
+            raise AuthError('INVALID_FIELDS', 422)
+        for uid in p_users:
+            validate_string(uid, max_len=200, min_len=1, required=True)
+
+    start_d = payload.get('startDate')
+    end_d = payload.get('endDate')
+
+    if start_d is not None:
+        if not validate_date(start_d):
+            raise AuthError('INVALID_FIELDS', 422)
+
+    if end_d is not None:
+        if not validate_date(end_d):
+            raise AuthError('INVALID_FIELDS', 422)
+
+    if start_d and end_d and start_d > end_d:
+        raise AuthError('INVALID_FIELDS', 422)
+
+    if 'supportingInfo' in payload and payload['supportingInfo'] is not None:
+        validate_string(payload['supportingInfo'], max_len=20000, min_len=0, required=False)
+
+    if 'supportingInfoForParticipant' in payload and payload['supportingInfoForParticipant'] is not None:
+        validate_string(payload['supportingInfoForParticipant'], max_len=20000, min_len=0, required=False)
+
+    if 'responsibleUserIds' in payload and payload['responsibleUserIds'] is not None:
+        resp = payload['responsibleUserIds']
+        if not isinstance(resp, list) or len(resp) < 1 or len(resp) > 20:
+            raise AuthError('INVALID_FIELDS', 422)
+        if len(set(resp)) != len(resp):
+            raise AuthError('INVALID_FIELDS', 422)
+        for uid in resp:
+            validate_string(uid, max_len=200, min_len=1, required=True)
+

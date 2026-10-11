@@ -18,6 +18,7 @@ from .validators import (
     validate_contact_payload,
     validate_history_payload,
     validate_activity_payload,
+    validate_exchange_payload,
 )
 
 
@@ -70,7 +71,9 @@ class PartnerRepository:
             # 1. Preconditions & Concurrency Checks
             if self.service is not None:
                 user = getattr(self.service.users, 'user', None)
-                if user is None and hasattr(self.service.users, 'store'):
+                if callable(user):
+                    user = user(conditions.user_id)
+                elif user is None and hasattr(self.service.users, 'store'):
                     user = self.service.users.store.user(conditions.user_id)
                 if user is None or not user.active or user.authz_version != conditions.authz_version:
                     raise AuthError('SESSION_REVOKED', 401)
@@ -170,4 +173,127 @@ class PartnerRepository:
 
     def content(self, document: dict, disposition: str):
         raise AuthError('NOT_FOUND', 404)
+
+
+class ExchangeRepository(PartnerRepository):
+    """In-memory repository for Exchanges (Issue #104 / Parent #85)."""
+
+    def mutate(self, kind: str, action: str, payload: dict, record: dict | None,
+               parent: dict | None, conditions, idempotency_key: str | None,
+               upload=None) -> dict:
+        if kind != 'exchange' or action not in {'create', 'update'} or upload is not None:
+            return super().mutate(kind, action, payload, record, parent, conditions, idempotency_key, upload)
+
+        with self._lock:
+            # 1. Preconditions & Concurrency Checks
+            if self.service is not None:
+                user = getattr(self.service.users, 'user', None)
+                if callable(user):
+                    user = user(conditions.user_id)
+                elif user is None and hasattr(self.service.users, 'store'):
+                    user = self.service.users.store.user(conditions.user_id)
+                if user is None or not user.active or user.authz_version != conditions.authz_version:
+                    raise AuthError('SESSION_REVOKED', 401)
+                session = self.service.store.get(conditions.session_hash) if hasattr(self.service, 'store') else None
+                if not session:
+                    raise AuthError('SESSION_REVOKED', 401)
+
+            # Optimistic concurrency check for target record
+            if conditions.target_id is not None:
+                current = self.rows.get((kind, conditions.target_id))
+                if not current or current.get('version') != conditions.target_version:
+                    raise AuthError('VERSION_CONFLICT', 409)
+
+            # 2. Idempotency Check for Create (24 hours)
+            if action == 'create' and idempotency_key:
+                cache_key = (conditions.user_id, kind, conditions.parent_id, idempotency_key)
+                cached = self.idempotency_cache.get(cache_key)
+                if cached:
+                    cached_payload, cached_result, timestamp = cached
+                    if self.clock() - timestamp < 86400:
+                        if cached_payload == payload:
+                            return copy.deepcopy(cached_result)
+                        else:
+                            raise AuthError('IDEMPOTENCY_CONFLICT', 409)
+
+            # 3. Domain Business Validation
+            is_create = (action == 'create')
+            validate_exchange_payload(payload, is_create=is_create)
+
+            # Verify partnerIds reference valid partners in same scope
+            partner_ids = payload.get('partnerIds') or (record.get('partnerIds') if record else [])
+            for pid in partner_ids:
+                partner_row = self.rows.get(('partner', pid))
+                if partner_row is None:
+                    raise AuthError('NOT_FOUND', 404)
+                if partner_row.get('scopeId') != conditions.scope_id:
+                    raise AuthError('NOT_FOUND', 404)
+
+            # Verify agreementId if present
+            agr_id = payload.get('agreementId')
+            if agr_id:
+                agr_row = self.rows.get(('agreement', agr_id))
+                if agr_row is None or agr_row.get('scopeId') != conditions.scope_id:
+                    raise AuthError('NOT_FOUND', 404)
+
+            # Validate responsibleUserIds against active users in scope (for staff)
+            resp_users = payload.get('responsibleUserIds')
+            if resp_users and self.service and hasattr(self.service, 'users') and hasattr(self.service.users, 'store'):
+                for uid in resp_users:
+                    target_user = self.service.users.store.user(uid)
+                    if not target_user or not target_user.active:
+                        raise AuthError('INVALID_FIELDS', 422)
+                    grants, _ = target_user.permissions()
+                    has_role = any(g.get('scopeId') == conditions.scope_id and g.get('role') in {'coordinator', 'staff'} for g in grants)
+                    if not has_role:
+                        raise AuthError('INVALID_FIELDS', 422)
+
+            # 4. Build and Persist Record
+            now_iso = datetime.now(timezone.utc).isoformat()
+            if is_create:
+                rec_id = f"exchange-{uuid.uuid4().hex[:12]}"
+                saved = {
+                    'id': rec_id,
+                    'entityType': 'exchange',
+                    'schemaVersion': 3,
+                    'scopeId': conditions.scope_id,
+                    'createdAt': now_iso,
+                    'updatedAt': now_iso,
+                    'createdBy': conditions.user_id,
+                    'updatedBy': conditions.user_id,
+                    'version': 1,
+                    'status': 'draft',
+                    'participantUserIds': payload.get('participantUserIds', []),
+                    'responsibleUserIds': payload.get('responsibleUserIds', [conditions.user_id]),
+                }
+                saved.update(payload)
+                # Ensure server owned fields cannot be overwritten by client payload
+                saved['id'] = rec_id
+                saved['entityType'] = 'exchange'
+                saved['schemaVersion'] = 3
+                saved['scopeId'] = conditions.scope_id
+                saved['status'] = 'draft'
+                saved['version'] = 1
+                saved['createdBy'] = conditions.user_id
+                saved['updatedBy'] = conditions.user_id
+            else:
+                saved = copy.deepcopy(record)
+                saved['updatedAt'] = now_iso
+                saved['updatedBy'] = conditions.user_id
+                saved['version'] = record.get('version', 1) + 1
+                saved.update(payload)
+
+            self.rows[(kind, saved['id'])] = copy.deepcopy(saved)
+            self.writes += 1
+
+            # 5. Cache Idempotency for Create
+            if action == 'create' and idempotency_key:
+                cache_key = (conditions.user_id, kind, conditions.parent_id, idempotency_key)
+                self.idempotency_cache[cache_key] = (
+                    copy.deepcopy(payload),
+                    copy.deepcopy(saved),
+                    self.clock(),
+                )
+
+            return copy.deepcopy(saved)
 
