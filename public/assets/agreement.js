@@ -126,10 +126,16 @@
         if (agreement.internalNote) addRow('บันทึกภายใน', agreement.internalNote);
         if (agreement.responsibleUserIds?.length) addRow('ผู้รับผิดชอบ', agreement.responsibleUserIds);
 
+        currentAgreement = agreement;
+        if (agreement.version !== undefined) {
+            currentVersion = agreement.version;
+        }
+
         // Extension container for #100 (Status transitions and renewal)
         const statusSec = document.createElement('div');
         statusSec.id = 'agreement-status-section';
         statusSec.style.marginTop = '1rem';
+        renderStatusSection(agreement, statusSec);
         content.appendChild(statusSec);
 
         // Extension container for #102/#103 (Document attachments)
@@ -174,6 +180,295 @@
 
         currentMode = 'detail';
         if (!dlg.open) dlg.showModal();
+    }
+
+    async function doChangeStatus(agreementId, payload, version, statusMsgContainer) {
+        if (isSaving) return;
+        isSaving = true;
+        if (statusMsgContainer) {
+            showStatus(statusMsgContainer, 'กำลังเปลี่ยนสถานะ...');
+        }
+        try {
+            const session = await window.CstuAuth?.refresh?.();
+            const csrfToken = session?.csrfToken || '';
+            const res = await window.CstuAuth.request(
+                '/agreements/' + encodeURIComponent(agreementId) + '/status',
+                {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-Token': csrfToken,
+                        'If-Match': '"' + version + '"',
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+            currentAgreement = res.data;
+            currentVersion = res.data.version;
+            renderDetail(res.data);
+            return res.data;
+        } catch (err) {
+            const status = err.status;
+            let message = 'เปลี่ยนสถานะไม่สำเร็จ: ' + (err.message || 'ข้อผิดพลาดระบบ');
+            if (status === 401) {
+                message = 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่';
+            } else if (status === 403) {
+                message = 'คุณไม่มีสิทธิ์เปลี่ยนสถานะข้อตกลงนี้';
+            } else if (status === 404) {
+                message = 'ไม่พบข้อมูลข้อตกลง หรืออยู่นอกขอบเขตที่คุณมีสิทธิ์';
+            } else if (status === 409) {
+                message = 'ข้อมูลถูกแก้ไขโดยผู้อื่น หรือสถานะไม่สอดคล้องกับกติกา (Version/State Conflict)';
+                if (statusMsgContainer) {
+                    showStatus(statusMsgContainer, message, true);
+                    let reloadBtn = statusMsgContainer.querySelector('.reload-conflict-btn');
+                    if (!reloadBtn) {
+                        reloadBtn = document.createElement('button');
+                        reloadBtn.type = 'button';
+                        reloadBtn.className = 'hero-btn reload-conflict-btn';
+                        reloadBtn.style.marginTop = '0.5rem';
+                        reloadBtn.textContent = 'โหลดข้อมูลล่าสุดเพื่อตรวจทาน';
+                        reloadBtn.onclick = () => openDetail(agreementId);
+                        statusMsgContainer.appendChild(reloadBtn);
+                    }
+                }
+                return;
+            } else if (status === 422) {
+                message = 'ข้อมูลหรือเงื่อนไขไม่ถูกต้อง กรุณาตรวจสอบวันที่และข้อมูลประกอบ';
+            } else if (status === 428) {
+                message = 'ขาดข้อมูลเวอร์ชันล่าสุดของข้อตกลง';
+            } else if (status === 503) {
+                message = 'ระบบไม่พร้อมใช้งานในขณะนี้';
+            }
+            if (statusMsgContainer) {
+                showStatus(statusMsgContainer, message, true);
+            }
+            throw err;
+        } finally {
+            isSaving = false;
+        }
+    }
+
+    function renderStatusSection(agreement, container) {
+        container.replaceChildren();
+        container.style.borderTop = '1px solid var(--border-color, #dedede)';
+        container.style.paddingTop = '1rem';
+        container.style.marginTop = '1rem';
+
+        const heading = document.createElement('h3');
+        heading.textContent = 'การจัดการสถานะและต่ออายุข้อตกลง';
+        heading.style.fontSize = '1.1rem';
+        heading.style.marginBottom = '0.5rem';
+        container.appendChild(heading);
+
+        const statusMsgContainer = document.createElement('div');
+        statusMsgContainer.className = 'status-action-msg';
+
+        const st = agreement.status || 'draft';
+
+        const statusBadgeMap = {
+            draft: { label: 'ฉบับร่าง (Draft)', color: '#858585', bg: '#f5f5f5' },
+            active: { label: 'มีผลบังคับใช้ (Active)', color: '#2e7d32', bg: '#e8f5e9' },
+            expired: { label: 'สิ้นสุดระยะเวลา (Expired)', color: '#e65100', bg: '#fff3e0' },
+            terminated: { label: 'ยุติก่อนกำหนด (Terminated)', color: '#c62828', bg: '#ffebee' },
+        };
+        const badgeInfo = statusBadgeMap[st] || { label: st, color: '#333', bg: '#eee' };
+
+        const badgeP = document.createElement('p');
+        badgeP.style.marginBottom = '0.75rem';
+        const badgeLabelStrong = document.createElement('strong');
+        badgeLabelStrong.textContent = 'สถานะปัจจุบัน: ';
+        const badgeSpan = document.createElement('span');
+        badgeSpan.className = 'agreement-status-badge';
+        badgeSpan.style.display = 'inline-block';
+        badgeSpan.style.padding = '2px 8px';
+        badgeSpan.style.borderRadius = '4px';
+        badgeSpan.style.fontWeight = '600';
+        badgeSpan.style.color = badgeInfo.color;
+        badgeSpan.style.background = badgeInfo.bg;
+        badgeSpan.textContent = badgeInfo.label;
+        badgeP.append(badgeLabelStrong, badgeSpan);
+        container.appendChild(badgeP);
+
+        if (st === 'draft') {
+            const draftActions = document.createElement('div');
+            draftActions.style.display = 'flex';
+            draftActions.style.flexDirection = 'column';
+            draftActions.style.gap = '0.5rem';
+
+            if (!agreement.startDate || !agreement.endDate) {
+                const note = document.createElement('small');
+                note.textContent = 'คำแนะนำ: การเปิดใช้งานข้อตกลงต้องระบุวันเริ่มต้นและสิ้นสุด (แก้ไขข้อมูลก่อนเปิดใช้งาน)';
+                note.style.color = 'var(--text-gray, #595959)';
+                draftActions.appendChild(note);
+            }
+
+            const activateBtn = document.createElement('button');
+            activateBtn.type = 'button';
+            activateBtn.id = 'activate-agreement-btn';
+            activateBtn.className = 'hero-btn';
+            activateBtn.textContent = 'เปิดใช้งานข้อตกลง (Activate)';
+            activateBtn.onclick = () => doChangeStatus(agreement.id, { to: 'active' }, currentVersion, statusMsgContainer).catch(() => {});
+            draftActions.appendChild(activateBtn);
+
+            container.appendChild(draftActions);
+        } else if (st === 'active') {
+            const activeActions = document.createElement('div');
+            activeActions.style.display = 'flex';
+            activeActions.style.flexDirection = 'column';
+            activeActions.style.gap = '0.75rem';
+
+            const btnRow = document.createElement('div');
+            btnRow.style.display = 'flex';
+            btnRow.style.gap = '0.75rem';
+
+            const expireBtn = document.createElement('button');
+            expireBtn.type = 'button';
+            expireBtn.id = 'expire-agreement-btn';
+            expireBtn.className = 'login-btn';
+            expireBtn.style.background = 'var(--text-gray, #595959)';
+            expireBtn.textContent = 'ปรับเป็นหมดอายุ (Expire)';
+            expireBtn.onclick = () => doChangeStatus(agreement.id, { to: 'expired' }, currentVersion, statusMsgContainer).catch(() => {});
+
+            const terminateToggleBtn = document.createElement('button');
+            terminateToggleBtn.type = 'button';
+            terminateToggleBtn.id = 'terminate-toggle-btn';
+            terminateToggleBtn.className = 'login-btn';
+            terminateToggleBtn.style.background = 'var(--tu-red, #C3002F)';
+            terminateToggleBtn.textContent = 'ขอยุติข้อตกลงก่อนกำหนด';
+
+            btnRow.append(expireBtn, terminateToggleBtn);
+            activeActions.appendChild(btnRow);
+
+            // Termination Form (collapsible)
+            const termForm = document.createElement('div');
+            termForm.id = 'terminate-form';
+            termForm.style.display = 'none';
+            termForm.style.padding = '0.75rem';
+            termForm.style.background = '#fff5f5';
+            termForm.style.border = '1px solid var(--tu-red, #C3002F)';
+            termForm.style.borderRadius = 'var(--radius-control, 6px)';
+            termForm.style.marginTop = '0.5rem';
+
+            const termLabel = document.createElement('label');
+            termLabel.htmlFor = 'terminate-reason-input';
+            termLabel.textContent = 'เหตุผลในการยุติข้อตกลง *';
+            termLabel.style.display = 'block';
+            termLabel.style.fontWeight = '600';
+            termLabel.style.marginBottom = '0.25rem';
+
+            const termInput = document.createElement('textarea');
+            termInput.id = 'terminate-reason-input';
+            termInput.rows = 2;
+            termInput.maxLength = 20000;
+            termInput.placeholder = 'ระบุเหตุผลในการขอยุติข้อตกลงก่อนกำหนด...';
+            termInput.style.width = '100%';
+            termInput.style.padding = '6px 10px';
+            termInput.style.borderRadius = 'var(--radius-control, 6px)';
+            termInput.style.border = '1px solid var(--control-border, #858585)';
+
+            const termSubmitBtn = document.createElement('button');
+            termSubmitBtn.type = 'button';
+            termSubmitBtn.id = 'confirm-terminate-btn';
+            termSubmitBtn.className = 'login-btn';
+            termSubmitBtn.style.background = 'var(--tu-red, #C3002F)';
+            termSubmitBtn.style.marginTop = '0.5rem';
+            termSubmitBtn.textContent = 'ยืนยันการยุติข้อตกลง';
+            termSubmitBtn.onclick = () => {
+                const reason = termInput.value.trim();
+                if (!reason) {
+                    showStatus(statusMsgContainer, 'กรุณาระบุเหตุผลในการยุติข้อตกลง', true);
+                    return;
+                }
+                return doChangeStatus(agreement.id, { to: 'terminated', reason }, currentVersion, statusMsgContainer).catch(() => {});
+            };
+
+            terminateToggleBtn.onclick = () => {
+                termForm.style.display = termForm.style.display === 'none' ? 'block' : 'none';
+            };
+
+            termForm.append(termLabel, termInput, termSubmitBtn);
+            activeActions.appendChild(termForm);
+
+            container.appendChild(activeActions);
+        } else if (st === 'expired') {
+            const renewContainer = document.createElement('div');
+            renewContainer.id = 'renewal-form';
+            renewContainer.style.padding = '0.75rem';
+            renewContainer.style.background = '#f9fbf9';
+            renewContainer.style.border = '1px solid #2e7d32';
+            renewContainer.style.borderRadius = 'var(--radius-control, 6px)';
+
+            const renewHeading = document.createElement('strong');
+            renewHeading.textContent = 'ต่ออายุข้อตกลง (Renewal)';
+            renewHeading.style.display = 'block';
+            renewHeading.style.marginBottom = '0.5rem';
+
+            const newEndLabel = document.createElement('label');
+            newEndLabel.htmlFor = 'renewal-end-date-input';
+            newEndLabel.textContent = 'วันสิ้นสุดใหม่ (New End Date) *';
+            newEndLabel.style.display = 'block';
+            newEndLabel.style.fontWeight = '600';
+            newEndLabel.style.marginBottom = '0.25rem';
+
+            const newEndInput = document.createElement('input');
+            newEndInput.type = 'date';
+            newEndInput.id = 'renewal-end-date-input';
+            newEndInput.required = true;
+            newEndInput.style.width = '100%';
+            newEndInput.style.padding = '6px 10px';
+            newEndInput.style.borderRadius = 'var(--radius-control, 6px)';
+            newEndInput.style.border = '1px solid var(--control-border, #858585)';
+            newEndInput.style.marginBottom = '0.5rem';
+
+            const renewNoteLabel = document.createElement('label');
+            renewNoteLabel.htmlFor = 'renewal-note-input';
+            renewNoteLabel.textContent = 'บันทึกการต่ออายุ (Renewal Note) *';
+            renewNoteLabel.style.display = 'block';
+            renewNoteLabel.style.fontWeight = '600';
+            renewNoteLabel.style.marginBottom = '0.25rem';
+
+            const renewNoteInput = document.createElement('textarea');
+            renewNoteInput.id = 'renewal-note-input';
+            renewNoteInput.rows = 2;
+            renewNoteInput.maxLength = 20000;
+            renewNoteInput.required = true;
+            renewNoteInput.placeholder = 'ระบุรายละเอียดหรือข้อตกลงในการต่ออายุ...';
+            renewNoteInput.style.width = '100%';
+            renewNoteInput.style.padding = '6px 10px';
+            renewNoteInput.style.borderRadius = 'var(--radius-control, 6px)';
+            renewNoteInput.style.border = '1px solid var(--control-border, #858585)';
+            renewNoteInput.style.marginBottom = '0.5rem';
+
+            const renewSubmitBtn = document.createElement('button');
+            renewSubmitBtn.type = 'button';
+            renewSubmitBtn.id = 'confirm-renewal-btn';
+            renewSubmitBtn.className = 'hero-btn';
+            renewSubmitBtn.textContent = 'บันทึกการต่ออายุ (Renew)';
+            renewSubmitBtn.onclick = () => {
+                const newEndDate = newEndInput.value.trim();
+                const renewalNote = renewNoteInput.value.trim();
+                if (!newEndDate) {
+                    showStatus(statusMsgContainer, 'กรุณาระบุวันสิ้นสุดใหม่สำหรับการต่ออายุ', true);
+                    return;
+                }
+                if (!renewalNote) {
+                    showStatus(statusMsgContainer, 'กรุณาระบุบันทึกการต่ออายุ', true);
+                    return;
+                }
+                return doChangeStatus(agreement.id, { to: 'active', endDate: newEndDate, renewalNote }, currentVersion, statusMsgContainer).catch(() => {});
+            };
+
+            renewContainer.append(renewHeading, newEndLabel, newEndInput, renewNoteLabel, renewNoteInput, renewSubmitBtn);
+            container.appendChild(renewContainer);
+        } else if (st === 'terminated') {
+            const termNotice = document.createElement('p');
+            termNotice.className = 'agreement-terminated-notice';
+            termNotice.textContent = 'ข้อตกลงนี้ถูกยุติก่อนกำหนดแล้ว และเป็นสถานะสิ้นสุด (Terminal State)';
+            termNotice.style.color = 'var(--tu-red, #C3002F)';
+            termNotice.style.fontStyle = 'italic';
+            container.appendChild(termNotice);
+        }
+
+        container.appendChild(statusMsgContainer);
     }
 
     function renderForm(agreement = null) {
@@ -525,6 +820,7 @@
         openCreate,
         renderDetail,
         renderForm,
+        changeStatus: (id, payload, ver) => doChangeStatus(id, payload, ver || currentVersion),
         close,
     };
 })();

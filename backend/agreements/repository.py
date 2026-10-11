@@ -7,13 +7,13 @@ and scope/role boundaries.
 """
 
 import copy
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import threading
 import time
 import uuid
 
 from ..auth.session_service import AuthError
-from .validators import validate_agreement_payload
+from .validators import validate_agreement_payload, validate_agreement_status_transition
 
 
 class AgreementRepository:
@@ -55,6 +55,11 @@ class AgreementRepository:
             return user_prop
         return None
 
+    def _today_bangkok(self) -> str:
+        tz_bkk = timezone(timedelta(hours=7))
+        now_dt = datetime.fromtimestamp(self.clock(), tz=timezone.utc).astimezone(tz_bkk)
+        return now_dt.strftime('%Y-%m-%d')
+
     def get(self, kind: str, key: str) -> dict | None:
         with self._lock:
             row = self.rows.get((kind, key))
@@ -81,7 +86,7 @@ class AgreementRepository:
     def mutate(self, kind: str, action: str, payload: dict, record: dict | None,
                parent: dict | None, conditions, idempotency_key: str | None,
                upload=None) -> dict:
-        if kind != 'agreement' or action not in {'create', 'update'} or upload is not None:
+        if kind != 'agreement' or action not in {'create', 'update', 'status'} or upload is not None:
             raise AuthError('PERMISSION_UNAVAILABLE', 503)
 
         with self._lock:
@@ -104,7 +109,36 @@ class AgreementRepository:
                 if not current or current.get('version') != conditions.target_version:
                     raise AuthError('VERSION_CONFLICT', 409)
 
-            # 2. Idempotency Check for Create (24 hours = 86400 seconds)
+            # 2. Status Mutation (Issue #100)
+            if action == 'status':
+                if not record:
+                    raise AuthError('NOT_FOUND', 404)
+                today_str = self._today_bangkok()
+                validate_agreement_status_transition(record, payload, today_str)
+
+                now_iso = datetime.now(timezone.utc).isoformat()
+                saved = copy.deepcopy(record)
+                saved['status'] = payload['to']
+                saved['updatedAt'] = now_iso
+                saved['updatedBy'] = conditions.user_id
+                saved['version'] = record.get('version', 1) + 1
+
+                if 'endDate' in payload and payload['endDate'] is not None:
+                    saved['endDate'] = payload['endDate']
+
+                if 'renewalNote' in payload and payload['renewalNote'] is not None:
+                    saved['renewalNote'] = payload['renewalNote']
+
+                if 'reason' in payload and payload['reason'] is not None:
+                    existing_internal = saved.get('internalNote') or ''
+                    reason_entry = f"Status reason: {payload['reason'].strip()}"
+                    saved['internalNote'] = f"{existing_internal}\n{reason_entry}".strip() if existing_internal else reason_entry
+
+                self.rows[(kind, saved['id'])] = copy.deepcopy(saved)
+                self.writes += 1
+                return copy.deepcopy(saved)
+
+            # 3. Idempotency Check for Create (24 hours = 86400 seconds)
             if action == 'create' and idempotency_key:
                 cache_key = (conditions.user_id, kind, idempotency_key)
                 cached = self.idempotency_cache.get(cache_key)

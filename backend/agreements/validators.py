@@ -141,3 +141,96 @@ def validate_agreement_payload(payload: dict, is_create: bool = True):
             raise AuthError('INVALID_FIELDS', 422)
 
 
+STATUS_FIELDS = {'to', 'reason', 'endDate', 'renewalNote'}
+
+
+def validate_agreement_status_transition(current_record: dict, payload: dict, today_str: str):
+    if not isinstance(payload, dict):
+        raise AuthError('INVALID_BODY', 400)
+
+    unknown = set(payload) - STATUS_FIELDS
+    if unknown:
+        raise AuthError('INVALID_FIELDS', 422)
+
+    to_status = payload.get('to')
+    if not isinstance(to_status, str) or to_status not in AGREEMENT_STATUSES:
+        raise AuthError('INVALID_FIELDS', 422)
+
+    # Validate individual fields if present
+    if 'reason' in payload and payload['reason'] is not None:
+        validate_string(payload['reason'], max_len=20000, min_len=1, required=True)
+
+    if 'renewalNote' in payload and payload['renewalNote'] is not None:
+        validate_string(payload['renewalNote'], max_len=20000, min_len=1, required=True)
+
+    if 'endDate' in payload and payload['endDate'] is not None:
+        if not validate_date(payload['endDate']):
+            raise AuthError('INVALID_FIELDS', 422)
+
+    from_status = current_record.get('status', 'draft')
+
+    # Terminated records cannot transition out
+    if from_status == 'terminated':
+        raise AuthError('INVALID_TRANSITION', 409)
+
+    if to_status == from_status:
+        return
+
+    # Transition 1: draft -> active
+    if from_status == 'draft' and to_status == 'active':
+        partner_ids = current_record.get('partnerIds')
+        if not partner_ids or not isinstance(partner_ids, list):
+            raise AuthError('INVALID_TRANSITION', 409)
+
+        resp_ids = current_record.get('responsibleUserIds')
+        if not resp_ids or not isinstance(resp_ids, list):
+            raise AuthError('INVALID_TRANSITION', 409)
+
+        start_date = current_record.get('startDate')
+        end_date = payload.get('endDate', current_record.get('endDate'))
+        if not start_date or not end_date:
+            raise AuthError('INVALID_TRANSITION', 409)
+
+        if start_date > end_date:
+            raise AuthError('INVALID_FIELDS', 422)
+
+        if end_date < today_str:
+            raise AuthError('INVALID_TRANSITION', 409)
+        return
+
+    # Transition 2: active -> expired
+    if from_status == 'active' and to_status == 'expired':
+        end_date = current_record.get('endDate')
+        if not end_date or end_date >= today_str:
+            raise AuthError('INVALID_TRANSITION', 409)
+        return
+
+    # Transition 3: active -> terminated
+    if from_status == 'active' and to_status == 'terminated':
+        reason = payload.get('reason')
+        if not reason or not isinstance(reason, str) or not reason.strip():
+            raise AuthError('INVALID_FIELDS', 422)
+        return
+
+    # Transition 4: expired -> active (renewal)
+    if from_status == 'expired' and to_status == 'active':
+        renewal_note = payload.get('renewalNote')
+        if not renewal_note or not isinstance(renewal_note, str) or not renewal_note.strip():
+            raise AuthError('INVALID_FIELDS', 422)
+
+        new_end = payload.get('endDate')
+        if not new_end or not validate_date(new_end):
+            raise AuthError('INVALID_FIELDS', 422)
+
+        if new_end < today_str:
+            raise AuthError('INVALID_FIELDS', 422)
+
+        start_date = current_record.get('startDate')
+        if start_date and start_date > new_end:
+            raise AuthError('INVALID_FIELDS', 422)
+        return
+
+    # Any other transition is forbidden
+    raise AuthError('INVALID_TRANSITION', 409)
+
+

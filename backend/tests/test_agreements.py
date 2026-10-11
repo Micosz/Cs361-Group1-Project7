@@ -12,6 +12,7 @@ Verifies:
   - Internal confidentiality: Agreements never leak to Public projections
 """
 
+from datetime import datetime, timezone
 import json
 import unittest
 
@@ -668,4 +669,294 @@ class AgreementTests(unittest.TestCase):
                                          {'startDate': '2026-10-20'},
                                          **{'if-match': '"1"'}))
         self.assertEqual(422, bad_patch['statusCode'])
+
+    # -------------------------------------------------------------
+    # 9. Issue #100: Status Transitions, Renewal, and Concurrency
+    # -------------------------------------------------------------
+    def test_agreement_status_transitions_allowed_lifecycle(self):
+        # Set Bangkok today to 2026-10-12
+        self.repo.clock = lambda: datetime(2026, 10, 12, 12, 0, 0, tzinfo=timezone.utc).timestamp()
+
+        # 1. Create Draft Agreement
+        create_res = self.call(self.event('/api/agreements', 'POST', {
+            'title': 'Lifecycle MoU',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+            'startDate': '2026-10-01',
+            'endDate': '2027-10-01',
+        }))
+        self.assertEqual(201, create_res['statusCode'])
+        aid = json.loads(create_res['body'])['data']['id']
+        self.assertEqual('draft', json.loads(create_res['body'])['data']['status'])
+        self.assertEqual(1, json.loads(create_res['body'])['data']['version'])
+
+        # 2. draft -> active
+        res_activate = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                           {'to': 'active'},
+                                           **{'if-match': '"1"'}))
+        self.assertEqual(200, res_activate['statusCode'])
+        data_act = json.loads(res_activate['body'])['data']
+        self.assertEqual('active', data_act['status'])
+        self.assertEqual(2, data_act['version'])
+
+        # Active agreement cannot expire while endDate >= today (2027-10-01 >= 2026-10-12)
+        res_premature = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                             {'to': 'expired'},
+                                             **{'if-match': '"2"'}))
+        self.assertEqual(409, res_premature['statusCode'])
+
+        # 3. Advance time to 2027-10-02 (after endDate 2027-10-01) -> active -> expired
+        self.repo.clock = lambda: datetime(2027, 10, 2, 12, 0, 0, tzinfo=timezone.utc).timestamp()
+        res_expire = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                          {'to': 'expired'},
+                                          **{'if-match': '"2"'}))
+        self.assertEqual(200, res_expire['statusCode'])
+        data_exp = json.loads(res_expire['body'])['data']
+        self.assertEqual('expired', data_exp['status'])
+        self.assertEqual(3, data_exp['version'])
+
+        # 4. expired -> active (Renewal)
+        res_renew = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {
+            'to': 'active',
+            'endDate': '2028-10-01',
+            'renewalNote': 'Renewed for another academic year',
+        }, **{'if-match': '"3"'}))
+        self.assertEqual(200, res_renew['statusCode'])
+        data_ren = json.loads(res_renew['body'])['data']
+        self.assertEqual('active', data_ren['status'])
+        self.assertEqual('2028-10-01', data_ren['endDate'])
+        self.assertEqual('Renewed for another academic year', data_ren['renewalNote'])
+        self.assertEqual(aid, data_ren['id'])  # Preserves existing record ID
+        self.assertEqual(4, data_ren['version'])
+
+        # 5. active -> terminated
+        res_term = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {
+            'to': 'terminated',
+            'reason': 'Mutual early termination due to partner restructuring',
+        }, **{'if-match': '"4"'}))
+        self.assertEqual(200, res_term['statusCode'])
+        data_term = json.loads(res_term['body'])['data']
+        self.assertEqual('terminated', data_term['status'])
+        self.assertIn('Mutual early termination due to partner restructuring', data_term['internalNote'])
+        self.assertEqual(5, data_term['version'])
+
+        # 6. Terminated is a terminal state: cannot transition out
+        res_out1 = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                        {'to': 'active'},
+                                        **{'if-match': '"5"'}))
+        self.assertEqual(409, res_out1['statusCode'])
+
+        res_out2 = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                        {'to': 'draft'},
+                                        **{'if-match': '"5"'}))
+        self.assertEqual(409, res_out2['statusCode'])
+
+    def test_agreement_status_transitions_denied_invalid_transitions(self):
+        self.repo.clock = lambda: datetime(2026, 10, 12, 12, 0, 0, tzinfo=timezone.utc).timestamp()
+
+        # Create Draft
+        create_res = self.call(self.event('/api/agreements', 'POST', {
+            'title': 'Transitions Matrix Test',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+            'startDate': '2026-10-01',
+            'endDate': '2027-10-01',
+        }))
+        aid = json.loads(create_res['body'])['data']['id']
+
+        # draft -> expired forbidden (409)
+        res1 = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                    {'to': 'expired'},
+                                    **{'if-match': '"1"'}))
+        self.assertEqual(409, res1['statusCode'])
+
+        # draft -> terminated forbidden (409)
+        res2 = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                    {'to': 'terminated', 'reason': 'Premature termination'},
+                                    **{'if-match': '"1"'}))
+        self.assertEqual(409, res2['statusCode'])
+
+        # Activate
+        self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                             {'to': 'active'},
+                             **{'if-match': '"1"'}))
+
+        # active -> draft forbidden (409)
+        res3 = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                    {'to': 'draft'},
+                                    **{'if-match': '"2"'}))
+        self.assertEqual(409, res3['statusCode'])
+
+        # Expire
+        self.repo.clock = lambda: datetime(2027, 10, 2, 12, 0, 0, tzinfo=timezone.utc).timestamp()
+        self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                             {'to': 'expired'},
+                             **{'if-match': '"2"'}))
+
+        # expired -> terminated forbidden (409)
+        res4 = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                    {'to': 'terminated', 'reason': 'Cannot terminate expired'},
+                                    **{'if-match': '"3"'}))
+        self.assertEqual(409, res4['statusCode'])
+
+        # expired -> draft forbidden (409)
+        res5 = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                    {'to': 'draft'},
+                                    **{'if-match': '"3"'}))
+        self.assertEqual(409, res5['statusCode'])
+
+    def test_agreement_status_transition_guards_and_validation(self):
+        self.repo.clock = lambda: datetime(2026, 10, 12, 12, 0, 0, tzinfo=timezone.utc).timestamp()
+
+        # 1. draft -> active requires non-null dates and endDate >= today
+        c1 = self.call(self.event('/api/agreements', 'POST', {
+            'title': 'No Dates Agreement',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+            'startDate': None,
+            'endDate': None,
+        }))
+        aid_nodate = json.loads(c1['body'])['data']['id']
+        res_nodate = self.call(self.event(f'/api/agreements/{aid_nodate}/status', 'POST',
+                                          {'to': 'active'},
+                                          **{'if-match': '"1"'}))
+        self.assertEqual(409, res_nodate['statusCode'])
+
+        # draft -> active with endDate in the past rejected (409)
+        c2 = self.call(self.event('/api/agreements', 'POST', {
+            'title': 'Past Dates Agreement',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+            'startDate': '2026-01-01',
+            'endDate': '2026-10-10',  # Past relative to 2026-10-12
+        }))
+        aid_past = json.loads(c2['body'])['data']['id']
+        res_past = self.call(self.event(f'/api/agreements/{aid_past}/status', 'POST',
+                                        {'to': 'active'},
+                                        **{'if-match': '"1"'}))
+        self.assertEqual(409, res_past['statusCode'])
+
+        # 2. active -> terminated requires non-empty reason
+        c3 = self.call(self.event('/api/agreements', 'POST', {
+            'title': 'Termination Guard Agreement',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+            'startDate': '2026-10-01',
+            'endDate': '2027-10-01',
+        }))
+        aid_term = json.loads(c3['body'])['data']['id']
+        self.call(self.event(f'/api/agreements/{aid_term}/status', 'POST', {'to': 'active'}, **{'if-match': '"1"'}))
+
+        # Missing reason -> 422
+        res_noreason = self.call(self.event(f'/api/agreements/{aid_term}/status', 'POST',
+                                            {'to': 'terminated'},
+                                            **{'if-match': '"2"'}))
+        self.assertEqual(422, res_noreason['statusCode'])
+
+        # Blank/whitespace reason -> 422
+        res_blankreason = self.call(self.event(f'/api/agreements/{aid_term}/status', 'POST',
+                                              {'to': 'terminated', 'reason': '   '},
+                                              **{'if-match': '"2"'}))
+        self.assertEqual(422, res_blankreason['statusCode'])
+
+        # 3. expired -> active (renewal) requires renewalNote and valid future endDate
+        self.repo.clock = lambda: datetime(2027, 10, 2, 12, 0, 0, tzinfo=timezone.utc).timestamp()
+        self.call(self.event(f'/api/agreements/{aid_term}/status', 'POST', {'to': 'expired'}, **{'if-match': '"2"'}))
+
+        # Missing renewalNote -> 422
+        res_nonote = self.call(self.event(f'/api/agreements/{aid_term}/status', 'POST', {
+            'to': 'active',
+            'endDate': '2028-10-01',
+        }, **{'if-match': '"3"'}))
+        self.assertEqual(422, res_nonote['statusCode'])
+
+        # Missing endDate -> 422
+        res_noend = self.call(self.event(f'/api/agreements/{aid_term}/status', 'POST', {
+            'to': 'active',
+            'renewalNote': 'Note without new endDate',
+        }, **{'if-match': '"3"'}))
+        self.assertEqual(422, res_noend['statusCode'])
+
+        # Past endDate -> 422
+        res_pastend = self.call(self.event(f'/api/agreements/{aid_term}/status', 'POST', {
+            'to': 'active',
+            'renewalNote': 'Renewing in the past',
+            'endDate': '2027-09-01',  # Before current Bangkok today 2027-10-02
+        }, **{'if-match': '"3"'}))
+        self.assertEqual(422, res_pastend['statusCode'])
+
+    def test_agreement_status_authorization_and_concurrency(self):
+        self.repo.clock = lambda: datetime(2026, 10, 12, 12, 0, 0, tzinfo=timezone.utc).timestamp()
+
+        # Staff creates agreement assigned to coord_user
+        coord_user = user_context('coordinator', 'c1', 'coord_user').user
+        exec_user = user_context('executive', 'c1', 'exec_user').user
+        stu_user = user_context('student', 'c1', 'stu_user').user
+        other_coord = user_context('coordinator', 'c1', 'other_coord').user
+        scope_c2_staff = user_context('staff', 'c2', 'staff_c2').user
+
+        for u in [coord_user, exec_user, stu_user, other_coord, scope_c2_staff]:
+            self.mock_user_dict[u.user_id] = u
+
+        c = self.call(self.event('/api/agreements', 'POST', {
+            'title': 'Auth and Concurrency Test Agreement',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+            'startDate': '2026-10-01',
+            'endDate': '2027-10-01',
+            'responsibleUserIds': ['coord_user'],
+        }))
+        aid = json.loads(c['body'])['data']['id']
+
+        # 1. Executive denied (403)
+        self.login_as(exec_user)
+        res_exec = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}, **{'if-match': '"1"'}))
+        self.assertEqual(403, res_exec['statusCode'])
+
+        # 2. Student denied (403)
+        self.login_as(stu_user)
+        res_stu = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}, **{'if-match': '"1"'}))
+        self.assertEqual(403, res_stu['statusCode'])
+
+        # 3. Unassigned coordinator denied (404 isolated)
+        self.login_as(other_coord)
+        res_unassigned = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}, **{'if-match': '"1"'}))
+        self.assertEqual(404, res_unassigned['statusCode'])
+
+        # 4. Out-of-scope staff denied (404)
+        self.login_as(scope_c2_staff)
+        res_cross = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}, **{'if-match': '"1"'}))
+        self.assertEqual(404, res_cross['statusCode'])
+
+        # 5. Assigned coordinator allowed to change status
+        self.login_as(coord_user)
+
+        # Missing If-Match -> 428 Precondition Required
+        res_missing_ifmatch = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}))
+        self.assertEqual(428, res_missing_ifmatch['statusCode'])
+
+        # Invalid If-Match format (unquoted) -> 422
+        res_bad_ifmatch = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}, **{'if-match': '1'}))
+        self.assertEqual(422, res_bad_ifmatch['statusCode'])
+
+        # Stale If-Match -> 409 Conflict
+        res_stale_ifmatch = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}, **{'if-match': '"99"'}))
+        self.assertEqual(409, res_stale_ifmatch['statusCode'])
+
+        # Unknown / forbidden fields in status payload -> 422
+        res_unknown_fields = self.call(self.event(f'/api/agreements/{aid}/status', 'POST',
+                                                  {'to': 'active', 'malicious': 'field'},
+                                                  **{'if-match': '"1"'}))
+        self.assertEqual(422, res_unknown_fields['statusCode'])
+
+        # Valid assigned coordinator call succeeds
+        res_coord_ok = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}, **{'if-match': '"1"'}))
+        self.assertEqual(200, res_coord_ok['statusCode'])
+        self.assertEqual('active', json.loads(res_coord_ok['body'])['data']['status'])
 
