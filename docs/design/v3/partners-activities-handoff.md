@@ -1,6 +1,6 @@
 # คู่มือเริ่มงาน Partners and Activities — #82
 
-ตรวจจาก `main` commit `354e320603144b3f3a764765760e4d57ad440740` และ Draft [PR #123](https://github.com/Micosz/Cs361-Group1-Project7/pull/123) commit `da023cb6bfd42d2ac77ee346c3fe05fd467d6aed` วันที่ 11 ตุลาคม 2026 คู่มือนี้เตรียมการพัฒนา ไม่ใช่หลักฐานว่า CRUD หรือ AWS พร้อมใช้งาน
+ตรวจจาก `main` commit `c3449a52a86f4a3d75937b738413208ae9890da4` และ Draft [PR #123](https://github.com/Micosz/Cs361-Group1-Project7/pull/123) commit `da023cb6bfd42d2ac77ee346c3fe05fd467d6aed` วันที่ 11 ตุลาคม 2026 คู่มือนี้เตรียมการพัฒนา ไม่ใช่หลักฐานว่า CRUD หรือ AWS พร้อมใช้งาน
 
 ## เริ่มตรงนี้
 
@@ -12,7 +12,7 @@
 | Issue / ผู้รับผิดชอบ ณ วันที่ตรวจ | งานหลัก | ส่งต่อให้ |
 | --- | --- | --- |
 | [#94](https://github.com/Micosz/Cs361-Group1-Project7/issues/94) / Suttipoch | Partner + Contact เพิ่ม/แก้, ตัวเลือก Partner ตามสิทธิ์ | #95 ใช้ parent; #96/#97 ใช้ ID และตัวเลือก |
-| [#95](https://github.com/Micosz/Cs361-Group1-Project7/issues/95) / Micosz | เหตุการณ์ประวัติของ Partner, อ่าน/เพิ่ม/แก้ | detail ร่วมของ #94 |
+| [#95](https://github.com/Micosz/Cs361-Group1-Project7/issues/95) / Micosz | ประวัติจาก Activity/Agreement เดิมในรายละเอียด Partner | detail ร่วมของ #94 |
 | [#96](https://github.com/Micosz/Cs361-Group1-Project7/issues/96) / wuttikornboontawee | Activity เพิ่ม/แก้, ผู้รับผิดชอบ, form/detail ร่วม | #97 ต่อความสัมพันธ์ใน API/form เดียวกัน |
 | [#97](https://github.com/Micosz/Cs361-Group1-Project7/issues/97) / Micosz, Supavit-49 | ตรวจ/อ่าน/ถอด partner/co-host/agreement links | repository และ form/detail ของ #96; options ของ #94/#98 |
 
@@ -27,12 +27,14 @@
 | `backend/permissions/projections.py` | `project`, `public_projection` | ไม่ expand protected reference IDs; history ยังไม่คืน referenceType/referenceId; feature ต้องเติมเฉพาะ reference ที่ตรวจสิทธิ์แล้ว |
 | `backend/permissions/transactions.py` | `transaction_checks`, `target_condition` | adapter ต้องรวม checks กับ write/idempotency/reference checks ใน transaction เดียว |
 | `backend/application.py` | `AuthApplication(..., repository=None)` ส่ง repository ไป transport | `backend/lambda_function.py` ยังไม่ inject business repository |
-| `public/assets/auth-client.js` | `CstuAuth.refresh/request/mutate` | `mutate` ทำ PATCH เท่านั้น; ยังไม่มี helper POST business create + Idempotency-Key |
+| `public/assets/auth-client.js` | `CstuAuth.refresh/request/mutate/create` | มี helper POST จาก PR #147; storage replay ยังต้องต่อ |
 | `public/assets/workspace.js`, `public/workspace.html` | Session/role workspace และฟอร์ม role management | ยังไม่มี form/list/detail ธุรกิจของ #82 |
 | `public/assets/script.js` | Public browse/detail เดิม, Search/date/MoU และลิงก์ Partner จาก PR #145 | เป็น public reader ไม่ใช่ protected CRUD; อย่าใช้ public cache เป็นข้อมูลแก้ไขภายใน |
 | PR #123 / `backend/relationships/activity_links.py` | `plan_patch`, `internal_links`, `public_links`, `legacy_relationships` | Draft ไม่อยู่บน main, ไม่บันทึกจริง, ไม่มี API/UI และรองรับแผน PATCH ของ activity ที่มี version แล้ว |
 
-ชุดเตรียม #82 ใน PR นี้เพิ่ม [โค้ดฐานร่วมและตัวอย่างใช้](../../../backend/business/README.th.md): `backend/business/validation.py`, typing port ใน `ports.py`, synthetic fixtures ใน `backend/tests/fixtures/partners_activities.py` และ `CstuAuth.create` ส่วนนี้ยังไม่อยู่ใน main จน PR ถูก review/merge ไม่ใช่ business repository ที่ใช้งานจริง
+main มี `backend/partners/` จาก PR #147 เป็น prototype Partner/Contact ในหน่วยความจำ ยังไม่มี persistent storage, UI หรือ production injection ให้ใช้ต่อและตกลง validator กลางก่อนเชื่อม `backend/business/` ไม่สร้าง adapter ซ้ำ
+
+ชุดเตรียม #82 ใน PR นี้เพิ่ม [โค้ดฐานร่วมและตัวอย่างใช้](../../../backend/business/README.th.md): `backend/business/validation.py`, typing port ใน `ports.py`, synthetic fixtures ใน `backend/tests/fixtures/partners_activities.py` โดยใช้ `CstuAuth.create` ที่มีบน main แล้ว ส่วนฐานร่วมนี้พร้อมใช้หลัง PR #146 merge ไม่ใช่ business repository ที่ใช้งานจริง
 
 ## จุดที่ต้องตกลงร่วมกันก่อนต่อของจริง
 
@@ -60,16 +62,17 @@
 
 หลักฐานขั้นต่ำ: staff C1 สร้าง/แก้/อ่านกลับ, coordinator assigned แก้ internal ได้แต่ unassigned/ข้าม scope ถูกปฏิเสธ, missing fields/unknown fields/Contact ข้าม parent ไม่เปลี่ยนข้อมูล; stale If-Match และ create replay ได้ผลตาม contract
 
-## ขั้นตอน #95 — History ของ Partner
+## ขั้นตอน #95 — ประวัติความร่วมมือของ Partner
 
-1. ใช้ parent/detail ของ #94 ไม่สร้าง Partner CRUD ซ้ำ model คือ occurredOn (ISO calendar day), kind (`meeting/agreement/activity/other`), note และ optional referenceType/referenceId เป็นคู่
-2. ต่อ `GET/POST /api/partners/{id}/history` และ `PATCH .../history/{historyId}` ผ่าน gateway; server สร้าง recordedBy/time/id/scope, PATCH ใช้ version ของ history และตรวจ parent version ด้วย
-3. ตรวจ reference มีจริง ชนิดตรง scope เดียวกันและผู้เรียกอ่านได้ ห้ามเปิดชื่อ/ID ของ Agreement ที่อ่านไม่ได้ใน history response หรือข้อความ error
-4. ต่อ history reference projection หลังตรวจสิทธิ์; `project` ปัจจุบันไม่ได้คืน references ห้ามแก้ด้วยการ merge raw row ทั้งก้อน
-5. แสดงประวัติในรายละเอียด Partner พร้อมส่วนกรอก/แก้ที่เปิดเมื่อมีสิทธิ์, empty/loading/error และลำดับตามข้อสรุป ไม่ต้องบันทึกทุกการแก้ฟิลด์
-6. หาก reference เปลี่ยนหรือหาย ให้ผลตาม contract ที่ตกลงและไม่เผยข้อมูลเพิ่ม; history ไม่ออก public/backup ตาม baseline ปัจจุบัน
+แนวล่าสุดแสดงประวัติจาก Activity/Agreement เดิมในรายละเอียด Partner ไม่เพิ่มฟอร์มประชุมหรือบันทึกกิจกรรมซ้ำ อ่าน [คู่มือ #95](../../ai-guides/v3/issue-95.md) ก่อนเริ่ม
 
-หลักฐานขั้นต่ำ: หลายเหตุการณ์/วันเดียวกัน/ไม่มีประวัติ, วันที่ไม่มีจริง, parent/reference หายหรือข้าม scope, executive read-only non-personal และผู้ไม่มีสิทธิ์ POST/PATCH ไม่เปลี่ยนข้อมูล
+1. ตกลงและปรับ Issue #95 กับแบบข้อมูล #91/API #92 ให้ตรงกันก่อน implementation เพราะ baseline เดิมยังใช้ RelationshipHistory และ GET/POST/PATCH history แยก
+2. ใช้ partnerId/coHostPartnerIds และความสัมพันธ์ Agreement ที่ตรวจแล้วรวบรวมรายการเดิม จำกัดสิทธิ์และ scope ก่อน pagination/count ไม่ดึงข้อมูลทั้งหมดไปกรองใน browser
+3. คืนรายการตาม projection ที่ผู้ใช้มีสิทธิ์อ่าน ไม่เปิดชื่อ/ID/count ของข้อตกลงที่อ่านไม่ได้ และไม่คืน raw records
+4. แสดงวัน ประเภท ชื่อรายการ และลิงก์ไป detail เดิม เรียงตามวันที่ที่ตกลงกับ tie-break คงที่ พร้อม empty/loading/error; สร้าง/แก้ผ่านฟอร์ม Activity/Agreement เดิม
+5. helper/schema history ในฐานร่วมนี้รองรับ baseline เดิมเท่านั้น ไม่บังคับสร้างข้อมูลซ้ำ การเลิกใช้หรือย้ายข้อมูลต้องตกลง migration กับ #91/#92 ก่อน
+
+หลักฐานขั้นต่ำ: หลายรายการ/วันเดียวกัน/ไม่มีรายการ, primary/co-host ถูก Partner, ข้าม scope/ไม่มีสิทธิ์ไม่เผยข้อมูล, ลิงก์เปิด detail เดิม และไม่เกิดการบันทึกซ้ำ
 
 ## ขั้นตอน #96 — Activity และผู้รับผิดชอบ
 
@@ -134,7 +137,7 @@ Local/mock ผ่านยังไม่ยืนยัน DynamoDB/HTTPS จ�
 
 - อ่านข้อมูลผ่าน `CstuAuth.request('/partners/...')` path ไม่เติม `/api` ซ้ำ; protected ไม่มี fallback JSON
 - PATCH ใช้ `CstuAuth.mutate(path, payload, version)` ซึ่งเติม CSRF/If-Match แล้ว ขาด version ห้ามกดบันทึก
-- ชุดเตรียมนี้เพิ่ม `CstuAuth.create(path, payload, submissionKey)` ให้แล้ว: refresh Session, POST, X-CSRF-Token, Idempotency-Key 16–128 ตัว `[A-Za-z0-9_-]`; form ส่งเฉพาะ allowlist, retry payload เดิมใช้ key เดิมและเปลี่ยน key เมื่อแก้ payload/เริ่มรายการใหม่ ไม่มี token/password ใน localStorage ส่วน storage replay ยังต้องทำ
+- main จาก PR #147 มี `CstuAuth.create(path, payload, submissionKey)` ให้แล้ว: refresh Session, POST, X-CSRF-Token, Idempotency-Key 16–128 ตัว `[A-Za-z0-9_-]`; form ส่งเฉพาะ allowlist, retry payload เดิมใช้ key เดิมและเปลี่ยน key เมื่อแก้ payload/เริ่มรายการใหม่ ไม่มี token/password ใน localStorage ส่วน storage replay ยังต้องทำ
 - Browser ส่ง Origin เอง; ฟอร์มแสดง saving/กันกดซ้ำ, 401 กลับ Login/ล้าง protected state, 403 แสดงไม่มีสิทธิ์, 409 โหลดรุ่นล่าสุดให้ผู้ใช้ทบทวน, 422 แสดง validation, 503 แสดง retry ไม่แทนด้วยรายการว่าง
 - Response ตอนนี้ไม่ได้มี `allowedActions`/`writableFields` โดยอัตโนมัติ หาก UI ต้องใช้ให้ตกลงกับ #92/#79 ก่อน ปุ่มซ่อนไม่แทน backend authorization
 - Render ชื่อ/หมายเหตุด้วย textContent หรือ DOM ที่ปลอดภัย; คง Search/filter เมื่อกลับ detail ไม่เก็บ protected payload ใน URL
