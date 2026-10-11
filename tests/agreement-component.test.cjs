@@ -248,3 +248,69 @@ test('close restores focus to activeElement', () => {
     assert.equal(focusCalled, true);
 });
 
+test('renderForm allows same-day dates and submits multiple partners and responsible users', async () => {
+    let capturedPayload = null;
+    const { component, body } = setup({
+        create: async (path, payload) => {
+            capturedPayload = payload;
+            return { data: { id: 'ag-sameday-1', version: 1, ...payload } };
+        },
+    });
+
+    component.renderForm();
+    const dialog = body.querySelector('#agreement-dialog');
+    const form = dialog.querySelector('#agreement-edit-form');
+
+    const titleInput = dialog.querySelector('#agreement-form-title');
+    const startInput = dialog.querySelector('#agreement-form-start-date');
+    const endInput = dialog.querySelector('#agreement-form-end-date');
+    const partnerInput = dialog.querySelector('#agreement-form-partners');
+    const respInput = dialog.querySelector('#agreement-form-responsible');
+
+    titleInput.value = 'One-Day Symposium Agreement';
+    partnerInput.value = 'partner-001, partner-002, partner-001'; // Multiple with duplicate
+    startInput.value = '2026-10-15';
+    endInput.value = '2026-10-15'; // Same-day
+    if (respInput) respInput.value = 'u1, u2, u1';
+
+    const submitEvent = new Event('submit');
+    submitEvent.preventDefault = () => {};
+    await form.onsubmit(submitEvent);
+
+    assert.ok(capturedPayload, 'Form should submit with same-day dates');
+    assert.equal(capturedPayload.startDate, '2026-10-15');
+    assert.equal(capturedPayload.endDate, '2026-10-15');
+    assert.deepEqual([...capturedPayload.partnerIds], ['partner-001', 'partner-002']);
+    if (respInput) {
+        assert.deepEqual([...capturedPayload.responsibleUserIds], ['u1', 'u2']);
+    }
+});
+
+test('renderForm rejects exceeding 20 partner IDs', async () => {
+    let createCalled = false;
+    const { component, body } = setup({
+        create: async () => {
+            createCalled = true;
+        },
+    });
+
+    component.renderForm();
+    const dialog = body.querySelector('#agreement-dialog');
+    const form = dialog.querySelector('#agreement-edit-form');
+
+    const titleInput = dialog.querySelector('#agreement-form-title');
+    const partnerInput = dialog.querySelector('#agreement-form-partners');
+
+    titleInput.value = 'Too Many Partners';
+    const excessivePartners = Array.from({ length: 21 }, (_, i) => `partner-${i + 1}`).join(', ');
+    partnerInput.value = excessivePartners;
+
+    const submitEvent = new Event('submit');
+    submitEvent.preventDefault = () => {};
+    await form.onsubmit(submitEvent);
+
+    assert.equal(createCalled, false, 'Form must NOT submit with more than 20 partners');
+    const statusMsg = dialog.querySelector('.agreement-status-msg');
+    assert.ok(statusMsg.textContent.includes('สูงสุดไม่เกิน 20'));
+});
+

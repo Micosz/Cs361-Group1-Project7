@@ -287,6 +287,27 @@
         internalNoteInput.value = agreement?.internalNote || '';
         form.appendChild(createField('agreement-form-internal-note', 'บันทึกภายใน', internalNoteInput));
 
+        // Responsible Users (Staff can assign/reassign; Coordinator cannot)
+        let isStaff = true;
+        try {
+            const authState = window.CstuAuth?.state ? window.CstuAuth.state() : null;
+            const currentRoles = (authState && window.CstuAuth?.roles) ? window.CstuAuth.roles(authState) : [];
+            if (currentRoles.length > 0 && !currentRoles.includes('staff')) {
+                isStaff = false;
+            }
+        } catch {
+            isStaff = true;
+        }
+
+        let respInput = null;
+        if (isStaff) {
+            respInput = document.createElement('input');
+            respInput.type = 'text';
+            respInput.placeholder = 'ระบุ ID ผู้รับผิดชอบ คั่นด้วยเครื่องหมายจุลภาค เช่น staff-001, coord-002';
+            respInput.value = (agreement?.responsibleUserIds || []).join(', ');
+            form.appendChild(createField('agreement-form-responsible', 'ผู้รับผิดชอบ (Responsible User IDs)', respInput));
+        }
+
         // Status container
         const statusContainer = document.createElement('div');
         statusContainer.className = 'agreement-form-status';
@@ -331,14 +352,29 @@
                 return;
             }
 
-            const parsedPartners = partnerInput.value
+            const parsedPartners = [...new Set(partnerInput.value
                 .split(',')
                 .map(p => p.trim())
-                .filter(Boolean);
+                .filter(Boolean))];
 
             if (isCreate && parsedPartners.length === 0) {
                 showStatus(statusContainer, 'กรุณาระบุรหัสคู่ความร่วมมืออย่างน้อย 1 รายการ', true);
                 return;
+            }
+            if (parsedPartners.length > 20) {
+                showStatus(statusContainer, 'ระบุคู่ความร่วมมือได้สูงสุดไม่เกิน 20 รายการ', true);
+                return;
+            }
+
+            if (isStaff && respInput) {
+                const parsedResp = [...new Set(respInput.value
+                    .split(',')
+                    .map(u => u.trim())
+                    .filter(Boolean))];
+                if (parsedResp.length > 20) {
+                    showStatus(statusContainer, 'ระบุผู้รับผิดชอบได้สูงสุดไม่เกิน 20 รายการ', true);
+                    return;
+                }
             }
 
             const payload = {
@@ -353,6 +389,16 @@
 
             if (parsedPartners.length > 0) {
                 payload.partnerIds = parsedPartners;
+            }
+
+            if (isStaff && respInput) {
+                const parsedResp = [...new Set(respInput.value
+                    .split(',')
+                    .map(u => u.trim())
+                    .filter(Boolean))];
+                if (parsedResp.length > 0) {
+                    payload.responsibleUserIds = parsedResp;
+                }
             }
 
             if (isCreate) {

@@ -34,11 +34,35 @@ def user_context(role='staff', scope='c1', user='u1', extra=()):
 class AgreementTests(unittest.TestCase):
     login = session_helpers.SessionTests.login
 
+    def login_as(self, user):
+        self.users.user = user
+        self.mock_user_dict[user.user_id] = user
+        self.issued = self.service._issue(user)
+        return self.issued
+
     def setUp(self):
         session_helpers.SessionTests.setUp(self)
-        self.users.user = user_context('staff', 'c1', 'u1').user
-        self.issued = self.login()
-        self.repo = AgreementRepository(self.service)
+        self.mock_user_dict = {}
+        orig_get = self.users.get
+        def mock_get(key):
+            if self.users.user and key == self.users.user.user_id:
+                return self.users.user
+            if key in self.mock_user_dict:
+                return self.mock_user_dict[key]
+            return orig_get(key)
+        self.users.get = mock_get
+        self.repo = AgreementRepository(self.service, user_store=self.mock_user_dict)
+        self.login_as(user_context('staff', 'c1', 'u1').user)
+        for pid, name in [('partner-001', 'Partner Univ'), ('partner-002', 'Tech Corp'),
+                          ('partner-1', 'AI Research Partner'), ('partner-2', 'Robotics Partner')]:
+            self.repo.rows[('partner', pid)] = {
+                'id': pid,
+                'entityType': 'partner',
+                'name': name,
+                'scopeId': 'c1',
+                'publication': 'internal',
+                'responsibleUserIds': ['u1'],
+            }
 
     def event(self, path='/api/agreements', method='GET', payload=None, query=None, **headers):
         if '?' in path:
@@ -47,10 +71,12 @@ class AgreementTests(unittest.TestCase):
             parsed_query = {k: v[0] for k, v in parse_qs(query_part).items()}
             query = {**(query or {}), **parsed_query}
             path = path_part
+        import uuid
+        idem_key = headers.pop('idempotency-key', None) or f"test-idem-{uuid.uuid4().hex}"
         hdrs = {
             'origin': self.policy.origin,
             'x-csrf-token': self.issued.csrf_token,
-            'idempotency-key': 'test-idem-key-agreement-001',
+            'idempotency-key': idem_key,
             **headers,
         }
         ev = {
@@ -224,7 +250,7 @@ class AgreementTests(unittest.TestCase):
     # -------------------------------------------------------------
     def test_coordinator_creates_with_auto_assignment(self):
         # Coordinator in c1 creates agreement
-        self.users.user = user_context('coordinator', 'c1', 'u1').user
+        self.login_as(user_context('coordinator', 'c1', 'u1').user)
 
         payload = {
             'title': 'Coordinator MoU',
@@ -253,8 +279,8 @@ class AgreementTests(unittest.TestCase):
         denied_read = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
         self.assertEqual(404, denied_read['statusCode'])
         denied_patch = self.call(self.event(f'/api/agreements/{aid}', 'PATCH',
-                                            {'title': 'Unassigned edit'},
-                                            **{'if-match': '"2"'}))
+                                             {'title': 'Unassigned edit'},
+                                             **{'if-match': '"2"'}))
         self.assertEqual(404, denied_patch['statusCode'])
 
     def test_executive_and_student_permissions(self):
@@ -270,7 +296,7 @@ class AgreementTests(unittest.TestCase):
         aid = json.loads(res['body'])['data']['id']
 
         # Executive in c1 can read, but internalNote must be stripped
-        self.users.user = user_context('executive', 'c1', 'u1').user
+        self.login_as(user_context('executive', 'c1', 'u1').user)
         exec_res = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
         self.assertEqual(200, exec_res['statusCode'])
         exec_data = json.loads(exec_res['body'])['data']
@@ -286,7 +312,7 @@ class AgreementTests(unittest.TestCase):
         self.assertEqual(403, exec_patch['statusCode'])
 
         # Student has no access to agreements (403 on create/read/update)
-        self.users.user = user_context('student', 'c1', 'u1').user
+        self.login_as(user_context('student', 'c1', 'u1').user)
         stu_read = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
         self.assertEqual(403, stu_read['statusCode'])
         stu_post = self.call(self.event('/api/agreements', 'POST', payload))
@@ -304,7 +330,7 @@ class AgreementTests(unittest.TestCase):
         aid = json.loads(res['body'])['data']['id']
 
         # Staff in c2 cannot read or update c1 agreement
-        self.users.user = user_context('staff', 'c2', 'u1').user
+        self.login_as(user_context('staff', 'c2', 'u1').user)
         read_res = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
         self.assertEqual(404, read_res['statusCode'])
         patch_res = self.call(self.event(f'/api/agreements/{aid}', 'PATCH',
@@ -416,4 +442,230 @@ class AgreementTests(unittest.TestCase):
         q_body = json.loads(q_res['body'])
         self.assertEqual(1, q_body['count'])
         self.assertEqual('Robotics MoA', q_body['data'][0]['title'])
+
+    # -------------------------------------------------------------
+    # 8. Issue #99: Multiple Partners, Assignee Validation, and Dates
+    # -------------------------------------------------------------
+    def test_agreement_multiple_partners_success(self):
+        # Create agreement with multiple valid partners in scope c1
+        payload = {
+            'title': 'Consortium Agreement with 2 Partners',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001', 'partner-002'],
+            'scopeId': 'c1',
+            'startDate': '2026-10-01',
+            'endDate': '2027-09-30',
+        }
+        res = self.call(self.event('/api/agreements', 'POST', payload))
+        self.assertEqual(201, res['statusCode'])
+        data = json.loads(res['body'])['data']
+        aid = data['id']
+        self.assertEqual(['partner-001', 'partner-002'], data['partnerIds'])
+
+        # Read back returns both partner IDs
+        read_res = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
+        self.assertEqual(200, read_res['statusCode'])
+        read_data = json.loads(read_res['body'])['data']
+        self.assertEqual(['partner-001', 'partner-002'], read_data['partnerIds'])
+
+    def test_agreement_invalid_partner_references(self):
+        base = {
+            'title': 'Partners Ref Check',
+            'agreementType': 'MoU',
+            'scopeId': 'c1',
+        }
+        # 1. Non-existent partner ID
+        res_missing = self.call(self.event('/api/agreements', 'POST', dict(base, partnerIds=['non-existent-partner'])))
+        self.assertEqual(422, res_missing['statusCode'])
+
+        # 2. Duplicate partner IDs in list
+        res_dup = self.call(self.event('/api/agreements', 'POST', dict(base, partnerIds=['partner-001', 'partner-001'])))
+        self.assertEqual(422, res_dup['statusCode'])
+
+        # 3. Cross-scope partner ID
+        self.repo.rows[('partner', 'partner-scope-c2')] = {
+            'id': 'partner-scope-c2',
+            'entityType': 'partner',
+            'name': 'Other Campus Partner',
+            'scopeId': 'c2',
+            'publication': 'internal',
+            'responsibleUserIds': ['u1'],
+        }
+        res_cross = self.call(self.event('/api/agreements', 'POST', dict(base, partnerIds=['partner-scope-c2'])))
+        self.assertEqual(422, res_cross['statusCode'])
+
+        # 4. Wrong entity type (e.g. contact instead of partner)
+        self.repo.rows[('contact', 'contact-001')] = {
+            'id': 'contact-001',
+            'entityType': 'contact',
+            'scopeId': 'c1',
+        }
+        res_type = self.call(self.event('/api/agreements', 'POST', dict(base, partnerIds=['contact-001'])))
+        self.assertEqual(422, res_type['statusCode'])
+
+        # 5. Partner cannot be read by caller (coordinator not in responsibleUserIds)
+        self.login_as(user_context('coordinator', 'c1', 'coord_isolated').user)
+        # Partner-001 has responsibleUserIds=['u1'], coord_isolated has no read permission
+        res_unreadable = self.call(self.event('/api/agreements', 'POST', dict(base, partnerIds=['partner-001'])))
+        self.assertEqual(422, res_unreadable['statusCode'])
+
+    def test_agreement_assignee_validation(self):
+        # Register test users
+        coord_valid = user_context('coordinator', 'c1', 'coord_valid').user
+        coord_unverified = UserState('coord_unverified', True, 1, False, grants=({'role': 'coordinator', 'scopeId': 'c1', 'active': True},))
+        coord_inactive = UserState('coord_inactive', False, 1, True, grants=({'role': 'coordinator', 'scopeId': 'c1', 'active': True},))
+        coord_wrong_scope = user_context('coordinator', 'c2', 'coord_wrong_scope').user
+        student_user = user_context('student', 'c1', 'student_user').user
+
+        for u in [coord_valid, coord_unverified, coord_inactive, coord_wrong_scope, student_user]:
+            self.mock_user_dict[u.user_id] = u
+
+        base = {
+            'title': 'Assignee Check Agreement',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+        }
+
+        # Valid staff can assign valid coordinator
+        res_valid = self.call(self.event('/api/agreements', 'POST', dict(base, responsibleUserIds=['coord_valid'])))
+        self.assertEqual(201, res_valid['statusCode'])
+        self.assertEqual(['coord_valid'], json.loads(res_valid['body'])['data']['responsibleUserIds'])
+
+        # Unverified user rejected
+        res_unver = self.call(self.event('/api/agreements', 'POST', dict(base, responsibleUserIds=['coord_unverified'])))
+        self.assertEqual(422, res_unver['statusCode'])
+
+        # Inactive user rejected
+        res_inact = self.call(self.event('/api/agreements', 'POST', dict(base, responsibleUserIds=['coord_inactive'])))
+        self.assertEqual(422, res_inact['statusCode'])
+
+        # Wrong scope user rejected
+        res_scope = self.call(self.event('/api/agreements', 'POST', dict(base, responsibleUserIds=['coord_wrong_scope'])))
+        self.assertEqual(422, res_scope['statusCode'])
+
+        # Student user rejected (not coordinator/staff)
+        res_stu = self.call(self.event('/api/agreements', 'POST', dict(base, responsibleUserIds=['student_user'])))
+        self.assertEqual(422, res_stu['statusCode'])
+
+        # Non-existent user rejected
+        res_missing = self.call(self.event('/api/agreements', 'POST', dict(base, responsibleUserIds=['ghost_user'])))
+        self.assertEqual(422, res_missing['statusCode'])
+
+        # Duplicate assignees rejected
+        res_dup = self.call(self.event('/api/agreements', 'POST', dict(base, responsibleUserIds=['coord_valid', 'coord_valid'])))
+        self.assertEqual(422, res_dup['statusCode'])
+
+    def test_agreement_coordinator_cannot_edit_responsibilities(self):
+        # Create agreement as staff, assigning coordinator u1
+        payload = {
+            'title': 'Coord Update Test',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+            'responsibleUserIds': ['u1'],
+        }
+        res = self.call(self.event('/api/agreements', 'POST', payload))
+        self.assertEqual(201, res['statusCode'])
+        aid = json.loads(res['body'])['data']['id']
+
+        # Switch to coordinator u1
+        self.login_as(user_context('coordinator', 'c1', 'u1').user)
+
+        # Coordinator can update title
+        ok_patch = self.call(self.event(f'/api/agreements/{aid}', 'PATCH',
+                                        {'title': 'Updated Title by Coord'},
+                                        **{'if-match': '"1"'}))
+        self.assertEqual(200, ok_patch['statusCode'])
+
+        # Coordinator cannot update responsibleUserIds -> 403 Forbidden
+        denied_patch = self.call(self.event(f'/api/agreements/{aid}', 'PATCH',
+                                            {'responsibleUserIds': ['other_user']},
+                                            **{'if-match': '"2"'}))
+        self.assertEqual(403, denied_patch['statusCode'])
+
+    def test_agreement_dynamic_coordinator_permission_transfer(self):
+        coord_a = user_context('coordinator', 'c1', 'coord_a').user
+        coord_b = user_context('coordinator', 'c1', 'coord_b').user
+        self.mock_user_dict['coord_a'] = coord_a
+        self.mock_user_dict['coord_b'] = coord_b
+        # Partner readable by both coord_a and coord_b
+        self.repo.rows[('partner', 'partner-001')]['responsibleUserIds'] = ['u1', 'coord_a', 'coord_b']
+
+        # Staff creates agreement assigned to coord_a
+        res = self.call(self.event('/api/agreements', 'POST', {
+            'title': 'Assignment Transfer Agreement',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+            'responsibleUserIds': ['coord_a'],
+        }))
+        self.assertEqual(201, res['statusCode'])
+        aid = json.loads(res['body'])['data']['id']
+
+        # Coord A can read
+        self.login_as(coord_a)
+        res_a1 = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
+        self.assertEqual(200, res_a1['statusCode'])
+
+        # Coord B cannot read (404)
+        self.login_as(coord_b)
+        res_b1 = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
+        self.assertEqual(404, res_b1['statusCode'])
+
+        # Staff updates assignment from coord_a to coord_b
+        self.login_as(user_context('staff', 'c1', 'staff_admin').user)
+        patch_res = self.call(self.event(f'/api/agreements/{aid}', 'PATCH',
+                                         {'responsibleUserIds': ['coord_b']},
+                                         **{'if-match': '"1"'}))
+        self.assertEqual(200, patch_res['statusCode'])
+
+        # Now Coord A cannot read anymore (404)
+        self.login_as(coord_a)
+        res_a2 = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
+        self.assertEqual(404, res_a2['statusCode'])
+
+        # Now Coord B has access (200)
+        self.login_as(coord_b)
+        res_b2 = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
+        self.assertEqual(200, res_b2['statusCode'])
+
+    def test_agreement_same_day_and_null_dates(self):
+        # Same-day interval (startDate == endDate) is allowed
+        payload_sameday = {
+            'title': 'One-Day Signing MoU',
+            'agreementType': 'MoU',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+            'startDate': '2026-10-15',
+            'endDate': '2026-10-15',
+        }
+        res_sameday = self.call(self.event('/api/agreements', 'POST', payload_sameday))
+        self.assertEqual(201, res_sameday['statusCode'])
+        data_sameday = json.loads(res_sameday['body'])['data']
+        self.assertEqual('2026-10-15', data_sameday['startDate'])
+        self.assertEqual('2026-10-15', data_sameday['endDate'])
+        aid = data_sameday['id']
+
+        # Draft with null dates is allowed
+        payload_draft = {
+            'title': 'Draft Agreement Without Dates',
+            'agreementType': 'MoA',
+            'partnerIds': ['partner-001'],
+            'scopeId': 'c1',
+            'startDate': None,
+            'endDate': None,
+        }
+        res_draft = self.call(self.event('/api/agreements', 'POST', payload_draft,
+                                          **{'idempotency-key': 'idem-draft-null-dates'}))
+        self.assertEqual(201, res_draft['statusCode'])
+        data_draft = json.loads(res_draft['body'])['data']
+        self.assertIsNone(data_draft['startDate'])
+        self.assertIsNone(data_draft['endDate'])
+
+        # Update with reversed dates (startDate > endDate) is rejected with 422
+        bad_patch = self.call(self.event(f'/api/agreements/{aid}', 'PATCH',
+                                         {'startDate': '2026-10-20'},
+                                         **{'if-match': '"1"'}))
+        self.assertEqual(422, bad_patch['statusCode'])
 

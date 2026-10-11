@@ -19,11 +19,13 @@ from .validators import validate_agreement_payload
 class AgreementRepository:
     """Agreement domain repository conforming to BusinessRepository protocol."""
 
-    def __init__(self, service=None, initial_records=None, clock=None):
+    def __init__(self, service=None, initial_records=None, clock=None, partner_repo=None, user_store=None):
         self.service = service
         self.clock = clock or time.time
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self.rows = {}
+        self.partner_repo = partner_repo
+        self.user_store = user_store or {}
         # (user_id, kind, idempotency_key) -> (payload_copy, result_copy, created_at_timestamp)
         self.idempotency_cache = {}
         self.writes = 0
@@ -32,10 +34,36 @@ class AgreementRepository:
             for rec in initial_records:
                 self.rows[(rec['entityType'], rec['id'])] = copy.deepcopy(rec)
 
+    def _get_user(self, user_id: str):
+        if user_id in self.user_store:
+            return self.user_store[user_id]
+        if not self.service:
+            return None
+        users = getattr(self.service, 'users', None)
+        if users is None:
+            return None
+        if hasattr(users, 'get'):
+            u = users.get(user_id)
+            if u:
+                return u
+        if hasattr(users, 'store') and hasattr(users.store, 'user'):
+            u = users.store.user(user_id)
+            if u:
+                return u
+        user_prop = getattr(users, 'user', None)
+        if user_prop and user_prop.user_id == user_id:
+            return user_prop
+        return None
+
     def get(self, kind: str, key: str) -> dict | None:
         with self._lock:
             row = self.rows.get((kind, key))
-            return copy.deepcopy(row) if row else None
+            if row:
+                return copy.deepcopy(row)
+            if self.partner_repo and kind in {'partner', 'contact'}:
+                return self.partner_repo.get(kind, key)
+            return None
+
 
     def list(self, kind: str, context, parent: dict | None = None) -> list:
         user = context.user
@@ -59,9 +87,11 @@ class AgreementRepository:
         with self._lock:
             # 1. Preconditions & Concurrency Checks
             if self.service is not None:
-                user = getattr(self.service.users, 'user', None)
-                if user is None and hasattr(self.service.users, 'store'):
-                    user = self.service.users.store.user(conditions.user_id)
+                user = self._get_user(conditions.user_id)
+                if user is None:
+                    user = getattr(self.service.users, 'user', None)
+                    if user is None and hasattr(self.service.users, 'store'):
+                        user = self.service.users.store.user(conditions.user_id)
                 if user is None or not user.active or user.authz_version != conditions.authz_version:
                     raise AuthError('SESSION_REVOKED', 401)
                 session = self.service.store.get(conditions.session_hash) if hasattr(self.service, 'store') else None
@@ -96,6 +126,37 @@ class AgreementRepository:
                 end = payload.get('endDate', record.get('endDate'))
                 if start is not None and end is not None and start > end:
                     raise AuthError('INVALID_FIELDS', 422)
+
+            # Partner references validation (Issue #99)
+            partner_ids = payload.get('partnerIds')
+            if partner_ids is not None:
+                for pid in partner_ids:
+                    partner = self.get('partner', pid)
+                    if not partner or partner.get('entityType') != 'partner':
+                        raise AuthError('INVALID_REFERENCE', 422)
+                    if partner.get('scopeId') != conditions.scope_id:
+                        raise AuthError('INVALID_REFERENCE', 422)
+                    caller = self._get_user(conditions.user_id)
+                    if caller:
+                        from ..auth.session_service import SessionContext
+                        from ..permissions.policy import require_reference
+                        caller_context = SessionContext(caller, self.clock())
+                        require_reference(caller_context, partner, conditions.scope_id)
+
+            # Assignee validation (Issue #99)
+            resp_ids = payload.get('responsibleUserIds')
+            if resp_ids is not None:
+                for uid in resp_ids:
+                    user = self._get_user(uid)
+                    if not user:
+                        raise AuthError('INVALID_REFERENCE', 422)
+                    from ..permissions.policy import require_assignee
+                    require_assignee(user, conditions.scope_id, participant=False)
+            elif is_create:
+                caller = self._get_user(conditions.user_id)
+                if caller:
+                    from ..permissions.policy import require_assignee
+                    require_assignee(caller, conditions.scope_id, participant=False)
 
             # 4. Build and Persist Record
             now_iso = datetime.now(timezone.utc).isoformat()
