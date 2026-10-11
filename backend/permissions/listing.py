@@ -5,15 +5,53 @@ import hashlib
 import hmac
 import json
 import re
+from datetime import date
 
 from ..auth.session_service import AuthError, token_hash
 from ..http_api import session_cookie
 
 
-def page(rows, event, service):
+def page(rows, event, service, kind=None):
     query = event.get('queryStringParameters') or {}
-    if set(query) - {'q', 'limit', 'cursor'}:
+    supported = {'q', 'limit', 'cursor'}
+    if kind in {'partner', 'activity'}:
+        supported.add('type')
+    if kind in {'agreement', 'exchange'}:
+        supported.add('status')
+    if kind in {'activity', 'agreement', 'exchange'}:
+        supported.update({'startDate', 'endDate'})
+    if set(query) - supported:
         raise AuthError('INVALID_QUERY', 422)
+    for field in ('type', 'status'):
+        if field in query and (not isinstance(query[field], str) or not query[field] or len(query[field]) > 64):
+            raise AuthError('INVALID_QUERY', 422)
+
+    def valid_day(value):
+        try:
+            return isinstance(value, str) and date.fromisoformat(value).isoformat() == value
+        except (ValueError, TypeError):
+            return False
+
+    for field in ('startDate', 'endDate'):
+        if field in query and not valid_day(query[field]):
+            raise AuthError('INVALID_QUERY', 422)
+    start, end = query.get('startDate'), query.get('endDate')
+    if start and end and start > end:
+        raise AuthError('INVALID_QUERY', 422)
+
+    def matches(row):
+        if any(field in query and row.get(field) != query[field] for field in ('type', 'status')):
+            return False
+        if not (start or end):
+            return True
+        if kind == 'activity':
+            day = row.get('periodDate')
+            return valid_day(day) and (not start or day >= start) and (not end or day <= end)
+        first, last = row.get('startDate'), row.get('endDate')
+        return (valid_day(first) and valid_day(last) and first <= last
+                and (not end or first <= end) and (not start or last >= start))
+
+    rows = [row for row in rows if matches(row)]
     q = query.get('q', '')
     raw_limit = query.get('limit', '20')
     if (not isinstance(q, str) or len(q) > 200 or not isinstance(raw_limit, str)
@@ -25,7 +63,7 @@ def page(rows, event, service):
                   key=lambda r: r['id'])
     # Include the authorized projection snapshot so record edits/assignment changes
     # invalidate pagination rather than shifting a stale page across permissions.
-    binding = json.dumps([event['rawPath'], token_hash(session_cookie(event)), needle, limit, rows],
+    binding = json.dumps([event['rawPath'], token_hash(session_cookie(event)), needle, limit, {k: query[k] for k in sorted(query) if k not in {'q', 'limit', 'cursor'}}, rows],
                          sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()
     fingerprint = hashlib.sha256(binding).hexdigest()
     secret = service.policy.csrf_secret

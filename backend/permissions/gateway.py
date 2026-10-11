@@ -170,7 +170,7 @@ class PermissionGateway:
                     if mine and not self._participant(context, row if kind == 'exchange' else parent):
                         continue
                     rows.append(project(context, kind, row, parent))
-                data, count, pagination = page(rows, event, self.service)
+                data, count, pagination = page(rows, event, self.service, kind)
                 return response(200, {'data': data, 'count': count, 'page': pagination,
                                       'requestId': event.get('requestContext', {}).get('requestId', '')})
             if query:
