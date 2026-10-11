@@ -53,3 +53,18 @@ test('malformed session never becomes authenticated; pagehide abort cancels logi
     await ready; controller.abort();
     await assert.rejects(pending, {name:'AbortError'});
 });
+test('CstuAuth.create sends same-origin POST with CSRF and Idempotency-Key', async () => {
+    const calls = [];
+    const auth = setup(async (url, options) => {
+        calls.push({url, options});
+        return ok(url.endsWith('/session') ? state({id:'u1'}) : {data:{id:'p1'}, requestId:'r1'});
+    });
+    const res = await auth.create('/partners', {name:'New Partner'}, 'idem-key-1234567890');
+    assert.deepEqual(res.data, {id:'p1'});
+    const createCall = calls.find(c => c.url === '/api/partners');
+    assert.equal(createCall.options.method, 'POST');
+    assert.equal(createCall.options.credentials, 'same-origin');
+    assert.equal(createCall.options.headers['X-CSRF-Token'], 'a'.repeat(64));
+    assert.equal(createCall.options.headers['Idempotency-Key'], 'idem-key-1234567890');
+    assert.deepEqual(JSON.parse(createCall.options.body), {name:'New Partner'});
+});

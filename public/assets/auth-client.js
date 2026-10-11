@@ -63,6 +63,13 @@
             'X-CSRF-Token': current.csrfToken, 'If-Match': '"' + version + '"'
         }, body: JSON.stringify(body) });
     }
+    async function create(path, body, idempotencyKey) {
+        const current = await refresh();
+        if (!current?.user) throw new Error('AUTH_REQUIRED');
+        const headers = { 'X-CSRF-Token': current.csrfToken };
+        if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
+        return request(path, { method: 'POST', headers, body: JSON.stringify(body) });
+    }
     async function logout() {
         const current = await refresh();
         if (current) await request('/auth/logout', { method: 'POST',
@@ -73,6 +80,6 @@
     const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('cstuhub-auth') : null;
     function notify() { channel?.postMessage('changed'); }
     channel?.addEventListener('message', () => window.dispatchEvent(new Event('authchange')));
-    window.CstuAuth = { enabled, refresh, login, logout, request, mutate,
+    window.CstuAuth = { enabled, refresh, login, logout, request, mutate, create,
         roles: data => [...new Set((data?.grants || []).map(g => g.role))] };
 })();
