@@ -49,3 +49,21 @@ test('workspace JS renders exchange cards with textContent and handles permissio
     assert.match(workspaceJs, /CstuAuth\.mutate\(['"]\/exchanges\//);
 });
 
+test('workspace contains status transition controls and wires status API', () => {
+    const workspaceHtml = fs.readFileSync(path.join(__dirname, '../public/workspace.html'), 'utf8');
+    const workspaceJs = fs.readFileSync(path.join(__dirname, '../public/assets/workspace.js'), 'utf8');
+
+    // HTML elements for transition
+    assert.match(workspaceHtml, /id="exchange-status-transition-section"/);
+    assert.match(workspaceHtml, /id="exchange-btn-ongoing"/);
+    assert.match(workspaceHtml, /id="exchange-btn-completed"/);
+    assert.match(workspaceHtml, /id="exchange-btn-cancelled"/);
+
+    // JS wires /status endpoint
+    assert.ok(workspaceJs.includes('/status'));
+    assert.ok(workspaceJs.includes('handleStatusTransition'));
+    assert.match(workspaceJs, /handleStatusTransition\(['"]ongoing['"]\)/);
+    assert.match(workspaceJs, /handleStatusTransition\(['"]completed['"]\)/);
+    assert.match(workspaceJs, /handleStatusTransition\(['"]cancelled['"]\)/);
+});
+

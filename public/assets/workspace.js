@@ -34,6 +34,12 @@ const exchangeStatus = document.getElementById('exchange-status');
 const exchangeSubmitBtn = document.getElementById('exchange-submit-btn');
 const exchangeCloseBtn = document.getElementById('exchange-close-btn');
 
+const exchangeStatusSection = document.getElementById('exchange-status-transition-section');
+const exchangeStatusDisplay = document.getElementById('exchange-current-status-display');
+const exchangeBtnOngoing = document.getElementById('exchange-btn-ongoing');
+const exchangeBtnCompleted = document.getElementById('exchange-btn-completed');
+const exchangeBtnCancelled = document.getElementById('exchange-btn-cancelled');
+
 function invalidateSelection() {
     version = null; selectedTarget = null; selectedScope = null;
     choices.disabled = true; saveRoles.disabled = true;
@@ -136,6 +142,7 @@ function openAddExchangeDialog(scopes) {
 
     const isStaff = userRoles.includes('staff');
     if (staffExchangeFields) staffExchangeFields.hidden = !isStaff;
+    if (exchangeStatusSection) exchangeStatusSection.hidden = true;
 
     currentSubmissionKey = 'ex-key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     exchangeDialog.showModal();
@@ -166,6 +173,17 @@ function openEditExchange(ex) {
 
     const isStaff = userRoles.includes('staff');
     if (staffExchangeFields) staffExchangeFields.hidden = !isStaff;
+
+    if (exchangeStatusSection && exchangeStatusDisplay) {
+        exchangeStatusSection.hidden = false;
+        const curStatus = ex.status || 'draft';
+        exchangeStatusDisplay.textContent = curStatus;
+
+        // Button availability based on current status
+        if (exchangeBtnOngoing) exchangeBtnOngoing.disabled = (curStatus !== 'draft');
+        if (exchangeBtnCompleted) exchangeBtnCompleted.disabled = (curStatus !== 'ongoing');
+        if (exchangeBtnCancelled) exchangeBtnCancelled.disabled = !['draft', 'ongoing'].includes(curStatus);
+    }
 
     currentSubmissionKey = null;
     exchangeDialog.showModal();
@@ -336,6 +354,70 @@ if (exchangeForm) {
         }
     };
 }
+
+async function handleStatusTransition(toStatus) {
+    if (!exchangeId.value || !exchangeVersion.value) return;
+    let reason = null;
+    let suppInfo = null;
+
+    if (toStatus === 'cancelled') {
+        reason = window.prompt('กรุณาระบุเหตุผลการยกเลิกโครงการ:');
+        if (!reason || !reason.trim()) {
+            exchangeStatus.textContent = 'การยกเลิกโครงการต้องระบุเหตุผล';
+            return;
+        }
+    } else if (toStatus === 'completed') {
+        suppInfo = exchangeSupportingInfo.value.trim();
+        if (!suppInfo) {
+            suppInfo = window.prompt('กรุณาระบุข้อมูลสนับสนุนการเสร็จสิ้นโครงการ (Supporting Info):');
+            if (!suppInfo || !suppInfo.trim()) {
+                exchangeStatus.textContent = 'การเสร็จสิ้นโครงการต้องระบุข้อมูลสนับสนุน';
+                return;
+            }
+        }
+    }
+
+    const payload = { to: toStatus };
+    if (reason) payload.reason = reason.trim();
+    if (suppInfo) payload.supportingInfo = suppInfo.trim();
+
+    exchangeStatus.textContent = 'กำลังเปลี่ยนสถานะ...';
+    try {
+        const session = await window.CstuAuth.refresh();
+        await window.CstuAuth.request('/exchanges/' + encodeURIComponent(exchangeId.value) + '/status', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-Token': session.csrfToken,
+                'If-Match': '"' + exchangeVersion.value + '"'
+            },
+            body: JSON.stringify(payload)
+        });
+        exchangeDialog.close();
+        await loadExchanges();
+    } catch (error) {
+        if (error.status === 401) {
+            window.location.replace('login.html');
+        } else if (error.status === 403) {
+            exchangeStatus.textContent = 'คุณไม่มีสิทธิ์เปลี่ยนสถานะนี้';
+        } else if (error.status === 409) {
+            exchangeStatus.textContent = 'ไม่สามารถเปลี่ยนสถานะได้ตามเงื่อนไข (Conflict) กำลังโหลดข้อมูลล่าสุด...';
+            try {
+                const fresh = await window.CstuAuth.request('/exchanges/' + encodeURIComponent(exchangeId.value));
+                if (fresh?.data) openEditExchange(fresh.data);
+            } catch {
+                exchangeStatus.textContent = 'โหลดข้อมูลล่าสุดไม่สำเร็จ';
+            }
+        } else if (error.status === 422) {
+            exchangeStatus.textContent = 'ข้อมูลสำหรับเปลี่ยนสถานะไม่ถูกต้อง';
+        } else {
+            exchangeStatus.textContent = error.message || 'เปลี่ยนสถานะไม่สำเร็จ';
+        }
+    }
+}
+
+if (exchangeBtnOngoing) exchangeBtnOngoing.onclick = () => handleStatusTransition('ongoing');
+if (exchangeBtnCompleted) exchangeBtnCompleted.onclick = () => handleStatusTransition('completed');
+if (exchangeBtnCancelled) exchangeBtnCancelled.onclick = () => handleStatusTransition('cancelled');
 
 window.addEventListener('focus', refreshWorkspace);
 window.addEventListener('pageshow', refreshWorkspace);

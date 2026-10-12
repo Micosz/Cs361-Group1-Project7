@@ -346,6 +346,105 @@ class ExchangeTests(unittest.TestCase):
             self.repo.mutate('exchange', 'create', payload_bad_agr, None, None, conditions, 'key-bad-agr')
         self.assertEqual(ctx.exception.status, 404)
 
+    def test_status_transitions(self):
+        conditions = WriteConditions(
+            user_id='u-coord-1',
+            authz_version=1,
+            session_hash='s1',
+            target_id=None,
+            target_version=None,
+            parent_id=None,
+            parent_version=None,
+            scope_id='cs',
+        )
+        # 1. Create draft exchange with valid dates & participant
+        draft_payload = {
+            'title': 'Exchange For Transition',
+            'partnerIds': ['partner-1'],
+            'participantUserIds': ['u-student-1'],
+            'startDate': '2026-12-01',
+            'endDate': '2027-05-31',
+        }
+        draft = self.repo.mutate('exchange', 'create', draft_payload, None, None, conditions, 'key-trans-init')
+        self.assertEqual(draft['status'], 'draft')
+
+        # 2. Transition draft -> ongoing
+        cond_ongoing = WriteConditions(
+            user_id='u-coord-1',
+            authz_version=1,
+            session_hash='s1',
+            target_id=draft['id'],
+            target_version=draft['version'],
+            parent_id=None,
+            parent_version=None,
+            scope_id='cs',
+        )
+        ongoing = self.repo.mutate('exchange', 'status', {'to': 'ongoing'}, draft, None, cond_ongoing, None)
+        self.assertEqual(ongoing['status'], 'ongoing')
+        self.assertEqual(ongoing['version'], draft['version'] + 1)
+
+        # 3. Transition ongoing -> completed requires supportingInfo
+        cond_completed = WriteConditions(
+            user_id='u-coord-1',
+            authz_version=1,
+            session_hash='s1',
+            target_id=ongoing['id'],
+            target_version=ongoing['version'],
+            parent_id=None,
+            parent_version=None,
+            scope_id='cs',
+        )
+        # Without supportingInfo -> 409 INVALID_TRANSITION
+        with self.assertRaises(AuthError) as ctx:
+            self.repo.mutate('exchange', 'status', {'to': 'completed'}, ongoing, None, cond_completed, None)
+        self.assertEqual(ctx.exception.status, 409)
+
+        # With supportingInfo -> success
+        completed = self.repo.mutate('exchange', 'status', {'to': 'completed', 'supportingInfo': 'Program finished successfully'}, ongoing, None, cond_completed, None)
+        self.assertEqual(completed['status'], 'completed')
+        self.assertEqual(completed['supportingInfo'], 'Program finished successfully')
+
+        # 4. Completed cannot transition back (INVALID_TRANSITION 409)
+        cond_revert = WriteConditions(
+            user_id='u-coord-1',
+            authz_version=1,
+            session_hash='s1',
+            target_id=completed['id'],
+            target_version=completed['version'],
+            parent_id=None,
+            parent_version=None,
+            scope_id='cs',
+        )
+        with self.assertRaises(AuthError) as ctx:
+            self.repo.mutate('exchange', 'status', {'to': 'draft'}, completed, None, cond_revert, None)
+        self.assertEqual(ctx.exception.status, 409)
+
+        # 5. Cancel transition requires reason
+        draft2_payload = {
+            'title': 'Exchange To Cancel',
+            'partnerIds': ['partner-1'],
+        }
+        draft2 = self.repo.mutate('exchange', 'create', draft2_payload, None, None, conditions, 'key-cancel-init')
+        cond_cancel = WriteConditions(
+            user_id='u-coord-1',
+            authz_version=1,
+            session_hash='s1',
+            target_id=draft2['id'],
+            target_version=draft2['version'],
+            parent_id=None,
+            parent_version=None,
+            scope_id='cs',
+        )
+        # Without reason -> 409
+        with self.assertRaises(AuthError) as ctx:
+            self.repo.mutate('exchange', 'status', {'to': 'cancelled'}, draft2, None, cond_cancel, None)
+        self.assertEqual(ctx.exception.status, 409)
+
+        # With reason -> success
+        cancelled = self.repo.mutate('exchange', 'status', {'to': 'cancelled', 'reason': 'Budget cut'}, draft2, None, cond_cancel, None)
+        self.assertEqual(cancelled['status'], 'cancelled')
+        self.assertEqual(cancelled['reason'], 'Budget cut')
+
 
 if __name__ == '__main__':
     unittest.main()

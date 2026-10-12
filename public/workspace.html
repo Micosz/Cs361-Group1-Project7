@@ -65,10 +65,21 @@
                 <p><label>ผู้รับผิดชอบโครงการ (Responsible User IDs คั่นด้วยจุลภาค) <input id="exchange-responsible-users" style="width:100%; padding:0.4rem;" placeholder="เช่น u-staff-1, u-coord-1"></label></p>
             </div>
 
+            <div id="exchange-status-transition-section" style="margin-top:1rem; padding-top:1rem; border-top:1px solid #eee;" hidden>
+                <h3>เปลี่ยนสถานะโครงการ (Status Transition)</h3>
+                <p>สถานะปัจจุบัน: <strong id="exchange-current-status-display">draft</strong></p>
+                <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
+                    <button id="exchange-btn-ongoing" type="button" style="padding:0.3rem 0.6rem; cursor:pointer;">เริ่มดำเนินการ (ongoing)</button>
+                    <button id="exchange-btn-completed" type="button" style="padding:0.3rem 0.6rem; cursor:pointer;">เสร็จสิ้นโครงการ (completed)</button>
+                    <button id="exchange-btn-cancelled" type="button" style="padding:0.3rem 0.6rem; cursor:pointer; color:#c00;">ยกเลิกโครงการ (cancelled)</button>
+                </div>
+                <p id="exchange-status-extra-note" style="font-size:0.85rem; color:#666;">(การเปลี่ยนเป็น completed ต้องระบุข้อมูลสนับสนุน; การยกเลิกต้องระบุเหตุผล)</p>
+            </div>
+
             <p id="exchange-status" role="status" style="margin-top:0.5rem;"></p>
             <div style="display:flex; gap:0.5rem; margin-top:1rem;">
                 <button id="exchange-submit-btn" type="submit" style="padding:0.4rem 1rem; cursor:pointer;">บันทึก</button>
-                <button id="exchange-close-btn" type="button" style="padding:0.4rem 1rem; cursor:pointer;">ยกเลิก</button>
+                <button id="exchange-close-btn" type="button" style="padding:0.4rem 1rem; cursor:pointer;">ปิด</button>
             </div>
         </form>
     </dialog>

@@ -304,3 +304,28 @@ def validate_exchange_payload(payload: dict, is_create: bool = True):
         for uid in resp:
             validate_string(uid, max_len=200, min_len=1, required=True)
 
+
+EXCHANGE_STATUSES = {'draft', 'ongoing', 'completed', 'cancelled'}
+
+
+def validate_exchange_status_payload(payload: dict):
+    """Validate exchange status transition payload (Issue #106 / Parent #85).
+
+    Contract:
+    - to: required string in {'draft', 'ongoing', 'completed', 'cancelled'}
+    - reason: optional string, max 20000 chars (required for 'cancelled')
+    - supportingInfo: optional string, max 20000 chars (required for 'completed')
+    """
+    if not isinstance(payload, dict):
+        raise AuthError('INVALID_BODY', 400)
+
+    to_status = payload.get('to')
+    if not isinstance(to_status, str) or to_status not in EXCHANGE_STATUSES:
+        raise AuthError('INVALID_FIELDS', 422)
+
+    if 'reason' in payload and payload['reason'] is not None:
+        validate_string(payload['reason'], max_len=20000, min_len=1, required=False)
+
+    if 'supportingInfo' in payload and payload['supportingInfo'] is not None:
+        validate_string(payload['supportingInfo'], max_len=20000, min_len=0, required=False)
+
