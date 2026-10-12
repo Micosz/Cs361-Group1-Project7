@@ -67,3 +67,34 @@ test('workspace contains status transition controls and wires status API', () =>
     assert.match(workspaceJs, /handleStatusTransition\(['"]cancelled['"]\)/);
 });
 
+test('workspace HTML and JS support My Exchange for students with read-only documents and projection', () => {
+    const workspaceHtml = fs.readFileSync(path.join(__dirname, '../public/workspace.html'), 'utf8');
+    const workspaceJs = fs.readFileSync(path.join(__dirname, '../public/assets/workspace.js'), 'utf8');
+
+    // Section and dialog elements in HTML
+    assert.match(workspaceHtml, /id="my-exchange-section"/);
+    assert.match(workspaceHtml, /id="my-exchange-status"/);
+    assert.match(workspaceHtml, /id="my-exchange-list"/);
+    assert.match(workspaceHtml, /id="my-exchange-dialog"/);
+    assert.match(workspaceHtml, /id="my-exchange-detail-title"/);
+    assert.match(workspaceHtml, /id="my-exchange-detail-status-badge"/);
+    assert.match(workspaceHtml, /id="my-exchange-detail-dates"/);
+    assert.match(workspaceHtml, /id="my-exchange-detail-info"/);
+    assert.match(workspaceHtml, /id="my-exchange-detail-docs-status"/);
+    assert.match(workspaceHtml, /id="my-exchange-detail-docs-list"/);
+    assert.match(workspaceHtml, /id="my-exchange-detail-close-btn"/);
+
+    // JS wires /me/exchanges listing and documents
+    assert.ok(workspaceJs.includes('/me/exchanges'));
+    assert.ok(workspaceJs.includes('loadMyExchanges'));
+    assert.ok(workspaceJs.includes('openMyExchangeDetail'));
+    assert.ok(workspaceJs.includes('/documents'));
+    assert.ok(workspaceJs.includes('/content?disposition=attachment'));
+
+    // Read-only safeguards: no edit or status mutation button in student listing
+    assert.ok(workspaceJs.includes('detailBtn'));
+    const loadMyExchangesFn = workspaceJs.slice(workspaceJs.indexOf('async function loadMyExchanges'), workspaceJs.indexOf('function openAddExchangeDialog'));
+    assert.doesNotMatch(loadMyExchangesFn, /openEditExchange/);
+    assert.doesNotMatch(loadMyExchangesFn, /handleStatusTransition/);
+});
+

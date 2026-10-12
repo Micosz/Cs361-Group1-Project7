@@ -40,6 +40,18 @@ const exchangeBtnOngoing = document.getElementById('exchange-btn-ongoing');
 const exchangeBtnCompleted = document.getElementById('exchange-btn-completed');
 const exchangeBtnCancelled = document.getElementById('exchange-btn-cancelled');
 
+const myExchangeSection = document.getElementById('my-exchange-section');
+const myExchangeStatus = document.getElementById('my-exchange-status');
+const myExchangeList = document.getElementById('my-exchange-list');
+const myExchangeDialog = document.getElementById('my-exchange-dialog');
+const myExchangeDetailTitle = document.getElementById('my-exchange-detail-title');
+const myExchangeDetailStatusBadge = document.getElementById('my-exchange-detail-status-badge');
+const myExchangeDetailDates = document.getElementById('my-exchange-detail-dates');
+const myExchangeDetailInfo = document.getElementById('my-exchange-detail-info');
+const myExchangeDetailDocsStatus = document.getElementById('my-exchange-detail-docs-status');
+const myExchangeDetailDocsList = document.getElementById('my-exchange-detail-docs-list');
+const myExchangeDetailCloseBtn = document.getElementById('my-exchange-detail-close-btn');
+
 function invalidateSelection() {
     version = null; selectedTarget = null; selectedScope = null;
     choices.disabled = true; saveRoles.disabled = true;
@@ -112,6 +124,149 @@ async function loadExchanges() {
         }
     } catch {
         exchangeListStatus.textContent = 'โหลดโครงการแลกเปลี่ยนไม่สำเร็จ';
+    }
+}
+
+async function openMyExchangeDetail(ex) {
+    if (!myExchangeDialog) return;
+    myExchangeDetailTitle.textContent = ex.title || 'รายละเอียดโครงการแลกเปลี่ยน';
+    myExchangeDetailStatusBadge.textContent = ex.status || 'draft';
+    myExchangeDetailDates.textContent = (ex.startDate || ex.endDate)
+        ? 'ระยะเวลา: ' + (ex.startDate || '-') + ' ถึง ' + (ex.endDate || '-')
+        : '';
+    myExchangeDetailInfo.textContent = ex.supportingInfoForParticipant
+        ? 'ข้อมูลสำหรับผู้เข้าร่วม: ' + ex.supportingInfoForParticipant
+        : '';
+
+    myExchangeDetailDocsStatus.textContent = 'กำลังโหลดเอกสาร...';
+    myExchangeDetailDocsList.replaceChildren();
+
+    myExchangeDialog.showModal();
+
+    // Fetch individual detail for freshest projection
+    try {
+        const fresh = await window.CstuAuth.request('/me/exchanges/' + encodeURIComponent(ex.id));
+        if (fresh?.data) {
+            const d = fresh.data;
+            myExchangeDetailTitle.textContent = d.title || 'รายละเอียดโครงการแลกเปลี่ยน';
+            myExchangeDetailStatusBadge.textContent = d.status || 'draft';
+            myExchangeDetailDates.textContent = (d.startDate || d.endDate)
+                ? 'ระยะเวลา: ' + (d.startDate || '-') + ' ถึง ' + (d.endDate || '-')
+                : '';
+            myExchangeDetailInfo.textContent = d.supportingInfoForParticipant
+                ? 'ข้อมูลสำหรับผู้เข้าร่วม: ' + d.supportingInfoForParticipant
+                : '';
+        }
+    } catch (err) {
+        if (err.status === 401) {
+            window.location.replace('login.html');
+            return;
+        } else if (err.status === 404) {
+            myExchangeDetailInfo.textContent = 'ไม่พบโครงการแลกเปลี่ยน หรือคุณไม่ได้เป็นผู้เข้าร่วมโครงการนี้แล้ว';
+        }
+    }
+
+    // Fetch documents for participants
+    try {
+        const docRes = await window.CstuAuth.request('/me/exchanges/' + encodeURIComponent(ex.id) + '/documents');
+        const docs = docRes.data || [];
+        if (!docs.length) {
+            myExchangeDetailDocsStatus.textContent = 'ไม่มีเอกสารแนบสำหรับผู้เข้าร่วม';
+        } else {
+            myExchangeDetailDocsStatus.textContent = '';
+            for (const doc of docs) {
+                const li = document.createElement('li');
+                li.style.cssText = 'padding:0.5rem; border:1px solid #eee; border-radius:4px; display:flex; justify-content:space-between; align-items:center;';
+
+                const nameSpan = document.createElement('span');
+                const sizeText = doc.size ? ' (' + Math.round(doc.size / 1024) + ' KB)' : '';
+                nameSpan.textContent = (doc.displayName || 'เอกสาร') + sizeText;
+                li.appendChild(nameSpan);
+
+                const downloadLink = document.createElement('a');
+                downloadLink.href = '/api/documents/' + encodeURIComponent(doc.id) + '/content?disposition=attachment';
+                downloadLink.target = '_blank';
+                downloadLink.rel = 'noopener';
+                downloadLink.textContent = 'ดาวน์โหลด';
+                downloadLink.style.cssText = 'padding:0.2rem 0.5rem; background:#2563eb; color:#fff; text-decoration:none; border-radius:4px; font-size:0.85rem;';
+                li.appendChild(downloadLink);
+
+                myExchangeDetailDocsList.appendChild(li);
+            }
+        }
+    } catch (err) {
+        if (err.status === 401) {
+            window.location.replace('login.html');
+            return;
+        }
+        myExchangeDetailDocsStatus.textContent = 'โหลดเอกสารไม่สำเร็จ';
+    }
+}
+
+async function loadMyExchanges() {
+    if (!myExchangeSection || myExchangeSection.hidden) return;
+    myExchangeStatus.textContent = 'กำลังโหลดโครงการแลกเปลี่ยนของคุณ...';
+    myExchangeList.replaceChildren();
+    try {
+        const res = await window.CstuAuth.request('/me/exchanges');
+        const exchanges = res.data || [];
+        if (!exchanges.length) {
+            myExchangeStatus.textContent = 'ไม่พบโครงการแลกเปลี่ยนที่คุณเข้าร่วม';
+            return;
+        }
+        myExchangeStatus.textContent = '';
+        for (const ex of exchanges) {
+            const card = document.createElement('div');
+            card.style.cssText = 'border:1px solid #ddd; border-radius:6px; padding:1rem; background:#fff;';
+
+            const header = document.createElement('div');
+            header.style.cssText = 'display:flex; justify-content:space-between; align-items:flex-start;';
+
+            const titleEl = document.createElement('h3');
+            titleEl.style.margin = '0';
+            titleEl.textContent = ex.title;
+            header.appendChild(titleEl);
+
+            const statusBadge = document.createElement('span');
+            statusBadge.style.cssText = 'padding:0.2rem 0.5rem; border-radius:4px; font-size:0.85rem; background:#e0e7ff; color:#3730a3;';
+            statusBadge.textContent = ex.status || 'draft';
+            header.appendChild(statusBadge);
+            card.appendChild(header);
+
+            if (ex.startDate || ex.endDate) {
+                const datesEl = document.createElement('p');
+                datesEl.style.cssText = 'margin:0.5rem 0 0; color:#555; font-size:0.9rem;';
+                datesEl.textContent = 'ระยะเวลา: ' + (ex.startDate || '-') + ' ถึง ' + (ex.endDate || '-');
+                card.appendChild(datesEl);
+            }
+
+            if (ex.supportingInfoForParticipant) {
+                const infoEl = document.createElement('p');
+                infoEl.style.cssText = 'margin:0.5rem 0 0; font-size:0.9rem;';
+                infoEl.textContent = 'ข้อมูลสำหรับผู้เข้าร่วม: ' + ex.supportingInfoForParticipant;
+                card.appendChild(infoEl);
+            }
+
+            if (myExchangeDialog) {
+                const actions = document.createElement('div');
+                actions.style.marginTop = '0.75rem';
+                const detailBtn = document.createElement('button');
+                detailBtn.type = 'button';
+                detailBtn.textContent = 'ดูรายละเอียดและเอกสาร';
+                detailBtn.style.cssText = 'padding:0.3rem 0.6rem; cursor:pointer;';
+                detailBtn.onclick = () => openMyExchangeDetail(ex);
+                actions.appendChild(detailBtn);
+                card.appendChild(actions);
+            }
+
+            myExchangeList.appendChild(card);
+        }
+    } catch (err) {
+        if (err.status === 401) {
+            window.location.replace('login.html');
+            return;
+        }
+        myExchangeStatus.textContent = 'โหลดโครงการแลกเปลี่ยนไม่สำเร็จ';
     }
 }
 
@@ -192,6 +347,7 @@ function openEditExchange(ex) {
 async function refreshWorkspace() {
     openRoles.hidden = true;
     if (exchangeSection) exchangeSection.hidden = true;
+    if (myExchangeSection) myExchangeSection.hidden = true;
     invalidateSelection();
     if (!window.CstuAuth?.enabled()) {
         workspaceStatus.textContent = 'พื้นที่ผู้ใช้ยังไม่เปิดใช้งาน กรุณากลับหน้าหลัก';
@@ -226,6 +382,13 @@ async function refreshWorkspace() {
                 openAddExchange.onclick = () => openAddExchangeDialog(activeScopes);
             }
             await loadExchanges();
+        }
+
+        // My Exchange section handling (students)
+        const isStudent = userRoles.includes('student');
+        if (myExchangeSection && isStudent && activeScopes.length) {
+            myExchangeSection.hidden = false;
+            await loadMyExchanges();
         }
     } catch { workspaceStatus.textContent = 'ตรวจสิทธิ์ไม่ได้ กรุณาลองใหม่ภายหลัง'; }
 }
@@ -266,6 +429,10 @@ document.getElementById('role-form').onsubmit = async event => {
 
 if (exchangeCloseBtn && exchangeDialog) {
     exchangeCloseBtn.onclick = () => exchangeDialog.close();
+}
+
+if (myExchangeDetailCloseBtn && myExchangeDialog) {
+    myExchangeDetailCloseBtn.onclick = () => myExchangeDialog.close();
 }
 
 if (exchangeForm) {

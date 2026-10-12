@@ -6,6 +6,7 @@ Do not inject this repository into the deployed application. Production requires
 persistent scoped storage and atomic user/session/target/parent/reference checks.
 """
 
+import base64
 import copy
 from datetime import datetime, timezone
 import threading
@@ -179,6 +180,26 @@ class PartnerRepository:
 
 class ExchangeRepository(PartnerRepository):
     """In-memory repository for Exchanges (Issue #104 / Parent #85)."""
+
+    def __init__(self, service=None, initial_records=None, clock=None, document_contents=None):
+        super().__init__(service, initial_records, clock)
+        self.document_contents = dict(document_contents or {})
+
+    def content(self, document: dict, disposition: str):
+        with self._lock:
+            doc_id = document.get('id')
+            content_bytes = self.document_contents.get(doc_id, b'%PDF-1.4 mock exchange document')
+            mime = document.get('mime', 'application/pdf')
+            filename = document.get('displayName', 'document.pdf')
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'content-type': mime,
+                    'content-disposition': f"{disposition}; filename=\"{filename}\"",
+                },
+                'body': base64.b64encode(content_bytes).decode('utf-8') if isinstance(content_bytes, bytes) else content_bytes,
+                'isBase64Encoded': True,
+            }
 
     def mutate(self, kind: str, action: str, payload: dict, record: dict | None,
                parent: dict | None, conditions, idempotency_key: str | None,

@@ -1,12 +1,17 @@
 """Unit tests for Exchange domain repository and validation (Issue #104 / Parent #85)."""
 
+import base64
 import copy
+from dataclasses import replace
+import json
 import unittest
 
 from backend.auth.session_service import AuthError, SessionContext, UserState
 from backend.permissions.gateway import WriteConditions
 from backend.partners.validators import validate_exchange_payload
 from backend.partners.repository import ExchangeRepository
+from backend.http_api import handle
+from backend.tests import test_sessions as session_helpers
 
 
 class DummyUsers:
@@ -446,6 +451,335 @@ class ExchangeTests(unittest.TestCase):
         self.assertEqual(cancelled['reason'], 'Budget cut')
 
 
+class MyExchangeApiTests(unittest.TestCase):
+    setUp = session_helpers.SessionTests.setUp
+
+    def setUp(self):
+        session_helpers.SessionTests.setUp(self)
+
+        self.student_a = UserState(
+            user_id='u-std-a',
+            active=True,
+            authz_version=1,
+            identity_verified=True,
+            display_name='Student A',
+            grants=({'id': 'g-std-a', 'role': 'student', 'scopeId': 'cs', 'active': True},),
+            capabilities=(),
+        )
+        self.student_b = UserState(
+            user_id='u-std-b',
+            active=True,
+            authz_version=1,
+            identity_verified=True,
+            display_name='Student B',
+            grants=({'id': 'g-std-b', 'role': 'student', 'scopeId': 'cs', 'active': True},),
+            capabilities=(),
+        )
+        self.student_c = UserState(
+            user_id='u-std-c',
+            active=True,
+            authz_version=1,
+            identity_verified=True,
+            display_name='Student C',
+            grants=({'id': 'g-std-c', 'role': 'student', 'scopeId': 'cs', 'active': True},),
+            capabilities=(),
+        )
+        self.coordinator = UserState(
+            user_id='u-coord-1',
+            active=True,
+            authz_version=1,
+            identity_verified=True,
+            display_name='Coordinator 1',
+            grants=({'id': 'g-coord', 'role': 'coordinator', 'scopeId': 'cs', 'active': True},),
+            capabilities=(),
+        )
+
+        records = [
+            {
+                'id': 'ex-1',
+                'entityType': 'exchange',
+                'scopeId': 'cs',
+                'title': 'Exchange A Only',
+                'status': 'ongoing',
+                'startDate': '2026-11-01',
+                'endDate': '2026-12-01',
+                'responsibleUserIds': ['u-coord-1'],
+                'participantUserIds': ['u-std-a'],
+                'internalNote': 'TOP SECRET NOTE A',
+                'supportingInfo': 'INTERNAL SUPPORTING INFO A',
+                'supportingInfoForParticipant': 'Welcome Student A',
+                'version': 1,
+            },
+            {
+                'id': 'ex-2',
+                'entityType': 'exchange',
+                'scopeId': 'cs',
+                'title': 'Exchange B Only',
+                'status': 'draft',
+                'startDate': '2026-11-01',
+                'endDate': '2026-12-01',
+                'responsibleUserIds': ['u-coord-1'],
+                'participantUserIds': ['u-std-b'],
+                'internalNote': 'TOP SECRET NOTE B',
+                'supportingInfo': 'INTERNAL SUPPORTING INFO B',
+                'supportingInfoForParticipant': 'Welcome Student B',
+                'version': 1,
+            },
+            {
+                'id': 'ex-3',
+                'entityType': 'exchange',
+                'scopeId': 'cs',
+                'title': 'Exchange Shared A and B',
+                'status': 'ongoing',
+                'startDate': '2026-11-01',
+                'endDate': '2026-12-01',
+                'responsibleUserIds': ['u-coord-1'],
+                'participantUserIds': ['u-std-a', 'u-std-b'],
+                'internalNote': 'TOP SECRET SHARED NOTE',
+                'supportingInfo': 'INTERNAL SUPPORTING INFO SHARED',
+                'supportingInfoForParticipant': 'Welcome Both Participants',
+                'version': 1,
+            },
+            {
+                'id': 'ex-4',
+                'entityType': 'exchange',
+                'scopeId': 'math',
+                'title': 'Exchange Cross-Scope Math',
+                'status': 'ongoing',
+                'startDate': '2026-11-01',
+                'endDate': '2026-12-01',
+                'responsibleUserIds': ['u-coord-1'],
+                'participantUserIds': ['u-std-a'],
+                'version': 1,
+            },
+            {
+                'id': 'doc-1',
+                'entityType': 'document',
+                'parentType': 'exchange',
+                'parentId': 'ex-1',
+                'scopeId': 'cs',
+                'displayName': 'Student Guide.pdf',
+                'mime': 'application/pdf',
+                'size': 1234,
+                'audience': 'participants',
+                'containsPersonal': False,
+                'uploadState': 'ready',
+                'objectKey': 'SECRET-OBJECT-KEY-1',
+                'version': 1,
+            },
+            {
+                'id': 'doc-2',
+                'entityType': 'document',
+                'parentType': 'exchange',
+                'parentId': 'ex-1',
+                'scopeId': 'cs',
+                'displayName': 'Internal Budget.pdf',
+                'mime': 'application/pdf',
+                'size': 5678,
+                'audience': 'internal',
+                'containsPersonal': False,
+                'uploadState': 'ready',
+                'objectKey': 'SECRET-OBJECT-KEY-2',
+                'version': 1,
+            },
+            {
+                'id': 'doc-3',
+                'entityType': 'document',
+                'parentType': 'exchange',
+                'parentId': 'ex-1',
+                'scopeId': 'cs',
+                'displayName': 'Pending Guide.pdf',
+                'mime': 'application/pdf',
+                'size': 999,
+                'audience': 'participants',
+                'containsPersonal': False,
+                'uploadState': 'pending',
+                'objectKey': 'SECRET-OBJECT-KEY-3',
+                'version': 1,
+            },
+            {
+                'id': 'doc-4-b',
+                'entityType': 'document',
+                'parentType': 'exchange',
+                'parentId': 'ex-2',
+                'scopeId': 'cs',
+                'displayName': 'Student B Guide.pdf',
+                'mime': 'application/pdf',
+                'size': 2000,
+                'audience': 'participants',
+                'containsPersonal': False,
+                'uploadState': 'ready',
+                'objectKey': 'SECRET-OBJECT-KEY-4',
+                'version': 1,
+            },
+        ]
+        self.doc_bytes = {
+            'doc-1': b'%PDF-1.4 Mock Student Guide Content',
+            'doc-4-b': b'%PDF-1.4 Mock Student B Guide Content',
+        }
+        self.repo = ExchangeRepository(self.service, records, document_contents=self.doc_bytes)
+
+    def login_as(self, user_state):
+        self.users.user = user_state
+        prior = self.service.create_anonymous()
+        return self.service.issue_authenticated(user_state.user_id, prior.token,
+                                               self.policy.origin, prior.csrf_token)
+
+    def event(self, issued, path='/api/me/exchanges', method='GET', payload=None, **hs):
+        return {
+            'version': '2.0',
+            'rawPath': path,
+            'requestContext': {'http': {'method': method}, 'requestId': 'req-test'},
+            'headers': {
+                'origin': self.policy.origin,
+                'x-csrf-token': issued.csrf_token if issued else '',
+                'if-match': '"1"',
+                'idempotency-key': 'test-key-1234567890123456',
+                **hs,
+            },
+            'cookies': [issued.cookie] if issued else [],
+            'body': json.dumps(payload or {}),
+        }
+
+    def call(self, event):
+        return handle(event, self.service, self.repo)
+
+    def assert_status(self, status, event):
+        result = self.call(event)
+        self.assertEqual(status, result['statusCode'], result)
+        self.assertEqual('no-store', result['headers']['cache-control'])
+        return json.loads(result['body'])
+
+    def test_student_a_and_b_listing_isolation_and_empty_for_student_c(self):
+        # Student A sees ex-1 and ex-3 (shared); does not see ex-2 or ex-4
+        tok_a = self.login_as(self.student_a)
+        res_a = self.assert_status(200, self.event(tok_a, '/api/me/exchanges'))
+        ids_a = [r['id'] for r in res_a['data']]
+        self.assertEqual(res_a['count'], 2)
+        self.assertEqual(sorted(ids_a), ['ex-1', 'ex-3'])
+
+        # Student B sees ex-2 and ex-3 (shared); does not see ex-1 or ex-4
+        tok_b = self.login_as(self.student_b)
+        res_b = self.assert_status(200, self.event(tok_b, '/api/me/exchanges'))
+        ids_b = [r['id'] for r in res_b['data']]
+        self.assertEqual(res_b['count'], 2)
+        self.assertEqual(sorted(ids_b), ['ex-2', 'ex-3'])
+
+        # Student C participates in 0 exchanges -> receives empty array
+        tok_c = self.login_as(self.student_c)
+        res_c = self.assert_status(200, self.event(tok_c, '/api/me/exchanges'))
+        self.assertEqual(res_c['count'], 0)
+        self.assertEqual(res_c['data'], [])
+
+    def test_student_projection_excludes_internal_fields_and_other_participants(self):
+        tok_a = self.login_as(self.student_a)
+        res_a = self.assert_status(200, self.event(tok_a, '/api/me/exchanges/ex-1'))
+        data_a = res_a['data']
+
+        # Safe student projection allowlist: {'id', 'title', 'startDate', 'endDate', 'status', 'supportingInfoForParticipant'}
+        expected_fields = {'id', 'title', 'startDate', 'endDate', 'status', 'supportingInfoForParticipant'}
+        self.assertEqual(set(data_a.keys()), expected_fields)
+        self.assertEqual(data_a['id'], 'ex-1')
+        self.assertEqual(data_a['title'], 'Exchange A Only')
+        self.assertEqual(data_a['status'], 'ongoing')
+        self.assertEqual(data_a['supportingInfoForParticipant'], 'Welcome Student A')
+
+        # Internal notes or internal supporting info must never leak
+        raw_json = json.dumps(res_a)
+        self.assertNotIn('TOP SECRET', raw_json)
+        self.assertNotIn('INTERNAL SUPPORTING INFO', raw_json)
+        self.assertNotIn('responsibleUserIds', data_a)
+        self.assertNotIn('participantUserIds', data_a)
+        self.assertNotIn('scopeId', data_a)
+        self.assertNotIn('version', data_a)
+
+        # In shared exchange ex-3, Student A should not see other participant ID 'u-std-b'
+        res_shared = self.assert_status(200, self.event(tok_a, '/api/me/exchanges/ex-3'))
+        self.assertNotIn('u-std-b', json.dumps(res_shared))
+
+    def test_single_record_cross_student_and_cross_scope_returns_404(self):
+        tok_a = self.login_as(self.student_a)
+
+        # Student A querying Student B's exchange -> 404 NOT_FOUND
+        self.assert_status(404, self.event(tok_a, '/api/me/exchanges/ex-2'))
+
+        # Student A querying cross-scope math exchange -> 404 NOT_FOUND
+        self.assert_status(404, self.event(tok_a, '/api/me/exchanges/ex-4'))
+
+        # Student A querying non-existent exchange -> 404 NOT_FOUND
+        self.assert_status(404, self.event(tok_a, '/api/me/exchanges/ex-nonexistent'))
+
+    def test_student_mutations_and_unsupported_methods_denied(self):
+        tok_a = self.login_as(self.student_a)
+
+        # Mutation on /api/me/exchanges -> 405 METHOD_NOT_ALLOWED
+        self.assert_status(405, self.event(tok_a, '/api/me/exchanges', method='POST', payload={'title': 'hacked'}))
+        self.assert_status(405, self.event(tok_a, '/api/me/exchanges/ex-1', method='PATCH', payload={'title': 'hacked'}))
+        self.assert_status(405, self.event(tok_a, '/api/me/exchanges/ex-1/status', method='POST', payload={'to': 'completed'}))
+
+        # Direct mutation on /api/exchanges by student -> 403 FORBIDDEN
+        self.assert_status(403, self.event(tok_a, '/api/exchanges', method='POST', payload={'title': 'hacked', 'scopeId': 'cs'}))
+        self.assert_status(403, self.event(tok_a, '/api/exchanges/ex-1', method='PATCH', payload={'title': 'hacked'}))
+        self.assert_status(403, self.event(tok_a, '/api/exchanges/ex-1/status', method='POST', payload={'to': 'completed'}))
+
+    def test_participant_removed_and_session_expired_deny_next_request(self):
+        tok_a = self.login_as(self.student_a)
+        self.assert_status(200, self.event(tok_a, '/api/me/exchanges/ex-1'))
+
+        # When participant assignment is removed: next request to /api/me/exchanges/ex-1 returns 404
+        self.repo.rows[('exchange', 'ex-1')]['participantUserIds'] = []
+        self.assert_status(404, self.event(tok_a, '/api/me/exchanges/ex-1'))
+
+        # And listing excludes ex-1 immediately
+        res = self.assert_status(200, self.event(tok_a, '/api/me/exchanges'))
+        self.assertEqual(res['count'], 1)
+        self.assertEqual([r['id'] for r in res['data']], ['ex-3'])
+
+        # Session revoked / version increment
+        self.users.user = replace(self.student_a, authz_version=2)
+        self.assert_status(401, self.event(tok_a, '/api/me/exchanges/ex-3'))
+
+        # Anonymous or bad session
+        unauth_event = self.event(None, '/api/me/exchanges')
+        self.assert_status(401, unauth_event)
+
+    def test_documents_for_participant_student(self):
+        tok_a = self.login_as(self.student_a)
+
+        # GET /api/me/exchanges/ex-1/documents
+        # doc-1 (participants audience) is returned; doc-2 (internal audience) is filtered out
+        res_docs = self.assert_status(200, self.event(tok_a, '/api/me/exchanges/ex-1/documents'))
+        self.assertEqual(res_docs['count'], 2)  # doc-1 (ready) and doc-3 (pending) both have audience=participants
+        doc_ids = [d['id'] for d in res_docs['data']]
+        self.assertIn('doc-1', doc_ids)
+        self.assertNotIn('doc-2', doc_ids)
+        # Verify objectKey and private fields are not in response
+        self.assertNotIn('SECRET-OBJECT-KEY', json.dumps(res_docs))
+
+        # Student A requesting documents for Student B's exchange -> 404
+        self.assert_status(404, self.event(tok_a, '/api/me/exchanges/ex-2/documents'))
+
+        # Download content of ready document for participant
+        content_res = self.call(self.event(tok_a, '/api/documents/doc-1/content'))
+        self.assertEqual(content_res['statusCode'], 200)
+        self.assertEqual(content_res['headers']['cache-control'], 'no-store')
+        self.assertEqual(content_res['headers']['x-content-type-options'], 'nosniff')
+        self.assertEqual(content_res['headers']['content-type'], 'application/pdf')
+        decoded = base64.b64decode(content_res['body'])
+        self.assertEqual(decoded, self.doc_bytes['doc-1'])
+
+        # Pending document cannot be downloaded -> 404
+        self.assert_status(404, self.event(tok_a, '/api/documents/doc-3/content'))
+
+        # Internal document cannot be downloaded by student -> 404
+        self.assert_status(404, self.event(tok_a, '/api/documents/doc-2/content'))
+
+        # Student B's document cannot be downloaded by Student A -> 404
+        self.assert_status(404, self.event(tok_a, '/api/documents/doc-4-b/content'))
+
+        # Student upload attempt on documents -> 403 FORBIDDEN
+        self.assert_status(403, self.event(tok_a, '/api/exchanges/ex-1/documents', method='POST', payload={'displayName': 'evil.pdf'}))
+
+
 if __name__ == '__main__':
     unittest.main()
-

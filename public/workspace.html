@@ -45,6 +45,29 @@
         <div id="exchange-list" style="margin-top:1rem; display:flex; flex-direction:column; gap:1rem;"></div>
     </section>
 
+    <section id="my-exchange-section" style="margin-top:2rem;" hidden>
+        <h2>โครงการแลกเปลี่ยนของฉัน (My Exchanges)</h2>
+        <div id="my-exchange-status" role="status" style="margin-top:0.5rem; color:#666;"></div>
+        <div id="my-exchange-list" style="margin-top:1rem; display:flex; flex-direction:column; gap:1rem;"></div>
+    </section>
+
+    <dialog id="my-exchange-dialog" style="padding:2rem; max-width:600px; width:100%;">
+        <div id="my-exchange-detail-container">
+            <h2 id="my-exchange-detail-title">รายละเอียดโครงการแลกเปลี่ยน</h2>
+            <p>สถานะ: <span id="my-exchange-detail-status-badge" style="padding:0.2rem 0.5rem; border-radius:4px; font-size:0.85rem; background:#e0e7ff; color:#3730a3;"></span></p>
+            <p id="my-exchange-detail-dates" style="color:#555; font-size:0.95rem;"></p>
+            <p id="my-exchange-detail-info" style="font-size:0.95rem;"></p>
+            <div style="margin-top:1.5rem; border-top:1px solid #eee; padding-top:1rem;">
+                <h3>เอกสารประกอบโครงการ</h3>
+                <div id="my-exchange-detail-docs-status" role="status" style="color:#666; font-size:0.9rem;"></div>
+                <ul id="my-exchange-detail-docs-list" style="list-style:none; padding:0; margin-top:0.5rem; display:flex; flex-direction:column; gap:0.5rem;"></ul>
+            </div>
+            <div style="margin-top:1.5rem;">
+                <button id="my-exchange-detail-close-btn" type="button" style="padding:0.4rem 1rem; cursor:pointer;">ปิด</button>
+            </div>
+        </div>
+    </dialog>
+
     <dialog id="exchange-dialog" style="padding:2rem; max-width:600px; width:100%;">
         <form id="exchange-form">
             <h2 id="exchange-dialog-title">เพิ่มโครงการแลกเปลี่ยน</h2>
