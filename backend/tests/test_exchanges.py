@@ -58,10 +58,31 @@ class ExchangeTests(unittest.TestCase):
             capabilities=(),
         )
 
+        self.user_student_other = UserState(
+            user_id='u-student-other-scope',
+            active=True,
+            authz_version=1,
+            identity_verified=True,
+            display_name='Student Other Scope',
+            grants=({'id': 'g5', 'role': 'student', 'scopeId': 'other-scope', 'active': True},),
+            capabilities=(),
+        )
+        self.user_student_unverified = UserState(
+            user_id='u-student-unverified',
+            active=True,
+            authz_version=1,
+            identity_verified=False,
+            display_name='Student Unverified',
+            grants=({'id': 'g6', 'role': 'student', 'scopeId': 'cs', 'active': True},),
+            capabilities=(),
+        )
+
         users_map = {
             'u-coord-1': self.user_coord,
             'u-staff-1': self.user_staff,
             'u-student-1': self.user_student,
+            'u-student-other-scope': self.user_student_other,
+            'u-student-unverified': self.user_student_unverified,
             'u-exec-1': self.user_exec,
         }
         self.dummy_users = DummyUsers(users_map)
@@ -227,6 +248,103 @@ class ExchangeTests(unittest.TestCase):
         with self.assertRaises(AuthError) as ctx:
             self.repo.mutate('exchange', 'update', {'title': 'New'}, res1, None, update_cond_stale, None)
         self.assertEqual(ctx.exception.status, 409)
+
+
+    def test_participants_and_assignees_validation(self):
+        conditions = WriteConditions(
+            user_id='u-staff-1',
+            authz_version=1,
+            session_hash='s1',
+            target_id=None,
+            target_version=None,
+            parent_id=None,
+            parent_version=None,
+            scope_id='cs',
+        )
+        # Valid student participant and coordinator responsible user
+        payload = {
+            'title': 'Exchange with Participant',
+            'partnerIds': ['partner-1'],
+            'participantUserIds': ['u-student-1'],
+            'responsibleUserIds': ['u-coord-1'],
+        }
+        res = self.repo.mutate('exchange', 'create', payload, None, None, conditions, 'key-valid-part')
+        self.assertEqual(res['participantUserIds'], ['u-student-1'])
+        self.assertEqual(res['responsibleUserIds'], ['u-coord-1'])
+
+        # Cross-scope student participant denied (422)
+        payload_cross_student = {
+            'title': 'Exchange Cross Student',
+            'partnerIds': ['partner-1'],
+            'participantUserIds': ['u-student-other-scope'],
+        }
+        with self.assertRaises(AuthError) as ctx:
+            self.repo.mutate('exchange', 'create', payload_cross_student, None, None, conditions, 'key-cross-std')
+        self.assertEqual(ctx.exception.status, 422)
+
+        # Unverified student participant denied (422)
+        payload_unverified = {
+            'title': 'Exchange Unverified Student',
+            'partnerIds': ['partner-1'],
+            'participantUserIds': ['u-student-unverified'],
+        }
+        with self.assertRaises(AuthError) as ctx:
+            self.repo.mutate('exchange', 'create', payload_unverified, None, None, conditions, 'key-unverified-std')
+        self.assertEqual(ctx.exception.status, 422)
+
+        # Assignee must not be student (must be staff/coordinator)
+        payload_bad_assignee = {
+            'title': 'Exchange Bad Assignee',
+            'partnerIds': ['partner-1'],
+            'responsibleUserIds': ['u-student-1'],
+        }
+        with self.assertRaises(AuthError) as ctx:
+            self.repo.mutate('exchange', 'create', payload_bad_assignee, None, None, conditions, 'key-bad-assignee')
+        self.assertEqual(ctx.exception.status, 422)
+
+        # Participant must not be staff/coordinator (must be student)
+        payload_bad_part = {
+            'title': 'Exchange Bad Participant',
+            'partnerIds': ['partner-1'],
+            'participantUserIds': ['u-staff-1'],
+        }
+        with self.assertRaises(AuthError) as ctx:
+            self.repo.mutate('exchange', 'create', payload_bad_part, None, None, conditions, 'key-bad-part')
+        self.assertEqual(ctx.exception.status, 422)
+
+    def test_agreement_reference_and_dates(self):
+        conditions = WriteConditions(
+            user_id='u-staff-1',
+            authz_version=1,
+            session_hash='s1',
+            target_id=None,
+            target_version=None,
+            parent_id=None,
+            parent_version=None,
+            scope_id='cs',
+        )
+        # Valid agreement in same scope + same-day dates (startDate == endDate is valid)
+        payload = {
+            'title': 'Exchange Single Day',
+            'partnerIds': ['partner-1'],
+            'agreementId': 'agreement-1',
+            'startDate': '2027-03-15',
+            'endDate': '2027-03-15',
+        }
+        res = self.repo.mutate('exchange', 'create', payload, None, None, conditions, 'key-agr-ok')
+        self.assertEqual(res['agreementId'], 'agreement-1')
+        self.assertEqual(res['startDate'], '2027-03-15')
+        self.assertEqual(res['endDate'], '2027-03-15')
+
+        # Invalid agreement reference (not found or cross scope) -> 404
+        payload_bad_agr = {
+            'title': 'Exchange Bad Agreement',
+            'partnerIds': ['partner-1'],
+            'agreementId': 'non-existent-agreement',
+        }
+        with self.assertRaises(AuthError) as ctx:
+            self.repo.mutate('exchange', 'create', payload_bad_agr, None, None, conditions, 'key-bad-agr')
+        self.assertEqual(ctx.exception.status, 404)
 
 
 if __name__ == '__main__':

@@ -329,7 +329,7 @@ if (exchangeForm) {
                     exchangeStatus.textContent = 'โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณาลองใหม่';
                 }
             } else if (error.status === 422) {
-                exchangeStatus.textContent = 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบวันที่ หรือรหัสคู่ความร่วมมือ';
+                exchangeStatus.textContent = 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบวันที่ รหัสคู่ความร่วมมือ หรือรหัสผู้ใช้/ผู้เข้าร่วม';
             } else {
                 exchangeStatus.textContent = error.message || 'บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
             }

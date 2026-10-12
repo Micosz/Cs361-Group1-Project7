@@ -13,6 +13,7 @@ import time
 import uuid
 
 from ..auth.session_service import AuthError
+from ..permissions.policy import require_assignee, require_reference
 from .validators import (
     validate_partner_payload,
     validate_contact_payload,
@@ -236,16 +237,39 @@ class ExchangeRepository(PartnerRepository):
                 if agr_row is None or agr_row.get('scopeId') != conditions.scope_id:
                     raise AuthError('NOT_FOUND', 404)
 
+            # Helper to get user object
+            def get_user_obj(uid):
+                if not self.service or not hasattr(self.service, 'users'):
+                    return None
+                u = getattr(self.service.users, 'user', None)
+                if callable(u):
+                    return u(uid)
+                if hasattr(self.service.users, 'store'):
+                    return self.service.users.store.user(uid)
+                return None
+
             # Validate responsibleUserIds against active users in scope (for staff)
             resp_users = payload.get('responsibleUserIds')
-            if resp_users and self.service and hasattr(self.service, 'users') and hasattr(self.service.users, 'store'):
+            if resp_users:
                 for uid in resp_users:
-                    target_user = self.service.users.store.user(uid)
-                    if not target_user or not target_user.active:
+                    target_user = get_user_obj(uid)
+                    if not target_user:
                         raise AuthError('INVALID_FIELDS', 422)
-                    grants, _ = target_user.permissions()
-                    has_role = any(g.get('scopeId') == conditions.scope_id and g.get('role') in {'coordinator', 'staff'} for g in grants)
-                    if not has_role:
+                    try:
+                        require_assignee(target_user, conditions.scope_id, participant=False)
+                    except AuthError:
+                        raise AuthError('INVALID_FIELDS', 422)
+
+            # Validate participantUserIds against active verified students in scope (#105)
+            part_users = payload.get('participantUserIds')
+            if part_users:
+                for uid in part_users:
+                    target_user = get_user_obj(uid)
+                    if not target_user:
+                        raise AuthError('INVALID_FIELDS', 422)
+                    try:
+                        require_assignee(target_user, conditions.scope_id, participant=True)
+                    except AuthError:
                         raise AuthError('INVALID_FIELDS', 422)
 
             # 4. Build and Persist Record
