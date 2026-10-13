@@ -99,6 +99,14 @@ class TestDocumentLinks(unittest.TestCase):
         unauthorized_user = {"user_id": "stranger", "role": "user"}
         sanitized = sanitize_document_for_viewer(doc_record, unauthorized_user, self.agreement_record)
         self.assertIsNone(sanitized)
+    def test_wrong_target_and_canonical_upload(self):
+        user = {'user_id': 'user_john', 'role': 'user'}
+        with self.assertRaises(TargetNotFoundError):
+            link_document_to_target(user, self.agreement_record, self.valid_upload_result, 'agreement', 'other')
+        upload = {'storageKey': 'documents/id.pdf', 'originalFileName': 'a.pdf', 'fileSize': 100, 'contentType': 'application/pdf'}
+        result = link_document_to_target(user, self.agreement_record, upload, 'agreement', 'agr_123')
+        self.assertEqual(result['storage_key'], 'documents/id.pdf')
+
 
 if __name__ == "__main__":
     unittest.main()
