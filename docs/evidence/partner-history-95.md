@@ -25,3 +25,13 @@
 เปิดเว็บ localhost ในเบราว์เซอร์จริง: Partner NVIDIA แสดง 9 ก.ค. 69 และชื่อกิจกรรม กดแล้วเปิด Activity detail พร้อมลิงก์หลักฐานเดิม ภาพตรวจอยู่ `/tmp/cs361-95-partner-history.jpg` (ไฟล์ชั่วคราวในเครื่อง)
 
 ยังไม่ได้รวม main/deploy หรือยืนยัน business storage/API/สิทธิ์ภายในบน AWS งานนี้เป็นส่วน public activities ของ #95 เท่านั้น
+
+## Integration — 13 ต.ค. 69
+
+ต่อ history GET/POST/PATCH ใน shared Partner detail และ DynamoDB transaction adapter แล้ว
+ประวัติภายในเรียง occurredOn ใหม่ไปเก่า ตามด้วย createdAt ใหม่ไปเก่า และ id เมื่อเวลาเท่ากัน
+ฟอร์มเหตุการณ์เลือก reference จากรายการที่ตรวจสิทธิ์และ scope แล้ว การอ่านคืน reference เฉพาะที่อ่านได้
+ข้อมูลประวัติภายในไม่ถูกเพิ่มลง public history/backup
+
+ตรวจเพิ่ม 2 integration tests: เขียน/อ่านกลับ/เรียง/แก้/วันที่ผิด/deny และ reference/parent-version race
+เป็น local AWS doubles; configuration และ production acceptance ยังใช้ข้อจำกัดใน workspace-83-86-integration.md

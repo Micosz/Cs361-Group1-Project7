@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 function setup() {
-    const ctx = {window: {}, document: {addEventListener() {}, createElement(tag) {
+    const ctx = {window: {addEventListener() {}}, document: {addEventListener() {}, createElement(tag) {
         return {tag, children: [], append(...nodes) {this.children.push(...nodes);}, appendChild(node) {this.children.push(node);}, addEventListener(event, handler) {this[event] = handler;}};
     }}};
     vm.createContext(ctx);

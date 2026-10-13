@@ -113,6 +113,8 @@ class DynamoBusinessRepository:
                 raise AuthError('VERSION_CONFLICT', 409)
             return result
 
+        if kind == 'history':
+            payload = normalize_payload(kind, action, payload, record=record)
         effective = dict(record or {}, **payload)
         scope = conditions.scope_id
         ref_pairs = [('partner', key) for key in effective.get('partnerIds', [])]
@@ -120,6 +122,8 @@ class DynamoBusinessRepository:
             ref_pairs += [('partner', effective.get('partnerId'))]
             ref_pairs += [('partner', key) for key in effective.get('coHostPartnerIds', [])]
             ref_pairs += [('agreement', key) for key in effective.get('agreementIds', [])]
+        if kind == 'history' and effective.get('referenceType'):
+            ref_pairs += [(effective['referenceType'], effective['referenceId'])]
         if kind == 'exchange' and effective.get('agreementId'):
             ref_pairs += [('agreement', effective['agreementId'])]
         for entity, key in ref_pairs:
@@ -137,7 +141,7 @@ class DynamoBusinessRepository:
         elif kind == 'exchange':
             domain = ExchangeRepository(local_service, seeds, clock=self.clock)
             saved = domain.mutate(kind, action, payload, record, parent, conditions, None)
-        elif kind in {'partner', 'contact'}:
+        elif kind in {'partner', 'contact', 'history'}:
             normalized = normalize_payload(kind, action, payload, record=record)
             domain = PartnerRepository(local_service, seeds + ([parent] if parent else []), clock=self.clock)
             saved = domain.mutate(kind, action, normalized, record, parent, conditions, None)

@@ -163,7 +163,7 @@ class PermissionGateway:
                 if key:
                     if query:
                         raise AuthError('INVALID_QUERY', 422)
-                    data = project(context, kind, record, parent)
+                    data = self._project(context, kind, record, parent)
                     return self._response(event, data)
                 rows = []
                 for row in self.repository.list(kind, context, parent):
@@ -171,7 +171,7 @@ class PermissionGateway:
                         continue
                     if mine and not self._participant(context, row if kind == 'exchange' else parent):
                         continue
-                    rows.append(project(context, kind, row, parent))
+                    rows.append(self._project(context, kind, row, parent))
                 data, count, pagination = page(rows, event, self.service, kind)
                 return response(200, {'data': data, 'count': count, 'page': pagination,
                                       'requestId': event.get('requestContext', {}).get('requestId', '')})
@@ -217,12 +217,23 @@ class PermissionGateway:
             saved = self.repository.mutate(kind, action, payload, record, parent, conditions, idempotency, upload=upload)
             # Recheck a fresh session before returning protected write data.
             current = require_session(event, self.service)
-            return self._response(event, project(current, kind, saved, parent),
+            return self._response(event, self._project(current, kind, saved, parent),
                                   status=201 if action in {'create', 'upload'} else 200)
         except AuthError as error:
             return error_response(error.code, error.status, event)
         except Exception:
             return error_response('PERMISSION_UNAVAILABLE', 503, event)
+
+    def _project(self, context, kind, record, parent=None):
+        data = project(context, kind, record, parent)
+        if kind == 'history' and record.get('referenceType') in {'activity', 'agreement'}:
+            ref_kind = record['referenceType']
+            target = self.repository.get(ref_kind, record.get('referenceId'))
+            if (target and target.get('scopeId') == record.get('scopeId')
+                    and allowed_roles(context, ref_kind, 'read', target)):
+                data.update(referenceType=ref_kind, referenceId=target['id'],
+                            referenceLabel=target.get('title', ''))
+        return data
 
     def overview(self, event):
         if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':

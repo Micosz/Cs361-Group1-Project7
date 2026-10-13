@@ -68,7 +68,7 @@ class PartnerRepository:
     def mutate(self, kind: str, action: str, payload: dict, record: dict | None,
                parent: dict | None, conditions, idempotency_key: str | None,
                upload=None) -> dict:
-        if kind not in {'partner', 'contact'} or action not in {'create', 'update'} or upload is not None:
+        if kind not in {'partner', 'contact', 'history'} or action not in {'create', 'update'} or upload is not None:
             raise AuthError('PERMISSION_UNAVAILABLE', 503)
         with self._lock:
             # 1. Preconditions & Concurrency Checks
@@ -149,6 +149,8 @@ class PartnerRepository:
                 if kind == 'partner':
                     saved['publication'] = payload.get('publication', 'internal')
                     saved['responsibleUserIds'] = payload.get('responsibleUserIds', [])
+                if kind == 'history':
+                    saved['recordedBy'] = conditions.user_id
                 saved.update(payload)
             else:
                 saved = copy.deepcopy(record)
