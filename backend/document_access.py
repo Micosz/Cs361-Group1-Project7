@@ -1,4 +1,6 @@
 import time
+import re
+from urllib.parse import urlsplit, parse_qs, urlencode
 from typing import Dict, Any, Optional
 
 
@@ -49,12 +51,11 @@ def generate_download_access(
 
     now = int(time.time())
     expires_at = now + expires_in_seconds
-    storage_key = document_record["storage_key"]
-    token = f"auth_token_{user_id}_{expires_at}"
-
-    presigned_download_url = (
-        f"https://s3.amazonaws.com/testuiforcloud/{storage_key}?token={token}&expires={expires_at}"
-    )
+    # Every access uses the authenticated gateway stream; no bearer S3 URL.
+    document_id = document_record.get('id') or document_record.get('link_id')
+    if not isinstance(document_id, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', document_id):
+        raise DocumentNotFoundError('Document ID required.')
+    presigned_download_url = '/api/documents/' + document_id + '/content?disposition=attachment'
 
     return {
         "download_url": presigned_download_url,
@@ -72,16 +73,11 @@ def validate_access_link(
     if not current_session or not current_session.get("is_authenticated"):
         raise AuthenticationRequiredError("Session has expired or logged out.")
 
-    if "expires=" not in token_url:
-        raise LinkExpiredError("Invalid access URL format.")
-
-    try:
-        expires_param = int(token_url.split("expires=")[1].split("&")[0])
-    except (ValueError, IndexError):
-        raise LinkExpiredError("Invalid expiration in URL.")
-
-    check_time = current_time if current_time is not None else int(time.time())
-    if check_time > expires_param:
-        raise LinkExpiredError("The download link has expired.")
-
+    parsed = urlsplit(token_url)
+    if parsed.scheme or parsed.netloc or not re.fullmatch(r'/api/documents/[A-Za-z0-9_-]{1,128}/content', parsed.path):
+        raise LinkExpiredError('Invalid access URL format.')
+    if parse_qs(parsed.query) != {'disposition': ['attachment']}:
+        raise LinkExpiredError('Invalid access URL format.')
+    # This only validates URL shape. PermissionGateway authorizes the actual GET
+    # using current Session, record, parent, role and document audience.
     return True

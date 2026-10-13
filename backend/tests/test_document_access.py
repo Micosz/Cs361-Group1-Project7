@@ -14,6 +14,7 @@ class TestDocumentAccess(unittest.TestCase):
     def setUp(self):
         self.doc_record = {
             "storage_key": "protected/agreements/agr_123/mou.pdf",
+            "id": "doc_123",
             "file_name": "mou.pdf"
         }
         self.target_record = {
@@ -26,8 +27,7 @@ class TestDocumentAccess(unittest.TestCase):
         session = {"user_id": "user_alice", "is_authenticated": True, "role": "user"}
         result = generate_download_access(session, self.doc_record, self.target_record)
         self.assertIn("download_url", result)
-        self.assertIn("token=", result["download_url"])
-        self.assertIn("expires=", result["download_url"])
+        self.assertEqual(result["download_url"], "/api/documents/doc_123/content?disposition=attachment")
 
     def test_unauthenticated_user_denied(self):
         session = {"user_id": "anon", "is_authenticated": False}
@@ -47,7 +47,7 @@ class TestDocumentAccess(unittest.TestCase):
     def test_validate_link_success(self):
         session = {"user_id": "user_alice", "is_authenticated": True}
         future_time = int(time.time()) + 300
-        url = f"https://s3.amazonaws.com/testuiforcloud/file.pdf?token=abc&expires={future_time}"
+        url = "/api/documents/doc_123/content?disposition=attachment"
         self.assertTrue(validate_access_link(url, session))
 
     def test_validate_link_expired(self):
@@ -60,7 +60,7 @@ class TestDocumentAccess(unittest.TestCase):
     def test_validate_link_logged_out_session(self):
         session = {"user_id": "user_alice", "is_authenticated": False}
         future_time = int(time.time()) + 300
-        url = f"https://s3.amazonaws.com/testuiforcloud/file.pdf?token=abc&expires={future_time}"
+        url = "/api/documents/doc_123/content?disposition=attachment"
         with self.assertRaises(AuthenticationRequiredError):
             validate_access_link(url, session)
 
@@ -81,6 +81,7 @@ class TestDocumentAccess(unittest.TestCase):
     def setUp(self):
         self.doc_record = {
             "storage_key": "protected/agreements/agr_123/mou.pdf",
+            "id": "doc_123",
             "file_name": "mou.pdf"
         }
         self.target_record = {
@@ -93,8 +94,7 @@ class TestDocumentAccess(unittest.TestCase):
         session = {"user_id": "user_alice", "is_authenticated": True, "role": "user"}
         result = generate_download_access(session, self.doc_record, self.target_record)
         self.assertIn("download_url", result)
-        self.assertIn("token=", result["download_url"])
-        self.assertIn("expires=", result["download_url"])
+        self.assertEqual(result["download_url"], "/api/documents/doc_123/content?disposition=attachment")
 
     def test_unauthenticated_user_denied(self):
         session = {"user_id": "anon", "is_authenticated": False}
@@ -114,7 +114,7 @@ class TestDocumentAccess(unittest.TestCase):
     def test_validate_link_success(self):
         session = {"user_id": "user_alice", "is_authenticated": True}
         future_time = int(time.time()) + 300
-        url = f"https://s3.amazonaws.com/testuiforcloud/file.pdf?token=abc&expires={future_time}"
+        url = "/api/documents/doc_123/content?disposition=attachment"
         self.assertTrue(validate_access_link(url, session))
 
     def test_validate_link_expired(self):
@@ -127,7 +127,7 @@ class TestDocumentAccess(unittest.TestCase):
     def test_validate_link_logged_out_session(self):
         session = {"user_id": "user_alice", "is_authenticated": False}
         future_time = int(time.time()) + 300
-        url = f"https://s3.amazonaws.com/testuiforcloud/file.pdf?token=abc&expires={future_time}"
+        url = "/api/documents/doc_123/content?disposition=attachment"
         with self.assertRaises(AuthenticationRequiredError):
             validate_access_link(url, session)
 
