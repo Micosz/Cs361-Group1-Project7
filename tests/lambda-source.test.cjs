@@ -18,7 +18,7 @@ async function load(name, options = {}) {
     if (options.failure) throw new Error('synthetic AWS outage');
     return { Items: options.items || [] };
   } }; } };
-  const context = vm.createContext({ console: silentConsole, process: { env: options.env || {} },
+  const context = vm.createContext({ console: options.console || silentConsole, URL, AbortController, setTimeout, clearTimeout, process: { env: options.env || {} },
                                     fetch: options.fetch || (() => { throw new Error('Unexpected network call'); }) });
   if (filename.endsWith('.cjs')) {
     context.exports = {};
@@ -41,7 +41,7 @@ async function load(name, options = {}) {
     }, { context });
   });
   await module.evaluate();
-  return module.namespace.handler;
+  return options.factory ? module.namespace.createHandler(options.factory) : module.namespace.handler;
 }
 
 test('fetchPartnersData retains existing publication filter, response and CORS', async () => {
@@ -75,34 +75,119 @@ test('getPublicPartners loads as CommonJS and retains original field mapping', a
   assert.equal(result.headers['Access-Control-Allow-Methods'], 'GET');
 });
 
-test('tuAuthLogin OPTIONS and input failures make no TU requests', async () => {
-  const handler = await load('tuAuthLogin');
-  assert.equal((await handler({ httpMethod: 'OPTIONS' })).statusCode, 200);
-  assert.equal((await handler({})).statusCode, 400);
-  assert.equal((await handler({ body: '{}' })).statusCode, 400);
-  assert.equal((await handler({ body: 'malformed' })).statusCode, 500);
-  assert.equal((await handler({ body: JSON.stringify({ UserName: 'fixture', PassWord: 'fixture' }) })).statusCode, 500);
+const tuEnv = { TU_APP_KEY: 'fixture-key', TU_AUTH_URL: 'https://restapi.tu.ac.th/api/v1/auth/Ad/verify2' };
+const request = { httpMethod: 'POST', body: JSON.stringify({ UserName: 'fixture', PassWord: 'fixture-password' }) };
+const provider = (body, status = 200, retryAfter = null) => ({
+  ok: status >= 200 && status < 300, status,
+  headers: { get: () => retryAfter }, json: async () => body,
 });
 
-test('tuAuthLogin checks provider body status and never returns input password/key', async () => {
-  const request = { body: JSON.stringify({ UserName: 'fixture', PassWord: 'fixture-password' }) };
-  for (const status of [true, false, 'true']) {
-    const handler = await load('tuAuthLogin', { env: { TU_APP_KEY: 'fixture-key' },
-      fetch: async (url, init) => {
-        assert.equal(url, 'https://restapi.tu.ac.th/api/v1/auth/Ad/verify2');
-        assert.equal(init.headers['Application-Key'], 'fixture-key');
-        return { ok: true, json: async () => ({ status, type: 'student' }) };
-      } });
-    const result = await handler(request);
-    assert.equal(result.statusCode, status === true ? 200 : 401);
-    assert.equal(result.body.includes('fixture-password'), false);
-    assert.equal(result.body.includes('fixture-key'), false);
+test('tuAuthLogin validates input/config before calling TU; preflight stays available', async () => {
+  const handler = await load('tuAuthLogin');
+  assert.equal((await handler({ httpMethod: 'OPTIONS' })).statusCode, 200);
+  assert.equal((await handler({ httpMethod: 'GET' })).statusCode, 405);
+  for (const body of [undefined, '{}', 'malformed', 'null', '{"UserName":1,"PassWord":"x"}']) {
+    assert.equal((await handler({ body })).statusCode, 400);
+  }
+  for (const env of [{}, { TU_AUTH_URL: tuEnv.TU_AUTH_URL },
+    { ...tuEnv, TU_AUTH_URL: 'https://example.invalid/auth' },
+    { ...tuEnv, TU_AUTH_URL: tuEnv.TU_AUTH_URL + '?key=unsafe' }]) {
+    const result = await (await load('tuAuthLogin', { env }))(request);
+    assert.equal(result.statusCode, 503);
+    assert.equal(JSON.parse(result.body).code, 'AUTH_CONFIGURATION_UNAVAILABLE');
   }
 });
 
-test('tuAuthLogin retains provider unavailable behavior', async () => {
-  const handler = await load('tuAuthLogin', { env: { TU_APP_KEY: 'fixture-key' },
-    fetch: async () => ({ ok: false }) });
-  const result = await handler({ body: JSON.stringify({ UserName: 'fixture', PassWord: 'fixture' }) });
-  assert.equal(result.statusCode, 502);
+test('TU student/employee succeeds using server config and ignores browser roles/type/id', async () => {
+  for (const [type, env, expectedUrl] of [
+    ['student', { TU_APP_KEY: tuEnv.TU_APP_KEY }, tuEnv.TU_AUTH_URL],
+    ['student', { ...tuEnv, TU_AUTH_URL: '' }, tuEnv.TU_AUTH_URL],
+    ['employee', { ...tuEnv, TU_AUTH_URL: 'https://restapi.tu.ac.th/test-fixture-auth' },
+      'https://restapi.tu.ac.th/test-fixture-auth'],
+  ]) {
+    let calls = 0;
+    const handler = await load('tuAuthLogin', { env,
+      fetch: async (url, init) => {
+        calls++;
+        assert.equal(url, expectedUrl);
+        assert.equal(init.method, 'POST');
+        assert.equal(init.redirect, 'error');
+        assert.equal(init.headers['Content-Type'], 'application/json');
+        assert.equal(init.headers['Application-Key'], 'fixture-key');
+        assert.deepEqual(JSON.parse(init.body), { UserName: 'fixture', PassWord: 'fixture-password' });
+        return provider({ status: true, type, displayname_th: 'ชื่อ', email: 'fixture@tu.ac.th',
+          department: 'Executive', password: 'provider-private', role: 'executive' });
+      } });
+    const result = await handler({ ...request, body: JSON.stringify({ ...JSON.parse(request.body),
+      type: 'student', role: 'executive', userId: 'forged' }) });
+    assert.equal(result.statusCode, 200);
+    assert.deepEqual(JSON.parse(result.body), { success: true, message: 'Login successful', user: {
+      username: 'fixture', type, displayname_th: 'ชื่อ', displayname_en: '', email: 'fixture@tu.ac.th',
+    } });
+    assert.equal(result.headers['Cache-Control'], 'no-store');
+    assert.equal(calls, 1);
+  }
+});
+
+test('TU false rejects credentials; malformed status/type/profile never authenticates', async () => {
+  const cases = [
+    [{ status: false, message: 'provider-private' }, 401, 'INVALID_CREDENTIALS'],
+    ...[null, [], {}, { status: 'true', type: 'student' }, { status: true },
+      { status: true, type: 'unknown' }, { status: true, type: 'employee', email: {} }]
+      .map(body => [body, 502, 'AUTH_PROVIDER_INVALID_RESPONSE']),
+  ];
+  for (const [body, status, code] of cases) {
+    const result = await (await load('tuAuthLogin', { env: tuEnv, fetch: async () => provider(body) }))(request);
+    assert.equal(result.statusCode, status);
+    assert.deepEqual(JSON.parse(result.body).success, false);
+    assert.equal(JSON.parse(result.body).code, code);
+    assert.equal(JSON.parse(result.body).user, undefined);
+    assert.equal(result.body.includes('provider-private'), false);
+  }
+});
+
+test('TU HTTP/config/quota/network/JSON errors are bounded, sanitized and never retried', async () => {
+  const cases = [
+    [async () => provider({}, 401), 503, 'AUTH_CONFIGURATION_UNAVAILABLE'],
+    [async () => provider({}, 403), 503, 'AUTH_CONFIGURATION_UNAVAILABLE'],
+    [async () => provider({}, 400), 502, 'AUTH_PROVIDER_INVALID_RESPONSE'],
+    [async () => provider({}, 503), 503, 'AUTH_PROVIDER_UNAVAILABLE'],
+    [async () => provider({}, 429, '99999'), 429, 'RATE_LIMITED', '300'],
+    [async () => provider({}, 429, 'unsafe'), 429, 'RATE_LIMITED', '60'],
+    [async () => { throw new Error('fixture-key fixture-password provider-private'); }, 503, 'AUTH_PROVIDER_UNAVAILABLE'],
+    [async () => ({ ok: true, status: 200, json: async () => { throw new Error('provider-private'); } }),
+      502, 'AUTH_PROVIDER_INVALID_RESPONSE'],
+  ];
+  for (const [fetchImpl, status, code, retryAfter] of cases) {
+    let calls = 0;
+    const logs = [];
+    const result = await (await load('tuAuthLogin', { env: tuEnv,
+      console: { error: (...args) => logs.push(args.join(' ')) },
+      fetch: (...args) => { calls++; return fetchImpl(...args); } }))(request);
+    assert.equal(result.statusCode, status);
+    assert.equal(JSON.parse(result.body).code, code);
+    assert.equal(result.headers['Retry-After'], retryAfter);
+    assert.equal(calls, 1);
+    for (const secret of ['fixture-key', 'fixture-password', 'provider-private']) {
+      assert.equal(JSON.stringify([result, logs]).includes(secret), false);
+    }
+  }
+});
+
+test('TU deadline covers fetching and body reading, aborts and does not retry', async () => {
+  for (const hangOnBody of [false, true]) {
+    let signal, calls = 0;
+    const handler = await load('tuAuthLogin', { factory: { env: tuEnv, timeoutMs: 10,
+      fetchImpl: async (_, init) => {
+        calls++;
+        signal = init.signal;
+        if (hangOnBody) return { ok: true, status: 200, json: () => new Promise(() => {}) };
+        return new Promise(() => {});
+      } } });
+    const result = await handler(request);
+    assert.equal(result.statusCode, 503);
+    assert.equal(JSON.parse(result.body).code, 'AUTH_PROVIDER_UNAVAILABLE');
+    assert.equal(signal.aborted, true);
+    assert.equal(calls, 1);
+  }
 });

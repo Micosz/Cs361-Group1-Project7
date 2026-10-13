@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mock user สำหรับ #81</title>
+<style>body{font:16px system-ui;max-width:950px;margin:40px auto;padding:0 20px;background:#f6f7f9;color:#1e293b}section{background:white;padding:20px;margin:20px 0;border:1px solid #d8dee8;border-radius:10px}button,select{font:inherit;padding:9px;margin:4px}button{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf1f7;padding:16px}td,th{padding:8px;text-align:left;vertical-align:top}code{overflow-wrap:anywhere}a{margin-right:16px}#status{min-height:24px}</style>
+<script src="/assets/auth-config.js" defer></script><script src="/assets/auth-client.js" defer></script><script src="/mock.js" defer></script></head>
+<body><h1>ลองใช้งานด้วย mock user</h1>
+<p>สำหรับ #81 ในเครื่องเท่านั้น ข้อมูลทุกอย่างเป็นข้อมูลสมมติ ไม่เรียก TU หรือ AWS รีสตาร์ตคำสั่งเพื่อเริ่มใหม่</p>
+<section><h2>1. เลือกบัญชี</h2><label for="account">ผู้ใช้จำลอง</label> <select id="account"></select>
+<button id="login">เข้าสู่ระบบบัญชีนี้</button><button id="logout">ออกจากระบบ / ผู้ไม่ Login</button>
+<p id="status" role="status">กำลังโหลดบัญชี</p>
+<a href="/index.html" target="_blank" rel="noopener">ดูเมนูหน้าเว็บเดิม</a><a href="/workspace.html" target="_blank" rel="noopener">เปิดพื้นที่ผู้ใช้ / จัดการบทบาท</a>
+<p>ทุกแท็บใน browser เดียวกันใช้ Session เดียวกัน สลับบัญชีที่นี่แล้วกลับไปแท็บเว็บเพื่อดูเมนู หากต้องลองผู้ใช้สองคนพร้อมกันใช้ browser คนละตัวหรือหน้าต่างส่วนตัว</p>
+<details><summary>ดูรหัสผู้ใช้สำหรับลองมอบหมายบทบาท</summary><table><thead><tr><th>บัญชี</th><th>รหัสผู้ใช้ภายใน</th></tr></thead><tbody id="users"></tbody></table></details>
+</section>
+<section><h2>2. สถานะ Session ปัจจุบัน</h2><button id="refresh">อ่านสถานะใหม่</button><pre id="session">ยังไม่มีข้อมูล</pre></section>
+<section><h2>3. ลองอ่านข้อมูลภายในจำลอง</h2>
+<p>ใช้ตัวตรวจสิทธิ์ #79 จริง นักศึกษา A/B ควรเห็นเฉพาะรายการตนเอง เจ้าหน้าที่เห็นใน scope ผู้บริหารอ่านได้แต่ไม่เห็น supportingInfo ผู้ไม่มีบทบาทถูกปฏิเสธ</p>
+<button data-api="/me/exchanges">My Exchange</button><button data-api="/exchanges">รายการ Exchange</button>
+<button data-api="/exchanges/exchange-a">รายการของ A</button><button data-api="/exchanges/exchange-b">รายการของ B</button><button data-api="/exchanges/exchange-other">รายการข้าม scope</button>
+<pre id="result">เลือกปุ่มเพื่อดูผล API ตามสิทธิ์</pre>
+<p>ส่วนนี้เป็นตัวดูผลทดสอบ ไม่ใช่หน้าธุรกิจจริง รองรับอ่านข้อมูลจำลองและมอบ/ถอนบทบาทผ่านพื้นที่ผู้ใช้เท่านั้น ไม่จำลองการเขียนข้อมูลธุรกิจหรือเอกสาร</p></section>
+</body></html>

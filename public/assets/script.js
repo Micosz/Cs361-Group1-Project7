@@ -78,6 +78,7 @@ function fetchPartnersData() {
         partners.forEach(partner => {
             partner.collaborations = events.filter(event => {
                 if (event.partnerId === partner.id) return true;
+                if (Array.isArray(event.coHostPartnerIds) && event.coHostPartnerIds.includes(partner.id)) return true;
 
                 if (Array.isArray(event.co_hosts)) {
                     return event.co_hosts.some(hostName =>
@@ -289,6 +290,77 @@ function getColorClass(type) {
     }
 }
 
+function formatActivityDate(activity) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(activity.period_date || '');
+    if (match) {
+        const [, year, month, day] = match;
+        const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
+        if (!Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === match[0]) {
+            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+                'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            return `${Number(day)} ${months[Number(month) - 1]} ${String(Number(year) + 543).slice(-2)}`;
+        }
+    }
+    // Preserve a source's month precision; never invent a calendar day.
+    if (activity.date_precision === 'month') {
+        return activity.period?.replace(/\b(\d{2})(\d{2})\b$/, '$2') || 'ไม่ระบุวันที่';
+    }
+    return 'ไม่ระบุวันที่';
+}
+
+// Public activity history only. Internal agreements need an authorized read API first.
+function buildPartnerActivityHistory(partnerId, activities) {
+    const seen = new Set();
+    return activities.filter(activity => {
+        if (!activity || typeof activity.id !== 'string' || !activity.id || seen.has(activity.id)) return false;
+        const flags = [activity.visibility, activity.access_level, activity.publication].filter(value => value !== undefined);
+        if (!flags.includes('public') || flags.some(value => value !== 'public')) return false;
+        if (activity.entityType && activity.entityType !== 'activity') return false;
+        if (activity.partnerId !== partnerId && !(Array.isArray(activity.coHostPartnerIds) && activity.coHostPartnerIds.includes(partnerId))) return false;
+        seen.add(activity.id);
+        return true;
+    }).map(activity => {
+        const raw = activity.periodDate ?? activity.period_date;
+        const parsed = typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)
+            ? new Date(`${raw}T00:00:00Z`) : null;
+        const date = parsed && !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === raw ? raw : null;
+        return { sourceId: activity.id, kind: 'activity', label: activity.title || 'กิจกรรม', date,
+            dateLabel: date ? formatActivityDate({period_date: date}) : formatActivityDate(activity) };
+    }).sort((a, b) => {
+        if (a.date !== b.date) return a.date === null ? 1 : b.date === null ? -1 : b.date.localeCompare(a.date);
+        return a.sourceId < b.sourceId ? -1 : a.sourceId > b.sourceId ? 1 : 0;
+    });
+}
+
+function renderPartnerActivityHistory(container, partnerId, activities) {
+    const heading = document.createElement('h3');
+    heading.textContent = 'ประวัติความร่วมมือ';
+    container.appendChild(heading);
+    const entries = buildPartnerActivityHistory(partnerId, activities);
+    if (!entries.length) {
+        const empty = document.createElement('p');
+        empty.textContent = 'ยังไม่มีกิจกรรมสาธารณะที่เชื่อมกับคู่ความร่วมมือนี้';
+        container.appendChild(empty);
+        return;
+    }
+    const list = document.createElement('ol');
+    list.className = 'partner-history';
+    for (const entry of entries) {
+        const row = document.createElement('li');
+        const date = document.createElement(entry.date ? 'time' : 'span');
+        date.textContent = entry.dateLabel;
+        if (entry.date) date.dateTime = entry.date;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = entry.label;
+        button.addEventListener('click', () => openModal(entry.sourceId, 'activity'));
+        row.appendChild(date);
+        row.appendChild(button);
+        list.appendChild(row);
+    }
+    container.appendChild(list);
+}
+
 // สร้างการ์ดหน้า Collaborator
 async function renderCollaboratorCards() {
     const container = document.getElementById('collaboratorGrid');
@@ -377,9 +449,7 @@ async function renderEventCards() {
             : `<h2 style="color:white; font-size:1.5rem; text-align:center; padding:0 1.5rem; margin: auto;">${activity.title}</h2>`;
 
         // --- เช็คผู้จัดร่วม (co_hosts) ---
-        const hostNames = (activity.co_hosts && activity.co_hosts.length > 0)
-            ? activity.co_hosts.join(' และ ') 
-            : activity.partnerName;
+        let hostNames = generatePartnerLinks(activity.co_hosts, activity.partnerName, activity.partnerId);
 
         return `
             <div class="card" id="${activity.id}" onclick="openModal('${activity.id}', 'activity')">
@@ -391,7 +461,7 @@ async function renderEventCards() {
                     <p class="card-desc">${activity.summary}</p>
                     <div class="card-footer">
                         <div class="author"><span class="author-name">${hostNames}</span></div>
-                        <div class="stats">${activity.period}</div>
+                        <div class="stats event-date">${formatActivityDate(activity)}</div>
                     </div>
                 </div>
             </div>
@@ -527,7 +597,7 @@ async function openModal(id, type) {
                     <p class="card-desc" style="font-size: 0.85rem; margin-bottom: 0.5rem;">${collab.summary}</p>
                     <div class="card-footer" style="font-size: 0.8rem; border-top: 1px solid #eee; padding-top: 0.5rem; display: flex; justify-content: space-between;">
                         <span class="author-name" style="color: #666;">${partnerName}</span>
-                        <span class="stats" style="color: #999;">${collab.period}</span>
+                        <span class="stats event-date" style="color: #999;">${formatActivityDate(collab)}</span>
                     </div>
                 </div>
             </div>
@@ -547,31 +617,18 @@ async function openModal(id, type) {
             modalImage.style.display = 'none';
         }
 
-        const partnerDetailText = data.full_description ? data.full_description : data.summary;
-        let detailsHTML = `<p style="font-weight: bold; font-size: 1.1em; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.6;">${partnerDetailText}</p>`;
-        
-        // แปลง List เป็น Grid Cards
-        if (data.collaborations && data.collaborations.length > 0) {
-            const publicCollabs = data.collaborations.filter(isPublicRecord);
-            if(publicCollabs.length > 0) {
-                detailsHTML += `<h3 style="margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">ความร่วมมือและกิจกรรม</h3>`;
-                // สร้าง Grid ขนาดย่อมใน Modal
-                detailsHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">`;
-                publicCollabs.forEach(collab => {
-                    detailsHTML += createMiniCardHTML(collab, data.name);
-                });
-                detailsHTML += `</div>`;
-            }
-        }
-        modalDetails.innerHTML = detailsHTML;
+        const partnerDetailText = data.full_description || data.summary || '';
+        // Keep the existing source-backed description and evidence links.
+        modalDetails.innerHTML = `<p style="font-weight: bold; font-size: 1.1em; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.6;">${partnerDetailText}</p>`;
+        renderPartnerActivityHistory(modalDetails, data.id, allActivities);
 
     } else {
         // --- 2. ส่วนของ Activity (แสดง Event อื่นๆ ของบริษัทเดียวกัน) ---
-        const hostNames = (data.co_hosts && data.co_hosts.length > 0) ? data.co_hosts.join(' และ ') : data.partnerName;
+        let hostNames = generatePartnerLinks(data.co_hosts, data.partnerName, data.partnerId);
 
         document.getElementById('modalTitle').textContent = data.title;
-        document.getElementById('modalName').textContent = hostNames;
-        document.getElementById('modalInfo').textContent = data.period || data.type.toUpperCase();
+        document.getElementById('modalName').innerHTML = hostNames;
+        document.getElementById('modalInfo').textContent = formatActivityDate(data);
         
         if (data.image_path) {
             modalImage.style.backgroundImage = `url('${data.image_path}')`;
@@ -598,6 +655,11 @@ async function openModal(id, type) {
         modalDetails.innerHTML = detailsHTML;
     }
 
+    if (window.CstuWork) {
+        const actions = document.createElement('div');
+        modalDetails.appendChild(actions);
+        window.CstuWork.attachDetailAction(actions, type === 'partner' ? 'partners' : 'activities', data.id);
+    }
     document.getElementById('detailModal').style.display = 'flex';
 }
 
@@ -628,10 +690,18 @@ function filterBrowseRecords(records, field, selectId, searchKeyword = browseKey
         typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) &&
         (!start || day >= start) && (!end || day <= end)
     );
+    const matchesType = record => {
+        const hasMoU = Array.isArray(record.activity_tags) && record.activity_tags.includes('mou');
+        if (selectId === 'filterEvent' && type === 'mou') return hasMoU;
+        if (selectId === 'filterEvent' && type === 'academic_activity') {
+            return record.type === type && !hasMoU;
+        }
+        return type === 'all' || record.type === type;
+    };
     // V2 specifies name/title search; suggestions and cards share these rules.
     // Preserve dates, co_hosts and relationships from the data source.
     return records.filter(record =>
-        (type === 'all' || record.type === type) &&
+        matchesType(record) &&
         String(record[field] ?? '').toLowerCase().includes(keyword) &&
         // Compare the stored calendar day directly, without timezone conversion.
         ((!start && !end) || (selectId === 'filterCollab'
@@ -758,3 +828,75 @@ function adjustSelectWidth(selectElement) {
 }
 
 document.addEventListener('DOMContentLoaded', initBrowseFilters);
+
+/**
+ * ฟังก์ชันสำหรับเปิด Popup คู่ความร่วมมือเมื่อคลิกลิงก์บนการ์ดกิจกรรม
+ * @param {Event} event - Event object จากการคลิก
+ * @param {string} partnerId - ID ของคู่ความร่วมมือที่จะเปิด
+ */
+function handlePartnerClick(event, partnerId) {
+    // ป้องกันการ Reload หรือ Redirect หน้าเว็บ
+    event.preventDefault();
+    
+    // ป้องกันไม่ให้ Event ทะลุไปทริกเกอร์ OnClick ของหน้าการ์ดหลัก
+    event.stopPropagation();
+    
+    // เรียกฟังก์ชันเปิด Popup ที่มีอยู่แล้วใน V1 (detailModal)
+    if (partnerId) {
+        openModal(partnerId, 'partner');
+    } else {
+        console.warn("ไม่พบ partnerId สำหรับเปิด Popup");
+    }
+}
+
+
+/**
+ * ฟังก์ชันสำหรับสร้างลิงก์ชื่อบริษัท โดยแยกกดทีละบริษัทได้ถ้ามีหลายอัน
+ */
+function escapePartnerLinkText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[char]));
+}
+
+function generatePartnerLinks(coHosts, partnerName, partnerId) {
+    const link = (name, id) => {
+        const label = escapePartnerLinkText(name);
+        if (!id) return label;
+        const encodedId = escapePartnerLinkText(encodeURIComponent(id));
+        return `<a class="partner-link" href="#partner-${encodedId}" data-partner-id="${encodedId}" onclick="handlePartnerClick(event, decodeURIComponent(this.dataset.partnerId))">${label}&nbsp;<span class="icon" aria-hidden="true">&#x2197;</span></a>`;
+    };
+    const hosts = Array.isArray(coHosts)
+        ? coHosts.filter(name => typeof name === 'string' && name.trim()) : [];
+    if (hosts.length) {
+        return hosts.map(name => {
+            const matches = (partnersDataCache || []).filter(partner =>
+                (typeof partner.name === 'string' && partner.name.includes(name)) ||
+                (typeof partner.short_name === 'string' && partner.short_name.includes(name))
+            );
+            // Ambiguous legacy names remain text rather than opening the wrong partner.
+            return link(name, matches.length === 1 ? matches[0].id : null);
+        }).join(' และ ');
+    }
+    return link(partnerName, partnerId);
+}
+
+async function checkAgreementEntryVisibility() {
+    const btn = document.getElementById('btnOpenAgreements');
+    if (!btn) return;
+    if (!window.CstuAuth?.enabled()) {
+        btn.style.display = 'none';
+        return;
+    }
+    try {
+        const session = await window.CstuAuth.refresh();
+        const roles = window.CstuAuth.roles(session);
+        const canManage = roles.some(r => ['coordinator', 'staff'].includes(r));
+        btn.style.display = canManage ? 'inline-block' : 'none';
+    } catch {
+        btn.style.display = 'none';
+    }
+}
+window.addEventListener('authchange', checkAgreementEntryVisibility);
+window.addEventListener('pageshow', checkAgreementEntryVisibility);
+document.addEventListener('DOMContentLoaded', checkAgreementEntryVisibility);

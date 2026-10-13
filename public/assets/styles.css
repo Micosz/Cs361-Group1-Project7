@@ -166,6 +166,7 @@ main { flex: 1; }
 .author { flex: 1 1 130px; min-width: 0; }
 .author-name { display: block; font-size: 0.8125rem; line-height: 1.7; color: var(--text-gray); overflow-wrap: anywhere; }
 .stats { font-size: 0.8125rem; color: var(--text-light); font-variant-numeric: tabular-nums; line-height: 1.7; overflow-wrap: anywhere; }
+.card-footer .event-date { flex: 0 0 auto; white-space: nowrap; }
 .grid > [role="status"] { padding: 32px 24px; background: var(--bg-gray); border: 1px solid var(--border-color); border-radius: var(--radius-card); color: var(--text-gray); }
 .site-footer { padding: 28px 0; margin-top: 16px; border-top: 1px solid var(--border-color); background: var(--bg-gray); }
 .footer-content { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
@@ -246,3 +247,35 @@ main { flex: 1; }
     .main-image { height: 200px; }
     .details-section > div { grid-template-columns: minmax(0, 1fr) !important; }
 }
+
+/* =========================================
+   สไตล์ลิงก์คู่ความร่วมมือ
+   ========================================= */
+.partner-link {
+  color: var(--text-gray);
+  text-decoration: underline;
+  cursor: pointer;
+  display: inline;
+  transition: color 0.2s ease-in-out;
+}
+
+.partner-link:hover {
+  color: var(--tu-red);
+}
+
+.partner-link .icon {
+  font-size: 0.85em;
+  line-height: inherit;
+  vertical-align: baseline;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Partner detail: compact chronological public activity links. */
+.partner-history { list-style: none; padding: 0; margin: 1rem 0; }
+.partner-history li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: .75rem; padding: .75rem 0; border-bottom: 1px solid #e5e7eb; align-items: baseline; }
+.partner-history time, .partner-history li > span { color: #666; font-size: .85rem; }
+.partner-history button { font: inherit; text-align: left; color: var(--text-dark, #222); background: transparent; border: 0; padding: .25rem; cursor: pointer; overflow-wrap: anywhere; }
+.partner-history button:hover { text-decoration: underline; }
+.partner-history button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+@media (max-width: 480px) { .partner-history li { grid-template-columns: 1fr; gap: .2rem; } }
