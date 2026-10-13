@@ -62,12 +62,21 @@ function invalidateSelection() {
     document.getElementById('confirm-identity').checked = false;
 }
 
+async function allWorkspaceRows(path) {
+    const data = []; let cursor = null;
+    do {
+        const result = await window.CstuAuth.request(path + '?limit=100' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
+        data.push(...result.data); cursor = result.page?.nextCursor;
+    } while (cursor);
+    return {data};
+}
+
 async function loadExchanges() {
     if (!exchangeSection || exchangeSection.hidden) return;
     exchangeListStatus.textContent = 'กำลังโหลดโครงการแลกเปลี่ยน...';
     exchangeList.replaceChildren();
     try {
-        const res = await window.CstuAuth.request('/exchanges');
+        const res = await allWorkspaceRows('/exchanges');
         const exchanges = res.data || [];
         if (!exchanges.length) {
             exchangeListStatus.textContent = 'ไม่พบโครงการแลกเปลี่ยนในขอบเขตของคุณ';
@@ -172,7 +181,7 @@ async function openMyExchangeDetail(ex) {
 
     // Fetch documents for participants
     try {
-        const docRes = await window.CstuAuth.request('/me/exchanges/' + encodeURIComponent(ex.id) + '/documents');
+        const docRes = await allWorkspaceRows('/me/exchanges/' + encodeURIComponent(ex.id) + '/documents');
         const docs = docRes.data || [];
         if (!docs.length) {
             myExchangeDetailDocsStatus.textContent = 'ไม่มีเอกสารแนบสำหรับผู้เข้าร่วม';
@@ -212,7 +221,7 @@ async function loadMyExchanges() {
     myExchangeStatus.textContent = 'กำลังโหลดโครงการแลกเปลี่ยนของคุณ...';
     myExchangeList.replaceChildren();
     try {
-        const res = await window.CstuAuth.request('/me/exchanges');
+        const res = await allWorkspaceRows('/me/exchanges');
         const exchanges = res.data || [];
         if (!exchanges.length) {
             myExchangeStatus.textContent = 'ไม่พบโครงการแลกเปลี่ยนที่คุณเข้าร่วม';

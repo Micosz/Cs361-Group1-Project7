@@ -614,6 +614,11 @@ async function openModal(id, type) {
         modalDetails.innerHTML = detailsHTML;
     }
 
+    if (window.CstuWork) {
+        const actions = document.createElement('div');
+        modalDetails.appendChild(actions);
+        window.CstuWork.attachDetailAction(actions, type === 'partner' ? 'partners' : 'activities', data.id);
+    }
     document.getElementById('detailModal').style.display = 'flex';
 }
 
