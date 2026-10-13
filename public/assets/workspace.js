@@ -39,7 +39,7 @@ async function refreshWorkspace() {
             const option = document.createElement('option'); option.value = id; option.textContent = id; scope.append(option);
         }
         openRoles.hidden = !managed.length;
-        const canAgreement = roles.some(r => ['coordinator', 'staff', 'executive'].includes(r));
+        const canAgreement = roles.some(r => ['coordinator', 'staff'].includes(r));
         if (openAgreements) {
             openAgreements.hidden = !canAgreement;
             openAgreements.onclick = () => {

@@ -51,6 +51,8 @@ class AgreementRepository:
             if u:
                 return u
         user_prop = getattr(users, 'user', None)
+        if callable(user_prop):
+            return user_prop(user_id)
         if user_prop and user_prop.user_id == user_id:
             return user_prop
         return None

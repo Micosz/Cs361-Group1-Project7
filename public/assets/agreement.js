@@ -14,6 +14,8 @@
     let currentMode = 'detail'; // 'detail' | 'form'
     let lastActiveElement = null;
     let isSaving = false;
+    let onSaved = () => {};
+    let createSubmission = null;
 
     function ensureDialog() {
         if (dialog) return dialog;
@@ -153,6 +155,7 @@
         docsPlaceholder.style.color = 'var(--text-light, #646464)';
         docsSec.append(docsHeading, docsPlaceholder);
         content.appendChild(docsSec);
+        if (window.DocumentComponent) window.DocumentComponent.mount(docsSec, 'agreement', agreement);
 
         dlg.appendChild(content);
 
@@ -175,7 +178,10 @@
         closeBtn.textContent = 'ปิด';
         closeBtn.onclick = close;
 
-        actions.append(editBtn, closeBtn);
+        const session = window.CstuAuth?.state?.();
+        const canEdit = (session?.grants || []).some(g => g.active !== false && g.scopeId === agreement.scopeId && (g.role === 'staff' || (g.role === 'coordinator' && agreement.responsibleUserIds?.includes(session.user?.id))));
+        if (canEdit) actions.append(editBtn);
+        actions.append(closeBtn);
         dlg.appendChild(actions);
 
         currentMode = 'detail';
@@ -205,6 +211,7 @@
             currentAgreement = res.data;
             currentVersion = res.data.version;
             renderDetail(res.data);
+            onSaved();
             return res.data;
         } catch (err) {
             const status = err.status;
@@ -287,6 +294,10 @@
         badgeSpan.textContent = badgeInfo.label;
         badgeP.append(badgeLabelStrong, badgeSpan);
         container.appendChild(badgeP);
+
+        const session = window.CstuAuth?.state?.();
+        const canEdit = (session?.grants || []).some(g => g.active !== false && g.scopeId === agreement.scopeId && (g.role === 'staff' || (g.role === 'coordinator' && agreement.responsibleUserIds?.includes(session.user?.id))));
+        if (!canEdit) return;
 
         if (st === 'draft') {
             const draftActions = document.createElement('div');
@@ -583,16 +594,9 @@
         form.appendChild(createField('agreement-form-internal-note', 'บันทึกภายใน', internalNoteInput));
 
         // Responsible Users (Staff can assign/reassign; Coordinator cannot)
-        let isStaff = true;
-        try {
-            const authState = window.CstuAuth?.state ? window.CstuAuth.state() : null;
-            const currentRoles = (authState && window.CstuAuth?.roles) ? window.CstuAuth.roles(authState) : [];
-            if (currentRoles.length > 0 && !currentRoles.includes('staff')) {
-                isStaff = false;
-            }
-        } catch {
-            isStaff = true;
-        }
+        const authState = window.CstuAuth?.state?.();
+        const isStaff = (authState?.grants || []).some(g => g.active !== false && g.role === 'staff'
+            && (!agreement?.scopeId || g.scopeId === agreement.scopeId));
 
         let respInput = null;
         if (isStaff) {
@@ -706,11 +710,14 @@
 
             try {
                 if (isCreate) {
-                    const idemKey = 'idem-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+                    const fingerprint = JSON.stringify(payload);
+                    if (createSubmission?.fingerprint !== fingerprint) createSubmission = {fingerprint, key: 'idem-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10)};
+                    const idemKey = createSubmission.key;
                     const res = await window.CstuAuth.create('/agreements', payload, idemKey);
                     currentAgreement = res.data;
                     currentVersion = res.data.version;
                     renderDetail(res.data);
+                    onSaved();
                 } else {
                     const res = await window.CstuAuth.mutate(
                         '/agreements/' + encodeURIComponent(agreement.id),
@@ -720,6 +727,7 @@
                     currentAgreement = res.data;
                     currentVersion = res.data.version;
                     renderDetail(res.data);
+                    onSaved();
                 }
             } catch (err) {
                 const status = err.status;
@@ -780,6 +788,7 @@
         if (!dlg.open) dlg.showModal();
 
         try {
+            await window.CstuAuth.refresh();
             const res = await window.CstuAuth.request('/agreements/' + encodeURIComponent(id));
             currentAgreement = res.data;
             currentVersion = res.data.version;
@@ -798,6 +807,7 @@
         lastActiveElement = document.activeElement;
         currentAgreement = null;
         currentVersion = null;
+        createSubmission = null;
         renderForm();
         if (scopeId) {
             const scopeField = document.getElementById('agreement-form-scope');
@@ -822,6 +832,13 @@
         renderForm,
         changeStatus: (id, payload, ver) => doChangeStatus(id, payload, ver || currentVersion),
         close,
+        setReload: callback => { onSaved = callback || (() => {}); },
     };
+    if (window.CstuWork) window.CstuWork.register('agreements', {
+        create: ({session, reload}) => { onSaved = reload; openCreate(session.grants.find(g => g.active !== false && ['staff','coordinator'].includes(g.role))?.scopeId); },
+        edit: ({record, reload}) => { onSaved = reload; currentAgreement = record; currentVersion = record.version; renderForm(record); },
+        status: ({record, reload}) => { onSaved = reload; return openDetail(record.id); },
+        documents: ({record}) => openDetail(record.id)
+    });
 })();
 
