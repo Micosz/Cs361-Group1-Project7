@@ -8,7 +8,7 @@ persistent scoped storage and atomic user/session/target/parent/reference checks
 
 import base64
 import copy
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import threading
 import time
 import uuid
@@ -254,7 +254,7 @@ class ExchangeRepository(PartnerRepository):
                 # - draft/ongoing -> cancelled: reason required
                 # - draft -> draft / ongoing -> ongoing: valid
                 # - completed / cancelled cannot transition to other statuses (INVALID_TRANSITION 409)
-                today_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+                today_str = datetime.fromtimestamp(self.clock(), timezone(timedelta(hours=7))).strftime('%Y-%m-%d')
                 if current_status == 'draft' and to_status == 'ongoing':
                     # Verify required fields for ongoing
                     if not record.get('partnerIds') or not record.get('responsibleUserIds'):
@@ -282,6 +282,10 @@ class ExchangeRepository(PartnerRepository):
             else:
                 is_create = (action == 'create')
                 validate_exchange_payload(payload, is_create=is_create)
+                combined = dict(record or {}, **payload)
+                start, end = combined.get('startDate'), combined.get('endDate')
+                if start is not None and end is not None and start > end:
+                    raise AuthError('INVALID_FIELDS', 422)
 
                 # Verify partnerIds reference valid partners in same scope
                 partner_ids = payload.get('partnerIds') or (record.get('partnerIds') if record else [])
@@ -306,6 +310,8 @@ class ExchangeRepository(PartnerRepository):
                     u = getattr(self.service.users, 'user', None)
                     if callable(u):
                         return u(uid)
+                    if hasattr(self.service.users, 'get'):
+                        return self.service.users.get(uid)
                     if hasattr(self.service.users, 'store'):
                         return self.service.users.store.user(uid)
                     return None

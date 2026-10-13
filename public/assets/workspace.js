@@ -9,6 +9,8 @@ const roleStatus = document.getElementById('role-status');
 let version = null, selectedTarget = null, selectedScope = null;
 let userRoles = [];
 let currentSubmissionKey = null;
+let submissionFingerprint = null;
+let embeddedActionOpened = false;
 
 const exchangeSection = document.getElementById('exchange-section');
 const openAddExchange = document.getElementById('open-add-exchange');
@@ -73,7 +75,7 @@ async function loadExchanges() {
         exchangeListStatus.textContent = '';
         const session = await window.CstuAuth.refresh();
         const currentUserId = session?.user?.id;
-        const isStaff = userRoles.includes('staff');
+        const isStaff = (session.grants || []).some(g => g.role === 'staff' && g.active !== false);
 
         for (const ex of exchanges) {
             const card = document.createElement('div');
@@ -107,7 +109,8 @@ async function loadExchanges() {
                 card.appendChild(infoEl);
             }
 
-            const canEdit = isStaff || (userRoles.includes('coordinator') && (ex.responsibleUserIds || []).includes(currentUserId));
+            const scopedRoles = (session.grants || []).filter(g => g.active !== false && g.scopeId === ex.scopeId).map(g => g.role);
+            const canEdit = scopedRoles.includes('staff') || (scopedRoles.includes('coordinator') && (ex.responsibleUserIds || []).includes(currentUserId));
             if (canEdit && exchangeDialog) {
                 const actions = document.createElement('div');
                 actions.style.marginTop = '0.75rem';
@@ -300,7 +303,7 @@ function openAddExchangeDialog(scopes) {
     if (exchangeStatusSection) exchangeStatusSection.hidden = true;
 
     currentSubmissionKey = 'ex-key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-    exchangeDialog.showModal();
+    if (!exchangeDialog.open) exchangeDialog.showModal();
 }
 
 function openEditExchange(ex) {
@@ -341,7 +344,12 @@ function openEditExchange(ex) {
     }
 
     currentSubmissionKey = null;
-    exchangeDialog.showModal();
+    if (window.DocumentComponent) {
+        let docs = document.getElementById('exchange-documents');
+        if (!docs) { docs = document.createElement('section'); docs.id = 'exchange-documents'; exchangeDialog.appendChild(docs); }
+        window.DocumentComponent.mount(docs, 'exchange', ex);
+    }
+    if (!exchangeDialog.open) exchangeDialog.showModal();
 }
 
 async function refreshWorkspace() {
@@ -372,9 +380,10 @@ async function refreshWorkspace() {
         openRoles.hidden = !managed.length;
 
         // Exchange section handling
-        const activeScopes = [...new Set((session.grants || []).filter(g => g.active).map(g => g.scopeId))];
+        const activeScopes = [...new Set((session.grants || []).filter(g => g.active !== false && ['coordinator','staff'].includes(g.role)).map(g => g.scopeId))];
+        const readScopes = (session.grants || []).filter(g => g.active !== false).map(g => g.scopeId);
         const canManageExchanges = userRoles.some(r => ['coordinator', 'staff', 'executive'].includes(r));
-        if (exchangeSection && canManageExchanges && activeScopes.length) {
+        if (exchangeSection && canManageExchanges && readScopes.length) {
             exchangeSection.hidden = false;
             const canAdd = userRoles.some(r => ['coordinator', 'staff'].includes(r));
             if (openAddExchange) {
@@ -384,9 +393,18 @@ async function refreshWorkspace() {
             await loadExchanges();
         }
 
+        const query = new URLSearchParams(window.location.search);
+        if (query.get('embed') === 'exchange' && !embeddedActionOpened) {
+            embeddedActionOpened = true;
+            if (query.get('id')) {
+                const fresh = (await window.CstuAuth.request('/exchanges/' + encodeURIComponent(query.get('id')))).data;
+                openEditExchange(fresh);
+            } else if (activeScopes.length) openAddExchangeDialog(activeScopes);
+        }
+
         // My Exchange section handling (students)
         const isStudent = userRoles.includes('student');
-        if (myExchangeSection && isStudent && activeScopes.length) {
+        if (myExchangeSection && isStudent && readScopes.length) {
             myExchangeSection.hidden = false;
             await loadMyExchanges();
         }
@@ -469,15 +487,13 @@ if (exchangeForm) {
         }
 
         const participants = parseCsv(exchangeParticipantUsers.value);
-        if (participants.length) {
-            payload.participantUserIds = participants;
-        }
+        payload.participantUserIds = participants;
 
-        if (exchangeSupportingInfo.value.trim()) {
+        if (true) {
             payload.supportingInfo = exchangeSupportingInfo.value.trim();
         }
 
-        if (exchangeSupportingInfoParticipant.value.trim()) {
+        if (true) {
             payload.supportingInfoForParticipant = exchangeSupportingInfoParticipant.value.trim();
         }
 
@@ -488,6 +504,12 @@ if (exchangeForm) {
             }
         }
 
+        if (exchangeSubmitBtn.disabled) return;
+        const fingerprint = JSON.stringify(payload);
+        if (isCreate && submissionFingerprint !== fingerprint) {
+            submissionFingerprint = fingerprint;
+            currentSubmissionKey = 'ex-key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        }
         exchangeSubmitBtn.disabled = true;
         exchangeStatus.textContent = 'กำลังบันทึกข้อมูล...';
 
@@ -499,6 +521,7 @@ if (exchangeForm) {
             }
             exchangeDialog.close();
             await loadExchanges();
+            if (window.parent !== window) window.parent.postMessage({type:'exchange-saved'}, window.location.origin);
         } catch (error) {
             exchangeSubmitBtn.disabled = false;
             if (error.status === 401) {
@@ -509,7 +532,10 @@ if (exchangeForm) {
                 exchangeStatus.textContent = 'ข้อมูลถูกแก้ไขโดยผู้อื่นแล้ว (Version Conflict) กำลังโหลดข้อมูลล่าสุด...';
                 try {
                     const fresh = await window.CstuAuth.request('/exchanges/' + encodeURIComponent(exchangeId.value));
-                    if (fresh?.data) openEditExchange(fresh.data);
+                    if (fresh?.data) {
+                        const reload = document.createElement('button'); reload.type = 'button'; reload.textContent = 'โหลดข้อมูลล่าสุดเพื่อตรวจทาน';
+                        reload.onclick = () => openEditExchange(fresh.data); exchangeStatus.appendChild(reload);
+                    }
                 } catch {
                     exchangeStatus.textContent = 'โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณาลองใหม่';
                 }
@@ -548,6 +574,8 @@ async function handleStatusTransition(toStatus) {
     if (reason) payload.reason = reason.trim();
     if (suppInfo) payload.supportingInfo = suppInfo.trim();
 
+    if (exchangeSubmitBtn.disabled) return;
+    exchangeSubmitBtn.disabled = true;
     exchangeStatus.textContent = 'กำลังเปลี่ยนสถานะ...';
     try {
         const session = await window.CstuAuth.refresh();
@@ -561,6 +589,7 @@ async function handleStatusTransition(toStatus) {
         });
         exchangeDialog.close();
         await loadExchanges();
+        if (window.parent !== window) window.parent.postMessage({type:'exchange-saved'}, window.location.origin);
     } catch (error) {
         if (error.status === 401) {
             window.location.replace('login.html');
@@ -579,7 +608,7 @@ async function handleStatusTransition(toStatus) {
         } else {
             exchangeStatus.textContent = error.message || 'เปลี่ยนสถานะไม่สำเร็จ';
         }
-    }
+    } finally { exchangeSubmitBtn.disabled = false; }
 }
 
 if (exchangeBtnOngoing) exchangeBtnOngoing.onclick = () => handleStatusTransition('ongoing');
