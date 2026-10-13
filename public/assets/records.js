@@ -54,7 +54,10 @@
         const handler = window.CstuWork.handler(kind, action);
         if (!handler) { container.textContent = 'ส่วนนี้ยังไม่พร้อมใช้งาน'; return; }
         // Handler must reauthorize reads/writes through CstuAuth; no storage fallback.
-        await handler({container, record, session, auth: window.CstuAuth, reload: load});
+        await handler({container, record, session, auth: window.CstuAuth, reload: () => {
+            if (params.get('action') === 'create') window.location.assign('records.html?kind='+kind);
+            else return load();
+        }});
     }
     async function detail(row, trigger) {
         const current = ++detailRevision, page = revision;
@@ -73,6 +76,10 @@
             for (const [field,label] of Object.entries(fields)) if (typeof record[field] === 'string') {
                 const dt = document.createElement('dt'), dd = document.createElement('dd');
                 dt.textContent = label; dd.textContent = record[field]; $('detail-fields').append(dt,dd);
+            }
+            if (['agreements','exchanges'].includes(kind) && window.DocumentComponent) {
+                const docs = document.createElement('section'); $('detail-fields').appendChild(docs);
+                window.DocumentComponent.mount(docs, kind === 'agreements' ? 'agreement' : 'exchange', record);
             }
             if (window.CstuWork.canEdit(fresh, record)) {
                 for (const [action,label] of [['edit','แก้ไข'], ...(['agreements','exchanges'].includes(kind) ? [['status','จัดการสถานะ'],['documents','จัดการเอกสาร']] : [])]) {
@@ -112,11 +119,14 @@
             if (overview) {
                 if (!roles.includes('executive')) { status('คุณไม่มีสิทธิ์ใช้งานส่วนนี้'); return; }
                 $('records-title').textContent = 'ภาพรวมความร่วมมือ'; status('กำลังโหลดภาพรวม');
-                const totals = await Promise.all(Object.entries(window.CstuWork.kinds).map(async ([name,item]) => ({name,item,result:validateList(await window.CstuAuth.request('/'+name+'?limit=1'))})));
+                const totals = (await window.CstuAuth.request('/overview')).data;
                 if (current !== revision) return;
-                for (const {name,item,result} of totals) {
+                for (const [name,item] of Object.entries(window.CstuWork.kinds)) {
+                    const result = totals[name];
                     const line = document.createElement('p'), link = document.createElement('a');
-                    link.href = 'records.html?kind='+name; link.textContent = `${item.label}: ${result.count} รายการ`; line.appendChild(link); $('records-content').appendChild(line);
+                    link.href = 'records.html?kind='+name; link.textContent = `${item.label}: ${result.count} รายการ`; line.appendChild(link);
+                    const detail = document.createElement('small'); detail.textContent = Object.entries(result.statuses).map(([state,count])=>`${state}: ${count}`).join(' · ');
+                    line.appendChild(detail); $('records-content').appendChild(line);
                 }
                 status('จำนวนเฉพาะรายการที่คุณมีสิทธิ์อ่าน'); return;
             }

@@ -47,8 +47,16 @@ def build_application():
         enabled=os.environ.get('COURSE_TEST_ENABLED') == 'true',
         configuration=os.environ.get('COURSE_TEST_ACCOUNTS', '[]'))
     accounts = CourseAccounts(AccountService(store, secret, os.environ['STUDENT_SCOPE_ID']), store)
+    repository = None
+    if os.environ.get('BUSINESS_TABLE'):
+        from .business.dynamo_repository import DynamoBusinessRepository
+        from .documents.storage import PrivateDocumentStorage
+        documents = PrivateDocumentStorage(boto3.client('s3'), os.environ['DOCUMENT_BUCKET']) if os.environ.get('DOCUMENT_BUCKET') else None
+        repository = DynamoBusinessRepository(boto3.client('dynamodb'), os.environ['BUSINESS_TABLE'],
+            sessions, os.environ['USER_TABLE'], os.environ['SESSION_TABLE'], documents,
+            index=os.environ.get('BUSINESS_SCOPE_INDEX', 'scope-entity-id'))
     return AuthApplication(sessions, provider, accounts, RoleService(store),
-        DynamoLoginLimiter(db.Table(os.environ['LOGIN_RATE_TABLE']), secret))
+        DynamoLoginLimiter(db.Table(os.environ['LOGIN_RATE_TABLE']), secret), repository)
 
 
 def handler(event, context):

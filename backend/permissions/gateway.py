@@ -117,6 +117,8 @@ class PermissionGateway:
         try:
             if event.get('version') != '2.0':
                 raise AuthError('UNSUPPORTED_EVENT', 400)
+            if event.get('rawPath') == '/api/overview':
+                return self.overview(event)
             kind, key, parent_kind, parent_key, special, mine = route(event)
             method = event.get('requestContext', {}).get('http', {}).get('method')
             action = ('status' if special == 'status' and method == 'POST' else
@@ -221,6 +223,28 @@ class PermissionGateway:
             return error_response(error.code, error.status, event)
         except Exception:
             return error_response('PERMISSION_UNAVAILABLE', 503, event)
+
+    def overview(self, event):
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        if event.get('queryStringParameters'):
+            raise AuthError('INVALID_QUERY', 422)
+        context = require_session(event, self.service)
+        executive = tuple(g for g in context.user.grants if g.get('role') == 'executive')
+        context = replace(context, user=replace(context.user, grants=executive, capabilities=()))
+        require_action(context, 'agreement', 'read')
+        if self.repository is None:
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        result = {}
+        for collection, kind in COLLECTIONS.items():
+            rows = [project(context, kind, row) for row in self.repository.list(kind, context, None)
+                    if allowed_roles(context, kind, 'read', row)]
+            states = {}
+            for row in rows:
+                if isinstance(row.get('status'), str):
+                    states[row['status']] = states.get(row['status'], 0) + 1
+            result[collection] = {'count': len(rows), 'statuses': states}
+        return self._response(event, result)
 
     def _parent(self, record, kind):
         if kind != 'document' or not record:

@@ -1,0 +1,98 @@
+"""Shared API/storage integration with explicit local AWS doubles, not deployment proof."""
+import base64
+import importlib.util
+import json
+from pathlib import Path
+import unittest
+
+from backend.auth.session_service import COOKIE_NAME
+from backend.business.dynamo_repository import DynamoBusinessRepository
+
+spec = importlib.util.spec_from_file_location('workspace_server', Path(__file__).parents[2] / 'tools/mock-auth/server.py')
+local = importlib.util.module_from_spec(spec); spec.loader.exec_module(local)
+
+
+class WorkspaceStorageTests(unittest.TestCase):
+    def setUp(self):
+        self.app, catalog = local.make_app(8765, writable=True)
+        self.ids = {entry['username']: entry['id'] for entry in catalog}
+        self.repository = self.app.repository
+        self.actor = 'staff'
+
+    def call(self, path, method='GET', data=None, version=None, key='workspace-submission-0001'):
+        service = self.app.sessions
+        issued = service._issue(service.users.get(self.ids[self.actor]))
+        headers = {'origin': service.policy.origin, 'x-csrf-token': issued.csrf_token, 'idempotency-key': key}
+        if version:
+            headers['if-match'] = '"' + str(version) + '"'
+        result = self.app.handle(dict(version='2.0', rawPath=path,
+            requestContext={'http': {'method': method}}, headers=headers,
+            cookies=[COOKIE_NAME + '=' + issued.token], body=json.dumps(data or {})))
+        return result, json.loads(result['body']) if not result.get('isBase64Encoded') else base64.b64decode(result['body'])
+
+    def create_agreement(self):
+        result, body = self.call('/api/agreements', 'POST', dict(title='ข้อตกลงทดสอบ', agreementType='MoU',
+            scopeId='cs-demo', partnerIds=['partner-demo']))
+        self.assertEqual(201, result['statusCode'], body)
+        return body['data']
+
+    def test_create_read_update_restart_retry_and_stale_version(self):
+        row = self.create_agreement()
+        self.app.repository = DynamoBusinessRepository(self.repository.client, 'business', self.app.sessions,
+            'users', 'sessions', self.repository.documents)
+        again = self.create_agreement()
+        self.assertEqual(row['id'], again['id'])
+        result, body = self.call('/api/agreements/' + row['id'], 'PATCH', {'title': 'แก้ไขแล้ว'}, version=1)
+        self.assertEqual(200, result['statusCode'], body)
+        self.assertEqual('แก้ไขแล้ว', body['data']['title'])
+        result, _ = self.call('/api/agreements/' + row['id'], 'PATCH', {'title': 'คำขอเก่า'}, version=1)
+        self.assertEqual(409, result['statusCode'])
+        self.actor = 'student-a'
+        self.assertEqual(403, self.call('/api/agreements/' + row['id'])[0]['statusCode'])
+
+    def test_private_upload_stream_participant_and_revocation(self):
+        data = dict(title='แลกเปลี่ยนทดสอบ', scopeId='cs-demo', partnerIds=['partner-demo'],
+                    participantUserIds=[self.ids['student-a']])
+        result, body = self.call('/api/exchanges', 'POST', data)
+        self.assertEqual(201, result['statusCode'], body)
+        exchange = body['data']
+        content = b'%PDF-1.4 integration fixture'
+        upload = dict(fileName='a.pdf', contentType='application/pdf', fileBase64=base64.b64encode(content).decode(),
+                      audience='participants', containsPersonal=True)
+        result, body = self.call('/api/exchanges/' + exchange['id'] + '/documents', 'POST', upload)
+        self.assertEqual(201, result['statusCode'], body)
+        document = body['data']
+        self.assertNotIn('objectKey', document)
+        self.actor = 'student-a'
+        result, raw = self.call('/api/documents/' + document['id'] + '/content')
+        self.assertEqual(200, result['statusCode']); self.assertEqual(content, raw)
+        self.actor = 'student-b'
+        self.assertEqual(404, self.call('/api/documents/' + document['id'] + '/content')[0]['statusCode'])
+        self.actor = 'staff'
+        self.assertEqual(200, self.call('/api/exchanges/' + exchange['id'], 'PATCH', {'participantUserIds': []}, version=1)[0]['statusCode'])
+        self.actor = 'student-a'
+        self.assertEqual(404, self.call('/api/documents/' + document['id'] + '/content')[0]['statusCode'])
+
+    def test_reference_race_and_failed_upload_cleanup(self):
+        def change_reference():
+            self.repository.client.rows['partner-demo']['version'] += 1
+        self.repository.client.before_commit = change_reference
+        result, _ = self.call('/api/agreements', 'POST', dict(title='Race', agreementType='MoU', scopeId='cs-demo', partnerIds=['partner-demo']))
+        self.assertEqual(409, result['statusCode'])
+        row = self.create_agreement()
+        def revoke_actor():
+            self.app.sessions.users.rows[self.ids['staff']]['authzVersion'] += 1
+        self.repository.client.before_commit = revoke_actor
+        payload = dict(fileName='a.pdf', contentType='application/pdf', fileBase64=base64.b64encode(b'%PDF-test').decode())
+        result, _ = self.call('/api/agreements/' + row['id'] + '/documents', 'POST', payload)
+        self.assertEqual(409, result['statusCode'])
+        self.assertFalse(self.repository.documents.client.rows)
+
+    def test_overview_is_executive_only_and_has_no_internal_data(self):
+        self.create_agreement()
+        self.assertEqual(403, self.call('/api/overview')[0]['statusCode'])
+        self.actor = 'executive'
+        result, body = self.call('/api/overview')
+        self.assertEqual(200, result['statusCode'], body)
+        self.assertEqual({'count': 1, 'statuses': {'draft': 1}}, body['data']['agreements'])
+        self.assertNotIn('responsibleUserIds', json.dumps(body))

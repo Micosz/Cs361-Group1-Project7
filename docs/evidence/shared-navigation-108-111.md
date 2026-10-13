@@ -44,3 +44,7 @@ backend 95 tests ผ่าน, frontend npm test 6 ไฟล์ผ่าน แ�
 เบราว์เซอร์ localhost บัญชีสมมติ: staff เปิด Exchange 2 รายการใน cs-demo ไม่เห็นรายการ other-scope; ค้นหา exchange-other ไม่พบ; detail ใช้ปุ่มแก้/สถานะ/เอกสาร disabled ตามฟอร์มที่ยังไม่มี; executive เห็น2รายการ ไม่มีปุ่มเขียนและไม่มี supportingInfo/participant info; overviewนับตามขอบเขต; มือถือ390pxรายการ/ตัวกรองไม่ล้นจอ
 
 ภาพชั่วคราว: /tmp/cs361-108-menu.jpg และ /tmp/cs361-111-mobile.jpg ผลนี้เป็น local/mock ไม่ใช่ deploy และไม่ติ๊ก acceptance ระบบจริง
+
+## Integration update — 13 ต.ค. 69
+
+ฟอร์ม Agreement/Exchange และเอกสารต่อกับเมนูร่วมแล้ว ภาพรวมมี count/status ตามสิทธิ์ผ่าน `/api/overview`; มี DynamoDB/S3 adapter ใน Python backend ดู [ผลตรวจและ config](workspace-83-86-integration.md) สำหรับสถานะล่าสุด ผล local ผ่าน แต่ยังไม่ใช่ production acceptance
