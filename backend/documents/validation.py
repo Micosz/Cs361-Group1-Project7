@@ -9,9 +9,14 @@ Key Requirements:
 
 import os
 import uuid
+import io
+import zipfile
 from typing import Tuple, Dict, Any
 
-MAX_FILE_SIZE = int(os.environ.get("MAX_FILE_SIZE_BYTES", 10 * 1024 * 1024))  # 10 MB
+# Buffered Lambda responses have a 6 MB envelope; base64 and headers need room.
+MAX_FILE_SIZE = min(int(os.environ.get("MAX_FILE_SIZE_BYTES", 3 * 1024 * 1024)), 3 * 1024 * 1024)
+CONTENT_TYPES = {"pdf": "application/pdf", "png": "image/png", "jpg": "image/jpeg",
+                 "jpeg": "image/jpeg", "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
 
 ALLOWED_EXTENSIONS = {"pdf", "docx", "png", "jpg", "jpeg"}
 ALLOWED_CONTENT_TYPES = {
@@ -36,7 +41,17 @@ def verify_magic_bytes(raw_bytes: bytes, ext: str) -> bool:
     if not raw_bytes:
         return False
     signatures = MAGIC_NUMBERS.get(ext.lower(), [])
-    return any(raw_bytes.startswith(sig) for sig in signatures)
+    if not any(raw_bytes.startswith(sig) for sig in signatures):
+        return False
+    if ext.lower() == 'docx':
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw_bytes)) as archive:
+                names = set(archive.namelist())
+                return {'[Content_Types].xml', 'word/document.xml'} <= names and not any(
+                    name.lower().endswith('vbaproject.bin') for name in names)
+        except (zipfile.BadZipFile, ValueError):
+            return False
+    return True
 
 
 def validate_file(filename: str, content_type: str, raw_bytes: bytes) -> Tuple[bool, str]:
@@ -52,7 +67,7 @@ def validate_file(filename: str, content_type: str, raw_bytes: bytes) -> Tuple[b
     if ext not in ALLOWED_EXTENSIONS:
         return False, f"UNSUPPORTED_EXTENSION_{ext.upper()}"
 
-    if not content_type or content_type.lower() not in ALLOWED_CONTENT_TYPES:
+    if not content_type or content_type.lower() != CONTENT_TYPES[ext]:
         return False, "UNSUPPORTED_CONTENT_TYPE"
 
     size = len(raw_bytes) if raw_bytes else 0
