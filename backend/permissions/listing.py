@@ -14,6 +14,8 @@ from ..http_api import session_cookie
 def page(rows, event, service, kind=None):
     query = event.get('queryStringParameters') or {}
     supported = {'q', 'limit', 'cursor'}
+    if kind in {'partner','activity','agreement','exchange'}:
+        supported.add('scopeId')
     if kind in {'partner', 'activity'}:
         supported.add('type')
     if kind in {'agreement', 'exchange'}:
