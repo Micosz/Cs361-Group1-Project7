@@ -121,7 +121,7 @@ class PartnerRepository:
             elif kind == 'history':
                 validate_history_payload(payload, is_create=is_create)
             elif kind == 'activity':
-                normalize_payload(kind, action, payload, record=record)
+                payload = normalize_payload(kind, action, payload, record=record)
                 validate_activity_payload(payload, is_create=is_create)
 
             # 4. Parent-Child & Reference Integrity

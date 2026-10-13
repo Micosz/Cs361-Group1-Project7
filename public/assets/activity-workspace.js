@@ -1,7 +1,9 @@
 /* Existing #96 form isolated from Exchange variables; server authorizes every request. */
 (() => {
 'use strict';
-let userRoles=[], currentSubmissionKey=null;
+let userRoles=[], currentSubmissionKey=null, submissionFingerprint=null;
+let relationshipComplete=true;
+const staffInScope = scope => (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false && g.scopeId===scope && g.role==='staff');
 const activitySection = document.getElementById('activity-section');
 const openAddActivity = document.getElementById('open-add-activity');
 const activityListStatus = document.getElementById('activity-list-status');
@@ -33,7 +35,7 @@ async function loadActivities() {
     activityListStatus.textContent = 'กำลังโหลดรายการกิจกรรม...';
     activityList.replaceChildren();
     try {
-        const res = await window.CstuAuth.request('/activities');
+        const res = await allWorkspaceRows('/activities');
         const activities = res.data || [];
         if (!activities.length) {
             activityListStatus.textContent = 'ไม่พบรายการกิจกรรมในขอบเขตของคุณ';
@@ -67,9 +69,10 @@ async function loadActivities() {
             const actions = document.createElement('div');
             actions.style.cssText = 'display:flex;gap:0.5rem;';
 
-            const isStaff = userRoles.includes('staff');
+            const isStaff = staffInScope(act.scopeId);
             const isAssigned = (act.responsibleUserIds || []).includes(currentUserId);
-            if (isStaff || (userRoles.includes('coordinator') && isAssigned)) {
+            const coordinator = (session.grants || []).some(g=>g.active!==false && g.scopeId===act.scopeId && g.role==='coordinator');
+            if (isStaff || (coordinator && isAssigned)) {
                 const editBtn = document.createElement('button');
                 editBtn.type = 'button';
                 editBtn.className = 'login-btn';
@@ -101,6 +104,9 @@ async function loadActivities() {
 }
 
 function openAddActivityDialog(scopes) {
+    relationshipComplete=true;
+    submissionFingerprint=null;
+    activityCohostIds.disabled=false;activityAgreementIds.disabled=false;
     activityDialogTitle.textContent = 'เพิ่มกิจกรรม';
     activityId.value = '';
     activityVersion.value = '';
@@ -128,15 +134,17 @@ function openAddActivityDialog(scopes) {
         activityScope.append(opt);
     }
 
-    const isStaff = userRoles.includes('staff');
+    const isStaff = staffInScope(activityScope.value);
     if (staffActivityFields) staffActivityFields.hidden = !isStaff;
     currentSubmissionKey = (typeof crypto !== 'undefined' && crypto.randomUUID)
         ? crypto.randomUUID()
         : ('key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12));
-    activityDialog.showModal();
+    if (!activityDialog.open) activityDialog.showModal();
 }
 
 function openEditActivity(act) {
+    relationshipComplete=act.relationshipsComplete === true;
+    activityCohostIds.disabled=!relationshipComplete;activityAgreementIds.disabled=!relationshipComplete;
     activityDialogTitle.textContent = 'แก้ไขกิจกรรม';
     activityId.value = act.id;
     activityVersion.value = act.version;
@@ -161,7 +169,7 @@ function openEditActivity(act) {
     activityScope.append(opt);
     activityScope.disabled = true;
 
-    const isStaff = userRoles.includes('staff');
+    const isStaff = staffInScope(activityScope.value);
     if (staffActivityFields) staffActivityFields.hidden = !isStaff;
 
     if (!isStaff && act.publication === 'public') {
@@ -171,7 +179,7 @@ function openEditActivity(act) {
         activitySubmitBtn.disabled = false;
     }
 
-    activityDialog.showModal();
+    if (!activityDialog.open) activityDialog.showModal();
 }
 
 if (activityCloseBtn) {
@@ -181,6 +189,7 @@ if (activityCloseBtn) {
 if (activityForm) {
     activityForm.onsubmit = async event => {
         event.preventDefault();
+        if (activitySubmitBtn.disabled) return;
         activityStatus.textContent = '';
         const titleVal = activityTitle.value.trim();
         const summaryVal = activitySummary.value.trim();
@@ -201,23 +210,25 @@ if (activityForm) {
         if (isCreate) {
             payload.scopeId = activityScope.value;
         }
-        if (activityFullDescription.value.trim()) payload.fullDescription = activityFullDescription.value.trim();
-        if (activityPeriodDate.value) payload.periodDate = activityPeriodDate.value;
-        if (activityPeriodText.value.trim()) payload.periodText = activityPeriodText.value.trim();
-        if (activityImagePath.value.trim()) payload.imagePath = activityImagePath.value.trim();
+        payload.fullDescription = activityFullDescription.value.trim();
+        payload.periodDate = activityPeriodDate.value || null;
+        payload.periodText = activityPeriodText.value.trim();
+        payload.imagePath = activityImagePath.value.trim();
 
         const parseCsv = v => v.split(',').map(s => s.trim()).filter(Boolean);
         const cohosts = parseCsv(activityCohostIds.value);
-        if (cohosts.length) payload.coHostPartnerIds = cohosts;
+        if (relationshipComplete) payload.coHostPartnerIds = cohosts;
         const agreements = parseCsv(activityAgreementIds.value);
-        if (agreements.length) payload.agreementIds = agreements;
+        if (relationshipComplete) payload.agreementIds = agreements;
 
-        if (userRoles.includes('staff')) {
+        if (staffInScope(activityScope.value)) {
             payload.publication = activityPublication.value;
             const resp = parseCsv(activityResponsibleUsers.value);
             if (resp.length) payload.responsibleUserIds = resp;
         }
 
+        const fingerprint=JSON.stringify(payload);
+        if(isCreate && fingerprint!==submissionFingerprint){submissionFingerprint=fingerprint;currentSubmissionKey=crypto.randomUUID();}
         activitySubmitBtn.disabled = true;
         activityStatus.textContent = 'กำลังบันทึกข้อมูล...';
 
@@ -229,6 +240,7 @@ if (activityForm) {
             }
             activityDialog.close();
             await loadActivities();
+            if(window.parent!==window)window.parent.postMessage({type:'activity-saved'},location.origin);
         } catch (error) {
             activitySubmitBtn.disabled = false;
             if (error.status === 401) {
@@ -239,7 +251,7 @@ if (activityForm) {
                 activityStatus.textContent = 'ข้อมูลถูกแก้ไขโดยผู้อื่นแล้ว (Version Conflict) กำลังโหลดข้อมูลล่าสุด...';
                 try {
                     const fresh = await window.CstuAuth.request('/activities/' + encodeURIComponent(activityId.value));
-                    if (fresh?.data) openEditActivity(fresh.data);
+                    if(fresh?.data){const reload=document.createElement('button');reload.type='button';reload.textContent='โหลดข้อมูลล่าสุดเพื่อตรวจทาน';reload.onclick=()=>openEditActivity(fresh.data);activityStatus.appendChild(reload);}
                 } catch {
                     activityStatus.textContent = 'โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณาลองใหม่';
                 }

@@ -5,7 +5,7 @@ const { join } = require('node:path');
 
 const base = join(__dirname, '..', 'public');
 const workspaceHtml = readFileSync(`${base}/workspace.html`, 'utf8');
-const workspaceJs = readFileSync(`${base}/assets/workspace.js`, 'utf8');
+const workspaceJs = readFileSync(`${base}/assets/workspace.js`, 'utf8') + readFileSync(`${base}/assets/activity-workspace.js`, 'utf8');
 
 test('workspace HTML includes unified Activity management section and dialog', () => {
     // Activity Section
@@ -44,7 +44,7 @@ test('workspace HTML includes unified Activity management section and dialog', (
 
 test('workspace JS binds activity operations and handles mutation contracts', () => {
     // Verifies CstuAuth.request('/activities') used for fetching activities
-    assert.match(workspaceJs, /window\.CstuAuth\.request\(['"]\/activities['"]\)/);
+    assert.match(workspaceJs, /allWorkspaceRows\(['"]\/activities['"]\)/);
 
     // Verifies CstuAuth.create used for new activity creation with idempotency key
     assert.match(workspaceJs, /window\.CstuAuth\.create\(['"]\/activities['"],\s*payload,\s*currentSubmissionKey\)/);
