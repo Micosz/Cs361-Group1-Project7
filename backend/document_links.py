@@ -28,7 +28,7 @@ def link_document_to_target(
     if not target_id:
         raise InvalidPayloadError("target_id is required")
 
-    if not target_record:
+    if not target_record or target_record.get("id") != target_id:
         raise TargetNotFoundError(f"{target_type} with ID '{target_id}' not found.")
 
     user_id = user_context.get("user_id")
@@ -39,6 +39,12 @@ def link_document_to_target(
     if not is_authorized:
         raise PermissionDeniedError(f"User {user_id} does not have permission to attach documents to this {target_type}.")
 
+    # Accept the upload module's server-generated metadata without changing its API.
+    upload_result = dict(upload_result)
+    for legacy, current in {'storage_key': 'storageKey', 'file_name': 'originalFileName',
+                            'file_size': 'fileSize', 'content_type': 'contentType'}.items():
+        if legacy not in upload_result and current in upload_result:
+            upload_result[legacy] = upload_result[current]
     required_fields = ["storage_key", "file_name", "file_size", "content_type"]
     for field in required_fields:
         if not upload_result.get(field):
@@ -86,3 +92,28 @@ def sanitize_document_for_viewer(
         "uploaded_by": document_record.get("uploaded_by"),
         "created_at": document_record.get("created_at")
     }
+
+
+def document_record(context, parent, payload, upload, *, document_id=None, now=None):
+    """Canonical #91 metadata for the authorized API; legacy helpers stay compatible.
+
+    The repository persists this row together with user/session/parent checks.
+    Never authorize a V3 request using the legacy owner/admin dictionaries above.
+    """
+    import hashlib
+    from backend.permissions.policy import require_record
+    from backend.auth.session_service import AuthError
+    metadata, raw = upload['metadata'], upload['bytes']
+    row = dict(id=document_id or metadata['documentId'], entityType='document', schemaVersion=3,
+               scopeId=parent['scopeId'], parentType=parent['entityType'], parentId=parent['id'],
+               version=1, displayName=payload['displayName'], audience=payload['audience'],
+               containsPersonal=payload['containsPersonal'], mime=metadata['contentType'],
+               size=metadata['fileSize'], objectKey=metadata['storageKey'],
+               hash=hashlib.sha256(raw).hexdigest(), uploadState='ready',
+               uploadedBy=context.user.user_id, uploadedAt=now or datetime.now(timezone.utc).isoformat())
+    if not isinstance(row['displayName'], str) or not row['displayName'].strip() or len(row['displayName']) > 200:
+        raise AuthError('INVALID_FIELDS', 422)
+    require_record(context, 'document', 'upload', row, parent)
+    row.update(createdAt=row['uploadedAt'], updatedAt=row['uploadedAt'],
+               createdBy=context.user.user_id, updatedBy=context.user.user_id)
+    return row

@@ -1,4 +1,8 @@
 import unittest
+import io
+import zipfile
+import base64
+import json
 from backend.documents.validation import validate_file, prepare_upload_record, MAX_FILE_SIZE
 
 
@@ -12,7 +16,11 @@ class TestDocumentValidation(unittest.TestCase):
 
     def test_valid_docx_file(self):
         mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        content = b"PK\x03\x04 mock docx content"
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, 'w') as archive:
+            archive.writestr('[Content_Types].xml', '<Types/>')
+            archive.writestr('word/document.xml', '<document/>')
+        content = buffer.getvalue()
         valid, msg = validate_file("mou_draft.docx", mime, content)
         self.assertTrue(valid)
         self.assertEqual(msg, "OK")
@@ -61,6 +69,19 @@ class TestDocumentValidation(unittest.TestCase):
         self.assertNotEqual(record1["documentId"], record2["documentId"])
         self.assertNotEqual(record1["storageKey"], record2["storageKey"])
         self.assertTrue(record1["storageKey"].startswith("documents/"))
+
+    def test_reject_zip_header_as_docx(self):
+        self.assertFalse(validate_file('fake.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', b'PK\x03\x04 not a document')[0])
+
+    def test_upload_round_trip_and_unknown_fields(self):
+        from backend.documents.uploads import parse_upload
+        from backend.auth.session_service import AuthError
+        data = dict(fileName='report.pdf', contentType='application/pdf', fileBase64=base64.b64encode(b'%PDF-1.4 test').decode())
+        payload, upload = parse_upload({'body': json.dumps(data)})
+        self.assertEqual(payload['displayName'], 'report.pdf')
+        self.assertEqual(upload['bytes'], b'%PDF-1.4 test')
+        with self.assertRaises(AuthError):
+            parse_upload({'body': json.dumps(dict(data, scopeId='spoof'))})
 
 
 if __name__ == "__main__":
