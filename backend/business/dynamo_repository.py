@@ -15,7 +15,7 @@ from ..auth.session_service import AuthError, SessionContext
 from ..permissions.policy import require_assignee, require_reference
 from ..permissions.transactions import values, transaction_checks, target_condition
 from ..agreements.repository import AgreementRepository
-from ..partners.repository import PartnerRepository, ExchangeRepository
+from ..partners.repository import PartnerRepository, ExchangeRepository, ActivityRepository
 from ..document_links import document_record
 from ..documents.uploads import parse_upload
 from .validation import normalize_payload
@@ -147,17 +147,8 @@ class DynamoBusinessRepository:
             saved = domain.mutate(kind, action, normalized, record, parent, conditions, None)
         elif kind == 'activity' and action in {'create', 'update'}:
             normalized = normalize_payload(kind, action, payload, record=record)
-            from ..partners.validators import validate_activity_payload
-            validate_activity_payload(normalized, is_create=action == 'create')
-            import uuid
-            stamp = datetime.fromtimestamp(now, timezone.utc).isoformat()
-            saved = dict(record or {}, **normalized)
-            saved.update(id=record['id'] if record else 'activity-' + uuid.uuid4().hex,
-                         entityType=kind, scopeId=scope, schemaVersion=3,
-                         version=record['version'] + 1 if record else 1,
-                         updatedAt=stamp, updatedBy=conditions.user_id)
-            if not record:
-                saved.update(createdAt=stamp, createdBy=conditions.user_id)
+            domain = ActivityRepository(local_service, seeds, clock=self.clock)
+            saved = domain.mutate(kind, action, normalized, record, parent, conditions, None)
         elif kind == 'document' and action == 'upload' and upload and parent:
             if not self.documents:
                 raise AuthError('DOCUMENT_STORAGE_UNAVAILABLE', 503)

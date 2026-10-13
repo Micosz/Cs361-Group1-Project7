@@ -14,6 +14,7 @@ import time
 import uuid
 
 from ..auth.session_service import AuthError
+from ..business.validation import normalize_payload
 from ..permissions.policy import require_assignee, require_reference
 from .validators import (
     validate_partner_payload,
@@ -28,7 +29,7 @@ from .validators import (
 class PartnerRepository:
     """Local Partner/Contact prototype; its lock protects only this process."""
 
-    def __init__(self, service=None, initial_records=None, clock=None):
+    def __init__(self, service=None, initial_records=None, clock=None, supported_kinds=None):
         self.service = service
         self.clock = clock or time.time
         self._lock = threading.Lock()
@@ -36,6 +37,7 @@ class PartnerRepository:
         # (user_id, kind, parent_id, idempotency_key) -> (payload_copy, result_copy, created_at_timestamp)
         self.idempotency_cache = {}
         self.writes = 0
+        self.supported_kinds = set(supported_kinds) if supported_kinds is not None else {'partner', 'contact', 'history'}
 
         if initial_records:
             for rec in initial_records:
@@ -68,7 +70,7 @@ class PartnerRepository:
     def mutate(self, kind: str, action: str, payload: dict, record: dict | None,
                parent: dict | None, conditions, idempotency_key: str | None,
                upload=None) -> dict:
-        if kind not in {'partner', 'contact', 'history'} or action not in {'create', 'update'} or upload is not None:
+        if kind not in self.supported_kinds or action not in {'create', 'update'} or upload is not None:
             raise AuthError('PERMISSION_UNAVAILABLE', 503)
         with self._lock:
             # 1. Preconditions & Concurrency Checks
@@ -78,6 +80,8 @@ class PartnerRepository:
                     user = user(conditions.user_id)
                 elif user is None and hasattr(self.service.users, 'store'):
                     user = self.service.users.store.user(conditions.user_id)
+                if user is None and hasattr(self.service.users, 'get'):
+                    user = self.service.users.get(conditions.user_id)
                 if user is None or not user.active or user.authz_version != conditions.authz_version:
                     raise AuthError('SESSION_REVOKED', 401)
                 session = self.service.store.get(conditions.session_hash) if hasattr(self.service, 'store') else None
@@ -117,9 +121,10 @@ class PartnerRepository:
             elif kind == 'history':
                 validate_history_payload(payload, is_create=is_create)
             elif kind == 'activity':
+                payload = normalize_payload(kind, action, payload, record=record)
                 validate_activity_payload(payload, is_create=is_create)
 
-            # 4. Parent-Child Relationship Integrity
+            # 4. Parent-Child & Reference Integrity
             if kind in {'contact', 'history'}:
                 if not parent or parent.get('entityType') != 'partner':
                     raise AuthError('NOT_FOUND', 404)
@@ -128,6 +133,40 @@ class PartnerRepository:
                 if not is_create and record:
                     if record.get('partnerId') != parent.get('id') or record.get('scopeId') != parent.get('scopeId'):
                         raise AuthError('NOT_FOUND', 404)
+
+            if kind == 'activity':
+                # Primary partner reference (required, must exist in same scope)
+                effective_partner_id = payload.get('partnerId', (record or {}).get('partnerId'))
+                partner_rec = self.rows.get(('partner', effective_partner_id))
+                if not partner_rec or partner_rec.get('scopeId') != conditions.scope_id:
+                    raise AuthError('INVALID_REFERENCE', 422)
+
+                # Co-host partner references (optional, must exist in same scope)
+                effective_cohosts = payload.get('coHostPartnerIds', (record or {}).get('coHostPartnerIds', []))
+                for ch_id in effective_cohosts:
+                    ch_rec = self.rows.get(('partner', ch_id))
+                    if not ch_rec or ch_rec.get('scopeId') != conditions.scope_id:
+                        raise AuthError('INVALID_REFERENCE', 422)
+
+                # Agreement references (optional, must exist in same scope)
+                effective_agreements = payload.get('agreementIds', (record or {}).get('agreementIds', []))
+                for ag_id in effective_agreements:
+                    ag_rec = self.rows.get(('agreement', ag_id))
+                    if not ag_rec or ag_rec.get('scopeId') != conditions.scope_id:
+                        raise AuthError('INVALID_REFERENCE', 422)
+
+                # Responsible user assignees (must be active, verified, staff/coordinator in same scope)
+                effective_responsible = payload.get('responsibleUserIds', (record or {}).get('responsibleUserIds', []))
+                if self.service is not None and hasattr(self.service, 'users'):
+                    for uid in effective_responsible:
+                        u_state = None
+                        if hasattr(self.service.users, 'get'):
+                            u_state = self.service.users.get(uid)
+                        elif hasattr(self.service.users, 'store') and hasattr(self.service.users.store, 'user'):
+                            u_state = self.service.users.store.user(uid)
+                        elif getattr(self.service.users, 'user', None) and self.service.users.user.user_id == uid:
+                            u_state = self.service.users.user
+                        require_assignee(u_state, conditions.scope_id)
 
             # 5. Build and Persist Record
             now_iso = datetime.now(timezone.utc).isoformat()
@@ -149,6 +188,11 @@ class PartnerRepository:
                 if kind == 'partner':
                     saved['publication'] = payload.get('publication', 'internal')
                     saved['responsibleUserIds'] = payload.get('responsibleUserIds', [])
+                if kind == 'activity':
+                    saved['publication'] = payload.get('publication', 'internal')
+                    saved['responsibleUserIds'] = payload.get('responsibleUserIds', [conditions.user_id])
+                    saved['coHostPartnerIds'] = []
+                    saved['agreementIds'] = []
                 if kind == 'history':
                     saved['recordedBy'] = conditions.user_id
                 saved.update(payload)
@@ -180,6 +224,12 @@ class PartnerRepository:
         raise AuthError('NOT_FOUND', 404)
 
 
+class ActivityRepository(PartnerRepository):
+    """Local prototype supporting Activity, Partner, and Contact domain operations (#96)."""
+
+    def __init__(self, service=None, initial_records=None, clock=None, supported_kinds=None):
+        kinds = supported_kinds if supported_kinds is not None else {'partner', 'contact', 'activity'}
+        super().__init__(service=service, initial_records=initial_records, clock=clock, supported_kinds=kinds)
 class ExchangeRepository(PartnerRepository):
     """In-memory repository for Exchanges (Issue #104 / Parent #85)."""
 

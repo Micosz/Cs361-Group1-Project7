@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from ..auth.session_service import AuthError
 
 PARTNER_TYPES = {'company', 'university', 'government', 'internship', 'research_institute'}
+ACTIVITY_TYPES = {'academic_activity', 'event', 'research'}
 PUBLICATION_TYPES = {'public', 'internal'}
 HISTORY_KINDS = {'meeting', 'agreement', 'activity', 'other'}
 REFERENCE_TYPES = {'agreement', 'activity'}
@@ -195,12 +196,25 @@ def validate_activity_payload(payload: dict, is_create: bool = True):
 
     if 'type' in payload:
         validate_string(payload['type'], max_len=100, min_len=1, required=True)
+        if payload['type'] not in ACTIVITY_TYPES:
+            raise AuthError('INVALID_FIELDS', 422)
 
     if 'summary' in payload:
         validate_string(payload['summary'], max_len=2000, min_len=1, required=True)
 
     if 'fullDescription' in payload and payload['fullDescription'] is not None:
         validate_string(payload['fullDescription'], max_len=20000, min_len=0, required=False)
+
+    if 'periodText' in payload and payload['periodText'] is not None:
+        validate_string(payload['periodText'], max_len=2000, min_len=0, required=False)
+
+    if 'imagePath' in payload and payload['imagePath'] is not None:
+        val = payload['imagePath']
+        if not isinstance(val, str):
+            raise AuthError('INVALID_FIELDS', 422)
+        if val != '':
+            if not re.fullmatch(r'resources/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)', val, re.IGNORECASE):
+                raise AuthError('INVALID_FIELDS', 422)
 
     if 'partnerId' in payload:
         validate_string(payload['partnerId'], max_len=200, min_len=1, required=True)
@@ -211,14 +225,19 @@ def validate_activity_payload(payload: dict, is_create: bool = True):
 
     if 'coHostPartnerIds' in payload and payload['coHostPartnerIds'] is not None:
         cohosts = payload['coHostPartnerIds']
-        if not isinstance(cohosts, list) or len(cohosts) > 20:
+        if not isinstance(cohosts, list) or len(cohosts) > 19:
             raise AuthError('INVALID_FIELDS', 422)
         if len(set(cohosts)) != len(cohosts):
+            raise AuthError('INVALID_FIELDS', 422)
+        primary = payload.get('partnerId')
+        if primary and primary in cohosts:
             raise AuthError('INVALID_FIELDS', 422)
 
     if 'agreementIds' in payload and payload['agreementIds'] is not None:
         agreements = payload['agreementIds']
         if not isinstance(agreements, list) or len(agreements) > 20:
+            raise AuthError('INVALID_FIELDS', 422)
+        if len(set(agreements)) != len(agreements):
             raise AuthError('INVALID_FIELDS', 422)
 
     if 'responsibleUserIds' in payload and payload['responsibleUserIds'] is not None:

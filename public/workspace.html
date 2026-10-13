@@ -9,6 +9,7 @@
     <script src="assets/documents.js" defer></script>
     <script src="assets/agreement.js" defer></script>
     <script src="assets/workspace.js" defer></script>
+    <script src="assets/activity-workspace.js" defer></script>
 </head>
 <body>
 <main class="container" style="padding:2rem;max-width:800px">
@@ -17,6 +18,57 @@
     <p id="workspace-status" role="status">กำลังตรวจสถานะ</p>
     <button id="open-roles" type="button" hidden>จัดการสิทธิ์ผู้ใช้</button>
     <button id="open-agreements" type="button" class="login-btn" style="margin-left:0.5rem" hidden>ข้อตกลงความร่วมมือ (MoU / MoA)</button>
+    <section id="activity-section" style="margin-top:2rem;" hidden>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2>กิจกรรมและความร่วมมือ</h2>
+            <button id="open-add-activity" type="button" class="login-btn" style="padding:0.4rem 1rem;">เพิ่มกิจกรรม</button>
+        </div>
+        <div id="activity-list-status" role="status" style="margin-top:0.5rem;color:#666;">กำลังโหลดรายการกิจกรรม...</div>
+        <div id="activity-list" style="margin-top:1rem;display:flex;flex-direction:column;gap:1rem;"></div>
+    </section>
+
+    <dialog id="activity-dialog" style="padding:2rem;max-width:600px;width:100%;border:1px solid #ccc;border-radius:8px;">
+        <form id="activity-form">
+            <h2 id="activity-dialog-title">เพิ่มกิจกรรม</h2>
+            <input type="hidden" id="activity-id">
+            <input type="hidden" id="activity-version">
+
+            <p><label>ขอบเขตหลักสูตร (Scope) <select id="activity-scope" required style="width:100%;padding:0.4rem;"></select></label></p>
+            <p><label>ชื่อกิจกรรม <input id="activity-title" required maxlength="200" style="width:100%;padding:0.4rem;"></label></p>
+            <p><label>ประเภทกิจกรรม
+                <select id="activity-type" required style="width:100%;padding:0.4rem;">
+                    <option value="academic_activity">กิจกรรมวิชาการ (Academic Activity)</option>
+                    <option value="event">กิจกรรมทั่วไป / งานอีเวนต์ (Event)</option>
+                    <option value="research">งานวิจัยและความร่วมมือ (Research)</option>
+                </select>
+            </label></p>
+            <p><label>คำอธิบายสรุป (Summary) <textarea id="activity-summary" required maxlength="2000" rows="3" style="width:100%;padding:0.4rem;"></textarea></label></p>
+            <p><label>คำอธิบายแบบเต็ม (Full Description) <textarea id="activity-full-description" maxlength="20000" rows="4" style="width:100%;padding:0.4rem;"></textarea></label></p>
+            <p><label>รหัสคู่ความร่วมมือหลัก (Primary Partner ID) <input id="activity-partner-id" required maxlength="200" style="width:100%;padding:0.4rem;"></label></p>
+            <p><label>รหัสคู่ความร่วมมือร่วม (Co-hosts คั่นด้วยเครื่องหมายจุลภาค) <input id="activity-cohost-ids" style="width:100%;padding:0.4rem;"></label></p>
+            <p><label>รหัสข้อตกลงที่เกี่ยวข้อง (Agreements คั่นด้วยเครื่องหมายจุลภาค) <input id="activity-agreement-ids" style="width:100%;padding:0.4rem;"></label></p>
+            <p><label>วันที่จัดกิจกรรม (ISO YYYY-MM-DD) <input id="activity-period-date" type="date" style="width:100%;padding:0.4rem;"></label></p>
+            <p><label>ข้อความช่วงเวลาแสดงผล (Period Text) <input id="activity-period-text" maxlength="2000" style="width:100%;padding:0.4rem;"></label></p>
+            <p><label>รูปภาพประกอบ (Asset Path เช่น resources/event.jpg) <input id="activity-image-path" placeholder="resources/..." style="width:100%;padding:0.4rem;"></label></p>
+
+            <fieldset id="staff-activity-fields" style="margin-top:1rem;border:1px solid #ddd;padding:1rem;border-radius:4px;">
+                <legend style="font-weight:bold;">การตั้งค่าเฉพาะเจ้าหน้าที่ (Staff)</legend>
+                <p><label>การเผยแพร่ (Publication)
+                    <select id="activity-publication" style="width:100%;padding:0.4rem;">
+                        <option value="internal">ภายใน (Internal)</option>
+                        <option value="public">สาธารณะ (Public)</option>
+                    </select>
+                </label></p>
+                <p><label>รหัสผู้รับผิดชอบ (User IDs คั่นด้วยจุลภาค) <input id="activity-responsible-users" placeholder="u1, u2" style="width:100%;padding:0.4rem;"></label></p>
+            </fieldset>
+
+            <p id="activity-status" role="status" style="margin-top:1rem;font-weight:bold;"></p>
+            <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1.5rem;">
+                <button id="activity-submit-btn" type="submit" class="login-btn">บันทึก</button>
+                <button id="activity-close-btn" type="button" class="login-btn" style="background:#888;">ยกเลิก</button>
+            </div>
+        </form>
+    </dialog>
     <dialog id="role-dialog" style="padding:2rem;max-width:600px">
         <form id="role-form">
             <h2>จัดการสิทธิ์ผู้ใช้</h2>
