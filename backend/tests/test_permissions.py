@@ -402,6 +402,43 @@ class GatewayTests(unittest.TestCase):
         self.repo.rows[('exchange', 'e1')]['internalNote'] = 'PRIVATE'
         self.assertEqual(0, self.assert_status(200, e)['count'])
 
+    def test_scoped_filters_count_only_authorized_rows_and_overlap_intervals(self):
+        self.repo.rows[('exchange', 'e1')].update(status='ongoing', startDate='2026-01-01', endDate='2026-12-31')
+        self.repo.rows[('exchange', 'e3')] = row(key='e3', status='ongoing', startDate='2026-10-12', endDate='2026-10-12')
+        self.repo.rows[('exchange', 'secret')] = row(key='secret', scope='other', status='ongoing', startDate='2026-01-01', endDate='2026-12-31')
+        self.repo.rows[('exchange', 'missing')] = row(key='missing', status='ongoing')
+        e = self.event('/api/exchanges')
+        e['queryStringParameters'] = {'status': 'ongoing', 'startDate': '2026-10-12', 'endDate': '2026-10-12'}
+        result = self.assert_status(200, e)
+        self.assertEqual({'e1', 'e3'}, {r['id'] for r in result['data']})
+        self.assertEqual(2, result['count'])
+        e['queryStringParameters'] = {'status': 'completed'}
+        self.assertEqual(0, self.assert_status(200, e)['count'])
+
+    def test_activity_filter_uses_calendar_day_and_rejects_invalid_queries(self):
+        self.repo.rows[('activity', 'a1')] = row('activity', 'a1', type='event', periodDate='2026-10-12')
+        self.repo.rows[('activity', 'a2')] = row('activity', 'a2', type='research', periodDate='2026-10-12')
+        self.repo.rows[('activity', 'a3')] = row('activity', 'a3', type='event')
+        e = self.event('/api/activities')
+        e['queryStringParameters'] = {'type': 'event', 'startDate': '2026-10-12', 'endDate': '2026-10-12'}
+        self.assertEqual(['a1'], [r['id'] for r in self.assert_status(200, e)['data']])
+        for query in ({'status': 'active'}, {'startDate': '2026-02-30'}, {'startDate': '2026-10-13', 'endDate': '2026-10-12'}, {'type': []}):
+            e['queryStringParameters'] = query
+            self.assert_status(422, e)
+        e = self.event('/api/partners')
+        e['queryStringParameters'] = {'startDate': '2026-10-12'}
+        self.assert_status(422, e)
+
+    def test_cursor_cannot_switch_filters_even_when_result_set_is_identical(self):
+        self.repo.rows[('exchange', 'e1')].update(status='ongoing')
+        self.repo.rows[('exchange', 'e3')] = row(key='e3', status='ongoing')
+        e = self.event('/api/exchanges')
+        e['queryStringParameters'] = {'status': 'ongoing', 'limit': '1'}
+        cursor = self.assert_status(200, e)['page']['nextCursor']
+        self.assertIsNotNone(cursor)
+        e['queryStringParameters'] = {'limit': '1', 'cursor': cursor}
+        self.assert_status(422, e)
+
     def test_dynamo_transaction_checks_include_auth_session_parent_and_target(self):
         c = WriteConditions('u1', 7, 'hash', 'e1', 2, 'p1', 3, 'c1')
         checks = transaction_checks(c, user_table='Users', session_table='Sessions', business_table='Records', now=1000)

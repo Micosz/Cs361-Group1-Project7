@@ -78,6 +78,7 @@ function fetchPartnersData() {
         partners.forEach(partner => {
             partner.collaborations = events.filter(event => {
                 if (event.partnerId === partner.id) return true;
+                if (Array.isArray(event.coHostPartnerIds) && event.coHostPartnerIds.includes(partner.id)) return true;
 
                 if (Array.isArray(event.co_hosts)) {
                     return event.co_hosts.some(hostName =>
@@ -305,6 +306,59 @@ function formatActivityDate(activity) {
         return activity.period?.replace(/\b(\d{2})(\d{2})\b$/, '$2') || 'ไม่ระบุวันที่';
     }
     return 'ไม่ระบุวันที่';
+}
+
+// Public activity history only. Internal agreements need an authorized read API first.
+function buildPartnerActivityHistory(partnerId, activities) {
+    const seen = new Set();
+    return activities.filter(activity => {
+        if (!activity || typeof activity.id !== 'string' || !activity.id || seen.has(activity.id)) return false;
+        const flags = [activity.visibility, activity.access_level, activity.publication].filter(value => value !== undefined);
+        if (!flags.includes('public') || flags.some(value => value !== 'public')) return false;
+        if (activity.entityType && activity.entityType !== 'activity') return false;
+        if (activity.partnerId !== partnerId && !(Array.isArray(activity.coHostPartnerIds) && activity.coHostPartnerIds.includes(partnerId))) return false;
+        seen.add(activity.id);
+        return true;
+    }).map(activity => {
+        const raw = activity.periodDate ?? activity.period_date;
+        const parsed = typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)
+            ? new Date(`${raw}T00:00:00Z`) : null;
+        const date = parsed && !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === raw ? raw : null;
+        return { sourceId: activity.id, kind: 'activity', label: activity.title || 'กิจกรรม', date,
+            dateLabel: date ? formatActivityDate({period_date: date}) : formatActivityDate(activity) };
+    }).sort((a, b) => {
+        if (a.date !== b.date) return a.date === null ? 1 : b.date === null ? -1 : b.date.localeCompare(a.date);
+        return a.sourceId < b.sourceId ? -1 : a.sourceId > b.sourceId ? 1 : 0;
+    });
+}
+
+function renderPartnerActivityHistory(container, partnerId, activities) {
+    const heading = document.createElement('h3');
+    heading.textContent = 'ประวัติความร่วมมือ';
+    container.appendChild(heading);
+    const entries = buildPartnerActivityHistory(partnerId, activities);
+    if (!entries.length) {
+        const empty = document.createElement('p');
+        empty.textContent = 'ยังไม่มีกิจกรรมสาธารณะที่เชื่อมกับคู่ความร่วมมือนี้';
+        container.appendChild(empty);
+        return;
+    }
+    const list = document.createElement('ol');
+    list.className = 'partner-history';
+    for (const entry of entries) {
+        const row = document.createElement('li');
+        const date = document.createElement(entry.date ? 'time' : 'span');
+        date.textContent = entry.dateLabel;
+        if (entry.date) date.dateTime = entry.date;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = entry.label;
+        button.addEventListener('click', () => openModal(entry.sourceId, 'activity'));
+        row.appendChild(date);
+        row.appendChild(button);
+        list.appendChild(row);
+    }
+    container.appendChild(list);
 }
 
 // สร้างการ์ดหน้า Collaborator
@@ -563,23 +617,10 @@ async function openModal(id, type) {
             modalImage.style.display = 'none';
         }
 
-        const partnerDetailText = data.full_description ? data.full_description : data.summary;
-        let detailsHTML = `<p style="font-weight: bold; font-size: 1.1em; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.6;">${partnerDetailText}</p>`;
-        
-        // แปลง List เป็น Grid Cards
-        if (data.collaborations && data.collaborations.length > 0) {
-            const publicCollabs = data.collaborations.filter(isPublicRecord);
-            if(publicCollabs.length > 0) {
-                detailsHTML += `<h3 style="margin-top: 1.5rem; margin-bottom: 1rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">ความร่วมมือและกิจกรรม</h3>`;
-                // สร้าง Grid ขนาดย่อมใน Modal
-                detailsHTML += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">`;
-                publicCollabs.forEach(collab => {
-                    detailsHTML += createMiniCardHTML(collab, data.name);
-                });
-                detailsHTML += `</div>`;
-            }
-        }
-        modalDetails.innerHTML = detailsHTML;
+        const partnerDetailText = data.full_description || data.summary || '';
+        // Keep the existing source-backed description and evidence links.
+        modalDetails.innerHTML = `<p style="font-weight: bold; font-size: 1.1em; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.6;">${partnerDetailText}</p>`;
+        renderPartnerActivityHistory(modalDetails, data.id, allActivities);
 
     } else {
         // --- 2. ส่วนของ Activity (แสดง Event อื่นๆ ของบริษัทเดียวกัน) ---
@@ -614,6 +655,11 @@ async function openModal(id, type) {
         modalDetails.innerHTML = detailsHTML;
     }
 
+    if (window.CstuWork) {
+        const actions = document.createElement('div');
+        modalDetails.appendChild(actions);
+        window.CstuWork.attachDetailAction(actions, type === 'partner' ? 'partners' : 'activities', data.id);
+    }
     document.getElementById('detailModal').style.display = 'flex';
 }
 
@@ -834,3 +880,23 @@ function generatePartnerLinks(coHosts, partnerName, partnerId) {
     }
     return link(partnerName, partnerId);
 }
+
+async function checkAgreementEntryVisibility() {
+    const btn = document.getElementById('btnOpenAgreements');
+    if (!btn) return;
+    if (!window.CstuAuth?.enabled()) {
+        btn.style.display = 'none';
+        return;
+    }
+    try {
+        const session = await window.CstuAuth.refresh();
+        const roles = window.CstuAuth.roles(session);
+        const canManage = roles.some(r => ['coordinator', 'staff'].includes(r));
+        btn.style.display = canManage ? 'inline-block' : 'none';
+    } catch {
+        btn.style.display = 'none';
+    }
+}
+window.addEventListener('authchange', checkAgreementEntryVisibility);
+window.addEventListener('pageshow', checkAgreementEntryVisibility);
+document.addEventListener('DOMContentLoaded', checkAgreementEntryVisibility);

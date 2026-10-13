@@ -1,0 +1,16 @@
+.records-shell { max-width: 960px; padding: 2rem 1rem; margin: auto; }
+.records-shell nav, #records-search, #detail-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1rem 0; }
+.records-shell [hidden] { display: none !important; }
+#records-search label { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+.records-shell input, .records-shell select, .records-shell button { font: inherit; padding: .55rem; max-width: 100%; }
+.records-shell button { cursor: pointer; }
+.records-shell button:disabled { cursor: default; }
+.records-list { list-style: none; padding: 0; }
+.records-list li { padding: 1rem 0; border-bottom: 1px solid #ddd; overflow-wrap: anywhere; }
+.records-list button { background: transparent; border: 0; text-align: left; color: #9e1233; }
+.records-list small { display: block; margin-top: .4rem; }
+#record-detail { width: min(90vw, 700px); max-height: 85vh; padding: 1.5rem; border: 1px solid #ddd; border-radius: 12px; overflow: auto; }
+#record-detail::backdrop { background: #0006; }
+#detail-fields dt { font-weight: bold; margin-top: 1rem; }
+#detail-fields dd { margin: .25rem 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 600px) { #records-search label { width: 100%; } .records-shell { padding: 1rem; } }

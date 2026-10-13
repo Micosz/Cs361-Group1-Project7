@@ -6,36 +6,54 @@ const target = document.getElementById('role-target');
 const choices = document.getElementById('role-choices');
 const saveRoles = document.getElementById('save-roles');
 const roleStatus = document.getElementById('role-status');
+const openAgreements = document.getElementById('open-agreements');
 let version = null, selectedTarget = null, selectedScope = null;
 let userRoles = [];
 let currentSubmissionKey = null;
+let submissionFingerprint = null;
+let embeddedActionOpened = false;
 
-const activitySection = document.getElementById('activity-section');
-const openAddActivity = document.getElementById('open-add-activity');
-const activityListStatus = document.getElementById('activity-list-status');
-const activityList = document.getElementById('activity-list');
-const activityDialog = document.getElementById('activity-dialog');
-const activityForm = document.getElementById('activity-form');
-const activityDialogTitle = document.getElementById('activity-dialog-title');
-const activityId = document.getElementById('activity-id');
-const activityVersion = document.getElementById('activity-version');
-const activityScope = document.getElementById('activity-scope');
-const activityTitle = document.getElementById('activity-title');
-const activityType = document.getElementById('activity-type');
-const activitySummary = document.getElementById('activity-summary');
-const activityFullDescription = document.getElementById('activity-full-description');
-const activityPartnerId = document.getElementById('activity-partner-id');
-const activityCohostIds = document.getElementById('activity-cohost-ids');
-const activityAgreementIds = document.getElementById('activity-agreement-ids');
-const activityPeriodDate = document.getElementById('activity-period-date');
-const activityPeriodText = document.getElementById('activity-period-text');
-const activityImagePath = document.getElementById('activity-image-path');
-const staffActivityFields = document.getElementById('staff-activity-fields');
-const activityPublication = document.getElementById('activity-publication');
-const activityResponsibleUsers = document.getElementById('activity-responsible-users');
-const activityStatus = document.getElementById('activity-status');
-const activitySubmitBtn = document.getElementById('activity-submit-btn');
-const activityCloseBtn = document.getElementById('activity-close-btn');
+const exchangeSection = document.getElementById('exchange-section');
+const openAddExchange = document.getElementById('open-add-exchange');
+const exchangeListStatus = document.getElementById('exchange-list-status');
+const exchangeList = document.getElementById('exchange-list');
+const exchangeDialog = document.getElementById('exchange-dialog');
+const exchangeForm = document.getElementById('exchange-form');
+const exchangeDialogTitle = document.getElementById('exchange-dialog-title');
+const exchangeId = document.getElementById('exchange-id');
+const exchangeVersion = document.getElementById('exchange-version');
+const exchangeScope = document.getElementById('exchange-scope');
+const exchangeTitle = document.getElementById('exchange-title');
+const exchangePartnerIds = document.getElementById('exchange-partner-ids');
+const exchangeAgreementId = document.getElementById('exchange-agreement-id');
+const exchangeStartDate = document.getElementById('exchange-start-date');
+const exchangeEndDate = document.getElementById('exchange-end-date');
+const exchangeParticipantUsers = document.getElementById('exchange-participant-users');
+const exchangeSupportingInfo = document.getElementById('exchange-supporting-info');
+const exchangeSupportingInfoParticipant = document.getElementById('exchange-supporting-info-participant');
+const staffExchangeFields = document.getElementById('staff-exchange-fields');
+const exchangeResponsibleUsers = document.getElementById('exchange-responsible-users');
+const exchangeStatus = document.getElementById('exchange-status');
+const exchangeSubmitBtn = document.getElementById('exchange-submit-btn');
+const exchangeCloseBtn = document.getElementById('exchange-close-btn');
+
+const exchangeStatusSection = document.getElementById('exchange-status-transition-section');
+const exchangeStatusDisplay = document.getElementById('exchange-current-status-display');
+const exchangeBtnOngoing = document.getElementById('exchange-btn-ongoing');
+const exchangeBtnCompleted = document.getElementById('exchange-btn-completed');
+const exchangeBtnCancelled = document.getElementById('exchange-btn-cancelled');
+
+const myExchangeSection = document.getElementById('my-exchange-section');
+const myExchangeStatus = document.getElementById('my-exchange-status');
+const myExchangeList = document.getElementById('my-exchange-list');
+const myExchangeDialog = document.getElementById('my-exchange-dialog');
+const myExchangeDetailTitle = document.getElementById('my-exchange-detail-title');
+const myExchangeDetailStatusBadge = document.getElementById('my-exchange-detail-status-badge');
+const myExchangeDetailDates = document.getElementById('my-exchange-detail-dates');
+const myExchangeDetailInfo = document.getElementById('my-exchange-detail-info');
+const myExchangeDetailDocsStatus = document.getElementById('my-exchange-detail-docs-status');
+const myExchangeDetailDocsList = document.getElementById('my-exchange-detail-docs-list');
+const myExchangeDetailCloseBtn = document.getElementById('my-exchange-detail-close-btn');
 
 function invalidateSelection() {
     version = null; selectedTarget = null; selectedScope = null;
@@ -44,155 +62,311 @@ function invalidateSelection() {
     document.getElementById('confirm-identity').checked = false;
 }
 
-async function loadActivities() {
-    if (!activitySection || activitySection.hidden) return;
-    activityListStatus.textContent = 'กำลังโหลดรายการกิจกรรม...';
-    activityList.replaceChildren();
+async function allWorkspaceRows(path) {
+    const data = []; let cursor = null;
+    do {
+        const result = await window.CstuAuth.request(path + '?limit=100' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
+        data.push(...result.data); cursor = result.page?.nextCursor;
+    } while (cursor);
+    return {data};
+}
+
+async function loadExchanges() {
+    if (!exchangeSection || exchangeSection.hidden) return;
+    exchangeListStatus.textContent = 'กำลังโหลดโครงการแลกเปลี่ยน...';
+    exchangeList.replaceChildren();
     try {
-        const res = await window.CstuAuth.request('/activities');
-        const activities = res.data || [];
-        if (!activities.length) {
-            activityListStatus.textContent = 'ไม่พบรายการกิจกรรมในขอบเขตของคุณ';
+        const res = await allWorkspaceRows('/exchanges');
+        const exchanges = res.data || [];
+        if (!exchanges.length) {
+            exchangeListStatus.textContent = 'ไม่พบโครงการแลกเปลี่ยนในขอบเขตของคุณ';
             return;
         }
-        activityListStatus.textContent = '';
+        exchangeListStatus.textContent = '';
         const session = await window.CstuAuth.refresh();
         const currentUserId = session?.user?.id;
-        for (const act of activities) {
+        const isStaff = (session.grants || []).some(g => g.role === 'staff' && g.active !== false);
+
+        for (const ex of exchanges) {
             const card = document.createElement('div');
-            card.style.cssText = 'border:1px solid #ddd;border-radius:6px;padding:1rem;background:#fafafa;';
+            card.style.cssText = 'border:1px solid #ddd; border-radius:6px; padding:1rem; background:#fff;';
 
             const header = document.createElement('div');
-            header.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;';
+            header.style.cssText = 'display:flex; justify-content:space-between; align-items:flex-start;';
 
-            const titleGroup = document.createElement('div');
-            const title = document.createElement('h3');
-            title.style.cssText = 'margin:0 0 0.25rem 0;color:var(--text-dark,#222);';
-            title.textContent = act.title;
+            const titleEl = document.createElement('h3');
+            titleEl.style.margin = '0';
+            titleEl.textContent = ex.title;
+            header.appendChild(titleEl);
 
-            const meta = document.createElement('div');
-            meta.style.cssText = 'font-size:0.85rem;color:#666;';
-            const typeLabels = {
-                academic_activity: 'กิจกรรมวิชาการ',
-                event: 'อีเวนต์ / ทั่วไป',
-                research: 'งานวิจัย'
-            };
-            meta.textContent = (typeLabels[act.type] || act.type) + (act.periodDate ? ' · ' + act.periodDate : '');
-            titleGroup.append(title, meta);
+            const statusBadge = document.createElement('span');
+            statusBadge.style.cssText = 'padding:0.2rem 0.5rem; border-radius:4px; font-size:0.85rem; background:#e0e7ff; color:#3730a3;';
+            statusBadge.textContent = ex.status || 'draft';
+            header.appendChild(statusBadge);
+            card.appendChild(header);
 
-            const actions = document.createElement('div');
-            actions.style.cssText = 'display:flex;gap:0.5rem;';
+            if (ex.startDate || ex.endDate) {
+                const datesEl = document.createElement('p');
+                datesEl.style.cssText = 'margin:0.5rem 0 0; color:#555; font-size:0.9rem;';
+                datesEl.textContent = 'ระยะเวลา: ' + (ex.startDate || '-') + ' ถึง ' + (ex.endDate || '-');
+                card.appendChild(datesEl);
+            }
 
-            const isStaff = userRoles.includes('staff');
-            const isAssigned = (act.responsibleUserIds || []).includes(currentUserId);
-            if (isStaff || (userRoles.includes('coordinator') && isAssigned)) {
+            if (ex.supportingInfoForParticipant) {
+                const infoEl = document.createElement('p');
+                infoEl.style.cssText = 'margin:0.5rem 0 0; font-size:0.9rem;';
+                infoEl.textContent = 'ข้อมูลสำหรับผู้เข้าร่วม: ' + ex.supportingInfoForParticipant;
+                card.appendChild(infoEl);
+            }
+
+            const scopedRoles = (session.grants || []).filter(g => g.active !== false && g.scopeId === ex.scopeId).map(g => g.role);
+            const canEdit = scopedRoles.includes('staff') || (scopedRoles.includes('coordinator') && (ex.responsibleUserIds || []).includes(currentUserId));
+            if (canEdit && exchangeDialog) {
+                const actions = document.createElement('div');
+                actions.style.marginTop = '0.75rem';
                 const editBtn = document.createElement('button');
                 editBtn.type = 'button';
-                editBtn.className = 'login-btn';
-                editBtn.style.cssText = 'padding:0.25rem 0.75rem;font-size:0.85rem;';
                 editBtn.textContent = 'แก้ไข';
-                editBtn.onclick = () => openEditActivity(act);
-                actions.append(editBtn);
+                editBtn.style.cssText = 'padding:0.3rem 0.6rem; cursor:pointer;';
+                editBtn.onclick = () => openEditExchange(ex);
+                actions.appendChild(editBtn);
+                card.appendChild(actions);
             }
-            header.append(titleGroup, actions);
 
-            const summary = document.createElement('p');
-            summary.style.cssText = 'margin:0.5rem 0 0.25rem 0;font-size:0.95rem;color:#333;';
-            summary.textContent = act.summary;
-
-            const footer = document.createElement('div');
-            footer.style.cssText = 'font-size:0.8rem;color:#777;margin-top:0.5rem;display:flex;gap:1.5rem;';
-            const pubBadge = document.createElement('span');
-            pubBadge.textContent = 'สถานะ: ' + (act.publication === 'public' ? 'เผยแพร่สาธารณะ' : 'ใช้งานภายใน');
-            const partnerSpan = document.createElement('span');
-            partnerSpan.textContent = 'คู่ความร่วมมือ: ' + act.partnerId;
-            footer.append(pubBadge, partnerSpan);
-
-            card.append(header, summary, footer);
-            activityList.append(card);
+            exchangeList.appendChild(card);
         }
     } catch {
-        activityListStatus.textContent = 'ไม่สามารถโหลดรายการกิจกรรมได้';
+        exchangeListStatus.textContent = 'โหลดโครงการแลกเปลี่ยนไม่สำเร็จ';
     }
 }
 
-function openAddActivityDialog(scopes) {
-    activityDialogTitle.textContent = 'เพิ่มกิจกรรม';
-    activityId.value = '';
-    activityVersion.value = '';
-    activityTitle.value = '';
-    activityType.value = 'academic_activity';
-    activitySummary.value = '';
-    activityFullDescription.value = '';
-    activityPartnerId.value = '';
-    activityCohostIds.value = '';
-    activityAgreementIds.value = '';
-    activityPeriodDate.value = '';
-    activityPeriodText.value = '';
-    activityImagePath.value = '';
-    activityPublication.value = 'internal';
-    activityResponsibleUsers.value = '';
-    activityStatus.textContent = '';
-    activitySubmitBtn.disabled = false;
+async function openMyExchangeDetail(ex) {
+    if (!myExchangeDialog) return;
+    myExchangeDetailTitle.textContent = ex.title || 'รายละเอียดโครงการแลกเปลี่ยน';
+    myExchangeDetailStatusBadge.textContent = ex.status || 'draft';
+    myExchangeDetailDates.textContent = (ex.startDate || ex.endDate)
+        ? 'ระยะเวลา: ' + (ex.startDate || '-') + ' ถึง ' + (ex.endDate || '-')
+        : '';
+    myExchangeDetailInfo.textContent = ex.supportingInfoForParticipant
+        ? 'ข้อมูลสำหรับผู้เข้าร่วม: ' + ex.supportingInfoForParticipant
+        : '';
 
-    activityScope.disabled = false;
-    activityScope.replaceChildren();
-    for (const s of scopes) {
+    myExchangeDetailDocsStatus.textContent = 'กำลังโหลดเอกสาร...';
+    myExchangeDetailDocsList.replaceChildren();
+
+    myExchangeDialog.showModal();
+
+    // Fetch individual detail for freshest projection
+    try {
+        const fresh = await window.CstuAuth.request('/me/exchanges/' + encodeURIComponent(ex.id));
+        if (fresh?.data) {
+            const d = fresh.data;
+            myExchangeDetailTitle.textContent = d.title || 'รายละเอียดโครงการแลกเปลี่ยน';
+            myExchangeDetailStatusBadge.textContent = d.status || 'draft';
+            myExchangeDetailDates.textContent = (d.startDate || d.endDate)
+                ? 'ระยะเวลา: ' + (d.startDate || '-') + ' ถึง ' + (d.endDate || '-')
+                : '';
+            myExchangeDetailInfo.textContent = d.supportingInfoForParticipant
+                ? 'ข้อมูลสำหรับผู้เข้าร่วม: ' + d.supportingInfoForParticipant
+                : '';
+        }
+    } catch (err) {
+        if (err.status === 401) {
+            window.location.replace('login.html');
+            return;
+        } else if (err.status === 404) {
+            myExchangeDetailInfo.textContent = 'ไม่พบโครงการแลกเปลี่ยน หรือคุณไม่ได้เป็นผู้เข้าร่วมโครงการนี้แล้ว';
+        }
+    }
+
+    // Fetch documents for participants
+    try {
+        const docRes = await allWorkspaceRows('/me/exchanges/' + encodeURIComponent(ex.id) + '/documents');
+        const docs = docRes.data || [];
+        if (!docs.length) {
+            myExchangeDetailDocsStatus.textContent = 'ไม่มีเอกสารแนบสำหรับผู้เข้าร่วม';
+        } else {
+            myExchangeDetailDocsStatus.textContent = '';
+            for (const doc of docs) {
+                const li = document.createElement('li');
+                li.style.cssText = 'padding:0.5rem; border:1px solid #eee; border-radius:4px; display:flex; justify-content:space-between; align-items:center;';
+
+                const nameSpan = document.createElement('span');
+                const sizeText = doc.size ? ' (' + Math.round(doc.size / 1024) + ' KB)' : '';
+                nameSpan.textContent = (doc.displayName || 'เอกสาร') + sizeText;
+                li.appendChild(nameSpan);
+
+                const downloadLink = document.createElement('a');
+                downloadLink.href = '/api/documents/' + encodeURIComponent(doc.id) + '/content?disposition=attachment';
+                downloadLink.target = '_blank';
+                downloadLink.rel = 'noopener';
+                downloadLink.textContent = 'ดาวน์โหลด';
+                downloadLink.style.cssText = 'padding:0.2rem 0.5rem; background:#2563eb; color:#fff; text-decoration:none; border-radius:4px; font-size:0.85rem;';
+                li.appendChild(downloadLink);
+
+                myExchangeDetailDocsList.appendChild(li);
+            }
+        }
+    } catch (err) {
+        if (err.status === 401) {
+            window.location.replace('login.html');
+            return;
+        }
+        myExchangeDetailDocsStatus.textContent = 'โหลดเอกสารไม่สำเร็จ';
+    }
+}
+
+async function loadMyExchanges() {
+    if (!myExchangeSection || myExchangeSection.hidden) return;
+    myExchangeStatus.textContent = 'กำลังโหลดโครงการแลกเปลี่ยนของคุณ...';
+    myExchangeList.replaceChildren();
+    try {
+        const res = await allWorkspaceRows('/me/exchanges');
+        const exchanges = res.data || [];
+        if (!exchanges.length) {
+            myExchangeStatus.textContent = 'ไม่พบโครงการแลกเปลี่ยนที่คุณเข้าร่วม';
+            return;
+        }
+        myExchangeStatus.textContent = '';
+        for (const ex of exchanges) {
+            const card = document.createElement('div');
+            card.style.cssText = 'border:1px solid #ddd; border-radius:6px; padding:1rem; background:#fff;';
+
+            const header = document.createElement('div');
+            header.style.cssText = 'display:flex; justify-content:space-between; align-items:flex-start;';
+
+            const titleEl = document.createElement('h3');
+            titleEl.style.margin = '0';
+            titleEl.textContent = ex.title;
+            header.appendChild(titleEl);
+
+            const statusBadge = document.createElement('span');
+            statusBadge.style.cssText = 'padding:0.2rem 0.5rem; border-radius:4px; font-size:0.85rem; background:#e0e7ff; color:#3730a3;';
+            statusBadge.textContent = ex.status || 'draft';
+            header.appendChild(statusBadge);
+            card.appendChild(header);
+
+            if (ex.startDate || ex.endDate) {
+                const datesEl = document.createElement('p');
+                datesEl.style.cssText = 'margin:0.5rem 0 0; color:#555; font-size:0.9rem;';
+                datesEl.textContent = 'ระยะเวลา: ' + (ex.startDate || '-') + ' ถึง ' + (ex.endDate || '-');
+                card.appendChild(datesEl);
+            }
+
+            if (ex.supportingInfoForParticipant) {
+                const infoEl = document.createElement('p');
+                infoEl.style.cssText = 'margin:0.5rem 0 0; font-size:0.9rem;';
+                infoEl.textContent = 'ข้อมูลสำหรับผู้เข้าร่วม: ' + ex.supportingInfoForParticipant;
+                card.appendChild(infoEl);
+            }
+
+            if (myExchangeDialog) {
+                const actions = document.createElement('div');
+                actions.style.marginTop = '0.75rem';
+                const detailBtn = document.createElement('button');
+                detailBtn.type = 'button';
+                detailBtn.textContent = 'ดูรายละเอียดและเอกสาร';
+                detailBtn.style.cssText = 'padding:0.3rem 0.6rem; cursor:pointer;';
+                detailBtn.onclick = () => openMyExchangeDetail(ex);
+                actions.appendChild(detailBtn);
+                card.appendChild(actions);
+            }
+
+            myExchangeList.appendChild(card);
+        }
+    } catch (err) {
+        if (err.status === 401) {
+            window.location.replace('login.html');
+            return;
+        }
+        myExchangeStatus.textContent = 'โหลดโครงการแลกเปลี่ยนไม่สำเร็จ';
+    }
+}
+
+function openAddExchangeDialog(scopes) {
+    exchangeDialogTitle.textContent = 'เพิ่มโครงการแลกเปลี่ยน';
+    exchangeId.value = '';
+    exchangeVersion.value = '';
+    exchangeTitle.value = '';
+    exchangePartnerIds.value = '';
+    exchangeAgreementId.value = '';
+    exchangeStartDate.value = '';
+    exchangeEndDate.value = '';
+    exchangeParticipantUsers.value = '';
+    exchangeSupportingInfo.value = '';
+    exchangeSupportingInfoParticipant.value = '';
+    exchangeResponsibleUsers.value = '';
+    exchangeStatus.textContent = '';
+    exchangeSubmitBtn.disabled = false;
+
+    exchangeScope.replaceChildren();
+    for (const sc of scopes) {
         const opt = document.createElement('option');
-        opt.value = s;
-        opt.textContent = s;
-        activityScope.append(opt);
+        opt.value = sc;
+        opt.textContent = sc;
+        exchangeScope.appendChild(opt);
     }
+    exchangeScope.disabled = false;
 
     const isStaff = userRoles.includes('staff');
-    if (staffActivityFields) staffActivityFields.hidden = !isStaff;
-    currentSubmissionKey = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : ('key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12));
-    activityDialog.showModal();
+    if (staffExchangeFields) staffExchangeFields.hidden = !isStaff;
+    if (exchangeStatusSection) exchangeStatusSection.hidden = true;
+
+    currentSubmissionKey = 'ex-key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    if (!exchangeDialog.open) exchangeDialog.showModal();
 }
 
-function openEditActivity(act) {
-    activityDialogTitle.textContent = 'แก้ไขกิจกรรม';
-    activityId.value = act.id;
-    activityVersion.value = act.version;
-    activityTitle.value = act.title || '';
-    activityType.value = act.type || 'academic_activity';
-    activitySummary.value = act.summary || '';
-    activityFullDescription.value = act.fullDescription || '';
-    activityPartnerId.value = act.partnerId || '';
-    activityCohostIds.value = (act.coHostPartnerIds || []).join(', ');
-    activityAgreementIds.value = (act.agreementIds || []).join(', ');
-    activityPeriodDate.value = act.periodDate || '';
-    activityPeriodText.value = act.periodText || '';
-    activityImagePath.value = act.imagePath || '';
-    activityPublication.value = act.publication || 'internal';
-    activityResponsibleUsers.value = (act.responsibleUserIds || []).join(', ');
-    activityStatus.textContent = '';
+function openEditExchange(ex) {
+    exchangeDialogTitle.textContent = 'แก้ไขโครงการแลกเปลี่ยน';
+    exchangeId.value = ex.id;
+    exchangeVersion.value = ex.version;
+    exchangeTitle.value = ex.title || '';
+    exchangePartnerIds.value = (ex.partnerIds || []).join(', ');
+    exchangeAgreementId.value = ex.agreementId || '';
+    exchangeStartDate.value = ex.startDate || '';
+    exchangeEndDate.value = ex.endDate || '';
+    exchangeParticipantUsers.value = (ex.participantUserIds || []).join(', ');
+    exchangeSupportingInfo.value = ex.supportingInfo || '';
+    exchangeSupportingInfoParticipant.value = ex.supportingInfoForParticipant || '';
+    exchangeResponsibleUsers.value = (ex.responsibleUserIds || []).join(', ');
+    exchangeStatus.textContent = '';
+    exchangeSubmitBtn.disabled = false;
 
-    activityScope.replaceChildren();
+    exchangeScope.replaceChildren();
     const opt = document.createElement('option');
-    opt.value = act.scopeId || '';
-    opt.textContent = act.scopeId || '';
-    activityScope.append(opt);
-    activityScope.disabled = true;
+    opt.value = ex.scopeId;
+    opt.textContent = ex.scopeId;
+    exchangeScope.appendChild(opt);
+    exchangeScope.disabled = true;
 
     const isStaff = userRoles.includes('staff');
-    if (staffActivityFields) staffActivityFields.hidden = !isStaff;
+    if (staffExchangeFields) staffExchangeFields.hidden = !isStaff;
 
-    if (!isStaff && act.publication === 'public') {
-        activityStatus.textContent = 'กิจกรรมนี้เผยแพร่แล้ว ผู้ประสานงานไม่สามารถแก้ไขข้อมูลแสดงผลได้ กรุณาติดต่อเจ้าหน้าที่';
-        activitySubmitBtn.disabled = true;
-    } else {
-        activitySubmitBtn.disabled = false;
+    if (exchangeStatusSection && exchangeStatusDisplay) {
+        exchangeStatusSection.hidden = false;
+        const curStatus = ex.status || 'draft';
+        exchangeStatusDisplay.textContent = curStatus;
+
+        // Button availability based on current status
+        if (exchangeBtnOngoing) exchangeBtnOngoing.disabled = (curStatus !== 'draft');
+        if (exchangeBtnCompleted) exchangeBtnCompleted.disabled = (curStatus !== 'ongoing');
+        if (exchangeBtnCancelled) exchangeBtnCancelled.disabled = !['draft', 'ongoing'].includes(curStatus);
     }
 
-    activityDialog.showModal();
+    currentSubmissionKey = null;
+    if (window.DocumentComponent) {
+        let docs = document.getElementById('exchange-documents');
+        if (!docs) { docs = document.createElement('section'); docs.id = 'exchange-documents'; exchangeDialog.appendChild(docs); }
+        window.DocumentComponent.mount(docs, 'exchange', ex);
+    }
+    if (!exchangeDialog.open) exchangeDialog.showModal();
 }
 
 async function refreshWorkspace() {
     openRoles.hidden = true;
-    if (activitySection) activitySection.hidden = true;
+    if (exchangeSection) exchangeSection.hidden = true;
+    if (myExchangeSection) myExchangeSection.hidden = true;
+    if (openAgreements) openAgreements.hidden = true;
     invalidateSelection();
     if (!window.CstuAuth?.enabled()) {
         workspaceStatus.textContent = 'พื้นที่ผู้ใช้ยังไม่เปิดใช้งาน กรุณากลับหน้าหลัก';
@@ -216,17 +390,44 @@ async function refreshWorkspace() {
         }
         openRoles.hidden = !managed.length;
 
-        // Activity section handling
-        const activeScopes = [...new Set((session.grants || []).filter(g => g.active).map(g => g.scopeId))];
-        const canManageActivities = userRoles.some(r => ['coordinator', 'staff', 'executive'].includes(r));
-        if (activitySection && canManageActivities && activeScopes.length) {
-            activitySection.hidden = false;
+        // Exchange section handling
+        const activeScopes = [...new Set((session.grants || []).filter(g => g.active !== false && ['coordinator','staff'].includes(g.role)).map(g => g.scopeId))];
+        const readScopes = (session.grants || []).filter(g => g.active !== false).map(g => g.scopeId);
+        const canManageExchanges = userRoles.some(r => ['coordinator', 'staff', 'executive'].includes(r));
+        if (exchangeSection && canManageExchanges && readScopes.length) {
+            exchangeSection.hidden = false;
             const canAdd = userRoles.some(r => ['coordinator', 'staff'].includes(r));
-            if (openAddActivity) {
-                openAddActivity.hidden = !canAdd;
-                openAddActivity.onclick = () => openAddActivityDialog(activeScopes);
+            if (openAddExchange) {
+                openAddExchange.hidden = !canAdd;
+                openAddExchange.onclick = () => openAddExchangeDialog(activeScopes);
             }
-            await loadActivities();
+            await loadExchanges();
+        }
+
+        const query = new URLSearchParams(window.location.search);
+        if (query.get('embed') === 'exchange' && !embeddedActionOpened) {
+            embeddedActionOpened = true;
+            if (query.get('id')) {
+                const fresh = (await window.CstuAuth.request('/exchanges/' + encodeURIComponent(query.get('id')))).data;
+                openEditExchange(fresh);
+            } else if (activeScopes.length) openAddExchangeDialog(activeScopes);
+        }
+
+        // My Exchange section handling (students)
+        const isStudent = userRoles.includes('student');
+        if (myExchangeSection && isStudent && readScopes.length) {
+            myExchangeSection.hidden = false;
+            await loadMyExchanges();
+        }
+        const canAgreement = userRoles.some(r => ['coordinator', 'staff'].includes(r));
+        if (openAgreements) {
+            openAgreements.hidden = !canAgreement;
+            openAgreements.onclick = () => {
+                if (window.AgreementComponent) {
+                    const defaultScope = session.grants.find(g => g.active !== false && ['staff','coordinator'].includes(g.role))?.scopeId;
+                    window.AgreementComponent.openCreate(defaultScope);
+                }
+            };
         }
     } catch { workspaceStatus.textContent = 'ตรวจสิทธิ์ไม่ได้ กรุณาลองใหม่ภายหลัง'; }
 }
@@ -265,83 +466,170 @@ document.getElementById('role-form').onsubmit = async event => {
     } finally { saveRoles.disabled = version === null; }
 };
 
-if (activityCloseBtn) {
-    activityCloseBtn.onclick = () => activityDialog.close();
+if (exchangeCloseBtn && exchangeDialog) {
+    exchangeCloseBtn.onclick = () => exchangeDialog.close();
 }
 
-if (activityForm) {
-    activityForm.onsubmit = async event => {
+if (myExchangeDetailCloseBtn && myExchangeDialog) {
+    myExchangeDetailCloseBtn.onclick = () => myExchangeDialog.close();
+}
+
+if (exchangeForm) {
+    exchangeForm.onsubmit = async event => {
         event.preventDefault();
-        activityStatus.textContent = '';
-        const titleVal = activityTitle.value.trim();
-        const summaryVal = activitySummary.value.trim();
-        const partnerIdVal = activityPartnerId.value.trim();
-        if (!titleVal || !summaryVal || !partnerIdVal) {
-            activityStatus.textContent = 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน';
+        const isCreate = !exchangeId.value;
+        const parseCsv = v => v.split(',').map(s => s.trim()).filter(Boolean);
+
+        const partners = parseCsv(exchangePartnerIds.value);
+        if (!partners.length) {
+            exchangeStatus.textContent = 'กรุณาระบุรหัสคู่ความร่วมมืออย่างน้อย 1 รายการ';
             return;
         }
 
         const payload = {
-            title: titleVal,
-            type: activityType.value,
-            summary: summaryVal,
-            partnerId: partnerIdVal,
+            title: exchangeTitle.value.trim(),
+            partnerIds: partners,
         };
 
-        const isCreate = !activityId.value;
         if (isCreate) {
-            payload.scopeId = activityScope.value;
+            payload.scopeId = exchangeScope.value;
         }
-        if (activityFullDescription.value.trim()) payload.fullDescription = activityFullDescription.value.trim();
-        if (activityPeriodDate.value) payload.periodDate = activityPeriodDate.value;
-        if (activityPeriodText.value.trim()) payload.periodText = activityPeriodText.value.trim();
-        if (activityImagePath.value.trim()) payload.imagePath = activityImagePath.value.trim();
 
-        const parseCsv = v => v.split(',').map(s => s.trim()).filter(Boolean);
-        const cohosts = parseCsv(activityCohostIds.value);
-        if (cohosts.length) payload.coHostPartnerIds = cohosts;
-        const agreements = parseCsv(activityAgreementIds.value);
-        if (agreements.length) payload.agreementIds = agreements;
+        if (exchangeAgreementId.value.trim()) {
+            payload.agreementId = exchangeAgreementId.value.trim();
+        }
+
+        if (exchangeStartDate.value) {
+            payload.startDate = exchangeStartDate.value;
+        }
+
+        if (exchangeEndDate.value) {
+            payload.endDate = exchangeEndDate.value;
+        }
+
+        const participants = parseCsv(exchangeParticipantUsers.value);
+        payload.participantUserIds = participants;
+
+        payload.supportingInfo = exchangeSupportingInfo.value.trim();
+        payload.supportingInfoForParticipant = exchangeSupportingInfoParticipant.value.trim();
 
         if (userRoles.includes('staff')) {
-            payload.publication = activityPublication.value;
-            const resp = parseCsv(activityResponsibleUsers.value);
-            if (resp.length) payload.responsibleUserIds = resp;
+            const resp = parseCsv(exchangeResponsibleUsers.value);
+            if (resp.length) {
+                payload.responsibleUserIds = resp;
+            }
         }
 
-        activitySubmitBtn.disabled = true;
-        activityStatus.textContent = 'กำลังบันทึกข้อมูล...';
+        if (exchangeSubmitBtn.disabled) return;
+        const fingerprint = JSON.stringify(payload);
+        if (isCreate && submissionFingerprint !== fingerprint) {
+            submissionFingerprint = fingerprint;
+            currentSubmissionKey = 'ex-key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        }
+        exchangeSubmitBtn.disabled = true;
+        exchangeStatus.textContent = 'กำลังบันทึกข้อมูล...';
 
         try {
             if (isCreate) {
-                await window.CstuAuth.create('/activities', payload, currentSubmissionKey);
+                await window.CstuAuth.create('/exchanges', payload, currentSubmissionKey);
             } else {
-                await window.CstuAuth.mutate('/activities/' + encodeURIComponent(activityId.value), payload, Number(activityVersion.value));
+                await window.CstuAuth.mutate('/exchanges/' + encodeURIComponent(exchangeId.value), payload, Number(exchangeVersion.value));
             }
-            activityDialog.close();
-            await loadActivities();
+            exchangeDialog.close();
+            await loadExchanges();
+            if (window.parent !== window) window.parent.postMessage({type:'exchange-saved'}, window.location.origin);
         } catch (error) {
-            activitySubmitBtn.disabled = false;
+            exchangeSubmitBtn.disabled = false;
             if (error.status === 401) {
                 window.location.replace('login.html');
             } else if (error.status === 403) {
-                activityStatus.textContent = 'คุณไม่มีสิทธิ์ดำเนินการนี้';
+                exchangeStatus.textContent = 'คุณไม่มีสิทธิ์ดำเนินการนี้';
             } else if (error.status === 409) {
-                activityStatus.textContent = 'ข้อมูลถูกแก้ไขโดยผู้อื่นแล้ว (Version Conflict) กำลังโหลดข้อมูลล่าสุด...';
+                exchangeStatus.textContent = 'ข้อมูลถูกแก้ไขโดยผู้อื่นแล้ว (Version Conflict) กำลังโหลดข้อมูลล่าสุด...';
                 try {
-                    const fresh = await window.CstuAuth.request('/activities/' + encodeURIComponent(activityId.value));
-                    if (fresh?.data) openEditActivity(fresh.data);
+                    const fresh = await window.CstuAuth.request('/exchanges/' + encodeURIComponent(exchangeId.value));
+                    if (fresh?.data) {
+                        const reload = document.createElement('button'); reload.type = 'button'; reload.textContent = 'โหลดข้อมูลล่าสุดเพื่อตรวจทาน';
+                        reload.onclick = () => openEditExchange(fresh.data); exchangeStatus.appendChild(reload);
+                    }
                 } catch {
-                    activityStatus.textContent = 'โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณาลองใหม่';
+                    exchangeStatus.textContent = 'โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณาลองใหม่';
                 }
             } else if (error.status === 422) {
-                activityStatus.textContent = 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบวันที่ ข้อมูลคู่ความร่วมมือ หรือผู้รับผิดชอบ';
+                exchangeStatus.textContent = 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบวันที่ รหัสคู่ความร่วมมือ หรือรหัสผู้ใช้/ผู้เข้าร่วม';
             } else {
-                activityStatus.textContent = error.message || 'บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+                exchangeStatus.textContent = error.message || 'บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
             }
         }
     };
 }
+
+async function handleStatusTransition(toStatus) {
+    if (!exchangeId.value || !exchangeVersion.value) return;
+    let reason = null;
+    let suppInfo = null;
+
+    if (toStatus === 'cancelled') {
+        reason = window.prompt('กรุณาระบุเหตุผลการยกเลิกโครงการ:');
+        if (!reason || !reason.trim()) {
+            exchangeStatus.textContent = 'การยกเลิกโครงการต้องระบุเหตุผล';
+            return;
+        }
+    } else if (toStatus === 'completed') {
+        suppInfo = exchangeSupportingInfo.value.trim();
+        if (!suppInfo) {
+            suppInfo = window.prompt('กรุณาระบุข้อมูลสนับสนุนการเสร็จสิ้นโครงการ (Supporting Info):');
+            if (!suppInfo || !suppInfo.trim()) {
+                exchangeStatus.textContent = 'การเสร็จสิ้นโครงการต้องระบุข้อมูลสนับสนุน';
+                return;
+            }
+        }
+    }
+
+    const payload = { to: toStatus };
+    if (reason) payload.reason = reason.trim();
+    if (suppInfo) payload.supportingInfo = suppInfo.trim();
+
+    if (exchangeSubmitBtn.disabled) return;
+    exchangeSubmitBtn.disabled = true;
+    exchangeStatus.textContent = 'กำลังเปลี่ยนสถานะ...';
+    try {
+        const session = await window.CstuAuth.refresh();
+        await window.CstuAuth.request('/exchanges/' + encodeURIComponent(exchangeId.value) + '/status', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-Token': session.csrfToken,
+                'If-Match': '"' + exchangeVersion.value + '"'
+            },
+            body: JSON.stringify(payload)
+        });
+        exchangeDialog.close();
+        await loadExchanges();
+        if (window.parent !== window) window.parent.postMessage({type:'exchange-saved'}, window.location.origin);
+    } catch (error) {
+        if (error.status === 401) {
+            window.location.replace('login.html');
+        } else if (error.status === 403) {
+            exchangeStatus.textContent = 'คุณไม่มีสิทธิ์เปลี่ยนสถานะนี้';
+        } else if (error.status === 409) {
+            exchangeStatus.textContent = 'ไม่สามารถเปลี่ยนสถานะได้ตามเงื่อนไข (Conflict) กำลังโหลดข้อมูลล่าสุด...';
+            try {
+                const fresh = await window.CstuAuth.request('/exchanges/' + encodeURIComponent(exchangeId.value));
+                if (fresh?.data) openEditExchange(fresh.data);
+            } catch {
+                exchangeStatus.textContent = 'โหลดข้อมูลล่าสุดไม่สำเร็จ';
+            }
+        } else if (error.status === 422) {
+            exchangeStatus.textContent = 'ข้อมูลสำหรับเปลี่ยนสถานะไม่ถูกต้อง';
+        } else {
+            exchangeStatus.textContent = error.message || 'เปลี่ยนสถานะไม่สำเร็จ';
+        }
+    } finally { exchangeSubmitBtn.disabled = false; }
+}
+
+if (exchangeBtnOngoing) exchangeBtnOngoing.onclick = () => handleStatusTransition('ongoing');
+if (exchangeBtnCompleted) exchangeBtnCompleted.onclick = () => handleStatusTransition('completed');
+if (exchangeBtnCancelled) exchangeBtnCancelled.onclick = () => handleStatusTransition('cancelled');
 
 window.addEventListener('focus', refreshWorkspace);
 window.addEventListener('pageshow', refreshWorkspace);

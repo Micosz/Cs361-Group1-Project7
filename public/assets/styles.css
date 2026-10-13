@@ -270,3 +270,12 @@ main { flex: 1; }
   display: inline-block;
   white-space: nowrap;
 }
+
+/* Partner detail: compact chronological public activity links. */
+.partner-history { list-style: none; padding: 0; margin: 1rem 0; }
+.partner-history li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: .75rem; padding: .75rem 0; border-bottom: 1px solid #e5e7eb; align-items: baseline; }
+.partner-history time, .partner-history li > span { color: #666; font-size: .85rem; }
+.partner-history button { font: inherit; text-align: left; color: var(--text-dark, #222); background: transparent; border: 0; padding: .25rem; cursor: pointer; overflow-wrap: anywhere; }
+.partner-history button:hover { text-decoration: underline; }
+.partner-history button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+@media (max-width: 480px) { .partner-history li { grid-template-columns: 1fr; gap: .2rem; } }

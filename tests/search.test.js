@@ -45,7 +45,7 @@ function page(fetchImpl = async () => response()) {
             elements.add(this);
         }
         set innerHTML(html) { this.html = html; this.children = []; this.writes++; }
-        get innerHTML() { return this.html; }
+        get innerHTML() { return this.html + this.children.map(child => child.textContent + child.innerHTML).join(''); }
         replaceChildren(...children) { this.children = children; this.html = ''; this.writes++; }
         appendChild(child) { this.children.push(child); }
         prepend(child) { this.children.unshift(child); }

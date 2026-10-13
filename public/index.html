@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>CSTUHub - Information Board</title>
-    <link rel="stylesheet" href="assets/styles.css?v=2">
+    <link rel="stylesheet" href="assets/styles.css?v=3">
     <link rel="stylesheet" href="assets/spatial.css?v=10">
     <link rel="stylesheet" href="assets/showcase.css?v=4">
     <link rel="stylesheet" href="assets/cinematic.css?v=1">
@@ -12,9 +12,12 @@
     <link rel="stylesheet" href="assets/portal.css?v=6">
     <script src="assets/auth-config.js" defer></script>
     <script src="assets/auth-client.js" defer></script>
-    <script src="assets/script.js?v=6" defer></script>
-    <link rel="stylesheet" href="assets/role-menu.css?v=2">
-    <script src="assets/role-menu.js?v=2" defer></script>
+    <script src="assets/documents.js" defer></script>
+    <script src="assets/agreement.js" defer></script>
+    <script src="assets/script.js?v=7" defer></script>
+    <link rel="stylesheet" href="assets/role-menu.css?v=3">
+    <script src="assets/work-navigation.js?v=1" defer></script>
+    <script src="assets/role-menu.js?v=3" defer></script>
     <script src="assets/filter-presentation.js?v=5" defer></script>
     <script src="assets/presentation.js?v=9" defer></script>
     <script src="assets/opening.js?v=11" defer></script>
@@ -142,6 +145,7 @@
 
         <section id="sectionEvent" class="mb-section" style="display: none;">
             <div class="filter-wrapper">
+                <button type="button" id="btnOpenAgreements" class="modern-select" style="display: none;" onclick="if(window.AgreementComponent) window.AgreementComponent.openCreate()">ข้อตกลงความร่วมมือ (MoU/MoA)</button>
                 <select id="filterEvent" class="modern-select" onchange="applyEventFilters()">
                     <option value="all">กิจกรรมทั้งหมด</option>
                     <option value="internship">โครงการฝึกงานและสหกิจฯ</option>

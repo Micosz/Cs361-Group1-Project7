@@ -13,7 +13,7 @@
         try {
             const response = await fetch('/api' + path, {
                 ...options, credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
-                headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+                headers: { ...(typeof FormData !== 'undefined' && options.body instanceof FormData ? {} : {'Content-Type': 'application/json'}), ...(options.headers || {}) }
             });
             let data;
             try { data = await response.json(); }
@@ -84,6 +84,6 @@
     const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('cstuhub-auth') : null;
     function notify() { channel?.postMessage('changed'); }
     channel?.addEventListener('message', () => window.dispatchEvent(new Event('authchange')));
-    window.CstuAuth = { enabled, refresh, login, logout, request, mutate, create,
+    window.CstuAuth = { state: () => state, enabled, refresh, login, logout, request, mutate, create,
         roles: data => [...new Set((data?.grants || []).map(g => g.role))] };
 })();
