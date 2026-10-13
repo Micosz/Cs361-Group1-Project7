@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="assets/portal.css?v=6">
     <script src="assets/auth-config.js" defer></script>
     <script src="assets/auth-client.js" defer></script>
+    <script src="assets/agreement.js" defer></script>
     <script src="assets/script.js?v=6" defer></script>
     <link rel="stylesheet" href="assets/role-menu.css?v=2">
     <script src="assets/role-menu.js?v=2" defer></script>
@@ -142,6 +143,7 @@
 
         <section id="sectionEvent" class="mb-section" style="display: none;">
             <div class="filter-wrapper">
+                <button type="button" id="btnOpenAgreements" class="modern-select" style="display: none;" onclick="if(window.AgreementComponent) window.AgreementComponent.openCreate()">ข้อตกลงความร่วมมือ (MoU/MoA)</button>
                 <select id="filterEvent" class="modern-select" onchange="applyEventFilters()">
                     <option value="all">กิจกรรมทั้งหมด</option>
                     <option value="internship">โครงการฝึกงานและสหกิจฯ</option>

@@ -6,6 +6,7 @@ const target = document.getElementById('role-target');
 const choices = document.getElementById('role-choices');
 const saveRoles = document.getElementById('save-roles');
 const roleStatus = document.getElementById('role-status');
+const openAgreements = document.getElementById('open-agreements');
 let version = null, selectedTarget = null, selectedScope = null;
 let userRoles = [];
 let currentSubmissionKey = null;
@@ -356,6 +357,7 @@ async function refreshWorkspace() {
     openRoles.hidden = true;
     if (exchangeSection) exchangeSection.hidden = true;
     if (myExchangeSection) myExchangeSection.hidden = true;
+    if (openAgreements) openAgreements.hidden = true;
     invalidateSelection();
     if (!window.CstuAuth?.enabled()) {
         workspaceStatus.textContent = 'พื้นที่ผู้ใช้ยังไม่เปิดใช้งาน กรุณากลับหน้าหลัก';
@@ -407,6 +409,16 @@ async function refreshWorkspace() {
         if (myExchangeSection && isStudent && readScopes.length) {
             myExchangeSection.hidden = false;
             await loadMyExchanges();
+        }
+        const canAgreement = userRoles.some(r => ['coordinator', 'staff'].includes(r));
+        if (openAgreements) {
+            openAgreements.hidden = !canAgreement;
+            openAgreements.onclick = () => {
+                if (window.AgreementComponent) {
+                    const defaultScope = session.grants.find(g => g.active !== false && ['staff','coordinator'].includes(g.role))?.scopeId;
+                    window.AgreementComponent.openCreate(defaultScope);
+                }
+            };
         }
     } catch { workspaceStatus.textContent = 'ตรวจสิทธิ์ไม่ได้ กรุณาลองใหม่ภายหลัง'; }
 }
@@ -489,13 +501,8 @@ if (exchangeForm) {
         const participants = parseCsv(exchangeParticipantUsers.value);
         payload.participantUserIds = participants;
 
-        if (true) {
-            payload.supportingInfo = exchangeSupportingInfo.value.trim();
-        }
-
-        if (true) {
-            payload.supportingInfoForParticipant = exchangeSupportingInfoParticipant.value.trim();
-        }
+        payload.supportingInfo = exchangeSupportingInfo.value.trim();
+        payload.supportingInfoForParticipant = exchangeSupportingInfoParticipant.value.trim();
 
         if (userRoles.includes('staff')) {
             const resp = parseCsv(exchangeResponsibleUsers.value);

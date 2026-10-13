@@ -15,7 +15,7 @@ FIELDS = {
 ARRAYS = {
     'partner': {'responsibleUserIds'},
     'activity': {'responsibleUserIds'},
-    'agreement': {'responsibleUserIds'},
+    'agreement': {'responsibleUserIds', 'partnerIds'},
     'exchange': {'partnerIds', 'responsibleUserIds', 'participantUserIds'},
 }
 STUDENT = {'id', 'title', 'startDate', 'endDate', 'status', 'supportingInfoForParticipant'}
