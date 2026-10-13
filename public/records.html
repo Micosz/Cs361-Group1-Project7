@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ข้อมูลความร่วมมือ — CSTUHub</title>
+<link rel="stylesheet" href="assets/styles.css"><link rel="stylesheet" href="assets/records.css">
+<script src="assets/auth-config.js" defer></script><script src="assets/auth-client.js" defer></script>
+<script src="assets/work-navigation.js" defer></script><script src="assets/documents.js" defer></script><script src="assets/agreement.js" defer></script><script src="assets/exchange-adapter.js" defer></script><script src="assets/basic-record-forms.js" defer></script><script src="assets/records.js" defer></script>
+</head>
+<body><main class="records-shell">
+<a href="index.html">กลับหน้าหลัก</a><h1 id="records-title">ข้อมูลความร่วมมือ</h1>
+<nav id="record-links" aria-label="ชนิดข้อมูล"></nav>
+<p id="records-status" role="status">กำลังตรวจสิทธิ์</p>
+<form id="records-search" hidden>
+<label>ค้นหาชื่อ <input name="q" maxlength="200" type="search"></label>
+<label id="type-field">ประเภท <select name="type"><option value="">ทั้งหมด</option></select></label>
+<label id="status-field">สถานะ <select name="status"><option value="">ทั้งหมด</option></select></label>
+<label id="start-field">เริ่มต้น <input name="startDate" type="date"></label>
+<label id="end-field">สิ้นสุด <input name="endDate" type="date"></label>
+<button type="submit">ค้นหา</button><button type="reset">ล้างเงื่อนไข</button>
+</form>
+<button id="records-retry" hidden type="button">ลองใหม่</button>
+<div id="records-content"></div><button id="records-next" hidden type="button">หน้าถัดไป</button>
+<dialog id="record-detail"><button id="detail-close" type="button">ปิด</button><h2 id="detail-title"></h2><p id="detail-status" role="status"></p><dl id="detail-fields"></dl><div id="detail-actions"></div></dialog>
+</main></body></html>

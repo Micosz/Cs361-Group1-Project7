@@ -6,18 +6,22 @@ Do not inject this repository into the deployed application. Production requires
 persistent scoped storage and atomic user/session/target/parent/reference checks.
 """
 
+import base64
 import copy
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import threading
 import time
 import uuid
 
 from ..auth.session_service import AuthError
+from ..permissions.policy import require_assignee, require_reference
 from .validators import (
     validate_partner_payload,
     validate_contact_payload,
     validate_history_payload,
     validate_activity_payload,
+    validate_exchange_payload,
+    validate_exchange_status_payload,
 )
 
 
@@ -70,7 +74,9 @@ class PartnerRepository:
             # 1. Preconditions & Concurrency Checks
             if self.service is not None:
                 user = getattr(self.service.users, 'user', None)
-                if user is None and hasattr(self.service.users, 'store'):
+                if callable(user):
+                    user = user(conditions.user_id)
+                elif user is None and hasattr(self.service.users, 'store'):
                     user = self.service.users.store.user(conditions.user_id)
                 if user is None or not user.active or user.authz_version != conditions.authz_version:
                     raise AuthError('SESSION_REVOKED', 401)
@@ -170,4 +176,226 @@ class PartnerRepository:
 
     def content(self, document: dict, disposition: str):
         raise AuthError('NOT_FOUND', 404)
+
+
+class ExchangeRepository(PartnerRepository):
+    """In-memory repository for Exchanges (Issue #104 / Parent #85)."""
+
+    def __init__(self, service=None, initial_records=None, clock=None, document_contents=None):
+        super().__init__(service, initial_records, clock)
+        self.document_contents = dict(document_contents or {})
+
+    def content(self, document: dict, disposition: str):
+        with self._lock:
+            doc_id = document.get('id')
+            content_bytes = self.document_contents.get(doc_id, b'%PDF-1.4 mock exchange document')
+            mime = document.get('mime', 'application/pdf')
+            filename = document.get('displayName', 'document.pdf')
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'content-type': mime,
+                    'content-disposition': f"{disposition}; filename=\"{filename}\"",
+                },
+                'body': base64.b64encode(content_bytes).decode('utf-8') if isinstance(content_bytes, bytes) else content_bytes,
+                'isBase64Encoded': True,
+            }
+
+    def mutate(self, kind: str, action: str, payload: dict, record: dict | None,
+               parent: dict | None, conditions, idempotency_key: str | None,
+               upload=None) -> dict:
+        if kind != 'exchange' or action not in {'create', 'update', 'status'} or upload is not None:
+            return super().mutate(kind, action, payload, record, parent, conditions, idempotency_key, upload)
+
+        with self._lock:
+            # 1. Preconditions & Concurrency Checks
+            if self.service is not None:
+                user = getattr(self.service.users, 'user', None)
+                if callable(user):
+                    user = user(conditions.user_id)
+                elif user is None and hasattr(self.service.users, 'store'):
+                    user = self.service.users.store.user(conditions.user_id)
+                if user is None or not user.active or user.authz_version != conditions.authz_version:
+                    raise AuthError('SESSION_REVOKED', 401)
+                session = self.service.store.get(conditions.session_hash) if hasattr(self.service, 'store') else None
+                if not session:
+                    raise AuthError('SESSION_REVOKED', 401)
+
+            # Optimistic concurrency check for target record
+            if conditions.target_id is not None:
+                current = self.rows.get((kind, conditions.target_id))
+                if not current or current.get('version') != conditions.target_version:
+                    raise AuthError('VERSION_CONFLICT', 409)
+
+            # 2. Idempotency Check for Create (24 hours)
+            if action == 'create' and idempotency_key:
+                cache_key = (conditions.user_id, kind, conditions.parent_id, idempotency_key)
+                cached = self.idempotency_cache.get(cache_key)
+                if cached:
+                    cached_payload, cached_result, timestamp = cached
+                    if self.clock() - timestamp < 86400:
+                        if cached_payload == payload:
+                            return copy.deepcopy(cached_result)
+                        else:
+                            raise AuthError('IDEMPOTENCY_CONFLICT', 409)
+
+            # 3. Domain Business Validation
+            is_create = (action == 'create')
+            if action == 'status':
+                validate_exchange_status_payload(payload)
+                if not record:
+                    raise AuthError('NOT_FOUND', 404)
+                current_status = record.get('status', 'draft')
+                to_status = payload['to']
+
+                # Rules from transition table:
+                # - draft -> ongoing: dates/partners/responsible and participant >= 1 valid, end >= today
+                # - ongoing -> completed: supportingInfo required
+                # - draft/ongoing -> cancelled: reason required
+                # - draft -> draft / ongoing -> ongoing: valid
+                # - completed / cancelled cannot transition to other statuses (INVALID_TRANSITION 409)
+                today_str = datetime.fromtimestamp(self.clock(), timezone(timedelta(hours=7))).strftime('%Y-%m-%d')
+                if current_status == 'draft' and to_status == 'ongoing':
+                    # Verify required fields for ongoing
+                    if not record.get('partnerIds') or not record.get('responsibleUserIds'):
+                        raise AuthError('INVALID_TRANSITION', 409)
+                    participants = record.get('participantUserIds', [])
+                    if not isinstance(participants, list) or len(participants) < 1:
+                        raise AuthError('INVALID_TRANSITION', 409)
+                    if not record.get('startDate') or not record.get('endDate'):
+                        raise AuthError('INVALID_TRANSITION', 409)
+                    if record['endDate'] < today_str:
+                        raise AuthError('INVALID_TRANSITION', 409)
+                elif current_status == 'ongoing' and to_status == 'completed':
+                    supp_info = payload.get('supportingInfo')
+                    if not supp_info or not isinstance(supp_info, str) or not supp_info.strip():
+                        raise AuthError('INVALID_TRANSITION', 409)
+                elif current_status in {'draft', 'ongoing'} and to_status == 'cancelled':
+                    reason = payload.get('reason')
+                    if not reason or not isinstance(reason, str) or not reason.strip():
+                        raise AuthError('INVALID_TRANSITION', 409)
+                elif current_status == to_status:
+                    pass
+                else:
+                    raise AuthError('INVALID_TRANSITION', 409)
+
+            else:
+                is_create = (action == 'create')
+                validate_exchange_payload(payload, is_create=is_create)
+                combined = dict(record or {}, **payload)
+                start, end = combined.get('startDate'), combined.get('endDate')
+                if start is not None and end is not None and start > end:
+                    raise AuthError('INVALID_FIELDS', 422)
+
+                # Verify partnerIds reference valid partners in same scope
+                partner_ids = payload.get('partnerIds') or (record.get('partnerIds') if record else [])
+                for pid in partner_ids:
+                    partner_row = self.rows.get(('partner', pid))
+                    if partner_row is None:
+                        raise AuthError('NOT_FOUND', 404)
+                    if partner_row.get('scopeId') != conditions.scope_id:
+                        raise AuthError('NOT_FOUND', 404)
+
+                # Verify agreementId if present
+                agr_id = payload.get('agreementId')
+                if agr_id:
+                    agr_row = self.rows.get(('agreement', agr_id))
+                    if agr_row is None or agr_row.get('scopeId') != conditions.scope_id:
+                        raise AuthError('NOT_FOUND', 404)
+
+                # Helper to get user object
+                def get_user_obj(uid):
+                    if not self.service or not hasattr(self.service, 'users'):
+                        return None
+                    u = getattr(self.service.users, 'user', None)
+                    if callable(u):
+                        return u(uid)
+                    if hasattr(self.service.users, 'get'):
+                        return self.service.users.get(uid)
+                    if hasattr(self.service.users, 'store'):
+                        return self.service.users.store.user(uid)
+                    return None
+
+                # Validate responsibleUserIds against active users in scope (for staff)
+                resp_users = payload.get('responsibleUserIds')
+                if resp_users:
+                    for uid in resp_users:
+                        target_user = get_user_obj(uid)
+                        if not target_user:
+                            raise AuthError('INVALID_FIELDS', 422)
+                        try:
+                            require_assignee(target_user, conditions.scope_id, participant=False)
+                        except AuthError:
+                            raise AuthError('INVALID_FIELDS', 422)
+
+                # Validate participantUserIds against active verified students in scope (#105)
+                part_users = payload.get('participantUserIds')
+                if part_users:
+                    for uid in part_users:
+                        target_user = get_user_obj(uid)
+                        if not target_user:
+                            raise AuthError('INVALID_FIELDS', 422)
+                        try:
+                            require_assignee(target_user, conditions.scope_id, participant=True)
+                        except AuthError:
+                            raise AuthError('INVALID_FIELDS', 422)
+
+            # 4. Build and Persist Record
+            now_iso = datetime.now(timezone.utc).isoformat()
+            if is_create:
+                rec_id = f"exchange-{uuid.uuid4().hex[:12]}"
+                saved = {
+                    'id': rec_id,
+                    'entityType': 'exchange',
+                    'schemaVersion': 3,
+                    'scopeId': conditions.scope_id,
+                    'createdAt': now_iso,
+                    'updatedAt': now_iso,
+                    'createdBy': conditions.user_id,
+                    'updatedBy': conditions.user_id,
+                    'version': 1,
+                    'status': 'draft',
+                    'participantUserIds': payload.get('participantUserIds', []),
+                    'responsibleUserIds': payload.get('responsibleUserIds', [conditions.user_id]),
+                }
+                saved.update(payload)
+                # Ensure server owned fields cannot be overwritten by client payload
+                saved['id'] = rec_id
+                saved['entityType'] = 'exchange'
+                saved['schemaVersion'] = 3
+                saved['scopeId'] = conditions.scope_id
+                saved['status'] = 'draft'
+                saved['version'] = 1
+                saved['createdBy'] = conditions.user_id
+                saved['updatedBy'] = conditions.user_id
+            elif action == 'status':
+                saved = copy.deepcopy(record)
+                saved['updatedAt'] = now_iso
+                saved['updatedBy'] = conditions.user_id
+                saved['version'] = record.get('version', 1) + 1
+                saved['status'] = payload['to']
+                if 'reason' in payload:
+                    saved['reason'] = payload['reason']
+                if 'supportingInfo' in payload:
+                    saved['supportingInfo'] = payload['supportingInfo']
+            else:
+                saved = copy.deepcopy(record)
+                saved['updatedAt'] = now_iso
+                saved['updatedBy'] = conditions.user_id
+                saved['version'] = record.get('version', 1) + 1
+                saved.update(payload)
+
+            self.rows[(kind, saved['id'])] = copy.deepcopy(saved)
+            self.writes += 1
+
+            # 5. Cache Idempotency for Create
+            if action == 'create' and idempotency_key:
+                cache_key = (conditions.user_id, kind, conditions.parent_id, idempotency_key)
+                self.idempotency_cache[cache_key] = (
+                    copy.deepcopy(payload),
+                    copy.deepcopy(saved),
+                    self.clock(),
+                )
+
+            return copy.deepcopy(saved)
 

@@ -655,6 +655,11 @@ async function openModal(id, type) {
         modalDetails.innerHTML = detailsHTML;
     }
 
+    if (window.CstuWork) {
+        const actions = document.createElement('div');
+        modalDetails.appendChild(actions);
+        window.CstuWork.attachDetailAction(actions, type === 'partner' ? 'partners' : 'activities', data.id);
+    }
     document.getElementById('detailModal').style.display = 'flex';
 }
 
@@ -875,3 +880,23 @@ function generatePartnerLinks(coHosts, partnerName, partnerId) {
     }
     return link(partnerName, partnerId);
 }
+
+async function checkAgreementEntryVisibility() {
+    const btn = document.getElementById('btnOpenAgreements');
+    if (!btn) return;
+    if (!window.CstuAuth?.enabled()) {
+        btn.style.display = 'none';
+        return;
+    }
+    try {
+        const session = await window.CstuAuth.refresh();
+        const roles = window.CstuAuth.roles(session);
+        const canManage = roles.some(r => ['coordinator', 'staff'].includes(r));
+        btn.style.display = canManage ? 'inline-block' : 'none';
+    } catch {
+        btn.style.display = 'none';
+    }
+}
+window.addEventListener('authchange', checkAgreementEntryVisibility);
+window.addEventListener('pageshow', checkAgreementEntryVisibility);
+document.addEventListener('DOMContentLoaded', checkAgreementEntryVisibility);
