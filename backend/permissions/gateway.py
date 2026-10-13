@@ -17,6 +17,7 @@ from .policy import (BUSINESS, require_action, require_record, validate_fields,
                      allowed_roles)
 from .projections import project, public_projection
 from .listing import page
+from ..relationships.activity_links import internal_links, LinkError
 
 COLLECTIONS = {'partners': 'partner', 'activities': 'activity',
                'agreements': 'agreement', 'exchanges': 'exchange'}
@@ -150,6 +151,13 @@ class PermissionGateway:
                     raise AuthError('NOT_FOUND', 404)
             query = event.get('queryStringParameters') or {}
             if action == 'read':
+                if not key and not parent_kind and 'scopeId' in query:
+                    scope = query['scopeId']
+                    if not isinstance(scope, str) or not scope or len(scope) > 200:
+                        raise AuthError('INVALID_QUERY', 422)
+                    scoped = tuple(g for g in context.user.grants if g.get('scopeId') == scope)
+                    context = replace(context, user=replace(context.user, grants=scoped, capabilities=()))
+                    require_action(context, kind, 'read')
                 if special is True:
                     if set(query) - {'disposition'} or query.get('disposition', 'inline') not in {'inline', 'attachment'}:
                         raise AuthError('INVALID_QUERY', 422)
@@ -226,6 +234,23 @@ class PermissionGateway:
 
     def _project(self, context, kind, record, parent=None):
         data = project(context, kind, record, parent)
+        if kind == 'activity':
+            try:
+                links = internal_links(record, get_record=self.repository.get,
+                    allowed=lambda entity, action, row: bool(allowed_roles(context, entity, action, row)))
+            except LinkError as error:
+                raise AuthError(error.code, error.status) from None
+            data.pop('partnerId', None)
+            if links['partner']:
+                data['partnerId'] = links['partner']['id']
+            data['relationships'] = links
+            roles = allowed_roles(context, kind, 'read', record)
+            if roles & {'staff', 'coordinator'}:
+                data['coHostPartnerIds'] = [item['id'] for item in links['coHosts']]
+                data['agreementIds'] = [item['id'] for item in links['agreements']]
+                data['relationshipsComplete'] = bool(links['partner'] and
+                    len(links['coHosts']) == len(record.get('coHostPartnerIds', [])) and
+                    len(links['agreements']) == len(record.get('agreementIds', [])))
         if kind == 'history' and record.get('referenceType') in {'activity', 'agreement'}:
             ref_kind = record['referenceType']
             target = self.repository.get(ref_kind, record.get('referenceId'))

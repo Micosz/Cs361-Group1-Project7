@@ -1,6 +1,7 @@
 """Allowlisted projections; never return raw records or embedded reference objects."""
 
 from .policy import allowed_roles, require_record
+from ..relationships.activity_links import public_links, LinkError
 
 COMMON = {'id', 'entityType', 'version', 'createdAt', 'updatedAt'}
 FIELDS = {
@@ -77,17 +78,16 @@ def public_projection(kind, record, partners=None):
             normalized[target] = record[source]
     result = pick(normalized, PUBLIC_FIELDS[kind])
     if kind == 'activity':
-        partner = (partners or {}).get(record.get('partnerId'))
-        public_partner = public_projection('partner', partner) if partner else None
-        if not public_partner:
+        try:
+            links = public_links(record, get_record=lambda kind, key: (partners or {}).get(key))
+        except LinkError:
             return None
-        result['partnerName'] = public_partner.get('name', '')
+        if not links:
+            return None
+        result['partnerName'] = links['partner']['name']
         result['visibility'] = 'public'
-        cohosts = []
-        for key in record.get('coHostPartnerIds', []):
-            other = (partners or {}).get(key)
-            projected = public_projection('partner', other) if other else None
-            if projected:
-                cohosts.append(projected.get('name', ''))
-        result['co_hosts'] = cohosts
+        result['co_hosts'] = [item['name'] for item in links['coHosts']]
+        tags = record.get('activity_tags')
+        if isinstance(tags, list) and tags == ['mou']:
+            result['activity_tags'] = list(tags)
     return result

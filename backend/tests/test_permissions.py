@@ -21,9 +21,13 @@ def context(role='staff', scope='c1', user='u1', extra=()):
 
 
 def row(kind='exchange', key='e1', scope='c1', **fields):
-    return dict(id=key, entityType=kind, scopeId=scope, version=1,
+    base = dict(id=key, entityType=kind, scopeId=scope, version=1,
                 responsibleUserIds=['u1'], participantUserIds=['u1'],
-                title='Demo', publication='internal', **fields)
+                title='Demo', publication='internal')
+    if kind == 'activity':
+        base.update(partnerId='p1', coHostPartnerIds=[], agreementIds=[])
+    return dict(base, **fields)
+
 
 
 class PolicyTests(unittest.TestCase):
@@ -166,9 +170,9 @@ class PolicyTests(unittest.TestCase):
         p = row('partner', 'p1', name='Visible', contacts=[{'email': 'PRIVATE'}])
         p['publication'] = 'public'
         internal = dict(p, id='p2', name='Hidden', publication='internal')
-        activity = row('activity', 'a1', partnerId='p1', coHostPartnerIds=['p1', 'p2'])
+        activity = row('activity', 'a1', partnerId='p1', coHostPartnerIds=['p3', 'p2'])
         activity['publication'] = 'public'
-        data = public_projection('activity', activity, {'p1': p, 'p2': internal})
+        data = public_projection('activity', activity, {'p1': p, 'p2': internal, 'p3': dict(p, id='p3')})
         self.assertEqual(['Visible'], data['co_hosts'])
         self.assertNotIn('Hidden', json.dumps(data))
         self.assertIsNone(public_projection('activity', dict(activity, partnerId='p2'), {'p2': internal}))

@@ -140,6 +140,7 @@ function openAddActivityDialog(scopes) {
         ? crypto.randomUUID()
         : ('key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12));
     if (!activityDialog.open) activityDialog.showModal();
+    window.ActivityLinks?.picker(activityForm, null, complete=>{relationshipComplete=complete;});
 }
 
 function openEditActivity(act) {
@@ -180,6 +181,7 @@ function openEditActivity(act) {
     }
 
     if (!activityDialog.open) activityDialog.showModal();
+    window.ActivityLinks?.picker(activityForm, act, complete=>{relationshipComplete=complete;});
 }
 
 if (activityCloseBtn) {

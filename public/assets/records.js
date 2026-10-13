@@ -77,6 +77,7 @@
                 const dt = document.createElement('dt'), dd = document.createElement('dd');
                 dt.textContent = label; dd.textContent = record[field]; $('detail-fields').append(dt,dd);
             }
+            if (kind === 'activities' && window.ActivityLinks) window.ActivityLinks.render($('detail-fields'), record);
             if (kind === 'partners' && window.PartnerHistory) {
                 const history = document.createElement('section'); $('detail-fields').appendChild(history);
                 window.PartnerHistory.mount(history, record, fresh);
@@ -168,6 +169,6 @@
     $('detail-close').onclick = () => dialog.close();
     dialog.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
     dialog.addEventListener('close', () => { ++detailRevision; $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); lastTrigger?.focus(); });
-    window.addEventListener('authchange', () => load()); window.addEventListener('pageshow', () => load()); window.addEventListener('focus', () => load());
+    window.addEventListener('authchange', () => load()); window.addEventListener('pageshow', () => load()); window.addEventListener('focus', () => window.CstuAuth.refresh().catch(() => {}));
     load();
 })();

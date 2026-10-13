@@ -12,13 +12,14 @@ import time
 
 from ..auth.dynamo_accounts import decode
 from ..auth.session_service import AuthError, SessionContext
-from ..permissions.policy import require_assignee, require_reference
+from ..permissions.policy import require_assignee, require_reference, allowed_roles
 from ..permissions.transactions import values, transaction_checks, target_condition
 from ..agreements.repository import AgreementRepository
 from ..partners.repository import PartnerRepository, ExchangeRepository, ActivityRepository
 from ..document_links import document_record
 from ..documents.uploads import parse_upload
 from .validation import normalize_payload
+from ..relationships.activity_links import plan_patch, LinkError
 
 
 class DynamoBusinessRepository:
@@ -115,6 +116,18 @@ class DynamoBusinessRepository:
 
         if kind == 'history':
             payload = normalize_payload(kind, action, payload, record=record)
+        if kind == 'activity' and record:
+            patch = {key: value for key, value in payload.items() if key in {'partnerId', 'coHostPartnerIds', 'agreementIds'}}
+            if patch:
+                def allowed(entity, action, row):
+                    if action == 'change_public_links':
+                        return 'staff' in allowed_roles(context, 'activity', 'update', row)
+                    return bool(allowed_roles(context, entity, action, row))
+                try:
+                    plan = plan_patch(record, patch, get_record=reference, allowed=allowed)
+                    payload = dict(payload, **plan.changes)
+                except LinkError as error:
+                    raise AuthError(error.code, error.status) from None
         effective = dict(record or {}, **payload)
         scope = conditions.scope_id
         ref_pairs = [('partner', key) for key in effective.get('partnerIds', [])]

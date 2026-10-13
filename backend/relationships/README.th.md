@@ -90,3 +90,7 @@ Tests ใช้ memory repository และ policy double ไม่ใช่ห�
 ## AWS
 
 งานส่วนแยกนี้ไม่ต้องสร้างตาราง/เปลี่ยน Lambda/API Gateway/Amplify ไม่ได้ใช้ CloudShell หรือ deploy ค่าใด ตอนเชื่อม storage/API จริงให้ #94/#96/#98 ตกลง schema/resource กับ #79 ก่อน ไม่ใช้ตาราง Partner ของ V2 ทดลองเขียนความสัมพันธ์ใหม่โดยยังไม่มี adapter/rollback
+
+## สถานะ integration ล่าสุด
+
+ต่อ shared gateway/projection/durable Activity adapter และฟอร์ม #96 แล้ว ดู [ผลตรวจล่าสุด](../../docs/evidence/activity-links-issue-97.md) ส่วนข้อจำกัดที่ระบุว่าไม่มี runtime integration ด้านบนเป็นสถานะก่อนรอบ 13 ต.ค. 69 ยังไม่ได้ยืนยัน deployment/AWS จริง
