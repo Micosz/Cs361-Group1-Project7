@@ -77,6 +77,10 @@
                 const dt = document.createElement('dt'), dd = document.createElement('dd');
                 dt.textContent = label; dd.textContent = record[field]; $('detail-fields').append(dt,dd);
             }
+            if (kind === 'partners' && window.PartnerHistory) {
+                const history = document.createElement('section'); $('detail-fields').appendChild(history);
+                window.PartnerHistory.mount(history, record, fresh);
+            }
             if (['agreements','exchanges'].includes(kind) && window.DocumentComponent) {
                 const docs = document.createElement('section'); $('detail-fields').appendChild(docs);
                 window.DocumentComponent.mount(docs, kind === 'agreements' ? 'agreement' : 'exchange', record);
