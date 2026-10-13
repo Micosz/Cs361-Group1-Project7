@@ -37,6 +37,77 @@
             <button id="close-roles" type="button">ปิด</button>
         </form>
     </dialog>
+
+    <section id="exchange-section" style="margin-top:2rem;" hidden>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>โครงการแลกเปลี่ยนนักศึกษา (Student Exchanges)</h2>
+            <button id="open-add-exchange" type="button" class="login-btn" style="padding:0.4rem 0.8rem; cursor:pointer;">+ เพิ่มโครงการแลกเปลี่ยน</button>
+        </div>
+        <div id="exchange-list-status" role="status" style="margin-top:0.5rem; color:#666;"></div>
+        <div id="exchange-list" style="margin-top:1rem; display:flex; flex-direction:column; gap:1rem;"></div>
+    </section>
+
+    <section id="my-exchange-section" style="margin-top:2rem;" hidden>
+        <h2>โครงการแลกเปลี่ยนของฉัน (My Exchanges)</h2>
+        <div id="my-exchange-status" role="status" style="margin-top:0.5rem; color:#666;"></div>
+        <div id="my-exchange-list" style="margin-top:1rem; display:flex; flex-direction:column; gap:1rem;"></div>
+    </section>
+
+    <dialog id="my-exchange-dialog" style="padding:2rem; max-width:600px; width:100%;">
+        <div id="my-exchange-detail-container">
+            <h2 id="my-exchange-detail-title">รายละเอียดโครงการแลกเปลี่ยน</h2>
+            <p>สถานะ: <span id="my-exchange-detail-status-badge" style="padding:0.2rem 0.5rem; border-radius:4px; font-size:0.85rem; background:#e0e7ff; color:#3730a3;"></span></p>
+            <p id="my-exchange-detail-dates" style="color:#555; font-size:0.95rem;"></p>
+            <p id="my-exchange-detail-info" style="font-size:0.95rem;"></p>
+            <div style="margin-top:1.5rem; border-top:1px solid #eee; padding-top:1rem;">
+                <h3>เอกสารประกอบโครงการ</h3>
+                <div id="my-exchange-detail-docs-status" role="status" style="color:#666; font-size:0.9rem;"></div>
+                <ul id="my-exchange-detail-docs-list" style="list-style:none; padding:0; margin-top:0.5rem; display:flex; flex-direction:column; gap:0.5rem;"></ul>
+            </div>
+            <div style="margin-top:1.5rem;">
+                <button id="my-exchange-detail-close-btn" type="button" style="padding:0.4rem 1rem; cursor:pointer;">ปิด</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="exchange-dialog" style="padding:2rem; max-width:600px; width:100%;">
+        <form id="exchange-form">
+            <h2 id="exchange-dialog-title">เพิ่มโครงการแลกเปลี่ยน</h2>
+            <input type="hidden" id="exchange-id">
+            <input type="hidden" id="exchange-version">
+
+            <p><label>ขอบเขตหลักสูตร (Scope) <select id="exchange-scope" required style="width:100%; padding:0.4rem;"></select></label></p>
+            <p><label>ชื่อโครงการแลกเปลี่ยน <input id="exchange-title" required maxlength="200" style="width:100%; padding:0.4rem;"></label></p>
+            <p><label>รหัสคู่ความร่วมมือ (Partner IDs คั่นด้วยเครื่องหมายจุลภาค) <input id="exchange-partner-ids" required style="width:100%; padding:0.4rem;" placeholder="เช่น partner-1, partner-2"></label></p>
+            <p><label>รหัสข้อตกลงที่เกี่ยวข้อง (Agreement ID) <input id="exchange-agreement-id" style="width:100%; padding:0.4rem;" placeholder="เช่น agreement-1 (ถ้ามี)"></label></p>
+            <p><label>วันเริ่มต้น (ISO YYYY-MM-DD) <input id="exchange-start-date" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" style="width:100%; padding:0.4rem;"></label></p>
+            <p><label>วันสิ้นสุด (ISO YYYY-MM-DD) <input id="exchange-end-date" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" style="width:100%; padding:0.4rem;"></label></p>
+            <p><label>รหัสนักศึกษาผู้เข้าร่วม (Participant User IDs คั่นด้วยจุลภาค) <input id="exchange-participant-users" style="width:100%; padding:0.4rem;" placeholder="เช่น u-std-1, u-std-2"></label></p>
+            <p><label>ข้อมูลสนับสนุนภายใน (Supporting Info) <textarea id="exchange-supporting-info" maxlength="20000" rows="3" style="width:100%; padding:0.4rem;"></textarea></label></p>
+            <p><label>ข้อมูลสำหรับนักศึกษาผู้เข้าร่วม (Info for Participants) <textarea id="exchange-supporting-info-participant" maxlength="20000" rows="3" style="width:100%; padding:0.4rem;"></textarea></label></p>
+
+            <div id="staff-exchange-fields" hidden>
+                <p><label>ผู้รับผิดชอบโครงการ (Responsible User IDs คั่นด้วยจุลภาค) <input id="exchange-responsible-users" style="width:100%; padding:0.4rem;" placeholder="เช่น u-staff-1, u-coord-1"></label></p>
+            </div>
+
+            <div id="exchange-status-transition-section" style="margin-top:1rem; padding-top:1rem; border-top:1px solid #eee;" hidden>
+                <h3>เปลี่ยนสถานะโครงการ (Status Transition)</h3>
+                <p>สถานะปัจจุบัน: <strong id="exchange-current-status-display">draft</strong></p>
+                <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
+                    <button id="exchange-btn-ongoing" type="button" style="padding:0.3rem 0.6rem; cursor:pointer;">เริ่มดำเนินการ (ongoing)</button>
+                    <button id="exchange-btn-completed" type="button" style="padding:0.3rem 0.6rem; cursor:pointer;">เสร็จสิ้นโครงการ (completed)</button>
+                    <button id="exchange-btn-cancelled" type="button" style="padding:0.3rem 0.6rem; cursor:pointer; color:#c00;">ยกเลิกโครงการ (cancelled)</button>
+                </div>
+                <p id="exchange-status-extra-note" style="font-size:0.85rem; color:#666;">(การเปลี่ยนเป็น completed ต้องระบุข้อมูลสนับสนุน; การยกเลิกต้องระบุเหตุผล)</p>
+            </div>
+
+            <p id="exchange-status" role="status" style="margin-top:0.5rem;"></p>
+            <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                <button id="exchange-submit-btn" type="submit" style="padding:0.4rem 1rem; cursor:pointer;">บันทึก</button>
+                <button id="exchange-close-btn" type="button" style="padding:0.4rem 1rem; cursor:pointer;">ปิด</button>
+            </div>
+        </form>
+    </dialog>
 </main>
 </body>
 </html>

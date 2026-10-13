@@ -16,7 +16,7 @@ ARRAYS = {
     'partner': {'responsibleUserIds'},
     'activity': {'responsibleUserIds'},
     'agreement': {'responsibleUserIds', 'partnerIds'},
-    'exchange': {'responsibleUserIds', 'participantUserIds'},
+    'exchange': {'partnerIds', 'responsibleUserIds', 'participantUserIds'},
 }
 STUDENT = {'id', 'title', 'startDate', 'endDate', 'status', 'supportingInfoForParticipant'}
 EXECUTIVE_EXCLUDED = {'internalNote', 'supportingInfo', 'supportingInfoForParticipant'}
