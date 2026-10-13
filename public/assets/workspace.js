@@ -6,6 +6,7 @@ const target = document.getElementById('role-target');
 const choices = document.getElementById('role-choices');
 const saveRoles = document.getElementById('save-roles');
 const roleStatus = document.getElementById('role-status');
+const openAgreements = document.getElementById('open-agreements');
 let version = null, selectedTarget = null, selectedScope = null;
 function invalidateSelection() {
     version = null; selectedTarget = null; selectedScope = null;
@@ -15,6 +16,7 @@ function invalidateSelection() {
 }
 async function refreshWorkspace() {
     openRoles.hidden = true;
+    if (openAgreements) openAgreements.hidden = true;
     invalidateSelection();
     if (!window.CstuAuth?.enabled()) {
         workspaceStatus.textContent = 'พื้นที่ผู้ใช้ยังไม่เปิดใช้งาน กรุณากลับหน้าหลัก';
@@ -37,6 +39,16 @@ async function refreshWorkspace() {
             const option = document.createElement('option'); option.value = id; option.textContent = id; scope.append(option);
         }
         openRoles.hidden = !managed.length;
+        const canAgreement = roles.some(r => ['coordinator', 'staff'].includes(r));
+        if (openAgreements) {
+            openAgreements.hidden = !canAgreement;
+            openAgreements.onclick = () => {
+                if (window.AgreementComponent) {
+                    const defaultScope = session.grants.find(g => g.active)?.scopeId || 'cs-demo';
+                    window.AgreementComponent.openCreate(defaultScope);
+                }
+            };
+        }
     } catch { workspaceStatus.textContent = 'ตรวจสิทธิ์ไม่ได้ กรุณาลองใหม่ภายหลัง'; }
 }
 openRoles.onclick = () => document.getElementById('role-dialog').showModal();

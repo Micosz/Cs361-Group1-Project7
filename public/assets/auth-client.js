@@ -84,6 +84,6 @@
     const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('cstuhub-auth') : null;
     function notify() { channel?.postMessage('changed'); }
     channel?.addEventListener('message', () => window.dispatchEvent(new Event('authchange')));
-    window.CstuAuth = { enabled, refresh, login, logout, request, mutate, create,
+    window.CstuAuth = { state: () => state, enabled, refresh, login, logout, request, mutate, create,
         roles: data => [...new Set((data?.grants || []).map(g => g.role))] };
 })();
