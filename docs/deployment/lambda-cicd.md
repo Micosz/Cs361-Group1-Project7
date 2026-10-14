@@ -69,7 +69,7 @@ Missing secret ให้ตั้งครบสามค่า; ExpiredToken/In
 
 หาก update ผ่านแต่ waiter/checksum/API test ล้มเหลว อย่าอนุมานว่าระบบเดิมยังทำงาน ตรวจ AWS Console/API แยก Rollback ใช้ commit/source รุ่นที่ยืนยันแล้วผ่าน review และ workflow เดียวกัน ไม่ลบ resources ไม่มี automatic rollback ระหว่างสาม functions
 
-หลัง deploy ตรวจ API data จริงและ TU login ด้วยบัญชีทดสอบที่อนุญาต แยก API smoke จาก frontend fallback และจาก checksum success งานนี้ยังไม่ได้ deploy/invoke จริง ผล AWS ที่ตรวจคือ **DryRun=True** เท่านั้น ดู [หลักฐาน](../evidence/lambda-cicd-issue-120.md)
+หลัง deploy ตรวจ API data จริงและ TU login ด้วยบัญชีทดสอบที่อนุญาต แยก API smoke จาก frontend fallback และจาก checksum success งานนี้ยังไม่ได้ deploy/invoke จริง ผล AWS ที่ตรวจคือ **DryRun=True** เท่านั้น ดู [หลักฐาน](../evidence/v3-evidence.md#lambda-cicd-issue-120)
 
 ใน production AWS ทั่วไป GitHub OIDC กับ IAM Role เหมาะกว่าการเก็บ temporary credentials ใน Secrets หาก environment อนุญาต งานนี้ไม่ implement OIDC ภายใต้ข้อจำกัด Learner Lab
 

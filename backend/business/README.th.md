@@ -1,6 +1,6 @@
 # โค้ดฐานร่วม #82
 
-เริ่มจาก [คู่มือ #94–#97](../../docs/design/v3/partners-activities-handoff.md) ส่วนนี้ไม่มี AWS client, storage implementation, migration หรือ route ใหม่ ไม่เปิด business feature อัตโนมัติ
+อ่าน [Data model](../../docs/design/v3-design.md#data-model) และ [API contracts](../../docs/design/v3-design.md#api-flows) สำหรับสัญญากลาง ปัจจุบัน `dynamo_repository.py` เป็น adapter บันทึกถาวรที่ Lambda ใช้เมื่อกำหนด `BUSINESS_TABLE`; การเตรียม storage และขอบเขตผลตรวจอยู่ใน [workspace integration](../../docs/evidence/v3-evidence.md#workspace-83-86-integration)
 
 ## ใช้ใน adapter ของแต่ละงาน
 

@@ -9,7 +9,7 @@
 - `public_links`: คืนเฉพาะ partner/co-host ที่เผยแพร่ ไม่อ่านหรือคืน agreement ID, ชื่อ หรือจำนวนเลย
 - `legacy_relationships`: เตรียม fragment จาก V2 โดยคง partnerId และเก็บ co_hosts เป็น legacyCoHostNames ไม่จับชื่อคล้ายกันเป็น ID
 
-อ่าน cardinality/fields จาก `docs/design/v3/data-model.md` (#91): primary partner จำเป็น 1 ตัว, co-hosts หลายตัว, agreements หลายตัวหรือไม่มีได้; IDs ไม่ซ้ำ primary ไม่ซ้ำ co-hosts และ partner รวมไม่เกิน 20 ตัวตาม baseline ที่ใช้กับความสัมพันธ์ partner
+อ่าน cardinality/fields จาก `docs/design/v3-design.md` (#91): primary partner จำเป็น 1 ตัว, co-hosts หลายตัว, agreements หลายตัวหรือไม่มีได้; IDs ไม่ซ้ำ primary ไม่ซ้ำ co-hosts และ partner รวมไม่เกิน 20 ตัวตาม baseline ที่ใช้กับความสัมพันธ์ partner
 
 ## ตัวอย่างก่อน/หลัง (ข้อมูลสมมติ)
 
@@ -93,4 +93,4 @@ Tests ใช้ memory repository และ policy double ไม่ใช่ห�
 
 ## สถานะ integration ล่าสุด
 
-ต่อ shared gateway/projection/durable Activity adapter และฟอร์ม #96 แล้ว ดู [ผลตรวจล่าสุด](../../docs/evidence/activity-links-issue-97.md) ส่วนข้อจำกัดที่ระบุว่าไม่มี runtime integration ด้านบนเป็นสถานะก่อนรอบ 13 ต.ค. 69 ยังไม่ได้ยืนยัน deployment/AWS จริง
+ต่อ shared gateway/projection/durable Activity adapter และฟอร์ม #96 แล้ว ดู [ผลตรวจล่าสุด](../../docs/evidence/v3-evidence.md#activity-links-issue-97) ส่วนข้อจำกัดที่ระบุว่าไม่มี runtime integration ด้านบนเป็นสถานะก่อนรอบ 13 ต.ค. 69 ยังไม่ได้ยืนยัน deployment/AWS จริง
