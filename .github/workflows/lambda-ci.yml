@@ -10,6 +10,7 @@ on:
       - 'backend/tests/test_activity_links.py'
       - '.github/scripts/**'
       - '.github/workflows/deploy-lambda.yml'
+      - '.github/workflows/deploy-python-auth.yml'
       - '.github/workflows/lambda-ci.yml'
       - 'tests/lambda-source.test.cjs'
 
@@ -50,4 +51,4 @@ jobs:
             --output "$RUNNER_TEMP/actionlint.tar.gz"
           printf '%s  %s\n' "$ACTIONLINT_SHA256" "$RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check --status
           tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
-          "$RUNNER_TEMP/actionlint" -shellcheck= .github/workflows/deploy-lambda.yml .github/workflows/lambda-ci.yml
+          "$RUNNER_TEMP/actionlint" -shellcheck= .github/workflows/deploy-lambda.yml .github/workflows/deploy-python-auth.yml .github/workflows/lambda-ci.yml
