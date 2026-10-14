@@ -79,4 +79,4 @@ node --experimental-vm-modules tests/lambda-source.test.cjs
 node --check backend/lambda/tuAuthLogin/index.mjs
 ```
 
-ชุดเดิมมี 8 tests รวม data functions; ส่วน TU ใช้กลุ่มกรณีจำเป็น ไม่เรียก TU/AWS จริง และถูกเรียกโดย `lambda-ci.yml` เดิมแล้ว ดู [ผลตรวจและสิ่งที่ยังไม่ได้ทดสอบ](../evidence/tu-auth-issue-75.md)
+ชุดเดิมมี 8 tests รวม data functions; ส่วน TU ใช้กลุ่มกรณีจำเป็น ไม่เรียก TU/AWS จริง และถูกเรียกโดย `lambda-ci.yml` เดิมแล้ว ดู [ผลตรวจและสิ่งที่ยังไม่ได้ทดสอบ](../evidence/v3-evidence.md#tu-auth-issue-75)

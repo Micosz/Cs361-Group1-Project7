@@ -174,7 +174,7 @@ python3 -m http.server 8000 --directory public
 npm test
 ```
 
-ดูรายละเอียดกรณีค้นหา cache การกรอง และการจัดลำดับผลลัพธ์ใน [`tests/search.test.js`](tests/search.test.js) และ [บันทึกการตรวจสอบ search](docs/evidence/v2-search-verification.md) บันทึกนี้เป็นผลตรวจวันที่ 3 ตุลาคม 2026 ก่อนเพิ่ม JSON backup จึงไม่ได้ยืนยันพฤติกรรม fallback ของโค้ดปัจจุบันหรือสถานะ deployment ล่าสุด
+ดูรายละเอียดกรณีค้นหา cache การกรอง และการจัดลำดับผลลัพธ์ใน [`tests/search.test.js`](tests/search.test.js) และ [บันทึกการตรวจสอบ search](docs/evidence/v2-evidence.md#v2-search-verification) บันทึกนี้เป็นผลตรวจวันที่ 3 ตุลาคม 2026 ก่อนเพิ่ม JSON backup จึงไม่ได้ยืนยันพฤติกรรม fallback ของโค้ดปัจจุบันหรือสถานะ deployment ล่าสุด
 
 **อัปเดตข้อมูลสำรอง:** ผู้ดูแลที่มีสิทธิ์สามารถรัน workflow **Update public data backup** ผ่าน GitHub Actions ได้ด้วยตนเอง workflow จะอ่าน API ตรวจรูปแบบข้อมูล สถานะ public และ ID ซ้ำ ก่อน commit ไฟล์สำรองที่เปลี่ยนแปลงเข้า `main` โดยไม่มี schedule อัตโนมัติ
 
@@ -184,9 +184,11 @@ npm test
 
 ## Documentation
 
+[เลือกอ่านเอกสารตามงาน](docs/README.md) — แยกคู่มือใช้งาน/ตั้งระบบ ข้อกำหนด และหลักฐานย้อนหลัง
+
 ### V3 · Design baseline
 
-[เริ่มอ่าน V3-B1: Scope, Permissions, TU Login/Session, Data, API และ Architecture/Migration](docs/design/v3/README.md) — เอกสารออกแบบสำหรับ #72 และ 5 sub-issues; ยังไม่ใช่ implementation หรือผลยืนยันบริการจริง
+[เริ่มอ่าน V3-B1: Scope, Permissions, TU Login/Session, Data, API และ Architecture/Migration](docs/design/v3-design.md#design-baseline) — เอกสารออกแบบสำหรับ #72 และ 5 sub-issues; ยังไม่ใช่ implementation หรือผลยืนยันบริการจริง
 
 ### 📘 V2 · เวอร์ชันปัจจุบัน
 
@@ -196,7 +198,7 @@ npm test
 | --- | --- |
 | ระบบเชื่อมต่อกันอย่างไร | [แผนภาพสถาปัตยกรรม](docs/architecture/v2-architecture-diagram.png) |
 | ทำไมเลือกบริการ AWS เหล่านี้ | [เหตุผลการออกแบบ · ADR](docs/architecture/ADR-001-v2-hosting.md) |
-| ตรวจสอบการค้นหาอย่างไร | [บันทึกผลทดสอบ Search](docs/evidence/v2-search-verification.md) |
+| ตรวจสอบการค้นหาอย่างไร | [บันทึกผลทดสอบ Search](docs/evidence/v2-evidence.md#v2-search-verification) |
 
 <sub>บันทึกผลทดสอบ Search เป็นหลักฐานก่อนเพิ่มระบบข้อมูลสำรอง</sub>
 
@@ -210,7 +212,7 @@ npm test
 | หมวด | เปิดเอกสาร |
 | --- | --- |
 | สถาปัตยกรรม | [เหตุผลการเลือก Hosting](docs/architecture/ADR-001-v1-hosting.md) · [แผนภาพระบบ](docs/architecture/v1-architecture-diagram.png) |
-| ข้อมูลและหน้าจอ | [โครงสร้างข้อมูล JSON](docs/data/v1-data.md) · [การออกแบบหน้าเว็บ](docs/design/v1-design.md) |
+| ข้อมูลและหน้าจอ | [โครงสร้างข้อมูล JSON](docs/data/data-guide.md#v1-data) · [การออกแบบหน้าเว็บ](docs/design/v1-design.md) |
 | การเผยแพร่และหลักฐาน | [ขั้นตอน Deploy บน S3](docs/deployment/v1-deployment.md) · [หลักฐานส่งมอบ V1](docs/evidence/v1-evidence.md) |
 | การใช้ AI | [AI Usage Declaration](docs/ai-usage/v1-ai-usage-declaration.md) |
 

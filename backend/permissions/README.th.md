@@ -1,6 +1,6 @@
 # ตัวตรวจสิทธิ์ API และรายการ — #79
 
-อิง V3-B1 ใน [ตารางสิทธิ์](../../docs/design/v3/scope-permissions.md), [แบบข้อมูล](../../docs/design/v3/data-model.md) และ [API contract](../../docs/design/v3/api-flows.md) โดยต่อจาก `78-session` งานนี้เป็นส่วนกลางสำหรับ feature APIs และยังไม่ใช่ระบบ V3 ที่ deploy แล้ว
+อิง V3-B1 ใน [ตารางสิทธิ์](../../docs/design/v3-design.md#scope-permissions), [แบบข้อมูล](../../docs/design/v3-design.md#data-model) และ [API contract](../../docs/design/v3-design.md#api-flows) โดยต่อจาก `78-session` งานนี้เป็นส่วนกลางสำหรับ feature APIs และยังไม่ใช่ระบบ V3 ที่ deploy แล้ว
 
 ## สิ่งที่ทำแล้ว
 
@@ -63,7 +63,7 @@ Session ถูกอ่านใหม่ก่อนคืนผล mutation; �
 
 ## หลักฐานและส่วนที่เหลือ
 
-รัน `python3 -m unittest discover -s backend/tests -v` และ `npm test` จาก root รายละเอียดผลอยู่ที่ [หลักฐาน #79](../../docs/evidence/v3-permissions-issue-79.md)
+รัน `python3 -m unittest discover -s backend/tests -v` และ `npm test` จาก root รายละเอียดผลอยู่ที่ [หลักฐาน #79](../../docs/evidence/v3-evidence.md#v3-permissions-issue-79)
 
 ยังไม่มี production business repository, multipart/file stream adapter, การตั้งค่า AWS business routes หรือการเปลี่ยน public Lambda/backup workflow ตัวจริง `lambda_function.handler` ของ #78 ยังส่งเพียง session service; business request ที่มีสิทธิ์จะได้ 503 จนฉีด repository ที่ทำตามสัญญาข้างต้น ส่วน public routes เดิมและ frontend ไม่ได้เปลี่ยนมาใช้ projection ใหม่นี้โดยอัตโนมัติ
 

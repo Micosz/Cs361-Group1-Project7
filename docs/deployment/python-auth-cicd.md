@@ -12,7 +12,7 @@
   รองรับ x86_64/arm64 ตาม architecture เดิม ไม่เปลี่ยน runtime, role, environment หรือ API routing
 - ตั้ง auth environment และตารางตาม [auth integration](auth-integration.md) พร้อม `AUTH_V3_ENABLED=true`
 - เตรียม `BUSINESS_TABLE`, GSI และ `DOCUMENT_BUCKET` ตาม
-  [workspace storage](../evidence/workspace-83-86-integration.md#เปิดใช้บน-aws)
+  [workspace storage](../evidence/v3-evidence.md#workspace-83-86-integration-เปิดใช้บน-aws)
   ก่อนเปิด deployment: business PK `id` String, GSI `scopeEntity` String + `id` String,
   projection KEYS_ONLY, TTL `ttl`; session TTL ใช้ `ttl`, login rate TTL ใช้ `expiresAt`
   bucket region us-east-1 และเปิด public access blocks ทั้งสี่
