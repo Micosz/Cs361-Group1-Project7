@@ -7,7 +7,7 @@
 - `public/assets/auth-config.js` มี `enabled: true` หลังทดสอบบัญชีทดสอบครบทั้ง 8 ผ่าน origin เว็บจริง หน้า Browse/Search ใช้ข้อมูลเดิม
 - Backend ต้องตั้ง `AUTH_V3_ENABLED=true` จึงเปิด orchestration ใหม่ การเปลี่ยน frontend เพียงอย่างเดียวไม่เปิด backend
 - ตั้ง GitHub repository variable `LAMBDA_DEPLOYMENT_PAUSED=true` ก่อน merge เพื่อพัก workflow deploy ทั้งสาม Lambda จนเตรียม AWS ใน #81 เสร็จ CI ตรวจโค้ดยังทำงานตามปกติ
-- Python backend deploy เป็น `CSTUHubAuth` แล้ว แต่ยังไม่มี workflow deploy ของตัวเอง การอัปเดตต้องแพ็กและ deploy โดยผู้ดูแล
+- Python backend ใช้ `CSTUHubAuth` มี workflow ของตัวเองแล้ว ดู [config และเงื่อนไขเปิด deploy](python-auth-cicd.md); ยังเคารพ `LAMBDA_DEPLOYMENT_PAUSED`
 
 ## Flow และไฟล์ที่ทีมต้องใช้
 
