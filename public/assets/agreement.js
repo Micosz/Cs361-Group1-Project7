@@ -815,6 +815,7 @@
         }
     }
 
+    window.addEventListener('authchange', () => { if (dialog?.open) close(); });
     function close() {
         if (!dialog) return;
         if (dialog.open) dialog.close();

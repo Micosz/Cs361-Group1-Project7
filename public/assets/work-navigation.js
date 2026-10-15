@@ -21,15 +21,10 @@
         return grants.includes('staff') || (grants.includes('coordinator') && Array.isArray(record.responsibleUserIds) && record.responsibleUserIds.includes(session.user.id));
     }
     function menu(session) {
-        const grants = roles(session), items = [];
-        if (grants.some(role => ['coordinator','staff','executive'].includes(role))) {
-            for (const [kind, config] of Object.entries(kinds)) {
-                items.push({label:config.label, href:`records.html?kind=${kind}`, description:'เปิดรายการและรายละเอียดตามสิทธิ์'});
-                if (canCreate(session, kind)) items.push({label:config.create, href:`records.html?kind=${kind}&action=create`, description:'ใช้ฟอร์มร่วมของรายการนี้'});
-            }
+        const items = [];
+        for (const [kind, config] of Object.entries(kinds)) {
+            if (canCreate(session, kind)) items.push({label:config.create, href:`index.html?kind=${kind}&action=create#board-section`, description:'เพิ่มข้อมูลจากหน้าหลัก'});
         }
-        if (grants.includes('executive')) items.push({label:'ภาพรวมความร่วมมือ', href:'records.html?view=overview', description:'จำนวนรายการในขอบเขตที่มีสิทธิ์อ่าน'});
-        if (grants.includes('student')) items.push({label:'My Exchange', href:'workspace.html?view=student', description:'รายการและเอกสารของตนเอง'});
         return items;
     }
     async function attachDetailAction(container, kind, id) {
@@ -40,7 +35,7 @@
             const record = (await window.CstuAuth.request('/'+kind+'/'+encodeURIComponent(id))).data;
             if (!container.isConnected || !canEdit(session,record)) return;
             const link = document.createElement('a');
-            link.href = `records.html?kind=${kind}&id=${encodeURIComponent(id)}`;
+            link.href = `index.html?kind=${kind}&id=${encodeURIComponent(id)}#board-section`;
             link.textContent = 'จัดการรายการนี้'; container.appendChild(link);
         } catch { /* Public detail stays readable when the protected API is unavailable. */ }
     }

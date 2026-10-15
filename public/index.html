@@ -12,15 +12,23 @@
     <link rel="stylesheet" href="assets/portal.css?v=6">
     <script src="assets/auth-config.js" defer></script>
     <script src="assets/auth-client.js" defer></script>
+    <script src="assets/work-navigation.js?v=home-workspace-2" defer></script>
     <script src="assets/documents.js" defer></script>
-    <script src="assets/agreement.js" defer></script>
+    <script src="assets/agreement.js?v=home-workspace-2" defer></script>
     <script src="assets/script.js?v=7" defer></script>
     <link rel="stylesheet" href="assets/role-menu.css?v=3">
-    <script src="assets/work-navigation.js?v=1" defer></script>
-    <script src="assets/role-menu.js?v=3" defer></script>
+    <link rel="stylesheet" href="assets/records.css?v=home-workspace-2">
+    <script src="assets/basic-record-forms.js?v=home-workspace-2" defer></script>
+    <script src="assets/activity-links.js?v=home-workspace-2" defer></script>
+    <script src="assets/activity-adapter.js?v=home-workspace-2" defer></script>
+    <script src="assets/exchange-adapter.js?v=home-workspace-2" defer></script>
+    <script src="assets/partner-history.js?v=home-workspace-2" defer></script>
+    <script src="assets/partner-contacts.js?v=home-workspace-2" defer></script>
+    <script src="assets/records.js?v=home-workspace-2" defer></script>
+    <script src="assets/role-menu.js?v=home-workspace-2" defer></script>
     <script src="assets/filter-presentation.js?v=5" defer></script>
     <script src="assets/presentation.js?v=9" defer></script>
-    <script src="assets/opening.js?v=11" defer></script>
+    <script src="assets/opening.js?v=home-workspace-2" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -115,6 +123,9 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('collaborator')" id="tabCollab">COLLABORATOR</button>
             <button class="tab" onclick="switchTab('event')" id="tabEvent">EVENT & ACTIVITIES</button>
+            <button class="tab" data-work-kind="agreements" hidden>ข้อตกลง MoU/MoA</button>
+            <button class="tab" data-work-kind="exchanges" hidden>การแลกเปลี่ยน</button>
+            <button class="tab" data-work-kind="overview" hidden>ภาพรวม</button>
         </div>
         <div class="page-title">
             <h1>Computer Science</h1>
@@ -123,6 +134,20 @@
     </div>
 
     <main class="container">
+    <section id="home-records" class="records-shell" hidden><h2 id="records-title">ข้อมูลความร่วมมือ</h2>
+<nav id="record-links" aria-label="ชนิดข้อมูล"></nav>
+<p id="records-status" role="status">กำลังตรวจสิทธิ์</p>
+<form id="records-search" hidden>
+<label>ค้นหาชื่อ <input name="q" maxlength="200" type="search"></label>
+<label id="type-field">ประเภท <select name="type"><option value="">ทั้งหมด</option></select></label>
+<label id="status-field">สถานะ <select name="status"><option value="">ทั้งหมด</option></select></label>
+<label id="start-field">เริ่มต้น <input name="startDate" type="date"></label>
+<label id="end-field">สิ้นสุด <input name="endDate" type="date"></label>
+<button type="submit">ค้นหา</button><button type="reset">ล้างเงื่อนไข</button>
+</form>
+<button id="records-retry" hidden type="button">ลองใหม่</button>
+<div id="records-content"></div><button id="records-next" hidden type="button">หน้าถัดไป</button>
+</section>
         <section id="sectionCollaborator" class="mb-section active-section">
             <div class="filter-wrapper">
                 <select id="filterCollab" class="modern-select" onchange="applyCollabFilters()">
@@ -145,7 +170,6 @@
 
         <section id="sectionEvent" class="mb-section" style="display: none;">
             <div class="filter-wrapper">
-                <button type="button" id="btnOpenAgreements" class="modern-select" style="display: none;" onclick="if(window.AgreementComponent) window.AgreementComponent.openCreate()">ข้อตกลงความร่วมมือ (MoU/MoA)</button>
                 <select id="filterEvent" class="modern-select" onchange="applyEventFilters()">
                     <option value="all">กิจกรรมทั้งหมด</option>
                     <option value="internship">โครงการฝึกงานและสหกิจฯ</option>
@@ -163,7 +187,10 @@
             </div>
             <div class="grid" id="eventGrid"></div>
         </section>
+
     </main>
+<dialog id="record-detail" aria-labelledby="detail-title" class="records-shell"><button id="detail-close" type="button">ปิด</button><h2 id="detail-title"></h2><p id="detail-status" role="status"></p><dl id="detail-fields"></dl><div id="detail-actions"></div></dialog>
+
 
     </div>
 

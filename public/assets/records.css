@@ -14,3 +14,16 @@
 #detail-fields dt { font-weight: bold; margin-top: 1rem; }
 #detail-fields dd { margin: .25rem 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 600px) { #records-search label { width: 100%; } .records-shell { padding: 1rem; } }
+/* The protected workspace follows the same board surface as public records. */
+#home-records { max-width: none; padding: 2rem 0; border-top: 1px solid #e4d9d2; margin-top: 2rem; }
+#home-records h2 { font-size: 1.5rem; }
+.tabs { flex-wrap: wrap; }
+.tabs [hidden], #home-records[hidden], #record-detail [hidden] { display: none !important; }
+#home-records .records-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: 1rem; }
+#home-records .records-list li { background: #fff; border: 1px solid #e4d9d2; border-radius: 18px; padding: 1.25rem; }
+#home-records input, #home-records select, #record-detail input, #record-detail select, #record-detail textarea { border: 1px solid #cfc3ba; border-radius: 8px; background: #fff; padding: .65rem; font: inherit; }
+#record-detail { margin: auto; color: #232323; background: #fffdf9; }
+#record-detail form { width: 100%; }
+#record-detail button, #home-records button { border-radius: 8px; border: 1px solid #d8c9c1; background: #fff; padding: .65rem 1rem; font: inherit; }
+#record-detail button[type=submit] { background: #bd0031; color: white; }
+#record-detail :focus-visible, #home-records :focus-visible { outline: 3px solid #bd0031; outline-offset: 3px; }

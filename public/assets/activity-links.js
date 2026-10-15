@@ -57,7 +57,7 @@
         for(const [kind,rows] of [['partners',[relationships.partner,...relationships.coHosts].filter(Boolean)],['agreements',relationships.agreements]]){
             for(const row of rows){const li=document.createElement('li');
                 if(kind==='agreements'&&window.AgreementComponent){const button=document.createElement('button');button.type='button';button.textContent=row.title;button.onclick=()=>window.AgreementComponent.openDetail(row.id);li.appendChild(button);}
-                else{const link=document.createElement('a');link.textContent=row.name||row.title;link.href='records.html?kind='+kind+'&id='+encodeURIComponent(row.id);li.appendChild(link);}
+                else{const link=document.createElement('a');link.textContent=row.name||row.title;link.href='index.html?kind='+kind+'&id='+encodeURIComponent(row.id);li.appendChild(link);}
                 list.appendChild(li);
             }
         }

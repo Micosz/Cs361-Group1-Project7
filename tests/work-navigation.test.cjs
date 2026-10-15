@@ -9,7 +9,7 @@ const session = (...grants) => ({user:{id:'u1'},grants:grants.map(([role,scopeId
 test('shared menu routes use data kinds, deduplicate multi roles and keep executive read-only', () => {
     const executive = nav.menu(session(['executive','c1']));
     assert.equal(executive.filter(item=>item.href.includes('action=create')).length,0);
-    assert.ok(executive.some(item=>item.href.includes('view=overview')));
+    assert.equal(executive.length,0);
     const multi = nav.menu(session(['staff','c1'],['coordinator','c1']));
     assert.equal(multi.filter(item=>item.href.includes('kind=activities&action=create')).length,1);
     assert.ok(nav.canCreate(session(['staff','c1']),'partners'));
@@ -40,11 +40,20 @@ test('public detail action requires a fresh authorized protected record and igno
     const holder = {isConnected:true, children:[], appendChild(node){this.children.push(node);}};
     local.window.CstuAuth = {enabled:()=>true, refresh:async()=>session(['coordinator','c1']),request:async()=>({data:row})};
     await local.window.CstuWork.attachDetailAction(holder,'activities','a1');
-    assert.equal(holder.children[0].href,'records.html?kind=activities&id=a1');
+    assert.equal(holder.children[0].href,'index.html?kind=activities&id=a1#board-section');
     holder.children=[]; holder.isConnected=false;
     await local.window.CstuWork.attachDetailAction(holder,'activities','a1');
     assert.equal(holder.children.length,0);
     holder.isConnected=true; local.window.CstuAuth.request=async()=>{throw Object.assign(Error(),{status:503});};
     await local.window.CstuWork.attachDetailAction(holder,'activities','a1');
     assert.equal(holder.children.length,0);
+});
+test('homepage menu contains only create entries and never grants writes to students or expired grants', () => {
+    const staff=nav.menu(session(['staff','c1']));
+    assert.equal(staff.length,4);
+    assert.ok(staff.every(item=>item.href.startsWith('index.html?kind=') && item.href.endsWith('&action=create#board-section')));
+    assert.equal(nav.menu(session(['student','c1'])).length,0);
+    const revoked=session(['staff','c1']); revoked.grants[0].active=false;
+    assert.equal(nav.menu(revoked).length,0);
+    assert.equal(nav.menu(session(['coordinator','c1'])).length,3);
 });

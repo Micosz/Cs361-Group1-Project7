@@ -16,7 +16,7 @@
                     for(const row of result.data){
                         const li=document.createElement('li'), text=document.createElement('p');
                         text.textContent=row.occurredOn+' · '+row.kind+' · '+row.note;li.appendChild(text);
-                        if(row.referenceId){const link=document.createElement('a');link.textContent=row.referenceLabel||'เปิดรายการอ้างอิง';link.href='records.html?kind='+(row.referenceType==='activity'?'activities':'agreements')+'&id='+encodeURIComponent(row.referenceId);li.appendChild(link);}
+                        if(row.referenceId){const link=document.createElement('a');link.textContent=row.referenceLabel||'เปิดรายการอ้างอิง';link.href='index.html?kind='+(row.referenceType==='activity'?'activities':'agreements')+'&id='+encodeURIComponent(row.referenceId);li.appendChild(link);}
                         if(canEdit){const edit=document.createElement('button');edit.type='button';edit.textContent='แก้ไขเหตุการณ์';edit.onclick=()=>form(row);li.appendChild(edit);}
                         list.appendChild(li);total++;
                     }

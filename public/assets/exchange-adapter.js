@@ -19,6 +19,7 @@
         frame.src = 'workspace.html?embed=exchange' + (options.record ? '&id=' + encodeURIComponent(options.record.id) : '');
         dialog.appendChild(frame); if (!dialog.open) dialog.showModal();
     }
+    window.addEventListener('authchange', close);
     window.addEventListener('message', event => {
         if (event.origin === window.location.origin && event.source === frame?.contentWindow && event.data?.type === 'exchange-saved') {
             close(); reload?.();

@@ -20,6 +20,7 @@
             let input;
             if (name === 'type') {
                 input = document.createElement('select');
+                const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'เลือกประเภท'; input.appendChild(placeholder);
                 const types = kind === 'partners' ? ['company','university','government','research_institute','internship'] : ['academic_activity','event','research'];
                 for (const value of types) { const opt = document.createElement('option'); opt.value = value; opt.textContent = value; input.appendChild(opt); }
             } else {
