@@ -4,6 +4,8 @@
     const $ = id => document.getElementById(id), form = $('records-search'), dialog = $('record-detail');
     let params = new URLSearchParams(), kind = 'partners', overview = false, config = window.CstuWork.kinds.partners;
     const host = $('home-records');
+    const eventKinds = ['activities','agreements','exchanges'];
+    let eventKind = 'activities';
     let revision = 0, detailRevision = 0, session = null, nextCursor = null, lastTrigger = null;
     const status = text => { $('records-status').textContent = text; };
     function clear() {
@@ -167,12 +169,31 @@
             if (error.status === 401) redirectLogin();
         }
     }
+    function syncBoard() {
+        const eventView = eventKinds.includes(kind);
+        $('sectionCollaborator').style.display = kind === 'partners' ? 'block' : 'none';
+        $('sectionEvent').style.display = kind === 'activities' ? 'block' : 'none';
+        $('event-record-filter').hidden = !eventView || Array.from($('event-record-kind').options).filter(option => !option.disabled).length < 2;
+        $('event-record-kind').value = eventView ? kind : eventKind;
+        $('tabCollab').classList.toggle('active', !eventView);
+        $('tabEvent').classList.toggle('active', eventView);
+        $('tabCollab').setAttribute('aria-pressed', String(!eventView));
+        $('tabEvent').setAttribute('aria-pressed', String(eventView));
+    }
     function updateTabs(roles) {
-        document.querySelectorAll('[data-work-kind]').forEach(button => {
-            const target = button.dataset.workKind;
-            button.hidden = target === 'overview' ? !roles.includes('executive')
-                : !(roles.some(role => ['staff','coordinator','executive'].includes(role)) || (target === 'exchanges' && roles.includes('student')));
-        });
+        const internal = roles.some(role => ['staff','coordinator','executive'].includes(role));
+        for (const option of $('event-record-kind').options) {
+            const allowed = option.value === 'activities' || internal || (option.value === 'exchanges' && roles.includes('student'));
+            option.hidden = !allowed; option.disabled = !allowed;
+        }
+        $('board-overview').hidden = !roles.includes('executive');
+        const selected = Array.from($('event-record-kind').options).find(option => option.value === eventKind);
+        if (selected?.disabled) eventKind = 'activities';
+        if ((kind === 'agreements' && !internal) || (kind === 'exchanges' && !internal && !roles.includes('student')) || (overview && !roles.includes('executive'))) {
+            kind = 'activities'; overview = false; config = window.CstuWork.kinds.activities;
+            params = new URLSearchParams(); setupFilters();
+        }
+        syncBoard();
     }
     async function open(target = 'partners', action = null, id = null, scroll = false) {
         kind = target; overview = target === 'overview'; config = window.CstuWork.kinds[kind];
@@ -180,10 +201,8 @@
         form.elements.namedItem('q').value = '';
         for (const name of ['startDate','endDate']) form.elements.namedItem(name).value = '';
         if (config) setupFilters();
-        $('sectionCollaborator').style.display = kind === 'partners' ? 'block' : 'none';
-        $('sectionEvent').style.display = kind === 'activities' ? 'block' : 'none';
-        document.querySelectorAll('.tabs .tab').forEach(button => button.classList.toggle('active',
-            button.id === (kind === 'partners' ? 'tabCollab' : kind === 'activities' ? 'tabEvent' : '') || button.dataset.workKind === kind));
+        if (eventKinds.includes(kind)) eventKind = kind;
+        syncBoard();
         await load();
         if (scroll) window.dispatchEvent(new Event('cstu:board'));
     }
@@ -197,9 +216,10 @@
         $('detail-actions').appendChild(frame); if (!dialog.open) dialog.showModal();
     }
     window.CstuRecords = {open};
-    document.querySelectorAll('[data-work-kind]').forEach(button => button.onclick = () => open(button.dataset.workKind));
+    $('event-record-kind').onchange = () => open($('event-record-kind').value);
+    $('board-overview').onclick = () => open('overview');
     $('tabCollab').addEventListener('click', () => open('partners'));
-    $('tabEvent').addEventListener('click', () => open('activities'));
+    $('tabEvent').addEventListener('click', () => open(eventKind));
     document.addEventListener('click', event => {
         const link = event.target.closest('a[href]'); if (!link || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         const url = new URL(link.href, location.href);

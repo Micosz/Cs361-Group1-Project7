@@ -268,12 +268,15 @@
                 cancelAnimationFrame(indicatorFrame);
                 indicatorFrame = requestAnimationFrame(() => {
                     const selected = tabs.querySelector('.tab.active');
-                    if (selected) {
+                    if (selected && selected.getClientRects().length) {
+                        indicator.style.top = `${selected.offsetTop}px`;
+                        indicator.style.bottom = 'auto';
+                        indicator.style.height = `${selected.offsetHeight}px`;
                         // Size the pill without scaling its corner radius into an ellipse.
                         indicator.style.width = `${selected.offsetWidth}px`;
                         indicator.style.transform = `translateX(${selected.offsetLeft}px)`;
                         tabs.classList.add('has-indicator');
-                    }
+                    } else { tabs.classList.remove('has-indicator'); }
                 });
             };
             const observer = new MutationObserver(sync);

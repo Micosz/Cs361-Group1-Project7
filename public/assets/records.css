@@ -27,3 +27,8 @@
 #record-detail button, #home-records button { border-radius: 8px; border: 1px solid #d8c9c1; background: #fff; padding: .65rem 1rem; font: inherit; }
 #record-detail button[type=submit] { background: #bd0031; color: white; }
 #record-detail :focus-visible, #home-records :focus-visible { outline: 3px solid #bd0031; outline-offset: 3px; }
+
+.board-record-filter { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; margin: 1.5rem 0; }
+.board-record-filter[hidden], #board-overview[hidden] { display: none !important; }
+.board-record-filter select { max-width: 100%; }
+#board-overview { font: inherit; padding: .65rem 1rem; border: 1px solid #d8c9c1; border-radius: 8px; background: #fffdf9; cursor: pointer; }

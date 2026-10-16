@@ -12,23 +12,23 @@
     <link rel="stylesheet" href="assets/portal.css?v=6">
     <script src="assets/auth-config.js" defer></script>
     <script src="assets/auth-client.js" defer></script>
-    <script src="assets/work-navigation.js?v=home-workspace-2" defer></script>
+    <script src="assets/work-navigation.js?v=home-workspace-3" defer></script>
     <script src="assets/documents.js" defer></script>
-    <script src="assets/agreement.js?v=home-workspace-2" defer></script>
+    <script src="assets/agreement.js?v=home-workspace-3" defer></script>
     <script src="assets/script.js?v=7" defer></script>
     <link rel="stylesheet" href="assets/role-menu.css?v=3">
-    <link rel="stylesheet" href="assets/records.css?v=home-workspace-2">
-    <script src="assets/basic-record-forms.js?v=home-workspace-2" defer></script>
-    <script src="assets/activity-links.js?v=home-workspace-2" defer></script>
-    <script src="assets/activity-adapter.js?v=home-workspace-2" defer></script>
-    <script src="assets/exchange-adapter.js?v=home-workspace-2" defer></script>
-    <script src="assets/partner-history.js?v=home-workspace-2" defer></script>
-    <script src="assets/partner-contacts.js?v=home-workspace-2" defer></script>
-    <script src="assets/records.js?v=home-workspace-2" defer></script>
-    <script src="assets/role-menu.js?v=home-workspace-2" defer></script>
+    <link rel="stylesheet" href="assets/records.css?v=home-workspace-3">
+    <script src="assets/basic-record-forms.js?v=home-workspace-3" defer></script>
+    <script src="assets/activity-links.js?v=home-workspace-3" defer></script>
+    <script src="assets/activity-adapter.js?v=home-workspace-3" defer></script>
+    <script src="assets/exchange-adapter.js?v=home-workspace-3" defer></script>
+    <script src="assets/partner-history.js?v=home-workspace-3" defer></script>
+    <script src="assets/partner-contacts.js?v=home-workspace-3" defer></script>
+    <script src="assets/records.js?v=home-workspace-3" defer></script>
+    <script src="assets/role-menu.js?v=home-workspace-3" defer></script>
     <script src="assets/filter-presentation.js?v=5" defer></script>
-    <script src="assets/presentation.js?v=9" defer></script>
-    <script src="assets/opening.js?v=home-workspace-2" defer></script>
+    <script src="assets/presentation.js?v=home-workspace-3" defer></script>
+    <script src="assets/opening.js?v=home-workspace-3" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -121,11 +121,8 @@
     <div class="board-scene">
     <div id="board-section" class="sub-header container">
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('collaborator')" id="tabCollab">COLLABORATOR</button>
-            <button class="tab" onclick="switchTab('event')" id="tabEvent">EVENT & ACTIVITIES</button>
-            <button class="tab" data-work-kind="agreements" hidden>ข้อตกลง MoU/MoA</button>
-            <button class="tab" data-work-kind="exchanges" hidden>การแลกเปลี่ยน</button>
-            <button class="tab" data-work-kind="overview" hidden>ภาพรวม</button>
+            <button class="tab active" id="tabCollab">COLLABORATOR</button>
+            <button class="tab" id="tabEvent">EVENT & ACTIVITIES</button>
         </div>
         <div class="page-title">
             <h1>Computer Science</h1>
@@ -134,6 +131,15 @@
     </div>
 
     <main class="container">
+        <div id="event-record-filter" class="board-record-filter" hidden>
+            <label for="event-record-kind">แสดงรายการ</label>
+            <select id="event-record-kind" class="modern-select">
+                <option value="activities">กิจกรรมและข่าวกิจกรรม</option>
+                <option value="agreements" hidden disabled>ข้อตกลง MoU/MoA</option>
+                <option value="exchanges" hidden disabled>การแลกเปลี่ยน</option>
+            </select>
+        </div>
+        <button id="board-overview" type="button" hidden>ภาพรวมความร่วมมือ</button>
     <section id="home-records" class="records-shell" hidden><h2 id="records-title">ข้อมูลความร่วมมือ</h2>
 <nav id="record-links" aria-label="ชนิดข้อมูล"></nav>
 <p id="records-status" role="status">กำลังตรวจสิทธิ์</p>
