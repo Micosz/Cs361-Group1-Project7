@@ -63,7 +63,7 @@ def page(rows, event, service, kind=None):
     needle = q.strip().casefold()
     rows = sorted((r for r in rows if needle in str(r.get('name', r.get('title', ''))).casefold()),
                   key=lambda r: r['id'])
-    if kind == 'history':
+    if kind in {'history', 'feedback'}:
         rows.sort(key=lambda r: r.get('createdAt') or '', reverse=True)
         rows.sort(key=lambda r: r.get('occurredOn') or '', reverse=True)
     # Include the authorized projection snapshot so record edits/assignment changes

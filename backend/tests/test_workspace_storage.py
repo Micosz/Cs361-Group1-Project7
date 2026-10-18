@@ -96,3 +96,70 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.assertEqual(200, result['statusCode'], body)
         self.assertEqual({'count': 1, 'statuses': {'draft': 1}}, body['data']['agreements'])
         self.assertNotIn('responsibleUserIds', json.dumps(body))
+
+
+    def test_existing_partner_table_keeps_fields_and_checks_cross_table_references(self):
+        self.repository.partner_table = 'Partner'
+        original_query=self.repository.client.query
+        def original_table_query(**kwargs):
+            if kwargs.get('TableName')=='Partner':
+                from backend.auth.dynamo_accounts import decode
+                from backend.permissions.transactions import values
+                key=decode(kwargs['ExpressionAttributeValues'])[':id']
+                row=self.repository.client.rows.get(key)
+                return {'Items':[values(row)] if row else []}
+            return original_query(**kwargs)
+        self.repository.client.query=original_table_query
+
+        self.repository.client.rows['partner-demo'].update(source_urls=['https://example.test/source'], full_description='Original source')
+        result, body = self.call('/api/partners/partner-demo','PATCH',{'summary':'Edited summary'},version=1)
+        self.assertEqual(200,result['statusCode'],body)
+        saved=self.repository.client.rows['partner-demo']
+        self.assertEqual(['https://example.test/source'],saved['source_urls'])
+        self.assertEqual('Original source',saved['full_description'])
+        self.assertEqual('Partner',self.repository.client.transactions[-1][-1]['Put']['TableName'])
+        self.assertEqual({'id','type'},set(self.repository._key('partner',saved)))
+        result, body = self.call('/api/activities','POST',dict(scopeId='cs-demo',title='Event in original table',
+            type='event',summary='Test',partnerId='partner-demo',publication='public'),key='original-table-activity')
+        self.assertEqual(201,result['statusCode'],body)
+        row=self.repository.client.rows[body['data']['id']]
+        self.assertEqual('public',row['visibility'])
+        self.assertEqual('public',row['access_level'])
+        self.assertTrue(any(item.get('Put',{}).get('TableName')=='Partner' for item in self.repository.client.transactions[-1]))
+        agreement=self.create_agreement()
+        transaction=self.repository.client.transactions[-1]
+        self.assertTrue(any(item.get('ConditionCheck',{}).get('TableName')=='Partner' for item in transaction))
+        self.assertTrue(all('type' in item['ConditionCheck']['Key'] for item in transaction if item.get('ConditionCheck',{}).get('TableName')=='Partner'))
+        self.assertTrue(any(item.get('Put',{}).get('TableName')=='business' for item in transaction))
+        self.assertEqual('agreement',self.repository.get('agreement',agreement['id'])['entityType'])
+
+    def test_partner_scan_and_contact_parent_check_use_original_table(self):
+        from backend.permissions.transactions import values
+        self.repository.partner_table='Partner'
+        original_query=self.repository.client.query
+        def original_table_query(**kwargs):
+            if kwargs.get('TableName')=='Partner':
+                from backend.auth.dynamo_accounts import decode
+                from backend.permissions.transactions import values
+                key=decode(kwargs['ExpressionAttributeValues'])[':id']
+                row=self.repository.client.rows.get(key)
+                return {'Items':[values(row)] if row else []}
+            return original_query(**kwargs)
+        self.repository.client.query=original_table_query
+
+        scans=[]
+        def scan(**kwargs):
+            scans.append(kwargs)
+            return {'Items':[values({'id':'partner-demo'})]}
+        self.repository.client.scan=scan
+        result, body=self.call('/api/partners')
+        self.assertEqual(200,result['statusCode'],body)
+        self.assertEqual('Partner',scans[0]['TableName'])
+        self.assertTrue(scans[0]['ConsistentRead'])
+        self.assertIn('partner-demo',[row['id'] for row in body['data']])
+        result, body=self.call('/api/partners/partner-demo/contacts','POST',{'name':'Test contact'},key='original-table-contact')
+        self.assertEqual(201,result['statusCode'],body)
+        transaction=self.repository.client.transactions[-1]
+        self.assertTrue(any(item.get('ConditionCheck',{}).get('TableName')=='Partner' for item in transaction))
+        self.assertTrue(all('type' in item['ConditionCheck']['Key'] for item in transaction if item.get('ConditionCheck',{}).get('TableName')=='Partner'))
+        self.assertTrue(any(item.get('Put',{}).get('TableName')=='business' for item in transaction))

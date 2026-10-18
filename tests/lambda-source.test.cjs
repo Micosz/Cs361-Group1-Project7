@@ -64,12 +64,12 @@ test('both data functions retain their error response', async () => {
 
 test('getPublicPartners loads as CommonJS and retains original field mapping', async () => {
   const result = await (await load('getPublicPartners', { items: [
-    { id: 'p1', name: 'Demo', access_level: 'internal', coordinators: ['demo'], hidden: 'omit' },
+    { id: 'p1', name: 'Demo', access_level: 'public', coordinators: ['demo'], hidden: 'omit' },
   ] }))({});
   assert.equal(result.statusCode, 200);
   const data = JSON.parse(result.body);
   // Preserve current mapping behavior; changing its publication rule is outside CI/CD.
-  assert.equal(data[0].access_level, 'internal');
+  assert.equal(data[0].access_level, 'public');
   assert.deepEqual(data[0].coordinators, ['demo']);
   assert.equal(data[0].hidden, undefined);
   assert.equal(result.headers['Access-Control-Allow-Methods'], 'GET');

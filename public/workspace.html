@@ -5,12 +5,37 @@
     <title>พื้นที่ผู้ใช้ — CSTUHub</title>
     <link rel="stylesheet" href="assets/styles.css">
     <script src="assets/auth-config.js" defer></script>
-    <script src="assets/auth-client.js" defer></script>
+    <script src="assets/auth-client.js?v=auth-2" defer></script>
     <script src="assets/documents.js" defer></script>
-    <script src="assets/agreement.js" defer></script>
-    <script src="assets/workspace.js" defer></script>
-    <script src="assets/activity-links.js" defer></script>
-    <script src="assets/activity-workspace.js" defer></script>
+    <script src="assets/selection-fields.js?v=selection-3" defer></script>
+    <script src="assets/agreement.js?v=selection-3" defer></script>
+    <script src="assets/workspace.js?v=selection-3" defer></script>
+    <script src="assets/activity-links.js?v=selection-3" defer></script>
+    <script src="assets/activity-workspace.js?v=selection-3" defer></script>
+    <script>
+        // Embedded forms occupy the iframe itself; hide the workspace behind them.
+        const embeddedForm = new URLSearchParams(location.search).get('embed');
+        if (['activity', 'exchange', 'roles'].includes(embeddedForm)) document.documentElement.dataset.embed = embeddedForm;
+    </script>
+    <style>
+        html[data-embed], html[data-embed] body { margin:0; height:100%; overflow:hidden; background:#fff; }
+        html[data-embed] main.container { margin:0; padding:0 !important; max-width:none !important; }
+        html[data-embed] main > * { visibility:hidden; }
+        html[data-embed] #workspace-status { visibility:visible; padding:1rem; }
+        html[data-embed="activity"] #activity-dialog,
+        html[data-embed="exchange"] #exchange-dialog {
+            visibility:visible; position:fixed; inset:0; margin:0; box-sizing:border-box;
+            width:100% !important; max-width:none !important; height:100%; max-height:100%;
+            padding:1.25rem !important; border:0 !important; border-radius:0 !important; overflow:auto;
+        }
+        html[data-embed="roles"] #role-dialog {
+            visibility:visible; position:fixed; inset:0; margin:0; box-sizing:border-box;
+            width:100% !important; max-width:none !important; height:100%; max-height:100%;
+            padding:1.25rem !important; border:0 !important; border-radius:0 !important; overflow:auto;
+        }
+        html[data-embed] dialog::backdrop { background:#fff; }
+        html[data-embed] input, html[data-embed] select, html[data-embed] textarea { box-sizing:border-box; max-width:100%; }
+    </style>
 </head>
 <body>
 <main class="container" style="padding:2rem;max-width:800px">
@@ -163,5 +188,12 @@
         </form>
     </dialog>
 </main>
+<script>
+    if (['activity', 'exchange'].includes(embeddedForm) && window.parent !== window) {
+        const closeEmbedded = () => window.parent.postMessage({type: embeddedForm + '-closed'}, location.origin);
+        document.getElementById(embeddedForm + '-close-btn').addEventListener('click', closeEmbedded);
+        document.getElementById(embeddedForm + '-dialog').addEventListener('cancel', closeEmbedded);
+    }
+</script>
 </body>
 </html>

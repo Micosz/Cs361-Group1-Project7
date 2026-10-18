@@ -21,7 +21,7 @@ from ..relationships.activity_links import internal_links, LinkError
 
 COLLECTIONS = {'partners': 'partner', 'activities': 'activity',
                'agreements': 'agreement', 'exchanges': 'exchange'}
-NESTED = {'contacts': 'contact', 'history': 'history', 'documents': 'document'}
+NESTED = {'contacts': 'contact', 'history': 'history', 'documents': 'document', 'feedback': 'feedback'}
 
 
 @dataclass(frozen=True)
@@ -64,7 +64,8 @@ def route(event):
     if len(parts) in {3, 4} and parts[2] in NESTED:
         child = NESTED[parts[2]]
         if (child in {'contact', 'history'} and kind != 'partner'
-                or child == 'document' and kind not in {'agreement', 'exchange'}):
+                or child == 'document' and kind not in {'agreement', 'exchange'}
+                or child == 'feedback' and kind not in {'activity', 'exchange'}):
             raise AuthError('NOT_FOUND', 404)
         return child, parts[3] if len(parts) == 4 else None, kind, parts[1], False, mine
     raise AuthError('NOT_FOUND', 404)
@@ -196,10 +197,11 @@ class PermissionGateway:
             authorization_record = record
             if not key and parent_kind:
                 authorization_record = {'entityType': kind, 'scopeId': parent['scopeId']}
-                if kind == 'document':
-                    authorization_record.update(parentType=parent_kind, parentId=parent_key,
-                                                audience=payload.get('audience'),
-                                                containsPersonal=payload.get('containsPersonal'))
+                if kind in {'document', 'feedback'}:
+                    authorization_record.update(parentType=parent_kind, parentId=parent_key)
+                    if kind == 'document':
+                        authorization_record.update(audience=payload.get('audience'),
+                                                    containsPersonal=payload.get('containsPersonal'))
                 else:
                     authorization_record['partnerId'] = parent_key
             payload = validate_fields(context, kind, action, payload, authorization_record, parent)
@@ -236,8 +238,11 @@ class PermissionGateway:
         data = project(context, kind, record, parent)
         if kind == 'activity':
             try:
+                from .policy import can_reference
                 links = internal_links(record, get_record=self.repository.get,
-                    allowed=lambda entity, action, row: bool(allowed_roles(context, entity, action, row)))
+                    allowed=lambda entity, action, row: can_reference(context, row, record['scopeId'])
+                    if entity == 'partner' and action == 'read'
+                    else bool(allowed_roles(context, entity, action, row)))
             except LinkError as error:
                 raise AuthError(error.code, error.status) from None
             data.pop('partnerId', None)

@@ -135,8 +135,9 @@
         ['input', 'change', 'click'].forEach(type => on(document, type, browse));
         // FLIP the existing detail panel from the clicked preview's screen rectangle.
         // Observe the application's completed render instead of changing openModal().
-        const modal = document.querySelector('#detailModal');
-        const panel = modal?.querySelector('.modal-content');
+        const modalStops = [];
+        for (const modal of [document.querySelector('#detailModal'), document.querySelector('#record-detail')].filter(Boolean)) {
+        const panel = modal.matches('dialog') ? modal : modal.querySelector('.modal-content');
         let previewOrigin = null;
         let modalFrame = 0;
         const stopModalMotion = () => {
@@ -145,6 +146,7 @@
             if (panel) cancel(panel);
             if (modal) cancel(modal);
         };
+        modalStops.push(stopModalMotion);
         if (modal && panel) {
             on(document, 'click', event => {
                 if (event.target === modal || event.target.closest('.close-btn')) {
@@ -161,7 +163,7 @@
                 };
             }, { capture: true });
             const modalChanged = () => {
-                if (modal.style.display === 'none') {
+                if (modal.matches('dialog') ? !modal.open : modal.style.display === 'none') {
                     previewOrigin = null;
                     stopModalMotion();
                     return;
@@ -190,14 +192,15 @@
                 });
             };
             const modalObserver = new MutationObserver(modalChanged);
-            modalObserver.observe(modal, { attributes: true, attributeFilter: ['style'] });
-            const title = document.querySelector('#modalTitle');
+            modalObserver.observe(modal, { attributes: true, attributeFilter: ['style','open'] });
+            const title = document.querySelector(modal.matches('dialog') ? '#detail-title' : '#modalTitle');
             if (title) modalObserver.observe(title, { childList: true, subtree: true, characterData: true });
             observers.push(modalObserver);
             // Reading and pressing controls can interrupt the entrance immediately.
             on(panel, 'wheel', stopModalMotion, { passive: true });
             on(panel, 'touchmove', stopModalMotion, { passive: true });
             on(window, 'resize', stopModalMotion);
+        }
         }
         function reset() {
             cancelAnimationFrame(frame);
@@ -268,12 +271,15 @@
                 cancelAnimationFrame(indicatorFrame);
                 indicatorFrame = requestAnimationFrame(() => {
                     const selected = tabs.querySelector('.tab.active');
-                    if (selected) {
+                    if (selected && selected.getClientRects().length) {
+                        indicator.style.top = `${selected.offsetTop}px`;
+                        indicator.style.bottom = 'auto';
+                        indicator.style.height = `${selected.offsetHeight}px`;
                         // Size the pill without scaling its corner radius into an ellipse.
                         indicator.style.width = `${selected.offsetWidth}px`;
                         indicator.style.transform = `translateX(${selected.offsetLeft}px)`;
                         tabs.classList.add('has-indicator');
-                    }
+                    } else { tabs.classList.remove('has-indicator'); }
                 });
             };
             const observer = new MutationObserver(sync);
@@ -289,7 +295,7 @@
         }
         return () => {
             controller.abort();
-            stopModalMotion();
+            modalStops.forEach(stop => stop());
             reset();
             cancelAnimationFrame(indicatorFrame);
             observers.forEach(observer => observer.disconnect());

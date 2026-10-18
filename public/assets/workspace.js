@@ -77,7 +77,7 @@ async function loadExchanges() {
     exchangeList.replaceChildren();
     try {
         const res = await allWorkspaceRows('/exchanges');
-        const exchanges = res.data || [];
+        const exchanges = [...new Map((res.data || []).map(row=>[row.id,row])).values()];
         if (!exchanges.length) {
             exchangeListStatus.textContent = 'ไม่พบโครงการแลกเปลี่ยนในขอบเขตของคุณ';
             return;
@@ -222,7 +222,7 @@ async function loadMyExchanges() {
     myExchangeList.replaceChildren();
     try {
         const res = await allWorkspaceRows('/me/exchanges');
-        const exchanges = res.data || [];
+        const exchanges = [...new Map((res.data || []).map(row=>[row.id,row])).values()];
         if (!exchanges.length) {
             myExchangeStatus.textContent = 'ไม่พบโครงการแลกเปลี่ยนที่คุณเข้าร่วม';
             return;
@@ -283,6 +283,26 @@ async function loadMyExchanges() {
     }
 }
 
+function mountExchangeChoices() {
+    if (!window.SelectionFields) return;
+    const fields = [
+        {input:exchangePartnerIds,kind:'partners',label:'คู่ความร่วมมือ (เลือกได้หลายรายการ)',required:true},
+        {input:exchangeAgreementId,kind:'agreements',label:'ข้อตกลงที่เกี่ยวข้อง',multiple:false},
+        {input:exchangeParticipantUsers,kind:'participant',label:'นักศึกษาผู้เข้าร่วม (เลือกได้หลายคน)'}
+    ];
+    const staffInScope = (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false&&g.scopeId===exchangeScope.value&&g.role==='staff');
+    if (staffInScope) fields.push({input:exchangeResponsibleUsers,kind:'responsible',label:'ผู้รับผิดชอบโครงการ (เลือกได้หลายคน)'});
+    const setTransitions = ready => {
+        const state = exchangeStatusDisplay?.textContent;
+        if (exchangeBtnOngoing) exchangeBtnOngoing.disabled = !ready || state !== 'draft';
+        if (exchangeBtnCompleted) exchangeBtnCompleted.disabled = !ready || state !== 'ongoing';
+        if (exchangeBtnCancelled) exchangeBtnCancelled.disabled = !ready || !['draft','ongoing'].includes(state);
+    };
+    setTransitions(false);
+    window.SelectionFields.mount({form:exchangeForm,scope:exchangeScope,fields,submit:exchangeSubmitBtn,status:exchangeStatus,
+        onReady:()=>setTransitions(true)});
+}
+
 function openAddExchangeDialog(scopes) {
     exchangeDialogTitle.textContent = 'เพิ่มโครงการแลกเปลี่ยน';
     exchangeId.value = '';
@@ -308,12 +328,13 @@ function openAddExchangeDialog(scopes) {
     }
     exchangeScope.disabled = false;
 
-    const isStaff = userRoles.includes('staff');
+    const isStaff = (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false&&g.scopeId===exchangeScope.value&&g.role==='staff');
     if (staffExchangeFields) staffExchangeFields.hidden = !isStaff;
     if (exchangeStatusSection) exchangeStatusSection.hidden = true;
 
     currentSubmissionKey = 'ex-key-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     if (!exchangeDialog.open) exchangeDialog.showModal();
+    mountExchangeChoices();
 }
 
 function openEditExchange(ex) {
@@ -339,7 +360,7 @@ function openEditExchange(ex) {
     exchangeScope.appendChild(opt);
     exchangeScope.disabled = true;
 
-    const isStaff = userRoles.includes('staff');
+    const isStaff = (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false&&g.scopeId===exchangeScope.value&&g.role==='staff');
     if (staffExchangeFields) staffExchangeFields.hidden = !isStaff;
 
     if (exchangeStatusSection && exchangeStatusDisplay) {
@@ -348,9 +369,9 @@ function openEditExchange(ex) {
         exchangeStatusDisplay.textContent = curStatus;
 
         // Button availability based on current status
-        if (exchangeBtnOngoing) exchangeBtnOngoing.disabled = (curStatus !== 'draft');
-        if (exchangeBtnCompleted) exchangeBtnCompleted.disabled = (curStatus !== 'ongoing');
-        if (exchangeBtnCancelled) exchangeBtnCancelled.disabled = !['draft', 'ongoing'].includes(curStatus);
+        if (exchangeBtnOngoing) exchangeBtnOngoing.disabled = true;
+        if (exchangeBtnCompleted) exchangeBtnCompleted.disabled = true;
+        if (exchangeBtnCancelled) exchangeBtnCancelled.disabled = true;
     }
 
     currentSubmissionKey = null;
@@ -360,6 +381,7 @@ function openEditExchange(ex) {
         window.DocumentComponent.mount(docs, 'exchange', ex);
     }
     if (!exchangeDialog.open) exchangeDialog.showModal();
+    mountExchangeChoices();
 }
 
 async function refreshWorkspace() {
@@ -389,17 +411,21 @@ async function refreshWorkspace() {
             const option = document.createElement('option'); option.value = id; option.textContent = id; scope.append(option);
         }
         openRoles.hidden = !managed.length;
+        if (new URLSearchParams(location.search).get('embed') === 'roles' && managed.length) {
+            const roleDialog = document.getElementById('role-dialog');
+            if (roleDialog && !roleDialog.open) roleDialog.showModal();
+        }
 
         // Exchange section handling
-        const activeScopes = [...new Set((session.grants || []).filter(g => g.active !== false && ['coordinator','staff'].includes(g.role)).map(g => g.scopeId))];
         const readScopes = (session.grants || []).filter(g => g.active !== false).map(g => g.scopeId);
-        const canManageExchanges = userRoles.some(r => ['coordinator', 'staff', 'executive'].includes(r));
+        const activeScopes = [...new Set((session.grants || []).filter(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff'].includes(g.role)).map(g => g.scopeId))];
+        const canManageExchanges = (session.grants || []).some(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff','executive'].includes(g.role));
         if (exchangeSection && canManageExchanges && readScopes.length) {
             exchangeSection.hidden = false;
-            const canAdd = userRoles.some(r => ['coordinator', 'staff'].includes(r));
+            const canAddScopes = [...new Set((session.grants || []).filter(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff'].includes(g.role)).map(g => g.scopeId))];
             if (openAddExchange) {
-                openAddExchange.hidden = !canAdd;
-                openAddExchange.onclick = () => openAddExchangeDialog(activeScopes);
+                openAddExchange.hidden = !canAddScopes.length;
+                openAddExchange.onclick = () => openAddExchangeDialog(canAddScopes);
             }
             await loadExchanges();
         }
@@ -419,12 +445,12 @@ async function refreshWorkspace() {
             myExchangeSection.hidden = false;
             await loadMyExchanges();
         }
-        const canAgreement = userRoles.some(r => ['coordinator', 'staff'].includes(r));
+        const canAgreement = (session.grants || []).some(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff'].includes(g.role));
         if (openAgreements) {
             openAgreements.hidden = !canAgreement;
             openAgreements.onclick = () => {
                 if (window.AgreementComponent) {
-                    const defaultScope = session.grants.find(g => g.active !== false && ['staff','coordinator'].includes(g.role))?.scopeId;
+                    const defaultScope = session.grants.find(g => g.active !== false && readScopes.includes(g.scopeId) && ['staff','coordinator'].includes(g.role))?.scopeId;
                     window.AgreementComponent.openCreate(defaultScope);
                 }
             };
@@ -495,9 +521,8 @@ if (exchangeForm) {
             payload.scopeId = exchangeScope.value;
         }
 
-        if (exchangeAgreementId.value.trim()) {
-            payload.agreementId = exchangeAgreementId.value.trim();
-        }
+        // Selecting 'ไม่ระบุ' clears a previous optional agreement too.
+        payload.agreementId = exchangeAgreementId.value.trim() || null;
 
         if (exchangeStartDate.value) {
             payload.startDate = exchangeStartDate.value;

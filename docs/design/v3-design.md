@@ -94,7 +94,18 @@
 
 ส่งจริง: Public V2 เดิม, TU Login + account linking + Session/logout, role assignments, เพิ่ม/แก้ partner/contact/activity, สร้าง/แก้ agreement + status/renewal, เอกสาร private, สร้าง/แก้ exchange/participants/status, My Exchange และ coordinator/staff/executive workspaces พร้อม keyword/type/date filters ที่ระบุใน API contract
 
-เลื่อน/ไม่รวม: Feedback หลายแหล่ง, เชื่อมข้อมูลระบบอื่น, analytics เชิงลึก/ส่งออกรายงาน, สมัครโครงการ/approval workflow, ลบ, follow/notifications, บัญชีคู่ความร่วมมือ/ศิษย์เก่า และ auto-sync/scheduled backup ไม่ตีความว่าแนวคิดทั้งหมดใน Role Diagram ต้องส่ง V3
+เลื่อน/ไม่รวม ณ baseline เดิม: Feedback หลายแหล่ง, เชื่อมข้อมูลระบบอื่น, analytics เชิงลึก/ส่งออกรายงาน, สมัครโครงการ/approval workflow, ลบ, follow/notifications, บัญชีคู่ความร่วมมือ/ศิษย์เก่า และ auto-sync/scheduled backup ไม่ตีความว่าแนวคิดทั้งหมดใน Role Diagram ต้องส่ง V3
+
+### เพิ่มขอบเขต Feedback — เจ้าของงานสั่ง 18 ตุลาคม 2026
+
+รายการนี้เพิ่มเติมจาก baseline ด้านบนตามคำสั่งเจ้าของงานในแชต ไม่ใช่การยืนยันว่าทีมอนุมัติ baseline ทั้งชุดหรือกำหนด release ถัดไปแล้ว
+
+- เพิ่มรายการ Feedback ในรายละเอียด Activity และ Exchange บนหน้าหลัก โดย Coordinator อ่าน/เพิ่ม/แก้ไขได้เฉพาะงานรับผิดชอบ และ Staff ทำได้ภายใน scope ที่มีสิทธิ์
+- Executive อ่านความคิดเห็นและสิ่งที่ควรปรับปรุงในรายละเอียดได้ตาม scope แต่เพิ่ม/แก้ไขไม่ได้ และ API ไม่ส่ง `respondentName` ให้ Executive; Public/Student อ่านหรือเขียน Feedback ไม่ได้
+- เก็บวันที่รับผลตอบรับ แหล่งที่มา (ผู้เข้าร่วม/คู่ความร่วมมือ/อื่น ๆ) ความคิดเห็น สิ่งที่ควรปรับปรุง และชื่อผู้ให้ผลตอบรับภายในซึ่งไม่บังคับ ต้องไม่ใส่ข้อมูลระบุตัวบุคคลในข้อความความคิดเห็น เพราะไม่มีการทำ anonymization อัตโนมัติ
+- ยังไม่รวมลบรายการ แบบสำรวจ/คะแนน การให้นักศึกษากรอกเอง และรายงานสรุป Feedback
+- ใช้ API nested parent พร้อมการตรวจ session/scope/assignment, CSRF, idempotency และ optimistic version ของระบบเดิม ไม่เพิ่มช่องทาง public หรือ browser storage สำหรับข้อมูลนี้
+- การรวมเข้า main และ deploy เว็บหลักรอคำสั่งเจ้าของงานภายหลัง ผลตรวจ local/mock ไม่ใช่หลักฐานการทำงานบน AWS จริง
 
 <a id="scope-permissions-นิยามขอบเขต"></a>
 

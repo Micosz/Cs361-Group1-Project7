@@ -111,12 +111,22 @@
             row.appendChild(span);
 
             content.appendChild(row);
+            return span;
         };
 
         addRow('ประเภทข้อตกลง', agreement.agreementType);
         addRow('สถานะ', agreement.status);
         addRow('ขอบเขตหลักสูตร (Scope)', agreement.scopeId);
-        addRow('คู่ความร่วมมือ (Partner IDs)', agreement.partnerIds);
+        const partnerLabel = addRow('คู่ความร่วมมือ', (agreement.partnerIds || []).join(', '));
+        if (partnerLabel && window.CstuAuth?.enabled?.()) {
+            const agreementId = agreement.id;
+            Promise.all((agreement.partnerIds || []).map(async id => {
+                try { return (await window.CstuAuth.request('/partners/'+encodeURIComponent(id))).data?.name || id; }
+                catch { return id; }
+            })).then(names => {
+                if (currentAgreement?.id === agreementId && partnerLabel.isConnected) partnerLabel.textContent = names.join(', ');
+            });
+        }
 
         const dates = [];
         if (agreement.startDate) dates.push('เริ่ม: ' + agreement.startDate);
@@ -126,7 +136,7 @@
         if (agreement.renewalDueOn) addRow('กำหนดพิจารณาต่ออายุ', agreement.renewalDueOn);
         if (agreement.renewalNote) addRow('บันทึกการต่ออายุ', agreement.renewalNote);
         if (agreement.internalNote) addRow('บันทึกภายใน', agreement.internalNote);
-        if (agreement.responsibleUserIds?.length) addRow('ผู้รับผิดชอบ', agreement.responsibleUserIds);
+        if (agreement.responsibleUserIds?.length) addRow('รหัสผู้รับผิดชอบภายใน', agreement.responsibleUserIds);
 
         currentAgreement = agreement;
         if (agreement.version !== undefined) {
@@ -337,6 +347,16 @@
             expireBtn.className = 'login-btn';
             expireBtn.style.background = 'var(--text-gray, #595959)';
             expireBtn.textContent = 'ปรับเป็นหมดอายุ (Expire)';
+            const today = new Date();
+            const todayIso = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+            const beforeEndDate = Boolean(agreement.endDate && agreement.endDate >= todayIso);
+            expireBtn.disabled = beforeEndDate;
+            if (beforeEndDate) {
+                const dateHint = document.createElement('small');
+                dateHint.textContent = `ปรับเป็นหมดอายุได้ตั้งแต่วันถัดจากวันสิ้นสุด ${agreement.endDate}`;
+                dateHint.setAttribute('role','status');
+                activeActions.appendChild(dateHint);
+            }
             expireBtn.onclick = () => doChangeStatus(agreement.id, { to: 'expired' }, currentVersion, statusMsgContainer).catch(() => {});
 
             const terminateToggleBtn = document.createElement('button');
@@ -482,7 +502,7 @@
         container.appendChild(statusMsgContainer);
     }
 
-    function renderForm(agreement = null) {
+    function renderForm(agreement = null, initialScopeId = null) {
         const dlg = ensureDialog();
         dlg.replaceChildren();
 
@@ -537,11 +557,12 @@
         // Scope ID (on create)
         let scopeInput = null;
         if (isCreate) {
-            scopeInput = document.createElement('input');
-            scopeInput.type = 'text';
+            scopeInput = document.createElement('select');
             scopeInput.required = true;
-            scopeInput.maxLength = 200;
-            scopeInput.value = 'cs-demo'; // Default or prompt
+            const scopes = [...new Set((window.CstuAuth?.state?.()?.grants || [])
+                .filter(g=>g.active!==false&&['staff','coordinator'].includes(g.role)).map(g=>g.scopeId))];
+            for (const id of scopes) { const option=document.createElement('option');option.value=id;option.textContent=id;scopeInput.appendChild(option); }
+            if (initialScopeId && scopes.includes(initialScopeId)) scopeInput.value = initialScopeId;
             form.appendChild(createField('agreement-form-scope', 'ขอบเขตหลักสูตร (Scope ID) *', scopeInput));
         }
 
@@ -771,6 +792,11 @@
         dlg.appendChild(form);
         currentMode = 'form';
         if (!dlg.open) dlg.showModal();
+        if (window.SelectionFields) {
+            const fields=[{input:partnerInput,kind:'partners',label:'คู่ความร่วมมือ (เลือกได้หลายรายการ)',required:true}];
+            if(respInput)fields.push({input:respInput,kind:'responsible',label:'ผู้รับผิดชอบ (เลือกได้หลายคน)'});
+            window.SelectionFields.mount({form,scope:scopeInput || (()=>agreement.scopeId),fields,submit:submitBtn,status:statusContainer});
+        }
     }
 
     async function openDetail(id) {
@@ -808,13 +834,10 @@
         currentAgreement = null;
         currentVersion = null;
         createSubmission = null;
-        renderForm();
-        if (scopeId) {
-            const scopeField = document.getElementById('agreement-form-scope');
-            if (scopeField) scopeField.value = scopeId;
-        }
+        renderForm(null, scopeId);
     }
 
+    window.addEventListener('authchange', () => { if (dialog?.open) close(); });
     function close() {
         if (!dialog) return;
         if (dialog.open) dialog.close();

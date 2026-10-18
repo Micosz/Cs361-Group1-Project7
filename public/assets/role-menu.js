@@ -71,8 +71,8 @@
             };
             const roles = window.CstuAuth.roles(session);
             for (const item of window.CstuWork.menu(session)) append(item.label, item.href, item.description);
-            if (session.capabilities.some(c => c.name === 'manageRoles')) append('จัดการสิทธิ์ผู้ใช้', 'workspace.html?view=roles', 'มอบหมายและถอนบทบาทในขอบเขตที่ดูแล');
-            if (!roles.length) append('รอมอบหมายสิทธิ์', 'workspace.html', 'บัญชีของคุณยังไม่ได้รับบทบาทงานภายใน');
+            if (session.capabilities.some(c => c.name === 'manageRoles')) append('จัดการสิทธิ์ผู้ใช้', 'index.html?view=roles#board-section', 'มอบหมายและถอนบทบาทในขอบเขตที่ดูแล');
+            if (!roles.length) append('รอมอบหมายสิทธิ์', 'index.html#board-section', 'บัญชีของคุณยังไม่ได้รับบทบาทงานภายใน');
         } catch {
             if (current !== revision) return;
             finishClose();
@@ -87,7 +87,7 @@
         if (!event.target.closest('a, button')) close(event);
     });
     dialog.addEventListener('cancel', event => { event.preventDefault(); close({detail: 0}); });
-    dialog.addEventListener('close', restoreScroll);
+    dialog.addEventListener('close', () => { restoreScroll(); dialog.classList.remove('is-open'); host.querySelector('button')?.setAttribute('aria-expanded','false'); });
     logout.onclick = async () => {
         logout.disabled = true; status.textContent = '';
         try { await window.CstuAuth.logout(); finishClose(); await refresh(); }

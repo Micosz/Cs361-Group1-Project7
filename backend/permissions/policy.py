@@ -3,7 +3,7 @@
 from ..auth.session_service import AuthError
 
 BUSINESS = {'partner', 'activity', 'agreement', 'exchange'}
-CHILDREN = {'contact', 'history', 'document'}
+CHILDREN = {'contact', 'history', 'document', 'feedback'}
 DISPLAY = {
     'partner': {'name', 'type', 'summary', 'fullDescription', 'location', 'websiteUrl', 'logoPath'},
     'activity': {'title', 'type', 'summary', 'fullDescription', 'partnerId',
@@ -17,6 +17,7 @@ WRITABLE = {
                  'startDate', 'endDate', 'supportingInfo', 'supportingInfoForParticipant'},
     'contact': {'name', 'position', 'email', 'phone'},
     'history': {'occurredOn', 'kind', 'note', 'referenceType', 'referenceId'},
+    'feedback': {'occurredOn', 'sourceType', 'comment', 'improvement', 'respondentName'},
     'document': {'displayName', 'audience', 'containsPersonal'},
 }
 WRITABLE['activity'] = WRITABLE['activity'] | {'agreementIds'}
@@ -92,6 +93,11 @@ def allowed_roles(context, kind, action, record, parent=None):
             return set()
         if kind in {'contact', 'history'}:
             if parent.get('entityType') != 'partner' or record.get('partnerId') != parent['id']:
+                return set()
+        elif kind == 'feedback':
+            if (parent.get('entityType') not in {'activity', 'exchange'}
+                    or record.get('parentId') != parent['id']
+                    or record.get('parentType') != parent['entityType']):
                 return set()
         elif (parent.get('entityType') not in {'agreement', 'exchange'}
               or record.get('parentId') != parent['id']
@@ -181,11 +187,21 @@ def require_role_management(context, scope_id, target_user_id):
         denied()
 
 
-def require_reference(context, record, scope_id):
+def can_reference(context, record, scope_id):
     if not record or record.get('scopeId') != scope_id:
-        raise AuthError('INVALID_REFERENCE', 422)
-    kind = record.get('entityType')
-    if not allowed_roles(context, kind, 'read', record):
+        return False
+    if allowed_roles(context, record.get('entityType'), 'read', record):
+        return True
+    # A public organization may be linked without granting access to its
+    # internal management record, contacts, history or editing permissions.
+    from ..relationships.activity_links import published
+    return (record.get('entityType') == 'partner'
+            and record.get('source_state') != 'retired' and published(record)
+            and bool(matching_roles(context, record) & {'staff', 'coordinator'}))
+
+
+def require_reference(context, record, scope_id):
+    if not can_reference(context, record, scope_id):
         raise AuthError('INVALID_REFERENCE', 422)
 
 

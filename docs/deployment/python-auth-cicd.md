@@ -44,3 +44,19 @@ workflow ปฏิเสธ rerun commit เก่าหาก main เดิน
 และลบในขั้นตอนท้าย ไม่อัปโหลดเป็น artifacts
 
 อ้างอิงรูปแบบ ZIP/dependencies/architecture: [AWS Python packaging](https://docs.aws.amazon.com/lambda/latest/dg/python-package.html)
+
+## Homepage preview (15 October 2026)
+
+Branch `codex/home-workspace` moves create actions into the homepage menu and opens authorized record details/forms on the homepage board. Existing `records.html` query links redirect to the corresponding homepage view. The original feature forms and backend authorization remain in use.
+
+The preview is a separate Amplify app, `CSTUHub-Home-Preview` (`d24rufg3x1re07`), with branch `home-workspace`:
+[Open homepage preview](https://home-workspace.d24rufg3x1re07.amplifyapp.com/index.html).
+It currently uses a manual upload of the branch's built `public/` directory; pushing Git alone does not redeploy this preview.
+
+Its `/api/*` rewrite targets HTTP API `fig895vzs7`, which invokes `CSTUHubAuthPreview`. The function uses the production runtime package with its own exact `SESSION_ORIGIN`, separate session/identity secrets, five `CSTUHub-Preview-*` DynamoDB tables (Users, IdentityLinks, Sessions, LoginRate, Business), and private S3 bucket `cstuhub-preview-documents-379130028573-us-east-1`. Only existing synthetic course accounts were copied to the preview Users table; business data starts separately. Real TU users receive their own preview identity and require preview role assignment.
+
+Production app `d2q46seuxuluap`, function `CSTUHubAuth`, their API rewrite, and production tables/bucket are unchanged. The main-only deployment workflows continue to target production. Retire the named preview resources after acceptance, once any needed trial data has been retained.
+
+Bounded preview smoke: course staff login, Partner create from the homepage menu, list/detail readback, and edit/readback succeeded on HTTPS. Activity, Agreement, and Exchange create forms opened from that menu without leaving the homepage. This does not establish all-role acceptance, real TU login, every form submission, or document upload coverage.
+
+Preview adjustment (16 October 2026): keep the two original board tabs. The EVENT & ACTIVITIES selector switches between activities/news, protected agreements, and exchanges according to the current session. Feature forms remain separate dialogs; successful saves refresh the matching filtered view. The tab indicator tracks the visible button's position and size. Local smoke verified staff Agreement creation/readback in that view; this is not an AWS storage or all-role acceptance test.

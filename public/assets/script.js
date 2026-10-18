@@ -3,6 +3,7 @@ const API_URL = 'https://eb49u61kph.execute-api.us-east-1.amazonaws.com/default/
 // Cache only a successful API snapshot for this page; reload to get fresh data.
 let partnersDataCache = null;
 let partnersDataRequest = null;
+window.invalidatePublicData = () => { partnersDataCache = null; partnersDataRequest = null; };
 
 function isPublicRecord(record) {
     return record.visibility === 'public' || !record.visibility;
@@ -60,6 +61,20 @@ function fetchPartnersData() {
             );
 
             usingBackup = true;
+        }
+
+        // Merge published business records into the same browse/detail source.
+        // The backend returns only its explicit public projection, without a session.
+        if (window.CSTU_AUTH_CONFIG?.enabled === true) {
+            try {
+                const published = await loadJson('/api/public/records', 8000);
+                const combined = new Map(rawData.map(row => [row.id,row]));
+                for (const row of published) if (row.visibility === 'public') combined.set(row.id,{...combined.get(row.id),...row,businessRecord:row.businessRecord !== false});
+                rawData = Array.from(combined.values());
+            } catch (error) {
+                console.warn('Published records unavailable:', error);
+                usingBackup = true;
+            }
         }
 
         // ใช้เฉพาะรายการที่ระบุว่าเผยแพร่ได้
@@ -361,6 +376,61 @@ function renderPartnerActivityHistory(container, partnerId, activities) {
     container.appendChild(list);
 }
 
+// Shared implementation of the original card layout for both data sources.
+function createBrowseCard(record, type = 'partner', onOpen = null) {
+    const partner = type === 'partner', agreement = type === 'agreement';
+    const stateLabel = {draft:'ฉบับร่าง',active:'มีผลใช้งาน',expired:'หมดอายุ',terminated:'ยุติแล้ว'}[record.status] || record.status || '';
+    const name = (partner ? record.name : record.title) || 'รายละเอียด';
+    const card = document.createElement('div'); card.className = 'card'; card.id = record.id;
+    const thumbnail = document.createElement('div'); thumbnail.className = 'card-thumbnail '+getColorClass(record.type);
+    const fallback = document.createElement('span'); fallback.className = 'card-image-placeholder';
+    fallback.textContent = agreement ? record.agreementType || 'MoU / MoA' : name; thumbnail.appendChild(fallback);
+    const imagePath = partner ? record.logoPath || record.logo_path : record.imagePath || record.image_path;
+    if (imagePath) {
+        try {
+            const url = new URL(imagePath, location.href);
+            if (['http:','https:'].includes(url.protocol)) {
+                // Keep the original thumbnail contract used by the opening and hero animations.
+                thumbnail.style.backgroundImage = `url(${JSON.stringify(url.href)})`;
+                thumbnail.style.backgroundColor = 'white';
+                thumbnail.style.backgroundSize = 'contain';
+                thumbnail.style.backgroundRepeat = 'no-repeat';
+                thumbnail.style.backgroundPosition = 'center';
+                const image = document.createElement('img');
+                image.onload = () => { fallback.hidden = true; };
+                image.onerror = () => { thumbnail.style.backgroundImage = ''; fallback.hidden = false; };
+                image.src = url.href;
+            }
+        } catch (_) { /* Keep the text placeholder for unavailable images. */ }
+    }
+    const content = document.createElement('div'); content.className = 'card-content';
+    const title = document.createElement('h3'); title.className = 'card-title';
+    title.style.cssText = 'margin-bottom:.5rem;font-size:1.1rem;color:var(--text-dark)';
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'browse-card-open';
+    const activate = () => onOpen ? onOpen(record,button) : openModal(record.id,type);
+    button.textContent = name; button.onclick = activate;
+    title.appendChild(button);
+    const summary = document.createElement('p'); summary.className = 'card-desc'; summary.textContent = record.summary || (agreement ? 'ข้อตกลงความร่วมมือ '+(record.agreementType || 'MoU / MoA') : '');
+    const footer = document.createElement('div'); footer.className = 'card-footer';
+    const author = document.createElement('div'); author.className = 'author';
+    const authorName = document.createElement('span'); authorName.className = 'author-name';
+    if (partner) authorName.textContent = record.location || '';
+    else if (agreement) authorName.textContent = stateLabel;
+    else if (record.publication === 'internal') authorName.textContent = 'กิจกรรมภายใน';
+    else authorName.innerHTML = generatePartnerLinks(record.co_hosts, record.partnerName, record.partnerId);
+    author.appendChild(authorName); footer.appendChild(author);
+    if (!partner) {
+        const date = document.createElement('span'); date.className = 'stats event-date'; date.textContent = agreement
+            ? [record.startDate,record.endDate].filter(Boolean).map(day => formatActivityDate({period_date:day})).join(' – ') || 'ไม่ระบุช่วงวันที่'
+            : formatActivityDate({...record,period_date:record.periodDate || record.period_date});
+        footer.appendChild(date);
+    }
+    content.appendChild(title); content.appendChild(summary); content.appendChild(footer);
+    card.appendChild(thumbnail); card.appendChild(content);
+    card.addEventListener('click', event => { if (!event.target.closest('button,a')) activate(); });
+    return card;
+}
+
 // สร้างการ์ดหน้า Collaborator
 async function renderCollaboratorCards() {
     const container = document.getElementById('collaboratorGrid');
@@ -372,7 +442,7 @@ async function renderCollaboratorCards() {
     try {
         records = await getPublicPartners();
     } catch (error) {
-        if (version === collaboratorRenderVersion) showDataLoadError(container);
+        if (version === collaboratorRenderVersion) { showDataLoadError(container); window.CstuRecords?.renderPartnerCards(container); }
         return;
     }
     if (version !== collaboratorRenderVersion) return;
@@ -381,34 +451,18 @@ async function renderCollaboratorCards() {
 
     if (partners.length === 0) {
         container.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-gray);">
+            <div data-public-empty style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-gray);">
                 <i class="fas fa-search" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
                 <h3 style="color: var(--text-dark); margin-bottom: 0.5rem;">ไม่พบผู้มีส่วนได้ส่วนเสีย</h3>
                 <p>ลองเปลี่ยนคำค้นหา หรือล้างตัวกรองเพื่อดูข้อมูลทั้งหมด</p>
             </div>
         `;
+        window.CstuRecords?.renderPartnerCards(container);
         return;
     }
 
-    container.innerHTML = partners.map(partner => {
-        const bgStyle = partner.logo_path 
-    ? `background-image: url('${partner.logo_path}'); background-color: white; background-size: contain; background-repeat: no-repeat; background-position: center;` 
-    : '';
-        const colorClass = getColorClass(partner.type);
-
-        return `
-            <div class="card" id="${partner.id}" onclick="openModal('${partner.id}', 'partner')">
-                <div class="card-thumbnail ${colorClass}" style="${bgStyle}"></div>
-                <div class="card-content">
-                    <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--text-dark);">${partner.name}</h3>
-                    <p class="card-desc">${partner.summary}</p>
-                    <div class="card-footer">
-                        <div class="author"><span class="author-name">${partner.location}</span></div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
+    container.replaceChildren(...partners.map(partner => createBrowseCard(partner,'partner')));
+    window.CstuRecords?.renderPartnerCards(container);
 }
 
 //สร้างการ์ดหน้า Event & Activities
@@ -421,7 +475,7 @@ async function renderEventCards() {
     try {
         records = await getPublicActivities();
     } catch (error) {
-        if (version === eventRenderVersion) showDataLoadError(container);
+        if (version === eventRenderVersion) { showDataLoadError(container); window.CstuRecords?.renderEventCards(container); }
         return;
     }
     if (version !== eventRenderVersion) return;
@@ -429,44 +483,18 @@ async function renderEventCards() {
 
     if (activities.length === 0) {
         container.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-gray);">
+            <div data-public-event-empty style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-gray);">
                 <i class="fas fa-search" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
                 <h3 style="color: var(--text-dark); margin-bottom: 0.5rem;">ไม่พบกิจกรรม</h3>
                 <p>ลองเปลี่ยนคำค้นหา หรือล้างตัวกรองเพื่อดูข้อมูลทั้งหมด</p>
             </div>
         `;
+        window.CstuRecords?.renderEventCards(container);
         return;
     }
 
-    container.innerHTML = activities.map(activity => {
-        const colorClass = getColorClass(activity.type);
-        
-        const bgStyle = activity.image_path 
-    ? `background-image: url('${activity.image_path}'); background-color: white; background-size: contain; background-repeat: no-repeat; background-position: center;` 
-    : '';
-        const thumbnailContent = activity.image_path 
-            ? '' 
-            : `<h2 style="color:white; font-size:1.5rem; text-align:center; padding:0 1.5rem; margin: auto;">${activity.title}</h2>`;
-
-        // --- เช็คผู้จัดร่วม (co_hosts) ---
-        let hostNames = generatePartnerLinks(activity.co_hosts, activity.partnerName, activity.partnerId);
-
-        return `
-            <div class="card" id="${activity.id}" onclick="openModal('${activity.id}', 'activity')">
-                <div class="card-thumbnail ${colorClass}" style="${bgStyle}; display: flex;">
-                    ${thumbnailContent}
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--text-dark);">${activity.title}</h3>
-                    <p class="card-desc">${activity.summary}</p>
-                    <div class="card-footer">
-                        <div class="author"><span class="author-name">${hostNames}</span></div>
-                        <div class="stats event-date">${formatActivityDate(activity)}</div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
+    container.replaceChildren(...activities.map(activity => createBrowseCard(activity,'activity')));
+    window.CstuRecords?.renderEventCards(container);
 }
 
 //ฟังก์ชันสลับ Tab
@@ -555,7 +583,51 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeroTicker(); // เติมบรรทัดนี้เพื่อให้ระบบสุ่มเริ่มทำงาน
 });
 
-async function openModal(id, type) {
+// One article layout for source-backed and newly created activities.
+function createActivityDetailContent(record) {
+    const content = document.createElement('section'); content.className = 'public-activity-detail';
+    const hosts = document.createElement('p'); hosts.className = 'activity-detail-hosts';
+    const relationships = record.relationships;
+    if (relationships) {
+        const seen = new Set();
+        for (const row of [relationships.partner,...(relationships.coHosts || [])].filter(Boolean)) {
+            if (seen.has(row.id)) continue; seen.add(row.id);
+            if (hosts.children.length) { const separator=document.createElement('span');separator.textContent=' และ ';hosts.appendChild(separator); }
+            const link=document.createElement('a');link.textContent=row.name || row.title;
+            link.href='index.html?kind=partners&id='+encodeURIComponent(row.id);hosts.appendChild(link);
+        }
+    } else if (record.partnerName || record.co_hosts?.length) {
+        hosts.innerHTML = generatePartnerLinks(record.co_hosts,record.partnerName,record.partnerId);
+    }
+    if (hosts.children.length || hosts.innerHTML) content.appendChild(hosts);
+    const date=document.createElement('p');date.className='activity-detail-date';
+    date.textContent=formatActivityDate({...record,period_date:record.period_date || record.periodDate}) ;
+    if (date.textContent === 'ไม่ระบุวันที่' && record.periodText) date.textContent=record.periodText;
+    content.appendChild(date);
+    const imagePath=record.imagePath || record.image_path;
+    if (imagePath) {
+        const image=document.createElement('img');image.src=imagePath;image.alt=record.title;
+        image.className='record-detail-image';content.appendChild(image);
+    }
+    // User-authored fields remain plain text. Only the existing catalog article
+    // renderer may supply source-backed HTML below this shared header.
+    if (record.businessRecord !== false) {
+        for (const text of [record.summary,record.fullDescription || record.full_description].filter((text,index,all)=>typeof text==='string' && text.trim() && all.indexOf(text)===index)) {
+            const paragraph=document.createElement('p');paragraph.className='activity-detail-description';
+            paragraph.textContent=text;content.appendChild(paragraph);
+        }
+    }
+    if (relationships?.agreements?.length) {
+        const heading=document.createElement('h3');heading.textContent='ข้อตกลงที่เกี่ยวข้อง';content.appendChild(heading);
+        for (const row of relationships.agreements) {
+            const link=document.createElement('a');link.textContent=row.title;link.href='index.html?kind=agreements&id='+encodeURIComponent(row.id);
+            const line=document.createElement('p');line.appendChild(link);content.appendChild(line);
+        }
+    }
+    return content;
+}
+
+async function openModal(id, type, protectedPartner = null) {
     let data = null;
     let allActivities;
     try {
@@ -563,6 +635,9 @@ async function openModal(id, type) {
 
         if (type === 'partner') {
             data = await getPublicPartnerById(id);
+            if (!data && protectedPartner) data = {...protectedPartner, businessRecord:true,
+                full_description:protectedPartner.fullDescription, logo_path:protectedPartner.logoPath,
+                website_url:protectedPartner.websiteUrl};
         } else if (type === 'activity') {
             data = await getPublicActivityById(id);
         }
@@ -580,6 +655,8 @@ async function openModal(id, type) {
 
     const modalImage = document.getElementById('modalImage');
     const modalDetails = document.getElementById('modalDetails');
+    modalImage.textContent = '';
+    modalImage.classList.remove('partner-image-placeholder');
 
     // ฟังก์ชันช่วยสร้าง HTML การ์ดขนาดเล็กสำหรับใส่ใน Modal
     const createMiniCardHTML = (collab, partnerName) => {
@@ -608,18 +685,27 @@ async function openModal(id, type) {
         // --- 1. ส่วนของ Partner (แสดงการ์ดกิจกรรมที่เกี่ยวข้อง) ---
         document.getElementById('modalTitle').textContent = data.name;
         document.getElementById('modalName').textContent = data.location || 'ไม่ระบุสถานที่';
-        document.getElementById('modalInfo').textContent = data.type.toUpperCase();
+        document.getElementById('modalInfo').textContent = (data.type || '').toUpperCase();
         
         if (data.logo_path) {
             modalImage.style.backgroundImage = `url('${data.logo_path}')`;
             modalImage.style.display = 'block';
         } else {
-            modalImage.style.display = 'none';
+            modalImage.style.backgroundImage = 'none';
+            modalImage.style.display = 'flex';
+            modalImage.classList.add('partner-image-placeholder');
+            modalImage.textContent = data.name;
         }
 
         const partnerDetailText = data.full_description || data.summary || '';
         // Keep the existing source-backed description and evidence links.
-        modalDetails.innerHTML = `<p style="font-weight: bold; font-size: 1.1em; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.6;">${partnerDetailText}</p>`;
+        if (data.businessRecord) {
+            modalDetails.replaceChildren();
+            const description = document.createElement('p'); description.textContent = partnerDetailText;
+            modalDetails.appendChild(description);
+        } else {
+            modalDetails.innerHTML = `<p style="font-weight: bold; font-size: 1.1em; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.6;">${partnerDetailText}</p>`;
+        }
         renderPartnerActivityHistory(modalDetails, data.id, allActivities);
 
     } else {
@@ -655,8 +741,18 @@ async function openModal(id, type) {
         modalDetails.innerHTML = detailsHTML;
     }
 
+    if (type === 'activity' && window.CstuRecords?.openPublicActivity) {
+        const content = createActivityDetailContent({...data,businessRecord:data.businessRecord === true});
+        if (!data.businessRecord) {
+            while (modalDetails.firstChild) content.appendChild(modalDetails.firstChild);
+        }
+        closeModal();
+        return window.CstuRecords.openPublicActivity(data,content,document.activeElement);
+    }
+
     if (window.CstuWork) {
         const actions = document.createElement('div');
+        if (type === 'partner') actions.className = 'partner-management';
         modalDetails.appendChild(actions);
         window.CstuWork.attachDetailAction(actions, type === 'partner' ? 'partners' : 'activities', data.id);
     }
@@ -665,12 +761,13 @@ async function openModal(id, type) {
 
 function closeModal() {
     document.getElementById('detailModal').style.display = 'none';
+    document.getElementById('modalDetails').querySelectorAll?.('.partner-management').forEach(node => node.remove());
 }
 
 window.onclick = function(event) {
     const modal = document.getElementById('detailModal');
     if (event.target === modal) {
-        modal.style.display = "none";
+        closeModal();
     }
 }
 
@@ -713,16 +810,19 @@ function filterBrowseRecords(records, field, selectId, searchKeyword = browseKey
 // Integration point for #48: pass the keyword, or '' to clear only search.
 function setBrowseKeyword(keyword) {
     browseKeyword = String(keyword ?? '');
+    window.CstuRecords?.filter({keyword:browseKeyword});
     return Promise.all([renderCollaboratorCards(), renderEventCards()]);
 }
 
 function applyCollabFilters() {
     hideSuggestions();
+    window.CstuRecords?.filter({selectId:'filterCollab'});
     return renderCollaboratorCards();
 }
 
 function applyEventFilters() {
     hideSuggestions();
+    window.CstuRecords?.filter({selectId:'filterEvent'});
     return renderEventCards();
 }
 
@@ -878,7 +978,8 @@ function generatePartnerLinks(coHosts, partnerName, partnerId) {
             return link(name, matches.length === 1 ? matches[0].id : null);
         }).join(' และ ');
     }
-    return link(partnerName, partnerId);
+    const primaryName = partnerName || (partnersDataCache || []).find(partner => partner.id === partnerId)?.name;
+    return link(primaryName || (partnerId ? 'ดูคู่ความร่วมมือ' : 'ไม่ระบุคู่ความร่วมมือ'), partnerId);
 }
 
 async function checkAgreementEntryVisibility() {

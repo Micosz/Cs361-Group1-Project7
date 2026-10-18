@@ -537,12 +537,11 @@ test('MoU filter uses verified tags and combines with search and dates without d
     p.get('filterEvent').value = 'mou';
     assert.deepEqual(ids(), ['event-sparkcamp-001', 'event-yarsi-mou-001']);
     await p.context.applyEventFilters();
-    assert.doesNotMatch(p.get('eventGrid').innerHTML, /event-cnc-discussion-001|event-tudublin-001/);
+    assert.deepEqual(Array.from(p.get('eventGrid').children, card => card.id).sort(), ['event-sparkcamp-001','event-yarsi-mou-001']);
     p.get('searchInput').value = 'Yarsi';
     await p.context.handleSearch();
     await p.context.showSuggestions();
-    assert.match(p.get('eventGrid').innerHTML, /event-yarsi-mou-001/);
-    assert.doesNotMatch(p.get('eventGrid').innerHTML, /event-sparkcamp-001/);
+    assert.deepEqual(Array.from(p.get('eventGrid').children, card => card.id), ['event-yarsi-mou-001']);
     assert.match(p.get('searchSuggestions').innerHTML, /SCI-TU ลงนาม MoU/);
     await p.context.setBrowseKeyword('');
     p.get('filterEventDate').value = '2022-06-22';
@@ -586,4 +585,117 @@ test('event dates use compact Thai calendar days without time across cards and d
     let prevented = false, stopped = false;
     p.context.handlePartnerClick({ preventDefault() { prevented = true; }, stopPropagation() { stopped = true; } }, null);
     assert.ok(prevented && stopped);
+});
+
+
+test('published business partners join browse and detail without exposing internal rows', async () => {
+    const p = page(async url => response(url === '/api/public/records' ? [
+        {id:'new-public',name:'Published Partner',type:'university',summary:'New card',visibility:'public'},
+        {id:'new-private',name:'Internal Partner',visibility:'internal'}
+    ] : fixture));
+    p.context.window.CSTU_AUTH_CONFIG = {enabled:true};
+    const partners = await p.context.getPublicPartners();
+    assert.ok(partners.some(row => row.id === 'alpha'));
+    assert.ok(partners.some(row => row.id === 'new-public'));
+    assert.ok(!partners.some(row => row.id === 'new-private'));
+    assert.equal((await p.context.getPublicPartnerById('new-public')).summary,'New card');
+    assert.equal(p.requests,2,'one legacy request and one published catalog request');
+});
+
+
+test('authorized Partner uses the original detail modal and renders business description as text', async () => {
+    const p = page();
+    await p.context.openModal('assigned-partner','partner',{
+        id:'assigned-partner',name:'Assigned University',type:'university',location:'Thailand',
+        summary:'Short summary',fullDescription:'<strong>plain business text</strong>',logoPath:''
+    });
+    assert.equal(p.get('detailModal').style.display,'flex');
+    assert.equal(p.get('modalTitle').textContent,'Assigned University');
+    assert.equal(p.get('modalName').textContent,'Thailand');
+    assert.equal(p.get('modalInfo').textContent,'UNIVERSITY');
+    assert.equal(p.get('modalDetails').children[0].textContent,'<strong>plain business text</strong>');
+    assert.equal(p.get('modalImage').textContent,'Assigned University');
+});
+
+
+test('original and managed data use the same reusable browse card for Partner and Event', () => {
+    const p = page();
+    let opened;
+    const legacy = p.context.createBrowseCard({id:'old',name:'Legacy',summary:'Original',location:'Bangkok'},'partner');
+    const managed = p.context.createBrowseCard({id:'new',name:'Managed',summary:'New',location:'Bangkok'},'partner', (row,button)=>{opened={row,button};});
+    const event = p.context.createBrowseCard({id:'event',title:'Event',summary:'Activity',period_date:'2026-11-01'},'activity');
+    assert.equal(legacy.className,'card');
+    assert.equal(managed.className,legacy.className);
+    assert.equal(event.className,legacy.className);
+    for (const card of [legacy,managed,event]) {
+        assert.match(card.children[0].className,/card-thumbnail/);
+        assert.equal(card.children[1].className,'card-content');
+        assert.equal(card.children[1].children[0].className,'card-title');
+        assert.equal(card.children[1].children[1].className,'card-desc');
+        assert.equal(card.children[1].children[2].className,'card-footer');
+    }
+    const button=managed.children[1].children[0].children[0];
+    button.onclick();
+    assert.equal(opened.row.id,'new');
+    assert.equal(opened.button,button);
+});
+
+
+test('browse cards retain artwork for opening animations and preserve pointer activation', () => {
+    const p = page();
+    p.context.URL = URL;
+    p.context.location = {href: 'https://example.com/index.html'};
+    let opens = 0;
+    const card = p.context.createBrowseCard({id:'animated',name:'University',logo_path:'/logo.png'},'partner', () => {opens++;});
+    const thumbnail = card.children[0];
+    assert.equal(card.id, 'animated');
+    assert.equal(thumbnail.style.backgroundImage, 'url("https://example.com/logo.png")');
+    const button = card.children[1].children[0].children[0];
+    button.click = () => assert.fail('pointer activation must not create a synthetic keyboard click');
+    card.events.click({target:{closest:()=>null}});
+    assert.equal(opens, 1);
+    card.events.click({target:{closest:()=>button}});
+    assert.equal(opens, 1, 'button bubbling does not activate the card again');
+    button.onclick();
+    assert.equal(opens, 2, 'native button activation remains available');
+});
+
+test('agreements reuse the original browse card without exposing internal notes', () => {
+    const p=page();let opened;
+    const card=p.context.createBrowseCard({id:'mou',title:'Agreement',agreementType:'MoU',status:'draft',startDate:'2026-10-18',internalNote:'DO NOT DISPLAY'},'agreement',r=>{opened=r.id;});
+    assert.equal(card.className,'card');
+    assert.equal(card.children[0].children[0].textContent,'MoU');
+    assert.equal(card.children[1].children[2].children[0].children[0].textContent,'ฉบับร่าง');
+    assert.doesNotMatch(card.innerHTML,/DO NOT DISPLAY/);
+    card.children[1].children[0].children[0].onclick();
+    assert.equal(opened,'mou');
+});
+
+test('created activity details use the article layout with safe text and authorized partner labels', () => {
+    const p=page();
+    const content=p.context.createActivityDetailContent({title:'New activity',businessRecord:true,
+        summary:'<script>example</script>',fullDescription:'More information',periodDate:'2026-10-18',imagePath:'/event.png',
+        type:'academic_activity',relationships:{partner:{id:'partner-1',name:'Partner One'},coHosts:[],agreements:[]}});
+    assert.equal(content.className,'public-activity-detail');
+    assert.equal(content.children[0].children[0].textContent,'Partner One');
+    assert.equal(content.children[1].textContent,'18 ต.ค. 69');
+    assert.equal(content.children[2].src,'/event.png');
+    assert.equal(content.children[3].textContent,'<script>example</script>');
+    assert.equal(content.children[3].html,'','user content is never interpreted as HTML');
+    assert.equal(content.children[4].textContent,'More information');
+    const empty=p.context.createActivityDetailContent({title:'No photo',businessRecord:true,summary:'Only summary',fullDescription:''});
+    assert.equal(empty.children.length,2,'no invented artwork or empty detail labels');
+});
+
+
+test('protected activity cards resolve primary partner names and keep unknown links named', async () => {
+    const p = page();
+    p.dispatch('DOMContentLoaded');
+    await settle();
+    const known = p.context.generatePartnerLinks(null, undefined, 'alpha');
+    assert.match(known, /Alpha Company/);
+    assert.match(known, /data-partner-id="alpha"/);
+    const unknown = p.context.generatePartnerLinks(null, undefined, 'not-in-public-catalog');
+    assert.match(unknown, /ดูคู่ความร่วมมือ/);
+    assert.doesNotMatch(unknown, />undefined/);
 });

@@ -9,6 +9,7 @@ FIELDS = {
     'activity': {'title', 'type', 'summary', 'fullDescription', 'partnerId', 'periodText', 'periodDate', 'imagePath', 'publication'},
     'agreement': {'title', 'agreementType', 'startDate', 'endDate', 'status', 'renewalDueOn', 'renewalNote', 'internalNote'},
     'exchange': {'title', 'agreementId', 'startDate', 'endDate', 'status', 'supportingInfo', 'supportingInfoForParticipant'},
+    'feedback': {'parentId', 'parentType', 'occurredOn', 'sourceType', 'comment', 'improvement'},
     'contact': {'partnerId', 'name', 'position', 'email', 'phone'},
     'history': {'partnerId', 'occurredOn', 'kind', 'note'},
     'document': {'parentType', 'parentId', 'displayName', 'mime', 'size', 'audience', 'containsPersonal', 'uploadState'},
@@ -39,6 +40,8 @@ def project(context, kind, record, parent=None):
         fields -= EXECUTIVE_EXCLUDED
     result = pick(record, fields)
     if editor:
+        if kind == 'feedback':
+            result.update(pick(record, {'respondentName'}))
         result.update(pick(record, {'scopeId'}))
         for key in ARRAYS.get(kind, ()):
             value = record.get(key)

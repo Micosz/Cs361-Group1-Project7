@@ -143,6 +143,7 @@
         }
         // Own the ordinary anchor scroll so the browser cannot start a competing
         // scroll toward the board while it is still transformed. Keep the same URL.
+        on(window, 'cstu:board', () => { finish(); advanceScene(); });
         on(hero.querySelector('.hero-btn'), 'click', event => {
             if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
             event.preventDefault();

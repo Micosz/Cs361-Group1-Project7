@@ -18,12 +18,14 @@ ACTIVITY_TYPES = frozenset({'academic_activity', 'event', 'research'})
 REQUIRED = {
     'partner': ('name', 'type', 'summary', 'location'),
     'activity': ('title', 'type', 'summary', 'partnerId'),
+    'feedback': ('occurredOn', 'sourceType', 'comment'),
     'contact': ('name',),
     'history': ('occurredOn', 'kind', 'note'),
 }
 TEXT_LIMITS = {
     'name': 200, 'title': 200, 'summary': 2000, 'location': 2000,
     'fullDescription': 20000, 'note': 20000, 'periodText': 2000,
+    'comment': 10000, 'improvement': 10000, 'respondentName': 200,
     'position': 200, 'email': 320, 'phone': 100,
 }
 
@@ -141,6 +143,10 @@ def normalize_payload(kind, action, payload, *, record=None):
         cohosts = ids(effective.get('coHostPartnerIds', []), 19)
         ids(effective.get('agreementIds', []))
         if primary in cohosts:
+            invalid()
+    if kind == 'feedback':
+        calendar_day(effective['occurredOn'])
+        if not isinstance(effective['sourceType'], str) or effective['sourceType'] not in {'participant', 'partner', 'other'}:
             invalid()
     if kind == 'history':
         calendar_day(effective['occurredOn'])
