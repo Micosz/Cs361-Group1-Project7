@@ -63,3 +63,11 @@ python3 scripts/course_test_accounts.py --scope cs-demo --simple-login
 - หน้าธุรกิจยังใช้ workspace เดิมเป็นปลายทาง ไม่สร้างหน้าหรือ API ธุรกิจที่ยังไม่มี
 - กด Close หรือ Escape เพื่อปิด คืน focus และ scroll; รองรับคีย์บอร์ดและ prefers-reduced-motion
 - รหัสผิดแสดงข้อความในหน้า Login เดิม; employee ใช้ตรวจสถานะรอมอบหมายสิทธิ์; บัญชีที่เลิกใช้ถูกปิดและ Session เดิมใช้ต่อไม่ได้
+
+## เพิ่มบัญชี A/B — 18 ตุลาคม 2026
+
+- เว็บทดลอง home-workspace รองรับ coordinatora, coordinatorb และ studentb แล้ว โดย coordinatora ใช้ ID และงานเดิมของ coordinator; ชื่อ coordinator เดิมยัง Login ได้
+- Coordinator B มีชุดตัวอย่างภายใน Partner/Activity/MoU/Exchange แยก เพื่อทดสอบ assignment isolation; Student B เข้าร่วม Exchange ตัวอย่างปัจจุบันทั้งหมด 7รายการใน cs-demo
+- จำนวนนี้เป็น snapshot ไม่ใช่การ auto-enroll รายการใหม่ และ Activity ยังไม่มี participant membership
+- เพิ่ม reserved names ใน auth provider ของ preview เท่านั้น ไม่ใช่ deploy Feedback หรืออัปเดต main function รายชื่อช่วย Login ใน frontend อยู่ source local รอ deploy
+- การตรวจ AWS ปัจจุบันพบ preview ใช้ตาราง CSTUHub-Users, CSTUHub-IdentityLinks, CSTUHub-Business และ Partner ร่วมกับระบบเดิม จึงต้องระวังว่าข้อมูลบัญชี/ตัวอย่างไม่ได้แยกตารางตาม snapshotเก่า

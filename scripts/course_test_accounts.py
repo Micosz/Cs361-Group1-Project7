@@ -11,7 +11,8 @@ import uuid
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from backend.auth.course_accounts import password_digest
 
-CATALOG = [('student-a',['student']), ('coordinator',['coordinator']),
+CATALOG = [('student-a',['student']), ('student-b',['student']),
+           ('coordinator-a',['coordinator']), ('coordinator-b',['coordinator']),
            ('staff',['staff']), ('executive',['executive']), ('employee',[])]
 
 
