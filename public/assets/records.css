@@ -13,6 +13,15 @@
 #record-detail::backdrop { background: #0006; }
 #detail-fields dt { font-weight: bold; margin-top: 1rem; }
 #detail-fields dd { margin: .25rem 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.feedback-section { margin-top: 1.25rem; border-top: 1px solid #d8c9c1; padding-top: 1rem; }
+.feedback-section ol { padding-left: 1.5rem; }
+.feedback-section li { margin: .75rem 0 1.25rem; }
+.feedback-section li p { white-space: pre-wrap; overflow-wrap: anywhere; margin: .4rem 0; }
+.feedback-section label { display: grid; gap: .35rem; }
+.feedback-section textarea { min-height: 6rem; resize: vertical; }
+.feedback-section input, .feedback-section select, .feedback-section textarea { box-sizing: border-box; width: 100%; min-width: 0; }
+.feedback-section form { margin: 1rem 0; }
+.feedback-section form button { margin-right: .5rem; }
 @media (max-width: 600px) { #records-search label { width: 100%; } .records-shell { padding: 1rem; } }
 /* The protected workspace follows the same board surface as public records. */
 #home-records { max-width: none; padding: 2rem 0; border-top: 1px solid #e4d9d2; margin-top: 2rem; }
@@ -28,7 +37,36 @@
 #record-detail button[type=submit] { background: #bd0031; color: white; }
 #record-detail :focus-visible, #home-records :focus-visible { outline: 3px solid #bd0031; outline-offset: 3px; }
 
-.board-record-filter { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; margin: 1.5rem 0; }
-.board-record-filter[hidden], #board-overview[hidden] { display: none !important; }
-.board-record-filter select { max-width: 100%; }
+#board-overview[hidden], #tabExchange[hidden] { display: none !important; }
 #board-overview { font: inherit; padding: .65rem 1rem; border: 1px solid #d8c9c1; border-radius: 8px; background: #fffdf9; cursor: pointer; }
+
+/* One card layout for public and authorized records. */
+.card .browse-card-open { border: 0; background: transparent; padding: 0; color: inherit; font: inherit; font-weight: inherit; line-height: inherit; text-align: left; cursor: pointer; }
+.card .browse-card-open:focus-visible { outline: 3px solid #bd0031; outline-offset: 4px; }
+.card > .card-thumbnail { position: relative; }
+.card > .card-thumbnail img { width: 100%; height: 100%; object-fit: contain; }
+.card-image-placeholder { font-size: 1.25rem; font-weight: 600; text-align: center; overflow-wrap: anywhere; }
+#collaboratorGrid > [hidden] { display: none !important; }
+
+/* The original public detail modal also hosts authorized Partner management. */
+.main-image.partner-image-placeholder { align-items: center; justify-content: center; padding: 2rem; background: #f8f0f2; border-radius: 12px; color: var(--text-dark); font-size: clamp(1.25rem,3vw,2rem); font-weight: 600; text-align: center; }
+.partner-management { border-top: 1px solid var(--border-color); margin-top: 2rem; padding-top: 1.5rem; }
+.partner-management section { margin-top: 1.75rem; }
+.partner-management h3 { margin-bottom: .75rem; font-size: 1.125rem; }
+.partner-detail-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.partner-management button { font: inherit; padding: .65rem 1rem; border: 1px solid #d8c9c1; border-radius: 8px; background: #fff; color: var(--text-dark); cursor: pointer; }
+.partner-detail-actions button, .partner-management button[type=submit] { color: #fff; background: #bd0031; border-color: #bd0031; }
+.partner-management button:disabled { opacity: .6; cursor: default; }
+.partner-management label { display: block; margin: .75rem 0; }
+.partner-management input, .partner-management select, .partner-management textarea { width: 100%; max-width: 100%; font: inherit; padding: .65rem; border: 1px solid #cfc3ba; border-radius: 8px; background: #fff; }
+.partner-management form { margin: 1.25rem 0; }
+.partner-management :focus-visible { outline: 3px solid #bd0031; outline-offset: 3px; }
+
+#eventGrid > [hidden] { display: none !important; }
+
+.public-activity-detail { line-height: 1.7; overflow-wrap: anywhere; }
+.record-detail-image { display: block; width: 100%; max-height: 340px; object-fit: contain; margin: 1.5rem auto; }
+
+.activity-detail-hosts, .activity-detail-date { color: #61646b; }
+.activity-detail-date { font-size: .85rem; padding-bottom: 1rem; border-bottom: 1px solid #ddd; }
+.activity-detail-description { white-space: pre-wrap; margin: 1.5rem 0; }

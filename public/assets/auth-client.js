@@ -21,7 +21,7 @@
             if (!response.ok) {
                 const error = new Error(data.error?.code || 'ระบบไม่พร้อมใช้งาน');
                 error.status = response.status;
-                if (response.status === 401) state = null;
+                if (response.status === 401 && state?.user) { state = null; notify(); }
                 throw error;
             }
             return data;
@@ -82,7 +82,11 @@
         notify();
     }
     const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('cstuhub-auth') : null;
-    function notify() { channel?.postMessage('changed'); }
+    function notify() {
+        // BroadcastChannel reaches other tabs; dispatch locally so this tab also clears protected UI.
+        window.dispatchEvent(new Event('authchange'));
+        channel?.postMessage('changed');
+    }
     channel?.addEventListener('message', () => window.dispatchEvent(new Event('authchange')));
     window.CstuAuth = { state: () => state, enabled, refresh, login, logout, request, mutate, create,
         roles: data => [...new Set((data?.grants || []).map(g => g.role))] };

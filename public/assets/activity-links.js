@@ -3,6 +3,7 @@
     'use strict';
     let revision=0;
     async function choices(kind,scope){
+        if(kind==='partners')return (await window.CstuAuth.request('/selection-partners?scopeId='+encodeURIComponent(scope))).data;
         const rows=[];let cursor=null;
         do{const result=await window.CstuAuth.request('/'+kind+'?scopeId='+encodeURIComponent(scope)+'&limit=100'+(cursor?'&cursor='+encodeURIComponent(cursor):''));rows.push(...result.data);cursor=result.page.nextCursor;}while(cursor);
         return rows;

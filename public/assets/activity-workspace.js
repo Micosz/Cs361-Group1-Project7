@@ -36,7 +36,7 @@ async function loadActivities() {
     activityList.replaceChildren();
     try {
         const res = await allWorkspaceRows('/activities');
-        const activities = res.data || [];
+        const activities = [...new Map((res.data || []).map(row=>[row.id,row])).values()];
         if (!activities.length) {
             activityListStatus.textContent = 'ไม่พบรายการกิจกรรมในขอบเขตของคุณ';
             return;
@@ -274,7 +274,7 @@ async function refreshActivities() {
     if (!session?.user) return;
     userRoles=window.CstuAuth.roles(session);
     const readScopes=(session.grants || []).filter(g=>g.active!==false).map(g=>g.scopeId);
-    const createScopes=[...new Set((session.grants || []).filter(g=>g.active!==false && ['staff','coordinator'].includes(g.role)).map(g=>g.scopeId))];
+    const createScopes=[...new Set((session.grants || []).filter(g=>g.active!==false && readScopes.includes(g.scopeId) && ['staff','coordinator'].includes(g.role)).map(g=>g.scopeId))];
     if (!userRoles.some(r=>['staff','coordinator','executive'].includes(r)) || !readScopes.length) return;
     activitySection.hidden=false;openAddActivity.hidden=!createScopes.length;
     openAddActivity.onclick=()=>openAddActivityDialog(createScopes);

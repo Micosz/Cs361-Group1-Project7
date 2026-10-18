@@ -22,6 +22,7 @@
     }
     function menu(session) {
         const items = [];
+        if (roles(session).includes('student')) items.push({label:'โครงการแลกเปลี่ยนของฉัน', href:'index.html?kind=exchanges#board-section', description:'ดูข้อมูลและเอกสารสำหรับโครงการที่คุณเข้าร่วม'});
         for (const [kind, config] of Object.entries(kinds)) {
             if (canCreate(session, kind)) items.push({label:config.create, href:`index.html?kind=${kind}&action=create#board-section`, description:'เพิ่มข้อมูลจากหน้าหลัก'});
         }
@@ -29,6 +30,9 @@
     }
     async function attachDetailAction(container, kind, id) {
         if (!kinds[kind] || !window.CstuAuth?.enabled()) return;
+        if (kind === 'partners' && window.CstuRecords?.attachPartnerManagement) {
+            return window.CstuRecords.attachPartnerManagement(container,id);
+        }
         try {
             const session = await window.CstuAuth.refresh();
             if (!session?.user || !roles(session).some(role => ['staff','coordinator'].includes(role))) return;
