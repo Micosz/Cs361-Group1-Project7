@@ -22,6 +22,29 @@ class DynamoAccounts:
         return decode(self.client.get_item(TableName=self.users,
             Key=values({'id': user_id}), ConsistentRead=True).get('Item'))
 
+    def selection_users(self, scope, kind):
+        roles = {'student'} if kind == 'participant' else {'staff', 'coordinator'}
+        rows, cursor = [], None
+        while True:
+            query = dict(TableName=self.users, ConsistentRead=True,
+                ProjectionExpression='#id, #name, #active, #verified, #grants',
+                ExpressionAttributeNames={'#id':'id', '#name':'displayName', '#active':'active', '#verified':'identityVerified', '#grants':'grants'})
+            if cursor:
+                query['ExclusiveStartKey'] = cursor
+            result = self.client.scan(**query)
+            for item in result.get('Items', []):
+                row = decode(item)
+                if row.get('active') is not True or row.get('identityVerified') is not True:
+                    continue
+                grants = row.get('grants', [])
+                if any(g.get('active') is True and g.get('scopeId') == scope
+                       and g.get('role') in roles for g in grants):
+                    rows.append({'id': row['id'], 'displayName': row.get('displayName') or 'บัญชีไม่มีชื่อ'})
+            cursor = result.get('LastEvaluatedKey')
+            if not cursor:
+                break
+        return sorted(rows, key=lambda row: (row['displayName'], row['id']))
+
     def pair(self, subject):
         link = decode(self.client.get_item(TableName=self.identities,
             Key=values({'subjectKey': subject}), ConsistentRead=True).get('Item'))

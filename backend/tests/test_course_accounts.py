@@ -29,6 +29,17 @@ class CourseAccountTests(unittest.TestCase):
         self.assertEqual(provider.authenticate('tu-user','tu-pass'),{'type':'student'})
         self.assertEqual(len(self.calls),1)
 
+    def test_coordinator_aliases_and_student_b_use_course_auth_only(self):
+        entries = [dict(self.entry, username=name) for name in ('coordinatora', 'coordinatorb', 'studentb')]
+        provider = CourseProvider(self.tu, True, json.dumps(entries))
+        for entry in entries:
+            self.assertEqual(provider.authenticate(entry['username'], 'test-only-password')['userId'], entry['userId'])
+            with self.assertRaises(AuthError):
+                provider.authenticate(entry['username'], 'wrong')
+            with self.assertRaises(AuthError):
+                CourseProvider(self.tu).authenticate(entry['username'], 'wrong')
+        self.assertEqual([], self.calls)
+
     def test_current_roles_never_restored_and_wrong_identity_rejected(self):
         row=dict(id=self.entry['userId'],authProvider='course-test',identityVerified=True,active=True,grants=[])
         accounts=CourseAccounts(SimpleNamespace(link=lambda _:self.fail('Must not use TU mapping')),

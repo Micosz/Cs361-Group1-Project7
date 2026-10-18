@@ -54,7 +54,8 @@ def build_application():
         documents = PrivateDocumentStorage(boto3.client('s3'), os.environ['DOCUMENT_BUCKET']) if os.environ.get('DOCUMENT_BUCKET') else None
         repository = DynamoBusinessRepository(boto3.client('dynamodb'), os.environ['BUSINESS_TABLE'],
             sessions, os.environ['USER_TABLE'], os.environ['SESSION_TABLE'], documents,
-            index=os.environ.get('BUSINESS_SCOPE_INDEX', 'scope-entity-id'))
+            index=os.environ.get('BUSINESS_SCOPE_INDEX', 'scope-entity-id'),
+            partner_table=os.environ.get('PARTNER_TABLE'))
     return AuthApplication(sessions, provider, accounts, RoleService(store),
         DynamoLoginLimiter(db.Table(os.environ['LOGIN_RATE_TABLE']), secret), repository)
 

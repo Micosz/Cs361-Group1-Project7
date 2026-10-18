@@ -21,7 +21,10 @@ exports.handler = async (event) => {
 
         // คัดกรองข้อมูลก่อนส่งให้ Browser
         // (กรองเฉพาะฟิลด์ที่ปลอดภัย เผื่อในฐานข้อมูลมีข้อมูลภายใน)
-        const publicData = response.Items.map(item => ({
+        const publicData = response.Items.filter(item => {
+          const flags = ['publication','access_level','visibility'].filter(key => key in item).map(key => item[key]);
+          return flags.length > 0 && flags.every(value => value === 'public');
+        }).map(item => ({
           id: item.id,
           name: item.name,
           type: item.type,

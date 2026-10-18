@@ -124,6 +124,19 @@ retracted by a server logout.
 
 ## Deployment contract (not executed)
 
+Feedback endpoints: `GET/POST /api/activities/{id}/feedback` and
+`GET/POST /api/exchanges/{id}/feedback`; append `/{feedbackId}` for `GET/PATCH`.
+POST requires `Idempotency-Key`; PATCH requires `If-Match` containing the quoted
+version. Both use the existing authenticated session and CSRF contract. Fields:
+`occurredOn` (ISO calendar date), `sourceType` (`participant`, `partner`, `other`),
+`comment` (required, max 10,000), `improvement` (optional, max 10,000),
+`respondentName` (optional, max 200). Parent, scope, audit fields and version are
+server-owned. Coordinator needs parent assignment; Staff needs the same scope;
+Executive can read but receives no respondent name or editor audit identities.
+Student and public access are denied. Free text is not automatically anonymized.
+There is no delete endpoint. Records use the existing business table and scope
+index; no separate table or data migration is introduced.
+
 Package `backend/` at the Lambda zip root, with dependencies, and use handler
 `backend.lambda_function.handler`. Set:
 

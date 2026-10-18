@@ -7,7 +7,8 @@ from .session_service import AuthError
 
 ITERATIONS = 600_000
 PREFIX = 'course.'
-SIMPLE_NAMES = {'studenta', 'studentb', 'coordinator', 'staff', 'executive', 'employee', 'manager', 'multi'}
+SIMPLE_NAMES = {'studenta', 'studentb', 'coordinator', 'coordinatora', 'coordinatorb',
+                'staff', 'executive', 'employee', 'manager', 'multi'}
 
 
 def password_digest(password, salt):

@@ -17,6 +17,12 @@ class AuthApplication:
             if event.get('version') != '2.0':
                 raise AuthError('UNSUPPORTED_EVENT', 400)
             path = event.get('rawPath', '')
+            if path == '/api/public/records':
+                return self.public_catalog(event)
+            if path == '/api/selection-partners':
+                return self.selection_partners(event)
+            if path == '/api/selection-users':
+                return self.selection_users(event)
             if path == '/api/auth/login':
                 return self.login(event)
             target = re.fullmatch(r'/api/users/([^/]+)/roles', path)
@@ -30,6 +36,52 @@ class AuthApplication:
             return result
         except Exception:
             return error_response('AUTH_UNAVAILABLE', 503, event)
+
+    def public_catalog(self, event):
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        if event.get('queryStringParameters'):
+            raise AuthError('INVALID_QUERY', 422)
+        if self.repository is None or not hasattr(self.repository, 'public_catalog'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        return response(200, self.repository.public_catalog())
+
+    def selection_partners(self, event):
+        context = require_session(event, self.sessions)
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        query = event.get('queryStringParameters') or {}
+        scope = query.get('scopeId')
+        if set(query) != {'scopeId'} or not isinstance(scope, str) or not 1 <= len(scope) <= 100:
+            raise AuthError('INVALID_QUERY', 422)
+        if not any(g['scopeId'] == scope and g['role'] in {'staff','coordinator'}
+                   for g in context.user.permissions()[0]):
+            raise AuthError('FORBIDDEN', 403)
+        from .permissions.policy import can_reference
+        rows = self.repository.list('partner', context)
+        data = [{'id': row['id'], 'name': row['name']} for row in rows
+                if can_reference(context, row, scope)]
+        require_session(event, self.sessions)
+        return response(200, {'data': sorted(data, key=lambda row: (row['name'],row['id']))})
+
+    def selection_users(self, event):
+        context = require_session(event, self.sessions)
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        query = event.get('queryStringParameters') or {}
+        if (set(query) != {'scopeId', 'kind'} or not isinstance(query['scopeId'], str)
+                or not 1 <= len(query['scopeId']) <= 100
+                or query['kind'] not in {'participant', 'responsible'}):
+            raise AuthError('INVALID_QUERY', 422)
+        scope, kind = query['scopeId'], query['kind']
+        allowed = {'staff', 'coordinator'} if kind == 'participant' else {'staff'}
+        grants = context.user.permissions()[0]
+        if not any(g['scopeId'] == scope and g['role'] in allowed for g in grants):
+            raise AuthError('FORBIDDEN', 403)
+        rows = self.accounts.store.selection_users(scope, kind)
+        # A revoked session must not receive names collected before revocation.
+        require_session(event, self.sessions)
+        return response(200, {'data': rows})
 
     def login(self, event):
         if event.get('requestContext', {}).get('http', {}).get('method') != 'POST':
