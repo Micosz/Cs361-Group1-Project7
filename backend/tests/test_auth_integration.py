@@ -42,7 +42,8 @@ class Accounts:
         if not row:
             return None
         return UserState(row['id'], row['active'], row['authzVersion'], row['identityVerified'],
-                         row['displayName'], tuple(row['grants']), tuple(row['capabilities']))
+                         row['displayName'], tuple(row['grants']), tuple(row['capabilities']),
+                         'demo' if row.get('authProvider') == 'course-test' else 'tu')
 
     def save_roles(self, context, original, updated, session_hash, now):
         # CAS double models the write, including revocation before commit.
@@ -98,6 +99,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(result['statusCode'], 200)
         state = json.loads(result['body'])
         self.assertEqual(state['grants'], [{'role': 'student', 'scopeId': 'cs-demo'}])
+        self.assertEqual(state['user']['accountType'], 'tu')
         self.assertNotIn('synthetic-password', result['body'])
         token = result['cookies'][0].split(';')[0].split('=', 1)[1]
         with self.assertRaises(AuthError):

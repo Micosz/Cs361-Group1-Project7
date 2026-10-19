@@ -186,6 +186,15 @@ class SessionTests(unittest.TestCase):
         self.assertEqual([], state["grants"])
         self.assertEqual([], state["capabilities"])
 
+    def test_session_projects_account_type_without_exposing_provider_credentials(self):
+        self.users.user = replace(self.users.user, account_type="demo")
+        state = self.service.state(self.login().token)
+        self.assertEqual("demo", state["user"]["accountType"])
+        self.assertNotIn("authProvider", state["user"])
+        self.assertNotIn("username", state["user"])
+        anonymous = self.service.create_anonymous()
+        self.assertIsNone(self.service.state(anonymous.token)["user"])
+
     def test_permission_projection_excludes_inactive_and_private_fields(self):
         self.users.user = replace(self.users.user, grants=(
             {"role": "staff", "scopeId": "cs", "active": True, "secret": "private"},

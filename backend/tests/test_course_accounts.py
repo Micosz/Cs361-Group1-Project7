@@ -55,6 +55,8 @@ class CourseAccountTests(unittest.TestCase):
         row=dict(id=self.entry['userId'],active=True,identityVerified=True,authzVersion=1,authProvider='course-test')
         table=SimpleNamespace(get_item=lambda **_: {'Item':row})
         self.assertIsNone(DynamoUserReader(table).get(row['id']))
-        self.assertEqual(DynamoUserReader(table,allow_course_tests=True).get(row['id']).user_id,row['id'])
+        demo_user = DynamoUserReader(table,allow_course_tests=True).get(row['id'])
+        self.assertEqual(demo_user.user_id,row['id'])
+        self.assertEqual(demo_user.account_type,'demo')
         row['authProvider']='tu'
-        self.assertIsNotNone(DynamoUserReader(table).get(row['id']))
+        self.assertEqual(DynamoUserReader(table).get(row['id']).account_type,'tu')

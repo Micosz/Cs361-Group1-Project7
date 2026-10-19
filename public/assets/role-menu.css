@@ -33,3 +33,26 @@
 #role-menu-links a { padding: 1rem .5rem; }
 #role-menu-links a span { font-size: clamp(22px, 2.4vw, 32px); }
 @media (max-width: 600px) { #role-menu-links { grid-template-columns: 1fr; } }
+/* Account context stays beside Menu, then expands beside Close inside the menu. */
+#authNavButtons { gap: 12px; min-width: 0; }
+.account-summary { display: flex; flex-direction: column; align-items: flex-end; min-width: 0; max-width: 210px; gap: 3px; line-height: 1.4; }
+.account-summary-name { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: #45353b; }
+.account-summary-roles { font-size: .72rem; color: #a0002a; max-width: 100%; overflow-wrap: anywhere; text-align: right; }
+.role-menu-account-area { display: flex; align-items: center; justify-content: flex-end; gap: 22px; min-width: 0; }
+.role-menu-close { flex-shrink: 0; }
+.account-details { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px 18px; max-width: 650px; min-width: 0; opacity: 0; transform: scaleX(.92) translateX(12px); transform-origin: right center; transition: opacity 300ms ease, transform 450ms cubic-bezier(.22,1,.36,1); }
+.account-details[hidden] { display: none; }
+.account-details-name { font-size: 1rem; font-weight: 600; overflow-wrap: anywhere; }
+.account-details-grants { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.account-details-grants span { padding: 5px 10px; border: 1px solid #ffffff50; border-radius: 999px; background: #ffffff0d; font-size: .76rem; line-height: 1.5; overflow-wrap: anywhere; }
+.role-menu.is-open .account-details { opacity: 1; transform: none; transition-delay: 180ms; }
+@media (max-width: 760px) {
+    .account-summary { max-width: 135px; }
+    .role-menu-header { flex-wrap: wrap; }
+    .role-menu-account-area { flex: 1 1 100%; gap: 12px; }
+    .account-details { flex: 1; justify-content: flex-start; gap: 8px; }
+    .account-details-grants { justify-content: flex-start; }
+}
+@media (max-width: 380px) { .account-summary { max-width: 100px; } }
+@media (prefers-reduced-motion: reduce) { .account-details { transition: none !important; transform: none; } }
+.role-menu.instant .account-details { transition: none !important; transform: none; }

@@ -7,6 +7,33 @@
     const links = document.getElementById('role-menu-links');
     const status = document.getElementById('role-menu-status');
     const logout = document.getElementById('role-menu-logout');
+    const accountDetails = document.getElementById('role-menu-account');
+    const roleNames = {student:'Student', coordinator:'Coordinator', staff:'Staff', executive:'Executive'};
+    const firstName = value => typeof value === 'string' ? value.trim().split(/\s+/u)[0] || '' : '';
+    function showAccount(session) {
+        if (!accountDetails) return;
+        accountDetails.replaceChildren(); accountDetails.hidden = !session?.user;
+        if (!session?.user) { host.querySelector('.account-summary')?.remove(); return; }
+        const grants = (session.grants || []).filter(g => g.active !== false);
+        const roles = [...new Set(grants.map(g => roleNames[g.role] || g.role))];
+        const isDemo = session.user.accountType === 'demo';
+        const name = isDemo ? (roles.join(' · ') || 'บัญชีทดสอบ')
+            : session.user.accountType === 'tu' ? (firstName(session.user.displayName) || 'บัญชีที่เข้าสู่ระบบ')
+                : 'บัญชีที่เข้าสู่ระบบ';
+        let summary = host.querySelector('.account-summary');
+        if (!summary) { summary = document.createElement('div'); summary.className = 'account-summary'; host.prepend(summary); }
+        summary.replaceChildren();
+        const shortName = document.createElement('span'); shortName.className = 'account-summary-name'; shortName.textContent = name; shortName.title = name;
+        const shortRoles = document.createElement('span'); shortRoles.className = 'account-summary-roles';
+        shortRoles.textContent = isDemo ? 'บัญชีทดลอง' : roles.join(' · ') || 'ยังไม่มีบทบาท';
+        summary.append(shortName, shortRoles);
+        const fullName = document.createElement('strong'); fullName.className = 'account-details-name'; fullName.textContent = name;
+        const permissions = document.createElement('div'); permissions.className = 'account-details-grants';
+        const entries = grants.map(g => (roleNames[g.role] || g.role) + ' · ' + g.scopeId);
+        for (const capability of session.capabilities || []) if (capability.active !== false && capability.name === 'manageRoles') entries.push('จัดการสิทธิ์ · ' + capability.scopeId);
+        for (const text of [...new Set(entries.length ? entries : ['ยังไม่ได้รับบทบาทงาน'])]) { const badge = document.createElement('span'); badge.textContent = text; permissions.append(badge); }
+        accountDetails.append(fullName, permissions);
+    }
     const closeButton = document.getElementById('close-role-menu');
     let revision = 0, closing = null, locked = false, previousOverflow = '';
     const lockScroll = () => {
@@ -34,12 +61,12 @@
     }
     async function refresh() {
         const current = ++revision;
-        if (!window.CstuAuth?.enabled()) { finishClose(); return; }
+        if (!window.CstuAuth?.enabled()) { showAccount(null); finishClose(); return; }
         try {
             const session = await window.CstuAuth.refresh();
             if (current !== revision) return;
             if (!session?.user) {
-                finishClose();
+                showAccount(null); finishClose();
                 const login = document.createElement('a');
                 login.href = 'login.html'; login.className = 'login-btn'; login.textContent = 'Log in';
                 host.replaceChildren(login); return;
@@ -62,6 +89,7 @@
                 };
                 host.replaceChildren(trigger);
             }
+            showAccount(session);
             links.replaceChildren(); status.textContent = '';
             const append = (label, href, description) => {
                 const link = document.createElement('a'); link.href = href;
@@ -75,7 +103,7 @@
             if (!roles.length) append('รอมอบหมายสิทธิ์', 'index.html#board-section', 'บัญชีของคุณยังไม่ได้รับบทบาทงานภายใน');
         } catch {
             if (current !== revision) return;
-            finishClose();
+            showAccount(null); finishClose();
             const retry = document.createElement('button'); retry.type = 'button';
             retry.className = 'login-btn'; retry.textContent = 'ลองใหม่';
             retry.setAttribute('aria-label', 'ตรวจสถานะเข้าสู่ระบบอีกครั้ง'); retry.onclick = refresh;
@@ -84,7 +112,7 @@
     }
     closeButton.onclick = close;
     dialog.addEventListener('click', event => {
-        if (!event.target.closest('a, button')) close(event);
+        if (!event.target.closest('a, button, .account-details')) close(event);
     });
     dialog.addEventListener('cancel', event => { event.preventDefault(); close({detail: 0}); });
     dialog.addEventListener('close', () => { restoreScroll(); dialog.classList.remove('is-open'); host.querySelector('button')?.setAttribute('aria-expanded','false'); });
