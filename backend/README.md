@@ -141,6 +141,16 @@ Student and public access are denied. Free text is not automatically anonymized.
 There is no delete endpoint. Records use the existing business table and scope
 index; no separate table or data migration is introduced.
 
+`GET /api/overview` serves a role-specific aggregate for Staff or Executive.
+Optional filters are `scopeId`, `stakeholderType`, `activityType`, `status`,
+`startDate`, and `endDate`; the endpoint validates the scope against active role
+grants, authorizes records before aggregation, and returns only counts and the
+latest five authorized feedback/outcome summaries. It never returns respondent
+names, participant IDs, or responsible-user IDs. The CSV export is generated in
+the browser from these aggregate counts, not from raw records. Activity and
+Exchange records accept optional `outcomeSummary` text (max 10,000 characters);
+students' Exchange projection excludes it.
+
 Package `backend/` at the Lambda zip root, with dependencies, and use handler
 `backend.lambda_function.handler`. Set:
 

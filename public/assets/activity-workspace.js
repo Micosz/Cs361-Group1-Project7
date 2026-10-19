@@ -18,6 +18,7 @@ const activityTitle = document.getElementById('activity-title');
 const activityType = document.getElementById('activity-type');
 const activitySummary = document.getElementById('activity-summary');
 const activityFullDescription = document.getElementById('activity-full-description');
+const activityOutcomeSummary = document.getElementById('activity-outcome-summary');
 const activityPartnerId = document.getElementById('activity-partner-id');
 const activityCohostIds = document.getElementById('activity-cohost-ids');
 const activityAgreementIds = document.getElementById('activity-agreement-ids');
@@ -114,6 +115,7 @@ function openAddActivityDialog(scopes) {
     activityType.value = 'academic_activity';
     activitySummary.value = '';
     activityFullDescription.value = '';
+    activityOutcomeSummary.value = '';
     activityPartnerId.value = '';
     activityCohostIds.value = '';
     activityAgreementIds.value = '';
@@ -153,6 +155,7 @@ function openEditActivity(act) {
     activityType.value = act.type || 'academic_activity';
     activitySummary.value = act.summary || '';
     activityFullDescription.value = act.fullDescription || '';
+    activityOutcomeSummary.value = act.outcomeSummary || '';
     activityPartnerId.value = act.partnerId || '';
     activityCohostIds.value = (act.coHostPartnerIds || []).join(', ');
     activityAgreementIds.value = (act.agreementIds || []).join(', ');
@@ -213,6 +216,7 @@ if (activityForm) {
             payload.scopeId = activityScope.value;
         }
         payload.fullDescription = activityFullDescription.value.trim();
+        payload.outcomeSummary = activityOutcomeSummary.value.trim();
         payload.periodDate = activityPeriodDate.value || null;
         payload.periodText = activityPeriodText.value.trim();
         payload.imagePath = activityImagePath.value.trim();

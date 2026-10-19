@@ -3,6 +3,7 @@ import base64
 import importlib.util
 import json
 from pathlib import Path
+from urllib.parse import parse_qsl, urlsplit
 import unittest
 
 from backend.auth.session_service import COOKIE_NAME
@@ -25,9 +26,11 @@ class WorkspaceStorageTests(unittest.TestCase):
         headers = {'origin': service.policy.origin, 'x-csrf-token': issued.csrf_token, 'idempotency-key': key}
         if version:
             headers['if-match'] = '"' + str(version) + '"'
-        result = self.app.handle(dict(version='2.0', rawPath=path,
+        parsed = urlsplit(path)
+        result = self.app.handle(dict(version='2.0', rawPath=parsed.path,
             requestContext={'http': {'method': method}}, headers=headers,
-            cookies=[COOKIE_NAME + '=' + issued.token], body=json.dumps(data or {})))
+            cookies=[COOKIE_NAME + '=' + issued.token], body=json.dumps(data or {}),
+            queryStringParameters=dict(parse_qsl(parsed.query))))
         return result, json.loads(result['body']) if not result.get('isBase64Encoded') else base64.b64decode(result['body'])
 
     def create_agreement(self):
@@ -52,10 +55,11 @@ class WorkspaceStorageTests(unittest.TestCase):
 
     def test_private_upload_stream_participant_and_revocation(self):
         data = dict(title='แลกเปลี่ยนทดสอบ', scopeId='cs-demo', partnerIds=['partner-demo'],
-                    participantUserIds=[self.ids['student-a']])
+                    participantUserIds=[self.ids['student-a']], outcomeSummary='Test project outcome')
         result, body = self.call('/api/exchanges', 'POST', data)
         self.assertEqual(201, result['statusCode'], body)
         exchange = body['data']
+        self.assertEqual('Test project outcome', exchange['outcomeSummary'])
         content = b'%PDF-1.4 integration fixture'
         upload = dict(fileName='a.pdf', contentType='application/pdf', fileBase64=base64.b64encode(content).decode(),
                       audience='participants', containsPersonal=True)
@@ -64,6 +68,9 @@ class WorkspaceStorageTests(unittest.TestCase):
         document = body['data']
         self.assertNotIn('objectKey', document)
         self.actor = 'student-a'
+        student_result, student_body = self.call('/api/exchanges/' + exchange['id'])
+        self.assertEqual(200, student_result['statusCode'], student_body)
+        self.assertNotIn('outcomeSummary', student_body['data'])
         result, raw = self.call('/api/documents/' + document['id'] + '/content')
         self.assertEqual(200, result['statusCode']); self.assertEqual(content, raw)
         self.actor = 'student-b'
@@ -88,14 +95,41 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.assertEqual(409, result['statusCode'])
         self.assertFalse(self.repository.documents.client.rows)
 
-    def test_overview_is_executive_only_and_has_no_internal_data(self):
+    def test_overview_is_role_scoped_filtered_and_summarizes_feedback_without_identity(self):
         self.create_agreement()
-        self.assertEqual(403, self.call('/api/overview')[0]['statusCode'])
+        result, body = self.call('/api/activities', 'POST', dict(title='Outcome activity', type='event',
+            summary='Activity summary', outcomeSummary='Students completed a joint project',
+            partnerId='partner-demo', scopeId='cs-demo', periodDate='2026-10-18'), key='overview-activity-create-0001')
+        self.assertEqual(201, result['statusCode'], body)
+        activity = body['data']
+        result, body = self.call('/api/activities/' + activity['id'] + '/feedback', 'POST', dict(
+            occurredOn='2026-10-18', sourceType='partner', comment='Useful collaboration',
+            improvement='Schedule the workshop earlier', respondentName='Private respondent'),
+            key='overview-feedback-create-0001')
+        self.assertEqual(201, result['statusCode'], body)
+
+        result, body = self.call('/api/overview')
+        self.assertEqual(200, result['statusCode'], body)
+        self.assertEqual('staff', body['data']['role'])
+        self.assertEqual({'count': 1, 'statuses': {'draft': 1}}, body['data']['agreements'])
+        self.assertEqual(1, body['data']['activities']['outcomesRecorded'])
+        self.assertEqual(1, body['data']['outcomes']['count'])
+        self.assertEqual(1, body['data']['feedback']['count'])
+        self.assertNotIn('Private respondent', json.dumps(body))
+        filtered = self.call('/api/overview?activityType=event&startDate=2026-10-18&endDate=2026-10-18')
+        self.assertEqual(200, filtered[0]['statusCode'], filtered[1])
+        self.assertEqual(1, filtered[1]['data']['activities']['count'])
+        self.assertEqual(422, self.call('/api/overview?stakeholderType=unknown')[0]['statusCode'])
+        self.assertEqual(404, self.call('/api/overview?scopeId=outside-scope')[0]['statusCode'])
+        self.assertEqual(422, self.call('/api/overview?unknown=value')[0]['statusCode'])
+
         self.actor = 'executive'
         result, body = self.call('/api/overview')
         self.assertEqual(200, result['statusCode'], body)
+        self.assertEqual('executive', body['data']['role'])
         self.assertEqual({'count': 1, 'statuses': {'draft': 1}}, body['data']['agreements'])
         self.assertNotIn('responsibleUserIds', json.dumps(body))
+        self.assertNotIn('respondentName', json.dumps(body))
 
 
     def test_existing_partner_table_keeps_fields_and_checks_cross_table_references(self):

@@ -7,6 +7,7 @@ validation (refs, state transitions, idempotency) before its first side effect.
 
 import base64
 from dataclasses import dataclass, replace
+from datetime import date
 import json
 import re
 
@@ -268,23 +269,145 @@ class PermissionGateway:
     def overview(self, event):
         if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
             raise AuthError('METHOD_NOT_ALLOWED', 405)
-        if event.get('queryStringParameters'):
+        query = event.get('queryStringParameters') or {}
+        supported = {'scopeId', 'stakeholderType', 'activityType', 'status', 'startDate', 'endDate'}
+        if not isinstance(query, dict) or set(query) - supported:
             raise AuthError('INVALID_QUERY', 422)
         context = require_session(event, self.service)
-        executive = tuple(g for g in context.user.grants if g.get('role') == 'executive')
-        context = replace(context, user=replace(context.user, grants=executive, capabilities=()))
-        require_action(context, 'agreement', 'read')
+        role_grants = tuple(g for g in context.user.grants if g.get('role') in {'staff', 'executive'})
+        role = 'executive' if any(g.get('role') == 'executive' for g in role_grants) else 'staff'
+        role_grants = tuple(g for g in role_grants if g.get('role') == role)
+        if not role_grants:
+            raise AuthError('FORBIDDEN', 403)
+        scopes = sorted({g.get('scopeId') for g in role_grants if isinstance(g.get('scopeId'), str)})
+        if not scopes:
+            raise AuthError('FORBIDDEN', 403)
+        scope = query.get('scopeId')
+        if scope is not None:
+            if not isinstance(scope, str) or not scope or len(scope) > 200 or scope not in scopes:
+                raise AuthError('NOT_FOUND', 404)
+            role_grants = tuple(g for g in role_grants if g.get('scopeId') == scope)
+            scopes = [scope]
+        context = replace(context, user=replace(context.user, grants=role_grants, capabilities=()))
+        require_action(context, 'partner', 'read')
         if self.repository is None:
             raise AuthError('PERMISSION_UNAVAILABLE', 503)
-        result = {}
-        for collection, kind in COLLECTIONS.items():
-            rows = [project(context, kind, row) for row in self.repository.list(kind, context, None)
-                    if allowed_roles(context, kind, 'read', row)]
-            states = {}
+
+        def valid_day(value):
+            try:
+                return isinstance(value, str) and date.fromisoformat(value).isoformat() == value
+            except (ValueError, TypeError):
+                return False
+
+        for key, allowed in (('stakeholderType', {'company', 'university', 'government', 'research_institute', 'internship'}),
+                             ('activityType', {'academic_activity', 'event', 'research'})):
+            if key in query and (not isinstance(query[key], str) or query[key] not in allowed):
+                raise AuthError('INVALID_QUERY', 422)
+        if 'status' in query and (not isinstance(query['status'], str) or not query['status'] or len(query['status']) > 64):
+            raise AuthError('INVALID_QUERY', 422)
+        for key in ('startDate', 'endDate'):
+            if key in query and not valid_day(query[key]):
+                raise AuthError('INVALID_QUERY', 422)
+        start, end = query.get('startDate'), query.get('endDate')
+        if start and end and start > end:
+            raise AuthError('INVALID_QUERY', 422)
+
+        def authorized(kind, parent=None):
+            return [row for row in self.repository.list(kind, context, parent)
+                    if allowed_roles(context, kind, 'read', row, parent)]
+
+        def in_period(kind, row):
+            if not start and not end:
+                return True
+            if kind == 'activity':
+                day = row.get('periodDate')
+                return valid_day(day) and (not start or day >= start) and (not end or day <= end)
+            first, last = row.get('startDate'), row.get('endDate')
+            return (valid_day(first) and valid_day(last) and first <= last
+                    and (not end or first <= end) and (not start or last >= start))
+
+        partners = authorized('partner')
+        if 'stakeholderType' in query:
+            partners = [row for row in partners if row.get('type') == query['stakeholderType']]
+        visible_partner_ids = {row['id'] for row in partners}
+
+        def related_to_selected_stakeholder(kind, row):
+            if 'stakeholderType' not in query:
+                return True
+            if kind == 'activity':
+                ids = [row.get('partnerId')]
+                if isinstance(row.get('coHostPartnerIds'), list):
+                    ids.extend(row['coHostPartnerIds'])
+            else:
+                ids = row.get('partnerIds') if isinstance(row.get('partnerIds'), list) else []
+            return any(isinstance(item, str) and item in visible_partner_ids for item in ids)
+
+        activities = [row for row in authorized('activity')
+                      if ('activityType' not in query or row.get('type') == query['activityType'])
+                      and in_period('activity', row) and related_to_selected_stakeholder('activity', row)]
+        agreements = [row for row in authorized('agreement')
+                      if ('status' not in query or row.get('status') == query['status'])
+                      and in_period('agreement', row) and related_to_selected_stakeholder('agreement', row)]
+        exchanges = [row for row in authorized('exchange')
+                     if ('status' not in query or row.get('status') == query['status'])
+                     and in_period('exchange', row) and related_to_selected_stakeholder('exchange', row)]
+
+        def counts(rows, field):
+            result = {}
             for row in rows:
-                if isinstance(row.get('status'), str):
-                    states[row['status']] = states.get(row['status'], 0) + 1
-            result[collection] = {'count': len(rows), 'statuses': states}
+                value = row.get(field)
+                if isinstance(value, str) and value:
+                    result[value] = result.get(value, 0) + 1
+            return result
+
+        outcomes = []
+        for kind, rows, title_field, date_field in (
+                ('activity', activities, 'title', 'periodDate'),
+                ('exchange', exchanges, 'title', 'startDate')):
+            for row in rows:
+                summary = row.get('outcomeSummary')
+                if isinstance(summary, str) and summary.strip():
+                    outcomes.append({'recordType': kind, 'title': row.get(title_field, ''),
+                                     'date': row.get(date_field, ''), 'summary': summary.strip()[:500]})
+        outcomes.sort(key=lambda row: row.get('date') or '', reverse=True)
+
+        feedback = []
+        visible_parents = {(kind, row['id']): row for kind, rows in (
+            ('activity', activities), ('exchange', exchanges)) for row in rows}
+        for row in self.repository.list('feedback', context, None):
+            parent_kind, parent_id = row.get('parentType'), row.get('parentId')
+            parent = visible_parents.get((parent_kind, parent_id))
+            if not parent or not allowed_roles(context, 'feedback', 'read', row, parent):
+                continue
+            if start and (not valid_day(row.get('occurredOn')) or row['occurredOn'] < start):
+                continue
+            if end and (not valid_day(row.get('occurredOn')) or row['occurredOn'] > end):
+                continue
+            item = project(context, 'feedback', row, parent)
+            feedback.append({'date': item.get('occurredOn', ''),
+                             'sourceType': item.get('sourceType', ''),
+                             'parentType': parent_kind,
+                             'parentTitle': parent.get('title', ''),
+                             'comment': item.get('comment', '')[:500],
+                             'improvement': item.get('improvement', '')[:500]})
+        feedback.sort(key=lambda row: row.get('date') or '', reverse=True)
+
+        result = {
+            'role': role,
+            'filters': {key: query[key] for key in sorted(query)},
+            'availableScopes': scopes,
+            'stakeholders': {'count': len(partners), 'byType': counts(partners, 'type')},
+            'partners': {'count': len(partners), 'byType': counts(partners, 'type')},
+            'activities': {'count': len(activities), 'byType': counts(activities, 'type'),
+                           'outcomesRecorded': sum(isinstance(row.get('outcomeSummary'), str) and bool(row['outcomeSummary'].strip()) for row in activities)},
+            'agreements': {'count': len(agreements), 'statuses': counts(agreements, 'status')},
+            'exchanges': {'count': len(exchanges), 'statuses': counts(exchanges, 'status'),
+                          'outcomesRecorded': sum(isinstance(row.get('outcomeSummary'), str) and bool(row['outcomeSummary'].strip()) for row in exchanges)},
+            'outcomes': {'count': len(outcomes), 'records': outcomes[:5]},
+            'feedback': {'count': len(feedback), 'bySource': counts(feedback, 'sourceType'),
+                         'withImprovement': sum(bool(row.get('improvement')) for row in feedback),
+                         'latest': feedback[:5]},
+        }
         return self._response(event, result)
 
     def _parent(self, record, kind):

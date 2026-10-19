@@ -24,6 +24,7 @@ test('workspace HTML includes unified Activity management section and dialog', (
     assert.match(workspaceHtml, /id="activity-type"/);
     assert.match(workspaceHtml, /id="activity-summary"[^>]+maxlength="2000"/);
     assert.match(workspaceHtml, /id="activity-full-description"[^>]+maxlength="20000"/);
+    assert.match(workspaceHtml, /id="activity-outcome-summary"[^>]+maxlength="10000"/);
     assert.match(workspaceHtml, /id="activity-partner-id"/);
     assert.match(workspaceHtml, /id="activity-cohost-ids"/);
     assert.match(workspaceHtml, /id="activity-agreement-ids"/);
@@ -51,6 +52,7 @@ test('workspace JS binds activity operations and handles mutation contracts', ()
 
     // Verifies CstuAuth.mutate used with version for PATCH
     assert.match(workspaceJs, /window\.CstuAuth\.mutate\(['"]\/activities\/['"]/);
+    assert.match(workspaceJs, /payload\.outcomeSummary\s*=\s*activityOutcomeSummary\.value\.trim\(\)/);
 
     // Verifies optimistic concurrency 409 conflict handling with reload
     assert.match(workspaceJs, /error\.status === 409/);

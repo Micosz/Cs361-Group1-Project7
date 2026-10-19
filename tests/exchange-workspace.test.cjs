@@ -22,6 +22,7 @@ test('workspace HTML contains unified exchange section and dialog form', () => {
     assert.match(workspaceHtml, /id="exchange-start-date"/);
     assert.match(workspaceHtml, /id="exchange-end-date"/);
     assert.match(workspaceHtml, /id="exchange-participant-users"/);
+    assert.match(workspaceHtml, /id="exchange-outcome-summary"[^>]+maxlength="10000"/);
     assert.match(workspaceHtml, /id="staff-exchange-fields"/);
     assert.match(workspaceHtml, /id="exchange-responsible-users"/);
     assert.match(workspaceHtml, /id="exchange-submit-btn"/);
@@ -47,6 +48,7 @@ test('workspace JS renders exchange cards with textContent and handles permissio
     // CstuAuth usage
     assert.match(workspaceJs, /CstuAuth\.create\(['"]\/exchanges['"]/);
     assert.match(workspaceJs, /CstuAuth\.mutate\(['"]\/exchanges\//);
+    assert.match(workspaceJs, /payload\.outcomeSummary\s*=\s*exchangeOutcomeSummary\.value\.trim\(\)/);
 });
 
 test('workspace contains status transition controls and wires status API', () => {

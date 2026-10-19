@@ -26,6 +26,7 @@ TEXT_LIMITS = {
     'name': 200, 'title': 200, 'summary': 2000, 'location': 2000,
     'fullDescription': 20000, 'note': 20000, 'periodText': 2000,
     'comment': 10000, 'improvement': 10000, 'respondentName': 200,
+    'outcomeSummary': 10000,
     'position': 200, 'email': 320, 'phone': 100,
 }
 
