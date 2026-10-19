@@ -12,7 +12,7 @@
 .records-list li { padding: 1rem 0; border-bottom: 1px solid #ddd; overflow-wrap: anywhere; }
 .records-list button { background: transparent; border: 0; text-align: left; color: #9e1233; }
 .records-list small { display: block; margin-top: .4rem; }
-#record-detail { position: relative; width: min(90vw, 700px); max-height: 85vh; padding: 1.5rem; border: 1px solid #ddd; border-radius: 12px; overflow: auto; }
+#record-detail { position: fixed; overscroll-behavior: contain; width: min(90vw, 700px); max-height: 85vh; padding: 1.5rem; border: 1px solid #ddd; border-radius: 12px; overflow: auto; }
 #record-detail::backdrop { background: #0006; }
 #detail-fields dt { font-weight: bold; margin-top: 1rem; }
 #detail-fields dd { margin: .25rem 0; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -97,3 +97,11 @@
 .activity-detail-hosts, .activity-detail-date { color: #61646b; }
 .activity-detail-date { font-size: .85rem; padding-bottom: 1rem; border-bottom: 1px solid #ddd; }
 .activity-detail-description { white-space: pre-wrap; margin: 1.5rem 0; }
+
+/* Keep background pages stationary while a detail overlay is open. */
+html:has(#record-detail[open]), body:has(#record-detail[open]),
+html:has(#detailModal[style*="display: flex"]), body:has(#detailModal[style*="display: flex"]) {
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+#detailModal .modal-content { overscroll-behavior: contain; }
