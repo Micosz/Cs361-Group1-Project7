@@ -73,6 +73,23 @@
 
 #eventGrid > [hidden] { display: none !important; }
 
+/* Per-file document privacy controls in record detail and workspace dialogs. */
+.document-upload-queue { display: grid; gap: .75rem; list-style: none; padding: 0; margin: .75rem 0 1rem; }
+.document-upload-item { display: grid; grid-template-columns: 3.5rem minmax(0,1fr) minmax(12rem, .8fr) auto; align-items: center; gap: .75rem; padding: .75rem; border: 1px solid #e4d9d2; border-radius: 12px; background: #fff; }
+.document-upload-preview { display: grid; width: 3rem; height: 3rem; place-items: center; overflow: hidden; border-radius: 8px; background: #f8f0f2; color: #9e1233; font-size: .72rem; font-weight: 700; }
+.document-upload-preview img { width: 100%; height: 100%; object-fit: cover; }
+.document-upload-details { min-width: 0; overflow-wrap: anywhere; }
+.document-upload-details small { color: #6d6264; }
+.document-upload-item label { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; }
+.document-upload-item label select { min-width: 0; }
+.document-upload-item label input[type=checkbox] { width: auto; }
+.document-upload-item button { white-space: nowrap; }
+@media (max-width: 680px) {
+    .document-upload-item { grid-template-columns: 3rem minmax(0,1fr) auto; }
+    .document-upload-item > label { grid-column: 2 / -1; }
+    .document-upload-item > label:last-of-type { grid-column: 1 / -1; }
+}
+
 .public-activity-detail { line-height: 1.7; overflow-wrap: anywhere; }
 .record-detail-image { display: block; width: 100%; max-height: 340px; object-fit: contain; margin: 1.5rem auto; }
 
