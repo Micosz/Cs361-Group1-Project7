@@ -7,9 +7,10 @@
         trigger = document.activeElement; reload = options.reload;
         if (!dialog) {
             dialog = document.createElement('dialog');
+            dialog.className = 'entry-frame-dialog';
             dialog.style.cssText = 'box-sizing:border-box;margin:auto;width:min(900px,95vw);height:90dvh;max-height:95dvh;max-width:95vw;padding:1rem;border:1px solid #ddd;border-radius:12px;overflow:hidden';
             dialog.setAttribute('aria-label', 'จัดการกิจกรรม');
-            const button = document.createElement('button'); button.type = 'button'; button.textContent = 'ปิด'; button.onclick = close;
+            const button = document.createElement('button'); button.className = 'entry-frame-close'; button.type = 'button'; button.textContent = 'ปิด'; button.onclick = close;
             dialog.appendChild(button); document.body.appendChild(dialog);
             dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
             dialog.addEventListener('click', event => { if (event.target === dialog) close(); });

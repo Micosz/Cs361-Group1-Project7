@@ -3,6 +3,7 @@
     'use strict';
     let revision=0;
     async function choices(kind,scope){
+        if(kind==='responsible')return (await window.CstuAuth.request('/selection-users?scopeId='+encodeURIComponent(scope)+'&kind=responsible')).data;
         if(kind==='partners')return (await window.CstuAuth.request('/selection-partners?scopeId='+encodeURIComponent(scope))).data;
         const rows=[];let cursor=null;
         do{const result=await window.CstuAuth.request('/'+kind+'?scopeId='+encodeURIComponent(scope)+'&limit=100'+(cursor?'&cursor='+encodeURIComponent(cursor):''));rows.push(...result.data);cursor=result.page.nextCursor;}while(cursor);
@@ -19,6 +20,11 @@
         primary.required=false;
         function select(label,multiple=false){const p=document.createElement('p'),title=document.createElement('label'),input=document.createElement('select');title.textContent=label+' ';input.multiple=multiple;input.style.width='100%';if(multiple)input.size=4;title.appendChild(input);p.appendChild(title);box.appendChild(p);return input;}
         const partner=select('คู่ความร่วมมือหลัก'),partners=select('ผู้จัดร่วม (เลือกได้หลายรายการ)',true),linked=select('ข้อตกลงที่เกี่ยวข้อง (เลือกได้หลายรายการ)',true);
+        const responsibleInput=document.getElementById('activity-responsible-users');
+        responsibleInput.closest('p').hidden=true;
+        const responsible=select('ผู้รับผิดชอบกิจกรรม (เลือกได้หลายคน)',true);
+        const responsibleRow=responsible.closest('p');
+        responsible.onchange=()=>{responsibleInput.value=[...responsible.selectedOptions].map(o=>o.value).join(', ');};
         const clearLabel=document.createElement('label'),clear=document.createElement('input');clear.type='checkbox';clearLabel.append(clear,document.createTextNode(' ถอดผู้จัดร่วมและข้อตกลงทั้งหมด'));box.appendChild(clearLabel);
         const hint=document.createElement('p');hint.textContent='ใช้ Ctrl/Command เพื่อเลือกหลายรายการ หรือเลือกถอดทั้งหมดโดยไม่ลบข้อมูลต้นทาง';box.appendChild(hint);
         form.insertBefore(box,document.getElementById('staff-activity-fields'));
@@ -31,7 +37,10 @@
             const selectedScope=scope.value;
             save.disabled=true;message.textContent='กำลังโหลดตัวเลือกตามสิทธิ์';
             try{
-                const [pRows,aRows]=await Promise.all([choices('partners',selectedScope),choices('agreements',selectedScope)]);
+                const canAssign=(window.CstuAuth.state()?.grants||[]).some(g=>g.active!==false&&g.scopeId===selectedScope&&g.role==='staff');
+                responsibleRow.hidden=!canAssign;
+                responsible.disabled=true;
+                const [pRows,aRows,userRows]=await Promise.all([choices('partners',selectedScope),choices('agreements',selectedScope),canAssign?choices('responsible',selectedScope):Promise.resolve([])]);
                 if(current!==revision||!box.isConnected||scope.value!==selectedScope)return;
                 const oldPrimary=primary.value,oldPartners=cohosts.value.split(',').map(s=>s.trim()).filter(Boolean),oldAgreements=agreements.value.split(',').map(s=>s.trim()).filter(Boolean);
                 // A strong-read detail can precede the GSI. Preserve its authorized labels.
@@ -39,6 +48,11 @@
                 const existingA=record?.relationships?.agreements||[];
                 for(const item of existingP)if(!pRows.some(row=>row.id===item.id))pRows.push(item);
                 for(const item of existingA)if(!aRows.some(row=>row.id===item.id))aRows.push(item);
+                const selectedUsers=responsibleInput.value.split(',').map(v=>v.trim()).filter(Boolean);
+                responsible.replaceChildren();
+                for(const row of userRows){const option=document.createElement('option');option.value=row.id;option.textContent=row.displayName;option.selected=selectedUsers.includes(row.id);responsible.appendChild(option);}
+                if(canAssign&&selectedUsers.some(id=>!userRows.some(row=>row.id===id)))throw Error('รายชื่อผู้รับผิดชอบเดิมบางรายการไม่พร้อม กรุณาเปิดฟอร์มใหม่');
+                responsible.disabled=!canAssign;
                 partner.replaceChildren();partners.replaceChildren();linked.replaceChildren();
                 const empty=document.createElement('option');empty.value='';empty.textContent='เลือกคู่ความร่วมมือ';partner.appendChild(empty);
                 for(const row of pRows){for(const target of [partner,partners]){const option=document.createElement('option');option.value=row.id;option.textContent=row.name||row.id;option.selected=target===partner?row.id===oldPrimary:oldPartners.includes(row.id);target.appendChild(option);}}
@@ -48,7 +62,7 @@
                 message.textContent=complete?'':'มีความสัมพันธ์ที่อ่านไม่ได้ การบันทึกจะคงลิงก์เดิมไว้ เลือกถอดทั้งหมดได้หากต้องการ';
             }catch(error){message.textContent='โหลดตัวเลือกไม่ได้: '+error.message;}
         }
-        scope.onchange=()=>{primary.value='';cohosts.value='';agreements.value='';const staff=(window.CstuAuth.state()?.grants||[]).some(g=>g.scopeId===scope.value&&g.role==='staff'&&g.active!==false);document.getElementById('staff-activity-fields').hidden=!staff;load();};
+        scope.onchange=()=>{responsibleInput.value='';primary.value='';cohosts.value='';agreements.value='';const staff=(window.CstuAuth.state()?.grants||[]).some(g=>g.scopeId===scope.value&&g.role==='staff'&&g.active!==false);document.getElementById('staff-activity-fields').hidden=!staff;load();};
         await load();
     }
     function render(container,record){

@@ -10,7 +10,7 @@
     <script src="assets/selection-fields.js?v=selection-3" defer></script>
     <script src="assets/agreement.js?v=selection-3" defer></script>
     <script src="assets/workspace.js?v=selection-3" defer></script>
-    <script src="assets/activity-links.js?v=selection-3" defer></script>
+    <script src="assets/activity-links.js?v=entry-1" defer></script>
     <script src="assets/activity-workspace.js?v=selection-3" defer></script>
     <script>
         // Embedded forms occupy the iframe itself; hide the workspace behind them.
@@ -36,6 +36,8 @@
         html[data-embed] dialog::backdrop { background:#fff; }
         html[data-embed] input, html[data-embed] select, html[data-embed] textarea { box-sizing:border-box; max-width:100%; }
     </style>
+    <link rel="stylesheet" href="assets/entry-forms.css?v=1">
+    <script src="assets/entry-forms.js?v=1" defer></script>
 </head>
 <body>
 <main class="container" style="padding:2rem;max-width:800px">
@@ -159,8 +161,8 @@
             <p><label>ชื่อโครงการแลกเปลี่ยน <input id="exchange-title" required maxlength="200" style="width:100%; padding:0.4rem;"></label></p>
             <p><label>รหัสคู่ความร่วมมือ (Partner IDs คั่นด้วยเครื่องหมายจุลภาค) <input id="exchange-partner-ids" required style="width:100%; padding:0.4rem;" placeholder="เช่น partner-1, partner-2"></label></p>
             <p><label>รหัสข้อตกลงที่เกี่ยวข้อง (Agreement ID) <input id="exchange-agreement-id" style="width:100%; padding:0.4rem;" placeholder="เช่น agreement-1 (ถ้ามี)"></label></p>
-            <p><label>วันเริ่มต้น (ISO YYYY-MM-DD) <input id="exchange-start-date" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" style="width:100%; padding:0.4rem;"></label></p>
-            <p><label>วันสิ้นสุด (ISO YYYY-MM-DD) <input id="exchange-end-date" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" style="width:100%; padding:0.4rem;"></label></p>
+            <p><label>วันเริ่มต้น (ISO YYYY-MM-DD) <input id="exchange-start-date" type="date" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" style="width:100%; padding:0.4rem;"></label></p>
+            <p><label>วันสิ้นสุด (ISO YYYY-MM-DD) <input id="exchange-end-date" type="date" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" style="width:100%; padding:0.4rem;"></label></p>
             <p><label>รหัสนักศึกษาผู้เข้าร่วม (Participant User IDs คั่นด้วยจุลภาค) <input id="exchange-participant-users" style="width:100%; padding:0.4rem;" placeholder="เช่น u-std-1, u-std-2"></label></p>
             <p><label>ข้อมูลสนับสนุนภายใน (Supporting Info) <textarea id="exchange-supporting-info" maxlength="20000" rows="3" style="width:100%; padding:0.4rem;"></textarea></label></p>
             <p><label>ข้อมูลสำหรับนักศึกษาผู้เข้าร่วม (Info for Participants) <textarea id="exchange-supporting-info-participant" maxlength="20000" rows="3" style="width:100%; padding:0.4rem;"></textarea></label></p>

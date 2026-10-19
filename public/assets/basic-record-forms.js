@@ -8,10 +8,11 @@
     function open(kind, {container,record,session,reload}) {
         container.replaceChildren();
         const form = document.createElement('form'), fields = {};
+        if (kind === 'partners') form.id = 'partner-entry-form';
         const allowedRoles = kind === 'partners' ? ['staff'] : ['staff','coordinator'];
         const active = session.grants.filter(g => g.active !== false && allowedRoles.includes(g.role));
         const scopeLabel = document.createElement('label'); scopeLabel.textContent = 'ขอบเขต ';
-        const scope = document.createElement('select'); scope.disabled = Boolean(record);
+        const scope = document.createElement('select'); scope.id = `basic-${kind}-scope`; scope.disabled = Boolean(record);
         for (const id of [...new Set(record ? [record.scopeId] : active.map(g => g.scopeId))]) {
             const option = document.createElement('option'); option.value = id; option.textContent = id; scope.appendChild(option);
         }
@@ -23,7 +24,7 @@
                 input = document.createElement('select');
                 const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'เลือกประเภท'; input.appendChild(placeholder);
                 const types = kind === 'partners' ? ['company','university','government','research_institute','internship'] : ['academic_activity','event','research'];
-                for (const value of types) { const opt = document.createElement('option'); opt.value = value; opt.textContent = value; input.appendChild(opt); }
+                for (const value of types) { const opt = document.createElement('option'); opt.value = value; opt.textContent = ({company:'บริษัท / ภาคเอกชน',university:'มหาวิทยาลัย',government:'หน่วยงานภาครัฐ',research_institute:'สถาบันวิจัย',internship:'สถานประกอบการฝึกงาน',academic_activity:'กิจกรรมวิชาการ',event:'งานกิจกรรม',research:'การวิจัย'})[value] || value; input.appendChild(opt); }
             } else {
                 input = document.createElement(name === 'fullDescription' || name === 'summary' ? 'textarea' : 'input');
                 if (name === 'periodDate') input.type = 'date';
@@ -39,7 +40,7 @@
             fields.responsibleUserIds = document.createElement('input'); fields.responsibleUserIds.value = (record?.responsibleUserIds || [session.user.id]).join(', ');
             fields.responsibleUserIds.id = `basic-${kind}-responsibleUserIds`;
             label.appendChild(fields.responsibleUserIds); wrapper.appendChild(label); form.appendChild(wrapper);
-            const publication = document.createElement('select');
+            const publication = document.createElement('select'); publication.id = `basic-${kind}-publication`;
             for (const [value,text] of [['internal','ภายใน'],['public','สาธารณะ']]) { const option=document.createElement('option'); option.value=value;option.textContent=text;publication.appendChild(option); }
             publication.value = record?.publication || 'internal'; fields.publication = publication;
             const pubLabel = document.createElement('label'); pubLabel.textContent = ' การเผยแพร่ '; pubLabel.appendChild(publication);form.appendChild(pubLabel);

@@ -1,0 +1,77 @@
+/* Shared presentation for menu entry forms; browse/detail screens keep their styles. */
+.entry-dialog:has(.entry-form), .entry-frame-dialog {
+    box-sizing: border-box;
+    margin: auto !important;
+    width: min(860px, 94vw) !important;
+    min-width: 0 !important;
+    max-width: 94vw !important;
+    max-height: 92dvh !important;
+    padding: 0 !important;
+    border: 1px solid #eadfdc !important;
+    border-radius: 20px !important;
+    background: #fffdf9 !important;
+    color: var(--text-main, #202020);
+    box-shadow: 0 24px 80px #3d18252b;
+}
+.entry-dialog:has(.entry-form)::backdrop, .entry-frame-dialog::backdrop { background: #24151d88; backdrop-filter: blur(5px); }
+.entry-frame-dialog { height: 92dvh !important; overflow: hidden; }
+.entry-frame-dialog iframe { height: 100% !important; }
+.entry-frame-close { position: absolute; z-index: 3; right: 20px; top: 18px; padding: 6px 12px; border-radius: 8px; border: 1px solid #e4d6d7; background: #fff; color: #6d444d; font: inherit; cursor: pointer; }
+.entry-dialog:has(.entry-form) > button#detail-close { float: right; margin: 16px 20px 0; }
+.entry-dialog:has(.entry-form) > h2, .entry-dialog:has(.entry-form) > div:has(> h2) { padding: 24px 28px 0; margin: 0; }
+.entry-dialog:has(.entry-form) #detail-body { padding: 0; }
+.entry-form { --entry-accent: var(--tu-red, #c3002f); padding: 24px 28px 0; font-family: inherit; color: #292329; }
+.entry-heading { padding-right: 64px; }
+.entry-form h2 { font-size: clamp(1.25rem, 3vw, 1.6rem); line-height: 1.5; color: var(--entry-accent); margin: 0 0 8px; }
+.entry-intro { margin-bottom: 24px; }
+.entry-intro p { color: #685c61; font-size: .93rem; line-height: 1.7; margin: 0 0 6px; }
+.entry-intro small { color: #8b575f; font-size: .8rem; }
+.entry-form fieldset { box-sizing: border-box; min-width: 0; border: 1px solid #eadfe0; border-radius: 12px; background: #fff; padding: 18px 20px 20px; margin: 0 0 20px; }
+.entry-form fieldset legend { color: #8c1935; font-size: .98rem; font-weight: 700; padding: 0 8px; }
+.entry-form .entry-section { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
+.entry-form .entry-section > legend { float: none; }
+.entry-form .entry-field { margin: 0 !important; min-width: 0; }
+.entry-form .entry-wide { grid-column: 1 / -1; }
+.entry-form label { display: block; font-size: .9rem; line-height: 1.6; color: #453940; font-weight: 600; }
+.entry-form input:not([type=checkbox]):not([type=hidden]), .entry-form select:not([multiple]), .entry-form textarea {
+    box-sizing: border-box; display: block; width: 100%; min-height: 44px; margin-top: 7px;
+    padding: 10px 12px !important; border: 1px solid #d8cbcf !important; border-radius: 8px !important;
+    background: #fff; color: #2e262b; font: inherit; font-size: .94rem; line-height: 1.55;
+    transition: border-color .15s, box-shadow .15s;
+}
+.entry-form textarea { min-height: 100px; resize: vertical; }
+.entry-form input:focus-visible, .entry-form select:focus-visible, .entry-form textarea:focus-visible { outline: 0; border-color: var(--entry-accent) !important; box-shadow: 0 0 0 3px #c3002f15; }
+.entry-form input:disabled, .entry-form select:disabled { background: #f5f2f3; color: #7c7176; }
+.entry-form .entry-required { color: var(--entry-accent); }
+.entry-hint { display: block; color: #77696f; font-size: .8rem; font-weight: 400; line-height: 1.6; margin-top: 7px; }
+.entry-form [hidden] { display: none !important; }
+.entry-form .entry-actions { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin: 20px -28px 0; padding: 16px 28px; border-top: 1px solid #eadfe0; background: #fffdf9f5; backdrop-filter: blur(8px); }
+.entry-form .entry-actions button { min-height: 44px; width: auto; min-width: 100px; margin: 0; padding: 10px 20px; border: 1px solid #d8cbcf; border-radius: 8px; background: #fff !important; color: #59414a !important; font: inherit; font-weight: 600; box-shadow: none; cursor: pointer; }
+.entry-form .entry-actions button[type=submit] { order: 2; border-color: var(--entry-accent); background: var(--entry-accent) !important; color: #fff !important; }
+.entry-form .entry-actions button:hover { border-color: var(--entry-accent); }
+.entry-form .entry-actions button[type=submit]:hover { background: #9f0026 !important; }
+.entry-form .entry-actions button:disabled { opacity: .55; cursor: wait; }
+.entry-form .entry-status { flex: 1 1 240px; margin: 0; color: #853348; font-size: .88rem; }
+.entry-form .entry-status:empty { display: none; }
+.entry-form .entry-native-choices { position: absolute; width: 1px !important; height: 1px !important; padding: 0 !important; margin: 0 !important; border: 0 !important; overflow: hidden; clip-path: inset(50%); opacity: 0; pointer-events: none; }
+.entry-choices { margin-top: 6px; }
+.entry-choice-count { display: block; color: #88606c; margin: 8px 0; font-size: .8rem; }
+.entry-choice-list { max-height: 190px; overflow-y: auto; border: 1px solid #e6dcdf; border-radius: 8px; padding: 4px; background: #fff; }
+.entry-form .entry-choice { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; border-radius: 6px; cursor: pointer; font-weight: 400; }
+.entry-choice:hover { background: #fff4f5; }
+.entry-choice:has(input:checked) { background: #fff0f3; color: #9f0026; }
+.entry-choice input[type=checkbox] { flex: 0 0 auto; width: 17px; height: 17px; margin: 3px 0 0; accent-color: var(--entry-accent); }
+.entry-choice-error { margin: 6px 0 0; font-size: .85rem; color: #b10029; }
+.entry-choice-error:empty { display: none; }
+html[data-embed] .entry-dialog:has(.entry-form) { width: 100% !important; max-width: none !important; height: 100%; max-height: 100% !important; border: 0 !important; border-radius: 0 !important; padding: 0 !important; }
+@media (max-width: 600px) {
+    .entry-dialog:has(.entry-form), .entry-frame-dialog { width: 98vw !important; max-width: 98vw !important; max-height: 96dvh !important; border-radius: 12px !important; }
+    .entry-frame-dialog { height: 96dvh !important; }
+    .entry-form { padding: 20px 16px 0; }
+    .entry-form .entry-section { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .entry-form fieldset { padding: 14px; }
+    .entry-form .entry-actions { margin-inline: -16px; padding: 12px 16px; }
+    .entry-dialog:has(.entry-form) > h2, .entry-dialog:has(.entry-form) > div:has(> h2) { padding: 20px 16px 0; }
+}
+
+.entry-dialog:has(.entry-form) > h2, .entry-dialog:has(.entry-form) > div > h2 { color: var(--tu-red, #c3002f); }
