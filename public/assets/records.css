@@ -29,6 +29,7 @@
 .tabs { flex-wrap: wrap; }
 .tabs [hidden], #home-records[hidden], #record-detail [hidden] { display: none !important; }
 #home-records .records-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: 1rem; }
+#records-sentinel { grid-column: 1 / -1; min-height: 1px; width: 100%; }
 #home-records .records-list li { background: #fff; border: 1px solid #e4d9d2; border-radius: 18px; padding: 1.25rem; }
 #home-records input, #home-records select, #record-detail input, #record-detail select, #record-detail textarea { border: 1px solid #cfc3ba; border-radius: 8px; background: #fff; padding: .65rem; font: inherit; }
 #record-detail { margin: auto; color: #232323; background: #fffdf9; }

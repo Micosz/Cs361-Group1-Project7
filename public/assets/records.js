@@ -9,13 +9,21 @@
     let partnerRows = [], eventRows = [];
     const boardParent = host.parentNode;
     let eventKind = 'activities';
-    let revision = 0, detailRevision = 0, session = null, nextCursor = null, lastTrigger = null;
+    let revision = 0, detailRevision = 0, session = null, nextCursor = null, lastTrigger = null, moreRequest = null, autoLoadPaused = false;
+    const sentinel = $('records-sentinel');
+    const pageObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+        if (entries.some(entry => entry.isIntersecting)) loadMore();
+    }, {rootMargin:'400px 0px'}) : null;
+    if (pageObserver) pageObserver.observe(sentinel);
+    else window.addEventListener('scroll', () => {
+        if (!sentinel.hidden && sentinel.getBoundingClientRect().top < window.innerHeight + 400) loadMore();
+    }, {passive:true});
     const status = text => { $('records-status').textContent = text; };
     function clear() {
         partnerRows = []; eventRows = [];
         document.querySelectorAll('.protected-partner-card,.protected-event-card').forEach(card => card.remove());
         document.querySelectorAll('[data-protected-duplicate]').forEach(card => { card.hidden = false; card.removeAttribute('data-protected-duplicate'); });
-        $('records-content').replaceChildren(); $('records-next').hidden = true;
+        sentinel.remove(); $('records-content').replaceChildren(); sentinel.hidden = true;
         $('records-retry').hidden = true; nextCursor = null;
         ++detailRevision; if (dialog.open) dialog.close();
         $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); $('detail-title').textContent = '';
@@ -27,7 +35,7 @@
     }
     function redirectLogin() { location.replace('login.html'); }
     function nav() { $('record-links').replaceChildren(); }
-    function query(cursor) {
+    function query(cursor = null) {
         const query = new URLSearchParams();
         if (['partners','activities','agreements'].includes(kind)) {
             const prefix = kind === 'partners' ? 'filterCollab' : 'filterEvent';
@@ -254,8 +262,57 @@
         });
         container.prepend(...cards);
     }
-    async function load(cursor = null) {
-        const current = ++revision; clear(); host.hidden = false; form.hidden = true; status('กำลังตรวจสิทธิ์');
+    function placeSentinel() {
+        if (!nextCursor) { sentinel.hidden = true; sentinel.remove(); return; }
+        sentinel.hidden = false;
+        if (kind === 'partners') {
+            const cards = $('collaboratorGrid').querySelectorAll('.protected-partner-card');
+            if (cards.length) cards[cards.length - 1].after(sentinel);
+            else $('collaboratorGrid').appendChild(sentinel);
+        } else if (eventKinds.includes(kind)) {
+            const cards = $('eventGrid').querySelectorAll('.protected-event-card');
+            if (cards.length) cards[cards.length - 1].after(sentinel);
+            else $('eventGrid').appendChild(sentinel);
+        } else $('records-content').appendChild(sentinel);
+    }
+    async function loadMore() {
+        if (!nextCursor || moreRequest || autoLoadPaused || host.hidden) return;
+        const cursor = nextCursor, current = revision, targetKind = kind;
+        const request = {cursor,current}; moreRequest = request;
+        $('records-retry').hidden = true; status('กำลังโหลดรายการเพิ่มเติม');
+        try {
+            const result = validateList(await window.CstuAuth.request('/'+(targetKind === 'exchanges' &&
+                !window.CstuWork.roles(session).some(role => ['coordinator','staff','executive'].includes(role)) ? 'me/exchanges' : targetKind)+'?'+query(cursor)));
+            if (current !== revision || targetKind !== kind || nextCursor !== cursor) return;
+            if (result.page.nextCursor === cursor) throw Error('CURSOR_DID_NOT_ADVANCE');
+            if (targetKind === 'partners') {
+                partnerRows = [...new Map([...partnerRows, ...result.data].map(row => [row.id,row])).values()];
+                nextCursor = result.page.nextCursor; renderPartnerCards(); status('');
+            } else if (eventKinds.includes(targetKind)) {
+                eventRows = [...new Map([...eventRows, ...result.data].map(row => [row.id,row])).values()];
+                nextCursor = result.page.nextCursor; renderEventCards(); status('');
+            } else {
+                let list = $('records-content').querySelector('.records-list');
+                if (!list) { list = document.createElement('ul'); list.className = 'records-list'; $('records-content').appendChild(list); }
+                for (const row of result.data) {
+                    const li = document.createElement('li'), button = document.createElement('button');
+                    button.type = 'button'; button.textContent = row.name || row.title || 'รายละเอียด'; button.onclick = () => detail(row,button);
+                    li.appendChild(button);
+                    const summary = document.createElement('small'); summary.textContent = [row.type || row.status, row.periodDate || row.startDate, row.endDate].filter(Boolean).join(' · '); li.appendChild(summary); list.appendChild(li);
+                }
+                nextCursor = result.page.nextCursor; status(`แสดงรายการเพิ่มเติม (${result.count} รายการทั้งหมด)`);
+            }
+            placeSentinel();
+        } catch (error) {
+            if (current !== revision) return;
+            autoLoadPaused = true;
+            status(errorMessage(error)); $('records-retry').hidden = false;
+        } finally {
+            if (moreRequest === request) moreRequest = null;
+        }
+    }
+    async function load() {
+        const current = ++revision; moreRequest = null; autoLoadPaused = false; clear(); host.hidden = false; form.hidden = true; status('กำลังตรวจสิทธิ์');
         try {
             if (!window.CstuAuth.enabled()) { status('พื้นที่ผู้ใช้ยังไม่เปิดใช้งาน'); return; }
             session = await window.CstuAuth.refresh();
@@ -287,18 +344,18 @@
             if (kind === 'activities' && !['all','academic_activity','event','research'].includes($('filterEvent').value)) {
                 host.hidden = true; return;
             }
-            const result = validateList(await window.CstuAuth.request((kind === 'exchanges' && !roles.some(role => ['coordinator','staff','executive'].includes(role)) ? '/me/exchanges' : '/'+kind)+'?'+query(cursor)));
+            const result = validateList(await window.CstuAuth.request((kind === 'exchanges' && !roles.some(role => ['coordinator','staff','executive'].includes(role)) ? '/me/exchanges' : '/'+kind)+'?'+query()));
             if (current !== revision) return;
             status(result.count ? `พบ ${result.count} รายการในขอบเขตที่มีสิทธิ์` : 'ไม่พบรายการตามเงื่อนไข');
             if (!result.count && ['partners','activities','agreements'].includes(kind)) host.hidden = true;
             if (kind === 'partners') {
-                partnerRows = [...new Map(result.data.map(row=>[row.id,row])).values()];
+                partnerRows = [...new Map(result.data.map(row=>[row.id,row])).values()]; nextCursor = result.page.nextCursor;
                 renderPartnerCards();
                 status('');
                 host.hidden = !result.page.nextCursor;
             }
             if (eventKinds.includes(kind)) {
-                eventRows = [...new Map(result.data.map(row=>[row.id,row])).values()];
+                eventRows = [...new Map(result.data.map(row=>[row.id,row])).values()]; nextCursor = result.page.nextCursor;
                 renderEventCards();
                 status('');
                 host.hidden = !result.page.nextCursor;
@@ -311,7 +368,7 @@
                 li.appendChild(button);
                 const summary = document.createElement('small'); summary.textContent = [row.type || row.status, row.periodDate || row.startDate, row.endDate].filter(Boolean).join(' · '); li.appendChild(summary); list.appendChild(li);
             }
-            $('records-content').appendChild(list); nextCursor = result.page.nextCursor; $('records-next').hidden = !nextCursor;
+            $('records-content').appendChild(list); nextCursor = result.page.nextCursor; placeSentinel();
             if (params.get('action') === 'create') {
                 if (!window.CstuWork.canCreate(session,kind)) { status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; }
                 if (!window.CstuWork.handler(kind,'create')) { status('ฟอร์มเพิ่มรายการนี้ยังไม่พร้อมใช้งาน'); return; }
@@ -408,7 +465,7 @@
     });
     form.onsubmit = event => { event.preventDefault(); params.delete('id'); load(); };
     form.onreset = () => queueMicrotask(() => { if (form.isConnected && !host.hidden) load(); });
-    $('records-retry').onclick = () => load(); $('records-next').onclick = () => load(nextCursor);
+    $('records-retry').onclick = () => { autoLoadPaused = false; nextCursor ? loadMore() : load(); };
     $('detail-close').onclick = () => dialog.close();
     dialog.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
     dialog.addEventListener('close', () => { ++detailRevision; $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); lastTrigger?.focus(); });
