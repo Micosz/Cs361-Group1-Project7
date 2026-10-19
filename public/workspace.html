@@ -9,7 +9,7 @@
     <script src="assets/documents.js" defer></script>
     <script src="assets/selection-fields.js?v=selection-3" defer></script>
     <script src="assets/agreement.js?v=selection-3" defer></script>
-    <script src="assets/workspace.js?v=selection-3" defer></script>
+    <script src="assets/workspace.js?v=role-picker-1" defer></script>
     <script src="assets/activity-links.js?v=entry-1" defer></script>
     <script src="assets/activity-workspace.js?v=selection-3" defer></script>
     <script>
@@ -103,8 +103,11 @@
             <h2>จัดการสิทธิ์ผู้ใช้</h2>
             <p>มอบหมายหรือถอนบทบาทเฉพาะขอบเขตที่คุณจัดการได้ การถอนบทบาทไม่ปิดบัญชี</p>
             <p><label>ขอบเขต <select id="role-scope" required></select></label></p>
-            <p><label>รหัสผู้ใช้ภายใน <input id="role-target" required maxlength="128"></label>
-                <button id="load-user" type="button">ค้นหาบัญชี</button></p>
+            <p><label>ค้นหาชื่อบัญชี <input id="role-search" type="search" autocomplete="off" maxlength="80" placeholder="พิมพ์ชื่ออย่างน้อย 2 ตัวอักษร"></label>
+                <button id="search-role-targets" type="button">ค้นหาชื่อ</button></p>
+            <p id="role-target-status" role="status"></p>
+            <p><label>เลือกบัญชี <select id="role-target" required disabled><option value="">ค้นหาชื่อก่อน</option></select></label>
+                <button id="load-user" type="button" disabled>ดูสิทธิ์บัญชีนี้</button></p>
             <p id="role-user"></p>
             <fieldset id="role-choices" disabled><legend>บทบาทในขอบเขตนี้</legend>
                 <label><input type="checkbox" name="role" value="student"> นักศึกษา</label>
@@ -199,3 +202,4 @@
 </script>
 </body>
 </html>
+

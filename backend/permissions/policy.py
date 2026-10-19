@@ -178,12 +178,18 @@ def validate_fields(context, kind, action, payload, record=None, parent=None):
     return result
 
 
+def require_role_management_scope(context, scope_id):
+    """Require the scoped capability before exposing any role-management data."""
+    _, capabilities = user_from(context).permissions()
+    if not any(g['name'] == 'manageRoles' and g['scopeId'] == scope_id for g in capabilities):
+        denied()
+
+
 def require_role_management(context, scope_id, target_user_id):
     """#77 must additionally validate target and atomically increment authzVersion."""
     user = user_from(context)
-    _, capabilities = user.permissions()
-    if target_user_id == user.user_id or not any(
-            g['name'] == 'manageRoles' and g['scopeId'] == scope_id for g in capabilities):
+    require_role_management_scope(context, scope_id)
+    if target_user_id == user.user_id:
         denied()
 
 

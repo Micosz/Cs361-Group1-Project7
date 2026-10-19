@@ -45,6 +45,37 @@ class DynamoAccounts:
                 break
         return sorted(rows, key=lambda row: (row['displayName'], row['id']))
 
+    def role_targets(self, scope, term):
+        """Return minimal, active account labels eligible for this manager's scope."""
+        folded = term.casefold()
+        rows, cursor = [], None
+        while True:
+            query = dict(TableName=self.users, ConsistentRead=True,
+                ProjectionExpression='#id, #name, #active, #verified, #grants, #studentScope, #type',
+                ExpressionAttributeNames={'#id':'id', '#name':'displayName', '#active':'active',
+                    '#verified':'identityVerified', '#grants':'grants', '#studentScope':'studentGrantScopeId',
+                    '#type':'tuType'})
+            if cursor:
+                query['ExclusiveStartKey'] = cursor
+            result = self.client.scan(**query)
+            for item in result.get('Items', []):
+                row = decode(item)
+                if row.get('active') is not True:
+                    continue
+                grants = row.get('grants', [])
+                has_scope_grant = any(g.get('active') is True and g.get('scopeId') == scope for g in grants)
+                is_unassigned_employee = row.get('tuType') == 'employee' and not any(g.get('active') is True for g in grants)
+                belongs_to_scope = has_scope_grant or row.get('studentGrantScopeId') == scope or is_unassigned_employee
+                name = row.get('displayName')
+                if belongs_to_scope and isinstance(name, str) and folded in name.casefold():
+                    rows.append({'id': row['id'], 'displayName': name,
+                                 'identityVerified': row.get('identityVerified') is True})
+            cursor = result.get('LastEvaluatedKey')
+            if not cursor:
+                break
+        rows.sort(key=lambda row: (row['displayName'].casefold(), row['id']))
+        return rows[:50]
+
     def pair(self, subject):
         link = decode(self.client.get_item(TableName=self.identities,
             Key=values({'subjectKey': subject}), ConsistentRead=True).get('Item'))

@@ -4,7 +4,7 @@ from .auth.session_service import AuthError, token_hash
 from .auth.require_session import require_session
 from .http_api import handle, headers, session_cookie, response, error_response
 from .permissions.gateway import body
-from .permissions.policy import require_role_management
+from .permissions.policy import require_role_management, require_role_management_scope
 
 
 class AuthApplication:
@@ -23,6 +23,8 @@ class AuthApplication:
                 return self.selection_partners(event)
             if path == '/api/selection-users':
                 return self.selection_users(event)
+            if path == '/api/role-targets':
+                return self.role_targets(event)
             if path == '/api/auth/login':
                 return self.login(event)
             target = re.fullmatch(r'/api/users/([^/]+)/roles', path)
@@ -79,6 +81,22 @@ class AuthApplication:
         if not any(g['scopeId'] == scope and g['role'] in allowed for g in grants):
             raise AuthError('FORBIDDEN', 403)
         rows = self.accounts.store.selection_users(scope, kind)
+        # A revoked session must not receive names collected before revocation.
+        require_session(event, self.sessions)
+        return response(200, {'data': rows})
+
+    def role_targets(self, event):
+        context = require_session(event, self.sessions)
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        query = event.get('queryStringParameters') or {}
+        if (set(query) != {'scopeId', 'q'} or not isinstance(query['scopeId'], str)
+                or not 1 <= len(query['scopeId']) <= 100
+                or not isinstance(query['q'], str) or not 2 <= len(query['q'].strip()) <= 80):
+            raise AuthError('INVALID_QUERY', 422)
+        scope, term = query['scopeId'], query['q'].strip()
+        require_role_management_scope(context, scope)
+        rows = self.accounts.store.role_targets(scope, term)
         # A revoked session must not receive names collected before revocation.
         require_session(event, self.sessions)
         return response(200, {'data': rows})
