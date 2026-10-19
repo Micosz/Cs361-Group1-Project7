@@ -48,6 +48,7 @@
 
 #board-overview[hidden], #tabExchange[hidden] { display: none !important; }
 #board-overview { font: inherit; padding: .65rem 1rem; border: 1px solid #d8c9c1; border-radius: 8px; background: #fffdf9; cursor: pointer; }
+#board-overview.active { border-color:#bd0033; background:#bd0033; color:#fff; }
 
 /* One card layout for public and authorized records. */
 .card .browse-card-open { border: 0; background: transparent; padding: 0; color: inherit; font: inherit; font-weight: inherit; line-height: inherit; text-align: left; cursor: pointer; }

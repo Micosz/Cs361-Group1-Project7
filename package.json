@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node scripts/build-public.cjs",
     "pretest": "npm run build",
-    "test": "node --test tests/search.test.js tests/date-presentation.test.js tests/login-presentation.test.js tests/auth-client.test.cjs tests/source-sync.test.cjs tests/agreement-component.test.cjs tests/exchange-workspace.test.cjs tests/work-navigation.test.cjs tests/partner-history.test.cjs tests/activity-workspace.test.cjs tests/selection-fields.test.cjs tests/feedback.test.cjs tests/documents.test.cjs"
+    "test": "node --test tests/search.test.js tests/date-presentation.test.js tests/login-presentation.test.js tests/auth-client.test.cjs tests/source-sync.test.cjs tests/agreement-component.test.cjs tests/exchange-workspace.test.cjs tests/work-navigation.test.cjs tests/partner-history.test.cjs tests/activity-workspace.test.cjs tests/selection-fields.test.cjs tests/feedback.test.cjs tests/documents.test.cjs tests/overview.test.cjs"
   },
   "repository": {
     "type": "git",

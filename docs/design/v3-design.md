@@ -107,6 +107,16 @@
 - ใช้ API nested parent พร้อมการตรวจ session/scope/assignment, CSRF, idempotency และ optimistic version ของระบบเดิม ไม่เพิ่มช่องทาง public หรือ browser storage สำหรับข้อมูลนี้
 - การรวมเข้า main และ deploy เว็บหลักรอคำสั่งเจ้าของงานภายหลัง ผลตรวจ local/mock ไม่ใช่หลักฐานการทำงานบน AWS จริง
 
+### เพิ่มขอบเขตภาพรวมและรายงาน — เจ้าของงานสั่ง 19 ตุลาคม 2026
+
+รายการนี้ขยายจาก baseline V3 ที่เดิมเลื่อนการสรุป Feedback/การส่งออกรายงาน โดยยังไม่เปลี่ยนบันทึก baseline ย้อนหลัง
+
+- ใช้มุมมองภาพรวมร่วมหนึ่งหน้า: Staff เห็นเฉพาะข้อมูลตาม grant/scope; Executive เห็นสรุปความร่วมมือและ Stakeholder; รายละเอียดแบ่งแท็บแทน modal ใหญ่
+- รองรับตัวกรอง scope, stakeholder type, activity type, status และช่วงวันที่; รวม counts/status, Feedback summary และ outcomes ที่ผู้ใช้บันทึก
+- Activity/Exchange มีช่อง optional `outcomeSummary`; ไม่มีการอนุมานผลลัพธ์จากคำอธิบายทั่วไปหรือสถานะเพียงอย่างเดียว
+- CSV เป็นรายงาน aggregate เท่านั้น; endpoint อนุญาตข้อมูลตาม role/scope ก่อนสรุป และไม่ส่ง respondentName/participant IDs/responsible-user IDs
+- ไม่ถือว่าการเปลี่ยนนี้กำหนด release version; main/deploy ยังต้องได้รับคำสั่งแยก
+
 <a id="scope-permissions-นิยามขอบเขต"></a>
 
 ### นิยามขอบเขต

@@ -31,6 +31,7 @@ const exchangeEndDate = document.getElementById('exchange-end-date');
 const exchangeParticipantUsers = document.getElementById('exchange-participant-users');
 const exchangeSupportingInfo = document.getElementById('exchange-supporting-info');
 const exchangeSupportingInfoParticipant = document.getElementById('exchange-supporting-info-participant');
+const exchangeOutcomeSummary = document.getElementById('exchange-outcome-summary');
 const staffExchangeFields = document.getElementById('staff-exchange-fields');
 const exchangeResponsibleUsers = document.getElementById('exchange-responsible-users');
 const exchangeStatus = document.getElementById('exchange-status');
@@ -315,6 +316,7 @@ function openAddExchangeDialog(scopes) {
     exchangeParticipantUsers.value = '';
     exchangeSupportingInfo.value = '';
     exchangeSupportingInfoParticipant.value = '';
+    exchangeOutcomeSummary.value = '';
     exchangeResponsibleUsers.value = '';
     exchangeStatus.textContent = '';
     exchangeSubmitBtn.disabled = false;
@@ -349,6 +351,7 @@ function openEditExchange(ex) {
     exchangeParticipantUsers.value = (ex.participantUserIds || []).join(', ');
     exchangeSupportingInfo.value = ex.supportingInfo || '';
     exchangeSupportingInfoParticipant.value = ex.supportingInfoForParticipant || '';
+    exchangeOutcomeSummary.value = ex.outcomeSummary || '';
     exchangeResponsibleUsers.value = (ex.responsibleUserIds || []).join(', ');
     exchangeStatus.textContent = '';
     exchangeSubmitBtn.disabled = false;
@@ -537,6 +540,7 @@ if (exchangeForm) {
 
         payload.supportingInfo = exchangeSupportingInfo.value.trim();
         payload.supportingInfoForParticipant = exchangeSupportingInfoParticipant.value.trim();
+        payload.outcomeSummary = exchangeOutcomeSummary.value.trim();
 
         if (userRoles.includes('staff')) {
             const resp = parseCsv(exchangeResponsibleUsers.value);

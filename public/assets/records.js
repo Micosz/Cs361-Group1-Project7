@@ -206,8 +206,13 @@
             $('detail-title').textContent = record.name || record.title || 'รายละเอียด';
             if (kind === 'activities') {
                 $('detail-fields').appendChild(window.createActivityDetailContent({...record,businessRecord:true}));
+                if (record.outcomeSummary) {
+                    const outcome = document.createElement('section'), heading = document.createElement('h3'), text = document.createElement('p');
+                    heading.textContent = 'ผลลัพธ์ที่เกิดขึ้น'; text.textContent = record.outcomeSummary;
+                    outcome.append(heading,text); $('detail-fields').appendChild(outcome);
+                }
             } else {
-            const fields = {summary:'สรุป',fullDescription:'รายละเอียด',location:'สถานที่',type:'ประเภท',agreementType:'ชนิดข้อตกลง',periodDate:'วันจัดกิจกรรม',startDate:'วันเริ่ม',endDate:'วันสิ้นสุด',status:'สถานะ',renewalDueOn:'วันต่ออายุ',renewalNote:'ข้อมูลต่ออายุ',internalNote:'หมายเหตุภายใน',supportingInfo:'ข้อมูลประกอบ',supportingInfoForParticipant:'ข้อมูลสำหรับผู้เข้าร่วม'};
+            const fields = {summary:'สรุป',fullDescription:'รายละเอียด',outcomeSummary:'ผลลัพธ์ที่เกิดขึ้น',location:'สถานที่',type:'ประเภท',agreementType:'ชนิดข้อตกลง',periodDate:'วันจัดกิจกรรม',startDate:'วันเริ่ม',endDate:'วันสิ้นสุด',status:'สถานะ',renewalDueOn:'วันต่ออายุ',renewalNote:'ข้อมูลต่ออายุ',internalNote:'หมายเหตุภายใน',supportingInfo:'ข้อมูลประกอบ',supportingInfoForParticipant:'ข้อมูลสำหรับผู้เข้าร่วม'};
             for (const [field,label] of Object.entries(fields)) if (typeof record[field] === 'string') {
                 const dt = document.createElement('dt'), dd = document.createElement('dd');
                 dt.textContent = label; dd.textContent = record[field]; $('detail-fields').append(dt,dd);
@@ -325,18 +330,13 @@
             }
             nav();
             if (overview) {
-                if (!roles.includes('executive')) { status('คุณไม่มีสิทธิ์ใช้งานส่วนนี้'); return; }
-                $('records-title').textContent = 'ภาพรวมความร่วมมือ'; status('กำลังโหลดภาพรวม');
-                const totals = (await window.CstuAuth.request('/overview')).data;
+                if (!roles.some(role => ['staff','executive'].includes(role))) { status('คุณไม่มีสิทธิ์ใช้งานส่วนนี้'); return; }
+                $('records-title').textContent = roles.includes('executive') ? 'ภาพรวมความร่วมมือ' : 'สรุปข้อมูลตามสิทธิ์';
+                status('กำลังโหลดข้อมูลสรุป');
+                if (!window.CstuOverview) { status('ส่วนภาพรวมยังโหลดไม่สำเร็จ'); return; }
+                await window.CstuOverview.render($('records-content'),session);
                 if (current !== revision) return;
-                for (const [name,item] of Object.entries(window.CstuWork.kinds)) {
-                    const result = totals[name];
-                    const line = document.createElement('p'), link = document.createElement('a');
-                    link.href = 'index.html?kind='+name+'#board-section'; link.textContent = `${item.label}: ${result.count} รายการ`; line.appendChild(link);
-                    const detail = document.createElement('small'); detail.textContent = Object.entries(result.statuses).map(([state,count])=>`${state}: ${count}`).join(' · ');
-                    line.appendChild(detail); $('records-content').appendChild(line);
-                }
-                status('จำนวนเฉพาะรายการที่คุณมีสิทธิ์อ่าน'); return;
+                status('แสดงเฉพาะข้อมูลในขอบเขตที่คุณมีสิทธิ์'); return;
             }
             if (!config) { status('ไม่พบชนิดข้อมูล'); return; }
             $('records-title').textContent = config.label;
@@ -392,17 +392,20 @@
         if (kind === 'partners') $('collaboratorGrid').before(host);
         else if (eventView) $('eventGrid').before(host);
         else boardParent.appendChild(host);
-        const active = kind === 'exchanges' ? 'tabExchange' : eventView ? 'tabEvent' : 'tabCollab';
+        const active = overview ? '' : kind === 'exchanges' ? 'tabExchange' : eventView ? 'tabEvent' : 'tabCollab';
         for (const id of ['tabCollab','tabEvent','tabExchange']) {
             $(id).classList.toggle('active',id === active);
             $(id).setAttribute('aria-pressed',String(id === active));
         }
+        $('board-overview').classList.toggle('active',overview);
+        $('board-overview').setAttribute('aria-pressed',String(overview));
     }
     function updateTabs(roles) {
         const internal = roles.some(role => ['staff','coordinator','executive'].includes(role));
         $('tabExchange').hidden = !internal && !roles.includes('student');
-        $('board-overview').hidden = !roles.includes('executive');
-        if ((kind === 'agreements' && !internal) || (kind === 'exchanges' && $('tabExchange').hidden) || (overview && !roles.includes('executive'))) {
+        $('board-overview').hidden = !roles.some(role => ['staff','executive'].includes(role));
+        $('board-overview').textContent = roles.includes('executive') ? 'ภาพรวมความร่วมมือ' : 'สรุปข้อมูลตามสิทธิ์';
+        if ((kind === 'agreements' && !internal) || (kind === 'exchanges' && $('tabExchange').hidden) || (overview && !roles.some(role => ['staff','executive'].includes(role)))) {
             kind = 'activities'; overview = false; config = window.CstuWork.kinds.activities;
             params = new URLSearchParams(); setupFilters();
         }

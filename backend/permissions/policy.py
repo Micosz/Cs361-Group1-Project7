@@ -7,14 +7,14 @@ CHILDREN = {'contact', 'history', 'document', 'feedback'}
 DISPLAY = {
     'partner': {'name', 'type', 'summary', 'fullDescription', 'location', 'websiteUrl', 'logoPath'},
     'activity': {'title', 'type', 'summary', 'fullDescription', 'partnerId',
-                 'coHostPartnerIds', 'periodText', 'periodDate', 'imagePath'},
+                 'coHostPartnerIds', 'periodText', 'periodDate', 'imagePath', 'outcomeSummary'},
 }
 WRITABLE = {
     **DISPLAY,
     'agreement': {'title', 'agreementType', 'partnerIds', 'startDate', 'endDate',
                   'renewalDueOn', 'renewalNote', 'internalNote'},
     'exchange': {'title', 'partnerIds', 'agreementId', 'participantUserIds',
-                 'startDate', 'endDate', 'supportingInfo', 'supportingInfoForParticipant'},
+                 'startDate', 'endDate', 'supportingInfo', 'supportingInfoForParticipant', 'outcomeSummary'},
     'contact': {'name', 'position', 'email', 'phone'},
     'history': {'occurredOn', 'kind', 'note', 'referenceType', 'referenceId'},
     'feedback': {'occurredOn', 'sourceType', 'comment', 'improvement', 'respondentName'},

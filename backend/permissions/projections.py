@@ -6,9 +6,9 @@ from ..relationships.activity_links import public_links, LinkError
 COMMON = {'id', 'entityType', 'version', 'createdAt', 'updatedAt'}
 FIELDS = {
     'partner': {'name', 'type', 'summary', 'fullDescription', 'location', 'websiteUrl', 'logoPath', 'publication'},
-    'activity': {'title', 'type', 'summary', 'fullDescription', 'partnerId', 'periodText', 'periodDate', 'imagePath', 'publication'},
+    'activity': {'title', 'type', 'summary', 'fullDescription', 'partnerId', 'periodText', 'periodDate', 'imagePath', 'publication', 'outcomeSummary'},
     'agreement': {'title', 'agreementType', 'startDate', 'endDate', 'status', 'renewalDueOn', 'renewalNote', 'internalNote'},
-    'exchange': {'title', 'agreementId', 'startDate', 'endDate', 'status', 'supportingInfo', 'supportingInfoForParticipant'},
+    'exchange': {'title', 'agreementId', 'startDate', 'endDate', 'status', 'supportingInfo', 'supportingInfoForParticipant', 'outcomeSummary'},
     'feedback': {'parentId', 'parentType', 'occurredOn', 'sourceType', 'comment', 'improvement'},
     'contact': {'partnerId', 'name', 'position', 'email', 'phone'},
     'history': {'partnerId', 'occurredOn', 'kind', 'note'},
