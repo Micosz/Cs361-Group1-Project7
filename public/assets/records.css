@@ -1,15 +1,18 @@
 .records-shell { max-width: 960px; padding: 2rem 1rem; margin: auto; }
-.records-shell nav, #records-search, #detail-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1rem 0; }
+.records-shell nav, #detail-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1rem 0; }
+#records-search { display: grid; grid-template-columns: minmax(13rem, 1.3fr) minmax(8rem, .8fr) repeat(2, minmax(10rem, 1fr)) auto auto; align-items: end; gap: .75rem; margin: 1rem 0; }
 .records-shell [hidden] { display: none !important; }
-#records-search label { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
-.records-shell input, .records-shell select, .records-shell button { font: inherit; padding: .55rem; max-width: 100%; }
+#records-search label { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+.records-shell input, .records-shell select, .records-shell button { box-sizing: border-box; font: inherit; padding: .65rem; max-width: 100%; }
+#records-search input, #records-search select, #records-search button { width: 100%; min-width: 0; min-height: 3.25rem; }
+#records-search button { white-space: nowrap; }
 .records-shell button { cursor: pointer; }
 .records-shell button:disabled { cursor: default; }
 .records-list { list-style: none; padding: 0; }
 .records-list li { padding: 1rem 0; border-bottom: 1px solid #ddd; overflow-wrap: anywhere; }
 .records-list button { background: transparent; border: 0; text-align: left; color: #9e1233; }
 .records-list small { display: block; margin-top: .4rem; }
-#record-detail { width: min(90vw, 700px); max-height: 85vh; padding: 1.5rem; border: 1px solid #ddd; border-radius: 12px; overflow: auto; }
+#record-detail { position: relative; width: min(90vw, 700px); max-height: 85vh; padding: 1.5rem; border: 1px solid #ddd; border-radius: 12px; overflow: auto; }
 #record-detail::backdrop { background: #0006; }
 #detail-fields dt { font-weight: bold; margin-top: 1rem; }
 #detail-fields dd { margin: .25rem 0; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -22,7 +25,9 @@
 .feedback-section input, .feedback-section select, .feedback-section textarea { box-sizing: border-box; width: 100%; min-width: 0; }
 .feedback-section form { margin: 1rem 0; }
 .feedback-section form button { margin-right: .5rem; }
-@media (max-width: 600px) { #records-search label { width: 100%; } .records-shell { padding: 1rem; } }
+@media (max-width: 1050px) { #records-search { grid-template-columns: repeat(4, minmax(0, 1fr)); } #records-search > label:first-of-type { grid-column: span 2; } }
+@media (max-width: 640px) { #records-search { grid-template-columns: repeat(2, minmax(0, 1fr)); } #records-search > label { grid-column: span 2; } #records-search > label#start-field, #records-search > label#end-field, #records-search > button { grid-column: span 1; } .records-shell { padding: 1rem; } }
+@media (max-width: 400px) { #records-search > label#start-field, #records-search > label#end-field, #records-search > button { grid-column: span 2; } }
 /* The protected workspace follows the same board surface as public records. */
 #home-records { max-width: none; padding: 2rem 0; border-top: 1px solid #e4d9d2; margin-top: 2rem; }
 #home-records h2 { font-size: 1.5rem; }
@@ -33,6 +38,9 @@
 #home-records .records-list li { background: #fff; border: 1px solid #e4d9d2; border-radius: 18px; padding: 1.25rem; }
 #home-records input, #home-records select, #record-detail input, #record-detail select, #record-detail textarea { border: 1px solid #cfc3ba; border-radius: 8px; background: #fff; padding: .65rem; font: inherit; }
 #record-detail { margin: auto; color: #232323; background: #fffdf9; }
+#record-detail h2 { padding-right: 3.5rem; }
+#record-detail #detail-close { z-index: 1; padding: 0; border: 1px solid var(--border-color); border-radius: var(--radius-control); background: var(--bg-gray); color: var(--text-dark); font-size: 28px; line-height: 1; }
+#record-detail #detail-close span { display: block; transform: translateY(-1px); }
 #record-detail form { width: 100%; }
 #record-detail button, #home-records button { border-radius: 8px; border: 1px solid #d8c9c1; background: #fff; padding: .65rem 1rem; font: inherit; }
 #record-detail button[type=submit] { background: #bd0031; color: white; }
@@ -65,6 +73,23 @@
 .partner-management :focus-visible { outline: 3px solid #bd0031; outline-offset: 3px; }
 
 #eventGrid > [hidden] { display: none !important; }
+
+/* Per-file document privacy controls in record detail and workspace dialogs. */
+.document-upload-queue { display: grid; gap: .75rem; list-style: none; padding: 0; margin: .75rem 0 1rem; }
+.document-upload-item { display: grid; grid-template-columns: 3.5rem minmax(0,1fr) minmax(12rem, .8fr) auto; align-items: center; gap: .75rem; padding: .75rem; border: 1px solid #e4d9d2; border-radius: 12px; background: #fff; }
+.document-upload-preview { display: grid; width: 3rem; height: 3rem; place-items: center; overflow: hidden; border-radius: 8px; background: #f8f0f2; color: #9e1233; font-size: .72rem; font-weight: 700; }
+.document-upload-preview img { width: 100%; height: 100%; object-fit: cover; }
+.document-upload-details { min-width: 0; overflow-wrap: anywhere; }
+.document-upload-details small { color: #6d6264; }
+.document-upload-item label { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; }
+.document-upload-item label select { min-width: 0; }
+.document-upload-item label input[type=checkbox] { width: auto; }
+.document-upload-item button { white-space: nowrap; }
+@media (max-width: 680px) {
+    .document-upload-item { grid-template-columns: 3rem minmax(0,1fr) auto; }
+    .document-upload-item > label { grid-column: 2 / -1; }
+    .document-upload-item > label:last-of-type { grid-column: 1 / -1; }
+}
 
 .public-activity-detail { line-height: 1.7; overflow-wrap: anywhere; }
 .record-detail-image { display: block; width: 100%; max-height: 340px; object-fit: contain; margin: 1.5rem auto; }
