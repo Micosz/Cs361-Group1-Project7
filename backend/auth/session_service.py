@@ -26,12 +26,18 @@ class SessionPolicy:
     csrf_secret: bytes = field(repr=False)
     idle_seconds: int = 1800
     absolute_seconds: int = 28800
+    additional_origins: tuple[str, ...] = ()
 
     def __post_init__(self):
-        parsed = urlsplit(self.origin)
-        if (parsed.scheme != "https" or not parsed.netloc or parsed.username
-                or parsed.password or parsed.path or parsed.query or parsed.fragment):
-            raise ValueError("SESSION_ORIGIN must be an exact HTTPS origin")
+        if not isinstance(self.additional_origins, tuple):
+            raise ValueError("Additional session origins must be a tuple")
+        for origin in (self.origin, *self.additional_origins):
+            if not isinstance(origin, str) or "*" in origin:
+                raise ValueError("Session origins must be exact HTTPS origins")
+            parsed = urlsplit(origin)
+            if (parsed.scheme != "https" or not parsed.netloc or parsed.username
+                    or parsed.password or parsed.path or parsed.query or parsed.fragment):
+                raise ValueError("Session origins must be exact HTTPS origins")
         if len(self.csrf_secret) < 32:
             raise ValueError("CSRF secret requires at least 32 bytes")
         if not 0 < self.idle_seconds <= self.absolute_seconds:
@@ -49,11 +55,13 @@ class UserState:
     display_name: str = ""
     grants: tuple = ()
     capabilities: tuple = ()
+    account_type: str = "tu"
 
     def __post_init__(self):
         if (not isinstance(self.user_id, str) or not self.user_id
                 or not isinstance(self.display_name, str) or type(self.active) is not bool
                 or type(self.identity_verified) is not bool
+                or not isinstance(self.account_type, str) or self.account_type not in {"tu", "demo"}
                 or type(self.authz_version) is not int or self.authz_version < 0):
             raise ValueError("Invalid authoritative user state")
 
@@ -130,7 +138,7 @@ class SessionService:
             raise AuthError("AUTH_REQUIRED")
 
     def check_origin(self, origin: str | None):
-        if origin != self.policy.origin:
+        if origin not in (self.policy.origin, *self.policy.additional_origins):
             raise AuthError("ORIGIN_DENIED", 403)
 
     def check_csrf(self, token: str, origin: str | None, csrf: str | None):
@@ -224,7 +232,8 @@ class SessionService:
         grants, capabilities = user.permissions() if user else ([], [])
         return {
             "user": ({"id": user.user_id, "displayName": user.display_name,
-                      "identityVerified": user.identity_verified} if user else None),
+                      "identityVerified": user.identity_verified,
+                      "accountType": user.account_type} if user else None),
             "grants": grants, "capabilities": capabilities,
             "csrfToken": self.csrf_token(token),
         }

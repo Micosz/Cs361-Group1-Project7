@@ -1,11 +1,23 @@
 """Lambda handler: backend.lambda_function.handler; no resources created here."""
 
 import base64
+import json
 from functools import lru_cache
 import os
 from .auth.session_service import SessionPolicy, SessionService
 from .auth.session_store import DynamoSessionStore, DynamoUserReader
 from .http_api import handle, error_response
+
+
+def session_policy_from_environment():
+    additional = json.loads(os.environ.get("SESSION_ADDITIONAL_ORIGINS", "[]"))
+    if not isinstance(additional, list):
+        raise ValueError("SESSION_ADDITIONAL_ORIGINS must be a JSON array")
+    return SessionPolicy(
+        origin=os.environ["SESSION_ORIGIN"],
+        csrf_secret=base64.b64decode(os.environ["SESSION_CSRF_SECRET"], validate=True),
+        additional_origins=tuple(additional),
+    )
 
 
 @lru_cache(maxsize=1)
@@ -15,10 +27,7 @@ def build_service():
     user_table = os.environ["USER_TABLE"]
     if not session_table or not user_table or session_table == user_table:
         raise ValueError("Separate session/user tables required")
-    policy = SessionPolicy(
-        origin=os.environ["SESSION_ORIGIN"],
-        csrf_secret=base64.b64decode(os.environ["SESSION_CSRF_SECRET"], validate=True),
-    )
+    policy = session_policy_from_environment()
     database = boto3.resource("dynamodb", region_name=os.environ["AWS_REGION"])
     return SessionService(DynamoSessionStore(database.Table(session_table)),
                           DynamoUserReader(database.Table(user_table),

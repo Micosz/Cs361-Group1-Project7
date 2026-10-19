@@ -88,6 +88,7 @@ partition key `id` (String), and one authoritative row containing:
 {
   "id": "application-user-uuid", "active": true,
   "identityVerified": true, "authzVersion": 1, "displayName": "Student",
+  "authProvider": "tu",
   "grants": [{"role": "student", "scopeId": "cs", "active": true}],
   "capabilities": []
 }
@@ -98,6 +99,9 @@ only active `manageRoles` grants. Unverified identities project neither. This is
 an **adapter contract**, not a migration of existing public data or a decision to
 remove the separate logical RoleGrant entity in the design. If #76/#77 choose a
 different physical layout, inject another `UserReader` with the same interface.
+The session response exposes only the non-secret `user.accountType` enum (`tu` or
+`demo`) for the signed-in user's own account; legacy rows with no `authProvider`
+are treated as TU accounts, while course test rows use `course-test` internally.
 Maintain the materialized grants/capabilities snapshot and increment `authzVersion`
 **atomically** when adding/removing/changing roles or capabilities. If separate
 RoleGrant rows exist, update them and this snapshot/version in one transaction.
@@ -145,6 +149,7 @@ Package `backend/` at the Lambda zip root, with dependencies, and use handler
 | `SESSION_TABLE` | Separate DynamoDB table, String partition key `tokenHash`, TTL attribute `ttl` |
 | `USER_TABLE` | Authoritative user table described above, String partition key `id` |
 | `SESSION_ORIGIN` | Exact HTTPS origin, e.g. `https://hub.example.edu` (no trailing slash) |
+| `SESSION_ADDITIONAL_ORIGINS` | Optional JSON array of additional exact HTTPS origins for trusted frontends; defaults to `[]`. Keep `SESSION_ORIGIN` for production; wildcards are rejected. Frontends share backend data, while host-only cookies remain separate. |
 | `SESSION_CSRF_SECRET` | Base64-encoded cryptographically random secret of at least 32 bytes |
 | `AWS_REGION` | Region containing both tables |
 

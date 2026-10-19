@@ -83,4 +83,5 @@ class DynamoUserReader:
             user_id=row["id"], active=row["active"], authz_version=row["authzVersion"],
             identity_verified=row["identityVerified"], display_name=row.get("displayName", ""),
             grants=tuple(row.get("grants", [])), capabilities=tuple(row.get("capabilities", [])),
+            account_type="demo" if row.get("authProvider") == "course-test" else "tu",
         )

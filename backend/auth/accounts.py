@@ -27,7 +27,7 @@ class AccountService:
         name = profile.get('displayname_th') or profile.get('displayname_en') or 'TU user'
         if not isinstance(name, str) or len(name) > 200:
             raise AuthError('AUTH_PROVIDER_INVALID_RESPONSE', 502)
-        user = dict(id=user_id, displayName=name, active=True, identityVerified=student,
+        user = dict(id=user_id, displayName=name, authProvider='tu', active=True, identityVerified=student,
                     authzVersion=1, tuType=kind, subjectKey=subject, grants=[], capabilities=[])
         if student:
             user.update(studentGrantScopeId=self.scope, autoStudentPolicyVersion=1)
