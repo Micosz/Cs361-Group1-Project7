@@ -3,6 +3,9 @@ const workspaceStatus = document.getElementById('workspace-status');
 const openRoles = document.getElementById('open-roles');
 const scope = document.getElementById('role-scope');
 const target = document.getElementById('role-target');
+const roleSearch = document.getElementById('role-search');
+const roleTargetStatus = document.getElementById('role-target-status');
+const loadUserButton = document.getElementById('load-user');
 const choices = document.getElementById('role-choices');
 const saveRoles = document.getElementById('save-roles');
 const roleStatus = document.getElementById('role-status');
@@ -462,11 +465,35 @@ async function refreshWorkspace() {
 }
 openRoles.onclick = () => document.getElementById('role-dialog').showModal();
 document.getElementById('close-roles').onclick = () => document.getElementById('role-dialog').close();
-target.addEventListener('input', invalidateSelection);
-scope.addEventListener('change', invalidateSelection);
-document.getElementById('load-user').onclick = async () => {
+function clearRoleTargets() {
+    target.replaceChildren(new Option('ค้นหาชื่อก่อน', ''));
+    target.disabled = true;
+    loadUserButton.disabled = true;
+}
+roleSearch.addEventListener('input', () => { invalidateSelection(); clearRoleTargets(); roleTargetStatus.textContent = ''; });
+scope.addEventListener('change', () => { invalidateSelection(); clearRoleTargets(); roleTargetStatus.textContent = ''; });
+target.addEventListener('change', () => { invalidateSelection(); loadUserButton.disabled = !target.value; });
+document.getElementById('search-role-targets').onclick = async () => {
+    invalidateSelection(); clearRoleTargets(); roleStatus.textContent = '';
+    const term = roleSearch.value.trim(), scopeId = scope.value;
+    if (term.length < 2 || !scopeId) { roleTargetStatus.textContent = 'พิมพ์ชื่ออย่างน้อย 2 ตัวอักษรและเลือกขอบเขตก่อน'; return; }
+    roleTargetStatus.textContent = 'กำลังค้นหาบัญชีในขอบเขตนี้...';
+    try {
+        const result = await window.CstuAuth.request('/role-targets?scopeId=' + encodeURIComponent(scopeId) + '&q=' + encodeURIComponent(term));
+        if (roleSearch.value.trim() !== term || scope.value !== scopeId) return;
+        target.replaceChildren(new Option('เลือกบัญชี', ''));
+        for (const user of result.data) {
+            const identity = user.identityVerified ? '' : ' · ต้องตรวจตัวตน';
+            const suffix = String(user.id).slice(-6);
+            target.appendChild(new Option(user.displayName + identity + ' · #' + suffix, user.id));
+        }
+        target.disabled = result.data.length === 0;
+        roleTargetStatus.textContent = result.data.length ? `พบ ${result.data.length} บัญชีที่จัดการได้` : 'ไม่พบบัญชีในขอบเขตนี้';
+    } catch { roleTargetStatus.textContent = 'ค้นหาไม่ได้ หรือคุณไม่มีสิทธิ์จัดการขอบเขตนี้'; }
+};
+loadUserButton.onclick = async () => {
     invalidateSelection(); roleStatus.textContent = '';
-    const id = target.value.trim(), scopeId = scope.value;
+    const id = target.value, scopeId = scope.value;
     if (!id || !scopeId) return;
     try {
         const result = await window.CstuAuth.request('/users/' + encodeURIComponent(id)
@@ -474,14 +501,14 @@ document.getElementById('load-user').onclick = async () => {
         if (target.value.trim() !== id || scope.value !== scopeId) return;
         const user = result.data;
         version = user.authzVersion; selectedTarget = id; selectedScope = scopeId;
-        document.getElementById('role-user').textContent = user.displayName;
+        document.getElementById('role-user').textContent = user.displayName + (user.identityVerified ? ' · ยืนยันตัวตนแล้ว' : ' · ยังไม่ยืนยันตัวตน โปรดตรวจหลักฐานก่อนบันทึก');
         for (const input of choices.querySelectorAll('input')) input.checked = user.grants.some(g => g.role === input.value && g.active);
         choices.disabled = false; saveRoles.disabled = false;
     } catch { roleStatus.textContent = 'ไม่พบบัญชี หรือคุณไม่มีสิทธิ์จัดการบัญชีนี้'; }
 };
 document.getElementById('role-form').onsubmit = async event => {
     event.preventDefault();
-    if (version === null || saveRoles.disabled || selectedTarget !== target.value.trim() || selectedScope !== scope.value) return;
+    if (version === null || saveRoles.disabled || selectedTarget !== target.value || selectedScope !== scope.value) return;
     saveRoles.disabled = true;
     try {
         const result = await window.CstuAuth.mutate('/users/' + encodeURIComponent(selectedTarget) + '/roles', {
