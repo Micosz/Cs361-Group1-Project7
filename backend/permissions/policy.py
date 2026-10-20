@@ -58,6 +58,8 @@ def action_roles(kind, action):
         return {'staff'} if kind == 'partner' else {'coordinator', 'staff'}
     if action == 'update':
         return {'coordinator', 'staff'} if kind != 'document' else set()
+    if action == 'delete' and kind in {'contact', 'document'}:
+        return {'coordinator', 'staff'}
     if action == 'status' and kind in STATUS:
         return {'coordinator', 'staff'}
     if action == 'upload' and kind == 'document':
