@@ -6,6 +6,8 @@ body { background: var(--portal-paper); }
 .navbar { background: #fffefa; }
 .navbar::before { background: #fffefa; border-color: #e5dfd8; animation: none; transform: none; opacity: 1; }
 .navbar .logo { padding-inline-end: 24px; border-inline-end: 1px solid #e6dfd6; }
+.navbar .home-logo { color: inherit; text-decoration: none; cursor: pointer; border-radius: 4px; }
+.navbar .home-logo:focus-visible { outline: 3px solid #c3002f; outline-offset: 5px; }
 .navbar .search-wrapper { max-width: min(720px, 55vw); }
 .search-container { background: #f4f2ee; border-color: #d4cec7; }
 .search-container:focus-within { border-color: #c3002f; box-shadow: 0 0 0 3px rgb(195 0 47 / 9%); }
