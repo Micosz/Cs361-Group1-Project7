@@ -53,6 +53,23 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.actor = 'student-a'
         self.assertEqual(403, self.call('/api/agreements/' + row['id'])[0]['statusCode'])
 
+    def test_contact_delete_is_atomic_in_dynamo_adapter(self):
+        result, body = self.call('/api/partners/partner-demo/contacts', 'POST',
+            {'name': 'Delete through Dynamo'}, key='dynamo-contact-delete-create')
+        self.assertEqual(201, result['statusCode'], body)
+        contact = body['data']
+        self.app.repository = DynamoBusinessRepository(self.repository.client, 'business', self.app.sessions,
+            'users', 'sessions', self.repository.documents, partner_table='Partner')
+
+        result, body = self.call('/api/partners/partner-demo/contacts/' + contact['id'], 'DELETE',
+                                 version=contact['version'])
+        self.assertEqual(200, result['statusCode'], body)
+        self.assertEqual({'id': contact['id'], 'deleted': True}, body['data'])
+        delete = next(item['Delete'] for item in self.repository.client.transactions[-1] if 'Delete' in item)
+        self.assertEqual('business', delete['TableName'])
+        self.assertIn('partnerId', delete['ExpressionAttributeNames'].values())
+        self.assertEqual(404, self.call('/api/partners/partner-demo/contacts/' + contact['id'])[0]['statusCode'])
+
     def test_private_upload_stream_participant_and_revocation(self):
         data = dict(title='แลกเปลี่ยนทดสอบ', scopeId='cs-demo', partnerIds=['partner-demo'],
                     participantUserIds=[self.ids['student-a']], outcomeSummary='Test project outcome')

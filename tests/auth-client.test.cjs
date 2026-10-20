@@ -96,6 +96,20 @@ test('CstuAuth.create sends same-origin POST with CSRF and Idempotency-Key', asy
     assert.equal(createCall.options.headers['Idempotency-Key'], 'idem-key-1234567890');
     assert.deepEqual(JSON.parse(createCall.options.body), {name:'New Partner'});
 });
+test('CstuAuth.remove sends same-origin DELETE with CSRF and the target version', async () => {
+    const calls = [];
+    const auth = setup(async (url, options) => {
+        calls.push({url, options});
+        return ok(url.endsWith('/session') ? state({id:'u1'}) : {data:{id:'c1',deleted:true}, requestId:'r1'});
+    });
+    const res = await auth.remove('/partners/p1/contacts/c1', 3);
+    assert.equal(res.data.deleted, true);
+    const removeCall = calls.find(c => c.url === '/api/partners/p1/contacts/c1');
+    assert.equal(removeCall.options.method, 'DELETE');
+    assert.equal(removeCall.options.credentials, 'same-origin');
+    assert.equal(removeCall.options.headers['X-CSRF-Token'], 'a'.repeat(64));
+    assert.equal(removeCall.options.headers['If-Match'], '"3"');
+});
 test('business create rejects invalid replay keys before making requests', async () => {
     const auth = setup(() => { throw Error('Unexpected request'); });
     await assert.rejects(() => auth.create('/partners', {}, undefined), /INVALID_IDEMPOTENCY_KEY/);

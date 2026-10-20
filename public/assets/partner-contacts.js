@@ -16,7 +16,23 @@
                 for (const row of result.data) {
                     const line = document.createElement('p');
                     line.textContent = [row.name,row.position,row.email,row.phone].filter(Boolean).join(' · ');
-                    if (editable) { const edit = document.createElement('button'); edit.type='button'; edit.textContent='แก้ไขผู้ติดต่อ'; edit.onclick=()=>form(row); line.append(' ',edit); }
+                    if (editable) {
+                        const edit = document.createElement('button'); edit.type='button'; edit.textContent='แก้ไขผู้ติดต่อ'; edit.onclick=()=>form(row); line.append(' ',edit);
+                        const remove = document.createElement('button'); remove.type='button'; remove.textContent='ลบผู้ติดต่อ';
+                        remove.setAttribute('aria-label', 'ลบผู้ติดต่อ ' + row.name);
+                        remove.onclick = async () => {
+                            if (!window.confirm('ยืนยันลบผู้ติดต่อ ' + row.name + ' ใช่ไหม')) return;
+                            remove.disabled = true; status.textContent = 'กำลังลบผู้ติดต่อ';
+                            try { await window.CstuAuth.remove(base+'/'+encodeURIComponent(row.id),row.version); await load(); }
+                            catch(error) {
+                                status.textContent = error.status===409
+                                    ? 'ข้อมูลเปลี่ยนแล้ว กรุณาเปิดรายละเอียดใหม่'
+                                    : 'ลบผู้ติดต่อไม่สำเร็จ';
+                                remove.disabled = false;
+                            }
+                        };
+                        line.append(' ',remove);
+                    }
                     list.appendChild(line);
                 }
                 status.textContent = result.data.length ? '' : 'ยังไม่มีผู้ติดต่อ';

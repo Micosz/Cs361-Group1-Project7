@@ -63,6 +63,13 @@
             'X-CSRF-Token': current.csrfToken, 'If-Match': '"' + version + '"'
         }, body: JSON.stringify(body) });
     }
+    async function remove(path, version) {
+        const current = await refresh();
+        if (!current?.user) throw new Error('AUTH_REQUIRED');
+        return request(path, { method: 'DELETE', headers: {
+            'X-CSRF-Token': current.csrfToken, 'If-Match': '"' + version + '"'
+        }, body: '{}' });
+    }
     async function create(path, body, idempotencyKey) {
         // The form owns this key: retain it for retries of the SAME submission.
         if (typeof idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{16,128}$/.test(idempotencyKey)) {
@@ -88,6 +95,6 @@
         channel?.postMessage('changed');
     }
     channel?.addEventListener('message', () => window.dispatchEvent(new Event('authchange')));
-    window.CstuAuth = { state: () => state, enabled, refresh, login, logout, request, mutate, create,
+    window.CstuAuth = { state: () => state, enabled, refresh, login, logout, request, mutate, remove, create,
         roles: data => [...new Set((data?.grants || []).map(g => g.role))] };
 })();
