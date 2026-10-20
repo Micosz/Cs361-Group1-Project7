@@ -32,8 +32,9 @@ function page(fetchImpl = async () => response()) {
     const intervals = new Map();
     let timerId = 0, now = 0, requests = 0;
     class Element {
-        constructor(id = '') {
+        constructor(id = '', tagName = 'div') {
             this.id = id;
+            this.tagName = tagName;
             this.style = {};
             this.value = '';
             this.children = [];
@@ -48,9 +49,10 @@ function page(fetchImpl = async () => response()) {
         get innerHTML() { return this.html + this.children.map(child => child.textContent + child.innerHTML).join(''); }
         replaceChildren(...children) { this.children = children; this.html = ''; this.writes++; }
         appendChild(child) { this.children.push(child); }
-        prepend(child) { this.children.unshift(child); }
+        prepend(...children) { this.children.unshift(...children); }
         removeChild(child) { this.children = this.children.filter(item => item !== child); }
         setAttribute() {}
+        getAttribute(name) { return this[name] ?? null; }
         addEventListener(name, fn) { this.events[name] = fn; }
         insertAdjacentElement() {}
         getBoundingClientRect() { return { width: 100 }; }
@@ -73,12 +75,32 @@ function page(fetchImpl = async () => response()) {
     const document = {
         getElementById: get,
         querySelector: () => wrapper,
-        createElement: () => new Element(),
+        createElement: tagName => new Element('', tagName),
+        createTextNode: text => ({ textContent: String(text), innerHTML: '' }),
         body: new Element(),
         addEventListener: (name, fn) => listeners.set(name, [...(listeners.get(name) || []), fn])
     };
     const context = vm.createContext({
         document, window: { getComputedStyle: () => ({}), addEventListener() {} },
+        URL,
+        DOMParser: class {
+            parseFromString(html) {
+                const source = String(html);
+                const decode = value => value.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+                const text = value => decode(value.replace(/<br\s*\/?\s*>/gi, '\n').replace(/<[^>]*>/g, ''));
+                return {
+                    createTextNode: value => ({ textContent: value }),
+                    body: { get textContent() { return text(source); } },
+                    querySelectorAll(selector) {
+                        if (selector !== 'a') return [];
+                        return [...source.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi)].map(match => ({
+                            getAttribute(name) { return new RegExp(`\\b${name}\\s*=\\s*["']([^"']*)["']`, 'i').exec(match[1])?.[1] ?? null; },
+                            textContent: text(match[2])
+                        }));
+                    }
+                };
+            }
+        },
         console: { error() {}, warn() {} }, AbortController,
         fetch: (...args) => { requests++; return fetchImpl(...args); },
         setTimeout: (fn, delay) => { timeouts.set(++timerId, { fn, due: now + delay }); return timerId; },
@@ -615,6 +637,45 @@ test('authorized Partner uses the original detail modal and renders business des
     assert.equal(p.get('modalInfo').textContent,'UNIVERSITY');
     assert.equal(p.get('modalDetails').children[0].textContent,'<strong>plain business text</strong>');
     assert.equal(p.get('modalImage').textContent,'Assigned University');
+});
+
+test('legacy descriptions render source links safely in a separate Sources section', () => {
+    const p = page();
+    const nodes = p.context.createLegacyDescriptionNodes('MoU information<br>หลักฐาน: <a href="https://example.edu/news" target="_blank">University news</a> · <a href="javascript:alert(1)">unsafe link</a> <img src=x onerror=alert(1)>');
+    assert.equal(nodes[0].textContent, 'MoU information');
+    assert.equal(nodes[1].children[0].textContent, 'Sources: ');
+    assert.equal(nodes[1].children.filter(node => node.tagName === 'a').length, 1);
+    assert.equal(nodes[1].children[1].href, 'https://example.edu/news');
+    assert.equal(nodes[1].children[1].textContent, 'University news');
+    assert.equal(nodes[1].children[1].rel, 'noopener noreferrer');
+    assert.doesNotMatch(nodes.map(node => node.innerHTML).join(''), /<a|<img|onerror/);
+});
+
+test('legacy descriptions without a source marker stay plain text without an empty Sources section', () => {
+    const p = page();
+    const nodes = p.context.createLegacyDescriptionNodes('Plain legacy text<br>with a line break');
+    assert.equal(nodes.length, 1);
+    assert.equal(nodes[0].textContent, 'Plain legacy text\nwith a line break');
+});
+
+test('public partner and activity modals show legacy evidence as clickable Sources links', async () => {
+    const p = page();
+    const legacyText = 'MoU partnership details<br>หลักฐาน: <a href="https://example.edu/mou">University announcement</a>';
+    p.context.getPublicActivities = async () => [];
+    p.context.getPublicPartnerById = async () => ({ id: 'legacy-partner', name: 'Legacy Partner', full_description: legacyText });
+    await p.context.openModal('legacy-partner', 'partner');
+    let sources = p.get('modalDetails').children.find(node => node.className === 'legacy-description-sources');
+    assert.ok(sources);
+    assert.equal(p.get('modalDetails').children[0].textContent, 'MoU partnership details');
+    assert.equal(sources.children[1].textContent, 'University announcement');
+    assert.equal(sources.children[1].href, 'https://example.edu/mou');
+
+    p.context.getPublicActivityById = async () => ({ id: 'legacy-activity', title: 'Legacy Activity', partnerId: 'legacy-partner', partnerName: 'Legacy Partner', full_description: legacyText });
+    await p.context.openModal('legacy-activity', 'activity');
+    sources = p.get('modalDetails').children.find(node => node.className === 'legacy-description-sources');
+    assert.ok(sources);
+    assert.equal(p.get('modalDetails').children[0].textContent, 'MoU partnership details');
+    assert.equal(sources.children[1].href, 'https://example.edu/mou');
 });
 
 
