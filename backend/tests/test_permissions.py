@@ -313,6 +313,9 @@ class GatewayTests(unittest.TestCase):
         d = row('document', 'd1', parentType='exchange', parentId='e1', audience='participants',
                 containsPersonal=True, uploadState='ready', objectKey='SECRET')
         self.repo.rows[('document', 'd1')] = d
+        anonymous = self.event('/api/documents/d1/content')
+        anonymous['cookies'] = []
+        self.assert_status(401, anonymous)
         self.users.user = context('student').user
         result = self.call(self.event('/api/documents/d1/content'))
         self.assertEqual(200, result['statusCode'])
@@ -322,6 +325,16 @@ class GatewayTests(unittest.TestCase):
         self.users.user = context('executive').user
         self.assert_status(404, self.event('/api/documents/d1'))
         self.assertEqual(1, self.repo.streams)
+        # Revoking the current authorization version blocks the next file request.
+        self.users.user = replace(self.users.user, authz_version=2)
+        self.assert_status(401, self.event('/api/documents/d1/content'))
+        self.assertEqual(1, self.repo.streams)
+
+    def test_private_document_content_rejects_expired_session_before_stream(self):
+        self.users.user = context('student').user
+        self.now += 1000
+        self.assert_status(401, self.event('/api/documents/d1/content'))
+        self.assertEqual(0, self.repo.streams)
 
     def test_my_exchange_and_nested_parent_id_tamper(self):
         self.users.user = context('student').user
