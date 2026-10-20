@@ -32,8 +32,16 @@ class LocalDatabase:
         return {'Item': values(copy.deepcopy(row))} if row else {}
 
     def query(self, **kwargs):
-        partition = decode(kwargs['ExpressionAttributeValues'])[':partition']
-        return {'Items': [values({'id': r['id']}) for r in self.rows.values() if r.get('scopeEntity') == partition]}
+        expression_values = decode(kwargs['ExpressionAttributeValues'])
+        if ':partition' in expression_values:
+            partition = expression_values[':partition']
+            rows = [r for r in self.rows.values() if r.get('scopeEntity') == partition]
+        else:
+            # The Dynamo adapter strongly reads a Partner row by its id before
+            # a nested contact mutation; the fake models its composite key here.
+            record_id = expression_values.get(':id')
+            rows = [r for r in self.rows.values() if r.get('id') == record_id]
+        return {'Items': [values(copy.deepcopy(r)) for r in rows]}
 
     def _condition(self, item):
         row = self._row(item['TableName'], next(iter(decode(item['Key'] if 'Key' in item else {'id': item['Item']['id']}).values()))) or {}
@@ -69,6 +77,9 @@ class LocalDatabase:
             for operation in TransactItems:
                 if 'Put' in operation:
                     row = decode(operation['Put']['Item']); self.rows[row['id']] = row
+                elif 'Delete' in operation:
+                    key = decode(operation['Delete']['Key'])
+                    self.rows.pop(key['id'], None)
             self.transactions.append(copy.deepcopy(TransactItems))
         return {}
 
