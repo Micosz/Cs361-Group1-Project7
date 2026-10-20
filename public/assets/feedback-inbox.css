@@ -1,0 +1,25 @@
+body.feedback-inbox-view .hero-scroll,
+body.feedback-inbox-view #board-section > .tabs,
+body.feedback-inbox-view #board-section > .page-title,
+body.feedback-inbox-view #board-overview,
+body.feedback-inbox-view #sectionCollaborator,
+body.feedback-inbox-view #sectionEvent { display:none !important; }
+body.feedback-inbox-view #home-records { width:min(1100px, calc(100% - 32px)); margin:32px auto 72px; }
+body.feedback-inbox-view #records-content { display:block; }
+.feedback-inbox-toolbar { display:grid; grid-template-columns:minmax(220px,1fr) minmax(180px,.55fr) auto; gap:14px; align-items:end; margin:18px 0 22px; padding:18px; border:1px solid #e4d8d2; border-radius:18px; background:#fffdfa; }
+.feedback-inbox-toolbar label { display:grid; gap:7px; color:#51484a; font-weight:700; }
+.feedback-inbox-toolbar input[type=search], .feedback-inbox-toolbar select { min-height:46px; padding:10px 13px; border:1px solid #d7c9c4; border-radius:11px; color:#292426; background:#fff; font:inherit; }
+.feedback-inbox-toolbar .feedback-favorite-filter { display:flex; align-items:center; gap:9px; min-height:46px; white-space:nowrap; }
+.feedback-favorite-filter input { accent-color:#c80032; width:18px; height:18px; }
+.feedback-inbox-status { color:#655b5d; }
+.feedback-inbox-list { display:grid; gap:14px; }
+.feedback-inbox-card { padding:20px 22px; border:1px solid #e5d9d4; border-radius:16px; background:#fffdfa; box-shadow:0 8px 22px #35202a0a; }
+.feedback-inbox-card-header { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.feedback-inbox-meta { margin:0; color:#76696b; font-size:.92rem; }
+.feedback-favorite-button { border:1px solid #e7c5ce; border-radius:999px; padding:8px 13px; color:#b00030; background:#fff; font:inherit; cursor:pointer; }
+.feedback-favorite-button[aria-pressed=true] { background:#fff0f3; }
+.feedback-inbox-card h3 { margin:14px 0 8px; color:#252022; }
+.feedback-inbox-card p { white-space:pre-wrap; overflow-wrap:anywhere; }
+.feedback-inbox-card .feedback-inbox-improvement { padding:12px 14px; border-left:3px solid #d39a15; background:#fff9e8; }
+.feedback-inbox-card a { color:#a7002b; font-weight:700; }
+@media (max-width:700px) { .feedback-inbox-toolbar { grid-template-columns:1fr; } .feedback-inbox-toolbar .feedback-favorite-filter { min-height:34px; } .feedback-inbox-card { padding:16px; } }

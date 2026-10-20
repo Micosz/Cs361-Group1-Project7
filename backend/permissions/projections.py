@@ -35,10 +35,12 @@ def project(context, kind, record, parent=None):
     if kind == 'exchange' and roles == {'student'}:
         return pick(record, STUDENT)
     fields = COMMON | FIELDS[kind]
-    editor = bool(roles & {'staff', 'coordinator'})
+    editor = bool(roles & {'staff', 'coordinator'}) and 'executive' not in roles
     if not editor:
         fields -= EXECUTIVE_EXCLUDED
     result = pick(record, fields)
+    if kind == 'feedback':
+        result['canEdit'] = bool(allowed_roles(context, kind, 'update', record, parent))
     if editor:
         if kind == 'feedback':
             result.update(pick(record, {'respondentName'}))

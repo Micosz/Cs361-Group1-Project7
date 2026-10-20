@@ -6,7 +6,7 @@ function setup(editable=true, role='staff') {
     const node=tag=>({tag,children:[],isConnected:true,value:'',append(...nodes){this.children.push(...nodes);},
         appendChild(n){this.children.push(n);},replaceChildren(...nodes){this.children=nodes;},setAttribute(){},focus(){}});
     const calls=[];
-    const row={id:'f1',version:2,occurredOn:'2026-10-18',sourceType:'partner',comment:'<img onerror=bad()>',improvement:'More time'};
+    const row={id:'f1',version:2,canEdit:editable,occurredOn:'2026-10-18',sourceType:'partner',comment:'<img onerror=bad()>',improvement:'More time'};
     let result={data:[row],page:{nextCursor:null}};
     const auth={request:async path=>{calls.push(['read',path]);return result;},
         create:async (...args)=>calls.push(['create',...args]),mutate:async (...args)=>calls.push(['update',...args])};

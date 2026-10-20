@@ -60,9 +60,7 @@ def action_roles(kind, action):
         return {'coordinator', 'staff'} if kind != 'document' else set()
     if action == 'status' and kind in STATUS:
         return {'coordinator', 'staff'}
-    if action in {'upload', 'delete'} and kind == 'document':
-        return {'coordinator', 'staff'}
-    if action == 'delete' and kind == 'contact':
+    if action == 'upload' and kind == 'document':
         return {'coordinator', 'staff'}
     return set()
 
@@ -111,16 +109,13 @@ def allowed_roles(context, kind, action, record, parent=None):
     if base.get('entityType') not in BUSINESS or (kind in BUSINESS and base.get('entityType') != kind):
         return set()
     roles = matching_roles(context, base) & action_roles(kind, action)
+    if kind == 'feedback' and action == 'update' and record.get('createdBy') != user.user_id:
+        roles.discard('staff')
     if not linked(base, 'responsibleUserIds', user.user_id):
         roles.discard('coordinator')
     if base.get('entityType') != 'exchange' or not linked(base, 'participantUserIds', user.user_id):
         roles.discard('student')
     if kind == 'document':
-        if record.get('uploadState') == 'deleted':
-            return set()
-        if action == 'delete' and (record.get('uploadState') != 'ready'
-                or record.get('mime') not in {'image/png', 'image/jpeg'}):
-            return set()
         audience, personal = record.get('audience'), record.get('containsPersonal')
         if audience not in {'internal', 'participants'} or type(personal) is not bool:
             return set()
@@ -157,7 +152,7 @@ def validate_fields(context, kind, action, payload, record=None, parent=None):
             denied(404)
     else:
         roles = require_record(context, kind, action, record, parent)
-    fields = set() if action == 'delete' else (set(STATUS.get(kind, ())) if action == 'status' else set(WRITABLE.get(kind, ())))
+    fields = set(STATUS.get(kind, ())) if action == 'status' else set(WRITABLE.get(kind, ()))
     if action == 'create' and kind in BUSINESS:
         fields.add('scopeId')
     if 'staff' in roles and action != 'status' and kind in BUSINESS:

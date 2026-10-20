@@ -99,6 +99,38 @@ class FeedbackTests(unittest.TestCase):
         self.assertFalse(any(row.get('entityType') == 'feedback' for row in self.repository.client.rows.values()))
         self.assertEqual(404, self.create(base)[0]['statusCode'])
 
+    def test_staff_can_edit_only_feedback_they_created_and_inbox_is_scoped(self):
+        parent = self.parent()
+        base = self.base(parent)
+        own_response, own_body = self.create(base, comment='Staff own feedback')
+        self.assertEqual(201, own_response['statusCode'], own_body)
+        own = own_body['data']
+        self.actor = 'coordinator'
+        other_response, other_body = self.create(base, comment='Coordinator feedback')
+        self.assertEqual(201, other_response['statusCode'], other_body)
+        other = other_body['data']
+
+        self.actor = 'staff'
+        self.assertEqual(200, self.call(base + '/' + own['id'], 'PATCH', {'comment':'Staff edited'}, version=1)[0]['statusCode'])
+        self.assertIn(self.call(base + '/' + other['id'], 'PATCH', {'comment':'Staff must not edit'}, version=1)[0]['statusCode'], (403, 404))
+        response, body = self.call('/api/feedback?limit=100')
+        self.assertEqual(200, response['statusCode'], body)
+        indexed = {row['id']:row for row in body['data']}
+        self.assertEqual('Feedback parent', indexed[own['id']]['parentTitle'])
+        self.assertTrue(indexed[own['id']]['canEdit'])
+        self.assertFalse(indexed[other['id']]['canEdit'])
+        self.assertNotIn('respondentName', indexed[own['id']])
+
+        self.actor = 'executive'
+        response, body = self.call('/api/feedback?parentType=exchange&limit=100')
+        self.assertEqual(200, response['statusCode'], body)
+        self.assertEqual({own['id'], other['id']}, {row['id'] for row in body['data']})
+        self.assertTrue(all(row['canEdit'] is False and 'respondentName' not in row for row in body['data']))
+        self.assertEqual(422, self.call('/api/feedback?parentType=partner')[0]['statusCode'])
+
+        self.actor = 'coordinator'
+        self.assertIn(self.call('/api/feedback')[0]['statusCode'], (403, 404))
+
     def test_anonymous_and_wrong_methods_denied(self):
         base = self.base(self.parent())
         event = dict(version='2.0', rawPath=base, requestContext={'http': {'method': 'GET'}})

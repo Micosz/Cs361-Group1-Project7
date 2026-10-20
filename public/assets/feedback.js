@@ -9,7 +9,7 @@
         const list=document.createElement('ol'), editor=document.createElement('div');
         container.className='feedback-section';container.append(heading,status,list,editor);
         const base='/'+kind+'/'+encodeURIComponent(parent.id)+'/feedback';
-        const editable=window.CstuWork.canEdit(session,parent);
+        const parentEditable=window.CstuWork.canEdit(session,parent);
         const sources={participant:'ผู้เข้าร่วม',partner:'คู่ความร่วมมือ',other:'อื่น ๆ'};
         let revision=0;
         async function load() {
@@ -26,7 +26,7 @@
                         li.append(meta,comment);
                         if(row.improvement){const text=document.createElement('p');text.textContent='สิ่งที่ควรปรับปรุง: '+row.improvement;li.appendChild(text);}
                         if(row.respondentName){const name=document.createElement('p');name.textContent='ผู้ให้ผลตอบรับ (ภายใน): '+row.respondentName;li.appendChild(name);}
-                        if(editable){const edit=document.createElement('button');edit.type='button';edit.textContent='แก้ไข Feedback';edit.onclick=()=>form(row);li.appendChild(edit);}
+                        if(row.canEdit){const edit=document.createElement('button');edit.type='button';edit.textContent='แก้ไข Feedback';edit.onclick=()=>form(row);li.appendChild(edit);}
                         list.appendChild(li);total++;
                     }
                     cursor=result.page.nextCursor;
@@ -64,7 +64,7 @@
             };
             comment.focus();
         }
-        if(editable){const add=document.createElement('button');add.type='button';add.textContent='เพิ่ม Feedback';add.onclick=()=>form();container.appendChild(add);}
+        if(parentEditable){const add=document.createElement('button');add.type='button';add.textContent='เพิ่ม Feedback';add.onclick=()=>form();container.appendChild(add);}
         await load();
     }
     window.CstuFeedback={mount};

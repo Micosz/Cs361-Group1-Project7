@@ -2,7 +2,7 @@
 (() => {
     'use strict';
     const $ = id => document.getElementById(id), form = $('records-search'), dialog = $('record-detail');
-    let params = new URLSearchParams(), kind = 'partners', overview = false, config = window.CstuWork.kinds.partners;
+    let params = new URLSearchParams(), kind = 'partners', overview = false, feedbackInbox = false, config = window.CstuWork.kinds.partners;
     const host = $('home-records');
     const eventKinds = ['activities','agreements'];
     let keyword = '';
@@ -20,6 +20,7 @@
     }, {passive:true});
     const status = text => { $('records-status').textContent = text; };
     function clear() {
+        document.body.classList.remove('feedback-inbox-view');
         partnerRows = []; eventRows = [];
         document.querySelectorAll('.protected-partner-card,.protected-event-card').forEach(card => card.remove());
         document.querySelectorAll('[data-protected-duplicate]').forEach(card => { card.hidden = false; card.removeAttribute('data-protected-duplicate'); });
@@ -144,12 +145,12 @@
             }
         } catch { /* Public details remain readable if management is unavailable. */ }
     }
-    function mountDetailActions(fresh, record, resourceKind, current, page, target = $('detail-actions')) {
+    function mountDetailActions(fresh, record, resourceKind, current, page) {
         const canEdit = (identity, item) => window.CstuWork.canEdit(identity,item) &&
             !(resourceKind === 'activities' && item.publication === 'public' &&
               !window.CstuWork.roles(identity,item.scopeId).includes('staff'));
         if (!canEdit(fresh,record)) return;
-        for (const [action,label] of [['edit','แก้ไข']]) {
+        for (const [action,label] of [['edit','แก้ไข'], ...(['agreements','exchanges'].includes(resourceKind) ? [['status','จัดการสถานะ'],['documents','จัดการเอกสาร']] : [])]) {
             const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
             button.disabled = !window.CstuWork.handler(resourceKind,action);
             button.onclick = async () => {
@@ -164,7 +165,7 @@
                 } catch (error) { if (current === detailRevision) $('detail-status').textContent = errorMessage(error); }
                 finally { button.disabled = !window.CstuWork.handler(resourceKind,action); }
             };
-            target.appendChild(button);
+            $('detail-actions').appendChild(button);
         }
     }
     function mountFeedback(record, resourceKind, identity) {
@@ -185,10 +186,8 @@
             if (!fresh?.user || current !== detailRevision || page !== revision || !dialog.open) return;
             const latest = (await window.CstuAuth.request('/activities/'+encodeURIComponent(record.id))).data;
             if (current !== detailRevision || page !== revision || !dialog.open || latest?.id !== record.id) return;
-            const actions = document.createElement('div'); actions.className = 'detail-record-actions';
-            $('detail-fields').appendChild(actions);
-            mountDetailActions(fresh,latest,'activities',current,page,actions);
             mountFeedback(latest, 'activities', fresh);
+            mountDetailActions(fresh,latest,'activities',current,page);
         } catch { /* A public article stays readable when management is unavailable. */ }
     }
     async function detail(row, trigger) {
@@ -228,15 +227,12 @@
                 const history = document.createElement('section'); $('detail-fields').appendChild(history);
                 window.PartnerHistory.mount(history, record, fresh);
             }
-            const actions = document.createElement('div'); actions.className = 'detail-record-actions';
-            mountDetailActions(fresh, record, kind, current, page, actions);
             if (['agreements','exchanges'].includes(kind) && window.DocumentComponent) {
                 const docs = document.createElement('section'); $('detail-fields').appendChild(docs);
-                window.DocumentComponent.mount(docs, kind === 'agreements' ? 'agreement' : 'exchange', record, {actions});
-            } else {
-                $('detail-fields').appendChild(actions);
+                window.DocumentComponent.mount(docs, kind === 'agreements' ? 'agreement' : 'exchange', record);
             }
             mountFeedback(record, kind, fresh);
+            mountDetailActions(fresh, record, kind, current, page);
         } catch (error) {
             if (current !== detailRevision || page !== revision) return;
             $('detail-title').textContent = 'รายละเอียด'; $('detail-status').textContent = errorMessage(error);
@@ -343,6 +339,15 @@
                 if (current !== revision) return;
                 status('แสดงเฉพาะข้อมูลในขอบเขตที่คุณมีสิทธิ์'); return;
             }
+            if (feedbackInbox) {
+                if (!roles.some(role => ['staff','executive'].includes(role))) { status('คุณไม่มีสิทธิ์ใช้งานส่วนนี้'); return; }
+                $('records-title').textContent = 'รวม Feedback';
+                status('กำลังโหลด Feedback');
+                if (!window.CstuFeedbackInbox) { status('ส่วนรวม Feedback ยังโหลดไม่สำเร็จ'); return; }
+                await window.CstuFeedbackInbox.render($('records-content'),session);
+                if (current !== revision) return;
+                status(''); host.hidden = false; document.body.classList.add('feedback-inbox-view'); return;
+            }
             if (!config) { status('ไม่พบชนิดข้อมูล'); return; }
             $('records-title').textContent = config.label;
             form.hidden = kind !== 'exchanges'; status('กำลังโหลดข้อมูล');
@@ -391,13 +396,14 @@
         }
     }
     function syncBoard() {
+        document.body.classList.toggle('feedback-inbox-view',feedbackInbox);
         const eventView = eventKinds.includes(kind);
         $('sectionCollaborator').style.display = kind === 'partners' ? 'block' : 'none';
         $('sectionEvent').style.display = eventView ? 'block' : 'none';
         if (kind === 'partners') $('collaboratorGrid').before(host);
         else if (eventView) $('eventGrid').before(host);
         else boardParent.appendChild(host);
-        const active = overview ? '' : kind === 'exchanges' ? 'tabExchange' : eventView ? 'tabEvent' : 'tabCollab';
+        const active = overview || feedbackInbox ? '' : kind === 'exchanges' ? 'tabExchange' : eventView ? 'tabEvent' : 'tabCollab';
         for (const id of ['tabCollab','tabEvent','tabExchange']) {
             $(id).classList.toggle('active',id === active);
             $(id).setAttribute('aria-pressed',String(id === active));
@@ -410,14 +416,14 @@
         $('tabExchange').hidden = !internal && !roles.includes('student');
         $('board-overview').hidden = !roles.some(role => ['staff','executive'].includes(role));
         $('board-overview').textContent = roles.includes('executive') ? 'ภาพรวมความร่วมมือ' : 'สรุปข้อมูลตามสิทธิ์';
-        if ((kind === 'agreements' && !internal) || (kind === 'exchanges' && $('tabExchange').hidden) || (overview && !roles.some(role => ['staff','executive'].includes(role)))) {
-            kind = 'activities'; overview = false; config = window.CstuWork.kinds.activities;
+        if ((kind === 'agreements' && !internal) || (kind === 'exchanges' && $('tabExchange').hidden) || ((overview || feedbackInbox) && !roles.some(role => ['staff','executive'].includes(role)))) {
+            kind = 'activities'; overview = false; feedbackInbox = false; config = window.CstuWork.kinds.activities;
             params = new URLSearchParams(); setupFilters();
         }
         syncBoard();
     }
     async function open(target = 'partners', action = null, id = null, scroll = false) {
-        kind = target; overview = target === 'overview'; config = window.CstuWork.kinds[kind];
+        kind = target === 'feedback' ? 'feedback' : target; overview = target === 'overview'; feedbackInbox = target === 'feedback'; config = window.CstuWork.kinds[kind];
         params = new URLSearchParams(); if (action) params.set('action',action); if (id) params.set('id',id);
         form.elements.namedItem('q').value = '';
         for (const name of ['startDate','endDate']) form.elements.namedItem(name).value = '';
@@ -464,8 +470,8 @@
             event.preventDefault(); if ($('role-menu')?.open) $('role-menu').close();
             openRoles(); return;
         }
-        const target = url.searchParams.get('kind') || (url.searchParams.get('view') === 'overview' ? 'overview' : null);
-        if (!target || (!window.CstuWork.kinds[target] && target !== 'overview')) return;
+        const target = url.searchParams.get('kind') || (['overview','feedback'].includes(url.searchParams.get('view')) ? url.searchParams.get('view') : null);
+        if (!target || (!window.CstuWork.kinds[target] && !['overview','feedback'].includes(target))) return;
         event.preventDefault();
         const menu = $('role-menu'); if (menu?.open) menu.close();
         if (typeof window.closeModal === 'function') window.closeModal();
@@ -481,5 +487,5 @@
     window.addEventListener('pageshow', event => { if (event.persisted) load(); });
     const initial = new URLSearchParams(location.search);
     if (initial.get('view') === 'roles') openRoles();
-    else open(initial.get('kind') || (initial.get('view') === 'overview' ? 'overview' : 'partners'),initial.get('action'),initial.get('id'),Boolean(initial.size));
+    else open(initial.get('kind') || (['overview','feedback'].includes(initial.get('view')) ? initial.get('view') : 'partners'),initial.get('action'),initial.get('id'),Boolean(initial.size));
 })();

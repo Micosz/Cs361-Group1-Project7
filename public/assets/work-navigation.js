@@ -23,6 +23,7 @@
     function menu(session) {
         const items = [];
         if (roles(session).includes('student')) items.push({label:'โครงการแลกเปลี่ยนของฉัน', href:'index.html?kind=exchanges#board-section', description:'ดูข้อมูลและเอกสารสำหรับโครงการที่คุณเข้าร่วม'});
+        if (roles(session).some(role => ['staff','executive'].includes(role))) items.push({label:'รวม Feedback', href:'index.html?view=feedback#board-section', description:'อ่าน ค้นหา และกรอง Feedback ที่บันทึกไว้ด้วยหัวใจ'});
         for (const [kind, config] of Object.entries(kinds)) {
             if (canCreate(session, kind)) items.push({label:config.create, href:`index.html?kind=${kind}&action=create#board-section`, description:'เพิ่มข้อมูลจากหน้าหลัก'});
         }

@@ -9,7 +9,8 @@ const session = (...grants) => ({user:{id:'u1'},grants:grants.map(([role,scopeId
 test('shared menu routes use data kinds, deduplicate multi roles and keep executive read-only', () => {
     const executive = nav.menu(session(['executive','c1']));
     assert.equal(executive.filter(item=>item.href.includes('action=create')).length,0);
-    assert.equal(executive.length,0);
+    assert.equal(executive.length,1);
+    assert.match(executive[0].href,/view=feedback/);
     const multi = nav.menu(session(['staff','c1'],['coordinator','c1']));
     assert.equal(multi.filter(item=>item.href.includes('kind=activities&action=create')).length,1);
     assert.ok(nav.canCreate(session(['staff','c1']),'partners'));
@@ -50,8 +51,9 @@ test('public detail action requires a fresh authorized protected record and igno
 });
 test('staff gets create entries, students get only their exchange shortcut, and expired grants get nothing', () => {
     const staff=nav.menu(session(['staff','c1']));
-    assert.equal(staff.length,4);
-    assert.ok(staff.every(item=>item.href.startsWith('index.html?kind=') && item.href.endsWith('&action=create#board-section')));
+    assert.equal(staff.length,5);
+    assert.equal(staff.filter(item=>item.href.includes('view=feedback')).length,1);
+    assert.equal(staff.filter(item=>item.href.includes('action=create')).length,4);
     const student=nav.menu(session(['student','c1']));
     assert.equal(student.length,1);
     assert.equal(student[0].label,'โครงการแลกเปลี่ยนของฉัน');

@@ -55,6 +55,8 @@ def route(event):
         return 'document', parts[1], None, None, False, mine
     if len(parts) == 3 and parts[0] == 'documents' and parts[2] == 'content':
         return 'document', parts[1], None, None, True, mine
+    if parts == ['feedback']:
+        return 'feedback', None, None, None, 'inbox', False
     if not parts or parts[0] not in COLLECTIONS:
         raise AuthError('NOT_FOUND', 404)
     kind = COLLECTIONS[parts[0]]
@@ -130,10 +132,15 @@ class PermissionGateway:
                       'delete' if method == 'DELETE' and key and kind in {'document', 'contact'} and not special else
                       'upload' if method == 'POST' and not key and kind == 'document' else
                       'create' if method == 'POST' and not key else None)
+            if special == 'inbox' and method != 'GET':
+                raise AuthError('METHOD_NOT_ALLOWED', 405)
             if action is None or (mine and method != 'GET'):
                 raise AuthError('METHOD_NOT_ALLOWED', 405)
             context = require_session(event, self.service)
             require_action(context, kind, action)
+            if special == 'inbox' and not any(g['role'] in {'staff', 'executive'}
+                                             for g in context.user.permissions()[0]):
+                raise AuthError('NOT_FOUND', 404)
             if mine:
                 student_grants = tuple(g for g in context.user.grants
                                        if g.get('role') == 'student')
@@ -161,6 +168,9 @@ class PermissionGateway:
                     scoped = tuple(g for g in context.user.grants if g.get('scopeId') == scope)
                     context = replace(context, user=replace(context.user, grants=scoped, capabilities=()))
                     require_action(context, kind, 'read')
+                    if special == 'inbox' and not any(g['role'] in {'staff', 'executive'}
+                                                     for g in context.user.permissions()[0]):
+                        raise AuthError('NOT_FOUND', 404)
                 if special is True:
                     if set(query) - {'disposition'} or query.get('disposition', 'inline') not in {'inline', 'attachment'}:
                         raise AuthError('INVALID_QUERY', 422)
@@ -178,11 +188,20 @@ class PermissionGateway:
                     return self._response(event, data)
                 rows = []
                 for row in self.repository.list(kind, context, parent):
-                    if not allowed_roles(context, kind, 'read', row, parent):
+                    row_parent = parent
+                    if special == 'inbox':
+                        row_parent = self.repository.get(row.get('parentType'), row.get('parentId'))
+                        if not row_parent or row_parent.get('entityType') not in {'activity', 'exchange'}:
+                            continue
+                    if not allowed_roles(context, kind, 'read', row, row_parent):
                         continue
                     if mine and not self._participant(context, row if kind == 'exchange' else parent):
                         continue
-                    rows.append(self._project(context, kind, row, parent))
+                    projected = self._project(context, kind, row, row_parent)
+                    if special == 'inbox':
+                        projected.pop('respondentName', None)
+                        projected['parentTitle'] = row_parent.get('title', '')
+                    rows.append(projected)
                 data, count, pagination = page(rows, event, self.service, kind)
                 return response(200, {'data': data, 'count': count, 'page': pagination,
                                       'requestId': event.get('requestContext', {}).get('requestId', '')})

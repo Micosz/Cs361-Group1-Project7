@@ -22,11 +22,15 @@ def page(rows, event, service, kind=None):
         supported.add('status')
     if kind in {'activity', 'agreement', 'exchange'}:
         supported.update({'startDate', 'endDate'})
+    if kind == 'feedback':
+        supported.add('parentType')
     if set(query) - supported:
         raise AuthError('INVALID_QUERY', 422)
     for field in ('type', 'status'):
         if field in query and (not isinstance(query[field], str) or not query[field] or len(query[field]) > 64):
             raise AuthError('INVALID_QUERY', 422)
+    if 'parentType' in query and query['parentType'] not in {'activity', 'exchange'}:
+        raise AuthError('INVALID_QUERY', 422)
 
     def valid_day(value):
         try:
@@ -43,6 +47,8 @@ def page(rows, event, service, kind=None):
 
     def matches(row):
         if any(field in query and row.get(field) != query[field] for field in ('type', 'status')):
+            return False
+        if 'parentType' in query and row.get('parentType') != query['parentType']:
             return False
         if not (start or end):
             return True
@@ -61,7 +67,12 @@ def page(rows, event, service, kind=None):
         raise AuthError('INVALID_QUERY', 422)
     limit = int(raw_limit)
     needle = q.strip().casefold()
-    rows = sorted((r for r in rows if needle in str(r.get('name', r.get('title', ''))).casefold()),
+    def searchable(row):
+        if kind == 'feedback':
+            return ' '.join(str(row.get(field, '')) for field in
+                            ('comment', 'improvement', 'sourceType', 'parentTitle')).casefold()
+        return str(row.get('name', row.get('title', ''))).casefold()
+    rows = sorted((r for r in rows if needle in searchable(r)),
                   key=lambda r: r['id'])
     if kind in {'history', 'feedback'}:
         rows.sort(key=lambda r: r.get('createdAt') or '', reverse=True)
