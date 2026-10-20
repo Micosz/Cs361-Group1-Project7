@@ -58,7 +58,7 @@
 | Method | เส้นทาง | สิทธิ์ / หน้าที่ |
 |---|---|---|
 | GET, POST | `/api/partners/{partnerId}/contacts` | Coordinator/Staff ที่เข้าถึงคู่ความร่วมมือนั้นได้; อ่านรายการหรือเพิ่มผู้ติดต่อ |
-| GET, PATCH, DELETE | `/api/partners/{partnerId}/contacts/{contactId}` | Coordinator/Staff ที่เข้าถึงคู่ความร่วมมือนั้นได้; อ่าน/แก้ไข/ลบผู้ติดต่อ โดย DELETE ต้องส่ง `If-Match` |
+| GET, PATCH | `/api/partners/{partnerId}/contacts/{contactId}` | Coordinator/Staff ที่เข้าถึงคู่ความร่วมมือนั้นได้; อ่านหรือแก้ไขผู้ติดต่อ |
 | GET, POST | `/api/partners/{partnerId}/history` | อ่าน: รวม Executive; เพิ่ม: Coordinator/Staff ที่มีสิทธิ์ในรายการหลัก |
 | GET, PATCH | `/api/partners/{partnerId}/history/{historyId}` | อ่าน: รวม Executive; แก้ไข: Coordinator/Staff ที่มีสิทธิ์ในรายการหลัก |
 | GET, POST | `/api/{activities\|exchanges}/{recordId}/feedback` | Coordinator/Staff อ่านและเพิ่ม; Executive อ่านอย่างเดียว โดยไม่แสดงชื่อผู้ให้ข้อเสนอแนะ |
