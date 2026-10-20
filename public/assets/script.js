@@ -1062,3 +1062,7 @@ async function checkAgreementEntryVisibility() {
     } catch {
         btn.style.display = 'none';
     }
+}
+window.addEventListener('authchange', checkAgreementEntryVisibility);
+window.addEventListener('pageshow', checkAgreementEntryVisibility);
+document.addEventListener('DOMContentLoaded', checkAgreementEntryVisibility);
