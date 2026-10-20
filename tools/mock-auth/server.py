@@ -198,6 +198,7 @@ def make_handler(app, users, port):
         do_GET = dispatch
         do_POST = dispatch
         do_PATCH = dispatch
+        do_DELETE = dispatch
         def do_HEAD(self): self.send_data(405, '')
     return Handler
 

@@ -243,6 +243,11 @@ class DynamoBusinessRepository:
         elif kind == 'feedback' and action in {'create', 'update'}:
             from ..feedback import feedback_record
             saved = feedback_record(context, action, payload, record, parent, now)
+        elif kind == 'document' and action == 'delete' and record and parent:
+            # Logical removal is atomic with user/session/parent/version checks.
+            # Bytes remain private in S3; deleted metadata cannot be read or streamed.
+            saved = dict(record, uploadState='deleted', version=record['version'] + 1,
+                         updatedAt=now, updatedBy=conditions.user_id, deletedAt=now)
         elif kind == 'document' and action == 'upload' and upload and parent:
             if not self.documents:
                 raise AuthError('DOCUMENT_STORAGE_UNAVAILABLE', 503)

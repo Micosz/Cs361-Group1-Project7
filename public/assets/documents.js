@@ -8,12 +8,14 @@
             (g.role === 'staff' || (g.role === 'coordinator' && record.responsibleUserIds?.includes(session.user?.id))));
     }
 
-    async function mount(container, kind, record) {
+    async function mount(container, kind, record, {actions} = {}) {
         container.replaceChildren();
         const title = document.createElement('h3'); title.textContent = 'เอกสารแนบ';
         const status = document.createElement('p'); status.setAttribute('role', 'status');
         const list = document.createElement('ul'); container.append(title, status, list);
         const queued = [];
+        let identity = null;
+        const imageDocument = doc => ['image/png', 'image/jpeg'].includes(doc.mime);
 
         async function load() {
             status.textContent = 'กำลังโหลดเอกสาร'; list.replaceChildren();
@@ -26,7 +28,29 @@
                         const li = document.createElement('li'), link = document.createElement('a');
                         link.textContent = doc.displayName + ' (' + Math.round(doc.size / 1024) + ' KB)';
                         link.href = '/api/documents/' + encodeURIComponent(doc.id) + '/content?disposition=attachment';
-                        link.target = '_blank'; link.rel = 'noopener'; li.appendChild(link); list.appendChild(li); total++;
+                        link.target = '_blank'; link.rel = 'noopener'; li.appendChild(link);
+                        if (imageDocument(doc) && canUpload(identity, record)) {
+                            const remove = document.createElement('button'); remove.type = 'button';
+                            remove.className = 'document-remove-image'; remove.textContent = 'ลบรูปภาพ';
+                            remove.setAttribute('aria-label', 'ลบรูปภาพ ' + doc.displayName);
+                            remove.onclick = async () => {
+                                if (!window.confirm('ลบรูปภาพ “' + doc.displayName + '” ออกจากรายการนี้?')) return;
+                                remove.disabled = true;
+                                try {
+                                    const fresh = await window.CstuAuth.refresh();
+                                    if (!canUpload(fresh, record)) throw Error('คุณไม่มีสิทธิ์ลบรูปภาพนี้');
+                                    await window.CstuAuth.request('/documents/' + encodeURIComponent(doc.id), {
+                                        method: 'DELETE', headers: {'X-CSRF-Token': fresh.csrfToken, 'If-Match': '"' + doc.version + '"'}
+                                    });
+                                    await load(); status.textContent = 'ลบรูปภาพเรียบร้อย';
+                                } catch (error) {
+                                    status.textContent = 'ลบรูปภาพไม่ได้: ' + error.message;
+                                    remove.disabled = false;
+                                }
+                            };
+                            li.appendChild(remove);
+                        }
+                        list.appendChild(li); total++;
                     }
                     cursor = result.page?.nextCursor;
                 } while (cursor);
@@ -34,9 +58,10 @@
             } catch (error) { status.textContent = 'โหลดเอกสารไม่ได้: ' + error.message; }
         }
 
-        await load();
         try {
-            const session = await window.CstuAuth.refresh();
+            identity = await window.CstuAuth.refresh();
+            await load();
+            const session = identity;
             if (!container.isConnected || !canUpload(session, record)) return;
 
             const form = document.createElement('form');
@@ -54,7 +79,9 @@
             const queue = document.createElement('ul'); queue.className = 'document-upload-queue';
             const submit = document.createElement('button'); submit.type = 'submit'; submit.textContent = 'อัปโหลดไฟล์';
             submit.disabled = true;
-            form.append(fileLabel, queueTitle, help, queue, submit); container.appendChild(form);
+            const buttons = document.createElement('div'); buttons.className = 'document-form-actions';
+            buttons.appendChild(submit); if (actions) buttons.appendChild(actions);
+            form.append(fileLabel, queueTitle, help, queue, buttons); container.appendChild(form);
 
             function renderQueue() {
                 queue.replaceChildren();

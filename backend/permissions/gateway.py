@@ -127,6 +127,7 @@ class PermissionGateway:
             action = ('status' if special == 'status' and method == 'POST' else
                       'read' if method == 'GET' and special != 'status' else
                       'update' if method == 'PATCH' and key and not special else
+                      'delete' if method == 'DELETE' and key and kind == 'document' and not special else
                       'upload' if method == 'POST' and not key and kind == 'document' else
                       'create' if method == 'POST' and not key else None)
             if action is None or (mine and method != 'GET'):
@@ -207,7 +208,7 @@ class PermissionGateway:
                     authorization_record['partnerId'] = parent_key
             payload = validate_fields(context, kind, action, payload, authorization_record, parent)
             expected = None
-            if action in {'update', 'status'}:
+            if action in {'update', 'status', 'delete'}:
                 match = request_headers.get('if-match')
                 if match is None:
                     raise AuthError('PRECONDITION_REQUIRED', 428)
@@ -223,11 +224,13 @@ class PermissionGateway:
                     raise AuthError('INVALID_IDEMPOTENCY_KEY', 422)
             conditions = WriteConditions(context.user.user_id, context.user.authz_version,
                                          token_hash(session_cookie(event)), key, expected,
-                                         parent_key, version(parent) if parent else None,
+                                         parent['id'] if parent else parent_key, version(parent) if parent else None,
                                          (record or parent or payload)['scopeId'])
             saved = self.repository.mutate(kind, action, payload, record, parent, conditions, idempotency, upload=upload)
             # Recheck a fresh session before returning protected write data.
             current = require_session(event, self.service)
+            if action == 'delete':
+                return self._response(event, {'id': saved['id'], 'deleted': True})
             return self._response(event, self._project(current, kind, saved, parent),
                                   status=201 if action in {'create', 'upload'} else 200)
         except AuthError as error:

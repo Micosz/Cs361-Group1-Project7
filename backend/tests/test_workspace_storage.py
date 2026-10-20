@@ -80,6 +80,57 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.actor = 'student-a'
         self.assertEqual(404, self.call('/api/documents/' + document['id'] + '/content')[0]['statusCode'])
 
+    def image_fixture(self, mime='image/png'):
+        result, body = self.call('/api/exchanges', 'POST', dict(
+            title='Image removal fixture', scopeId='cs-demo', partnerIds=['partner-demo'],
+            responsibleUserIds=[self.ids['coordinator']], participantUserIds=[self.ids['student-a']]))
+        self.assertEqual(201, result['statusCode'], body)
+        exchange = body['data']
+        raw = b'\x89PNG\r\n\x1a\n fixture' if mime == 'image/png' else b'%PDF-1.4 fixture'
+        result, body = self.call('/api/exchanges/' + exchange['id'] + '/documents', 'POST', dict(
+            fileName='image.png' if mime == 'image/png' else 'file.pdf', contentType=mime,
+            fileBase64=base64.b64encode(raw).decode(), audience='participants', containsPersonal=False))
+        self.assertEqual(201, result['statusCode'], body)
+        return exchange, body['data']
+
+    def test_image_delete_removes_listing_metadata_and_content_with_version_guard(self):
+        exchange, document = self.image_fixture()
+        path = '/api/documents/' + document['id']
+        self.assertEqual(428, self.call(path, 'DELETE')[0]['statusCode'])
+        self.assertEqual(409, self.call(path, 'DELETE', version=9)[0]['statusCode'])
+        self.assertEqual(200, self.call(path + '/content')[0]['statusCode'])
+        self.actor = 'coordinator'
+        result, body = self.call(path, 'DELETE', version=document['version'])
+        self.assertEqual(200, result['statusCode'], body)
+        self.assertEqual({'id': document['id'], 'deleted': True}, body['data'])
+        self.assertEqual(404, self.call(path)[0]['statusCode'])
+        self.assertEqual(404, self.call(path + '/content')[0]['statusCode'])
+        result, body = self.call('/api/exchanges/' + exchange['id'] + '/documents')
+        self.assertEqual([], body['data'])
+        self.assertEqual('deleted', self.repository.client.rows[document['id']]['uploadState'])
+
+    def test_image_delete_requires_assigned_editor_and_rechecks_parent_at_commit(self):
+        exchange, document = self.image_fixture()
+        path = '/api/documents/' + document['id']
+        for actor in ['student-a', 'executive', 'employee']:
+            self.actor = actor
+            self.assertEqual(403, self.call(path, 'DELETE', version=1)[0]['statusCode'])
+        self.actor = 'coordinator'
+        def reassign():
+            self.repository.client.rows[exchange['id']]['responsibleUserIds'] = []
+            self.repository.client.rows[exchange['id']]['version'] += 1
+        self.repository.client.before_commit = reassign
+        self.assertEqual(409, self.call(path, 'DELETE', version=1)[0]['statusCode'])
+        self.assertEqual('ready', self.repository.client.rows[document['id']]['uploadState'])
+        self.assertEqual(404, self.call(path, 'DELETE', version=1)[0]['statusCode'])
+        self.actor = 'staff'
+        self.assertEqual(200, self.call(path, 'DELETE', version=1)[0]['statusCode'])
+
+    def test_image_delete_does_not_delete_other_document_types(self):
+        _, document = self.image_fixture('application/pdf')
+        self.assertEqual(404, self.call('/api/documents/' + document['id'], 'DELETE', version=1)[0]['statusCode'])
+        self.assertEqual(200, self.call('/api/documents/' + document['id'] + '/content')[0]['statusCode'])
+
     def test_reference_race_and_failed_upload_cleanup(self):
         def change_reference():
             self.repository.client.rows['partner-demo']['version'] += 1

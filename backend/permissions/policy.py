@@ -60,7 +60,7 @@ def action_roles(kind, action):
         return {'coordinator', 'staff'} if kind != 'document' else set()
     if action == 'status' and kind in STATUS:
         return {'coordinator', 'staff'}
-    if action == 'upload' and kind == 'document':
+    if action in {'upload', 'delete'} and kind == 'document':
         return {'coordinator', 'staff'}
     return set()
 
@@ -114,6 +114,11 @@ def allowed_roles(context, kind, action, record, parent=None):
     if base.get('entityType') != 'exchange' or not linked(base, 'participantUserIds', user.user_id):
         roles.discard('student')
     if kind == 'document':
+        if record.get('uploadState') == 'deleted':
+            return set()
+        if action == 'delete' and (record.get('uploadState') != 'ready'
+                or record.get('mime') not in {'image/png', 'image/jpeg'}):
+            return set()
         audience, personal = record.get('audience'), record.get('containsPersonal')
         if audience not in {'internal', 'participants'} or type(personal) is not bool:
             return set()
@@ -150,7 +155,7 @@ def validate_fields(context, kind, action, payload, record=None, parent=None):
             denied(404)
     else:
         roles = require_record(context, kind, action, record, parent)
-    fields = set(STATUS.get(kind, ())) if action == 'status' else set(WRITABLE.get(kind, ()))
+    fields = set() if action == 'delete' else (set(STATUS.get(kind, ())) if action == 'status' else set(WRITABLE.get(kind, ())))
     if action == 'create' and kind in BUSINESS:
         fields.add('scopeId')
     if 'staff' in roles and action != 'status' and kind in BUSINESS:
