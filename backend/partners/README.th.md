@@ -2,7 +2,7 @@
 
 โมดูลนี้เป็น prototype ในหน่วยความจำสำหรับทดสอบ local ผ่าน gateway #79 ไม่ใช่ production business repository ข้อมูลและ idempotency cache หายเมื่อ process สิ้นสุด Lock ป้องกันเฉพาะ writes ใน process เดียว ไม่ทำให้การตรวจ user/session กับข้อมูลธุรกิจเป็น transaction จริง
 
-มี validators, Partner/Contact create/update/read-back ผ่าน gateway ใน tests, version checks และ process-local idempotency แยก user/kind/parent/key พร้อม `CstuAuth.create` สำหรับ POST/CSRF/Idempotency-Key ในเว็บ
+มี validators, Partner/Contact create/update/read-back ผ่าน gateway ใน tests, version checks และ process-local idempotency แยก user/kind/parent/key พร้อม `CstuAuth.create` สำหรับ POST/CSRF/Idempotency-Key ในเว็บ; Contact รองรับ DELETE เมื่อส่ง CSRF และ `If-Match` โดยจำกัด staff/coordinator ตาม scope/parent
 
 ยังไม่มีฟอร์ม Partner/Contact, persistent storage, candidate options, real reference/assignee checks หรือการ inject repository ใน `backend/lambda_function.py` Routes และ field permissions ใช้ gateway เดิม ไม่ได้สร้าง API ที่ deploy ใหม่ อย่าต่อ repository นี้กับ Lambda ที่ใช้งานจริง
 

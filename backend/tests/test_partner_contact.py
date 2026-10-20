@@ -216,6 +216,40 @@ class PartnerContactTests(unittest.TestCase):
         self.assertEqual(200, list_res['statusCode'])
         self.assertEqual(1, json.loads(list_res['body'])['count'])
 
+    def test_staff_can_delete_contact_with_current_version_and_contact_is_gone(self):
+        parent = self.call(self.event('/api/partners', 'POST', {
+            'name': 'Delete Contact Parent', 'type': 'company', 'summary': 'Test',
+            'location': 'Bangkok', 'scopeId': 'c1',
+        }, **{'idempotency-key': 'delete-parent-test-001'}))
+        pid = json.loads(parent['body'])['data']['id']
+        contact = self.call(self.event(f'/api/partners/{pid}/contacts', 'POST',
+            {'name': 'Remove me'}, **{'idempotency-key': 'delete-contact-test-01'}))
+        cid = json.loads(contact['body'])['data']['id']
+
+        deleted = self.call(self.event(f'/api/partners/{pid}/contacts/{cid}', 'DELETE', {}, **{'if-match': '"1"'}))
+        self.assertEqual(200, deleted['statusCode'])
+        self.assertEqual({'id': cid, 'deleted': True}, json.loads(deleted['body'])['data'])
+        self.assertEqual(404, self.call(self.event(f'/api/partners/{pid}/contacts/{cid}', 'GET'))['statusCode'])
+        self.assertEqual(0, json.loads(self.call(self.event(f'/api/partners/{pid}/contacts', 'GET'))['body'])['count'])
+
+    def test_contact_delete_requires_version_scope_and_allowed_role(self):
+        parent = self.call(self.event('/api/partners', 'POST', {
+            'name': 'Delete Contact Guard', 'type': 'company', 'summary': 'Test',
+            'location': 'Bangkok', 'scopeId': 'c1',
+        }, **{'idempotency-key': 'delete-parent-guard-01'}))
+        pid = json.loads(parent['body'])['data']['id']
+        contact = self.call(self.event(f'/api/partners/{pid}/contacts', 'POST',
+            {'name': 'Guarded'}, **{'idempotency-key': 'delete-contact-guard1'}))
+        cid = json.loads(contact['body'])['data']['id']
+
+        missing_version = self.event(f'/api/partners/{pid}/contacts/{cid}', 'DELETE', {})
+        missing_version['headers'].pop('if-match', None)
+        self.assertEqual(428, self.call(missing_version)['statusCode'])
+        self.repo.rows[('contact', cid)]['version'] = 2
+        self.assertEqual(409, self.call(self.event(f'/api/partners/{pid}/contacts/{cid}', 'DELETE', {}, **{'if-match': '"1"'}))['statusCode'])
+        self.users.user = user_context('executive', 'c1', 'u1').user
+        self.assertEqual(403, self.call(self.event(f'/api/partners/{pid}/contacts/{cid}', 'DELETE', {}, **{'if-match': '"2"'}))['statusCode'])
+
     def test_contact_validation_missing_name_and_invalid_email(self):
         partner_payload = {
             'name': 'Partner Beta',

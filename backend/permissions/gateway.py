@@ -127,7 +127,7 @@ class PermissionGateway:
             action = ('status' if special == 'status' and method == 'POST' else
                       'read' if method == 'GET' and special != 'status' else
                       'update' if method == 'PATCH' and key and not special else
-                      'delete' if method == 'DELETE' and key and kind == 'document' and not special else
+                      'delete' if method == 'DELETE' and key and kind in {'document', 'contact'} and not special else
                       'upload' if method == 'POST' and not key and kind == 'document' else
                       'create' if method == 'POST' and not key else None)
             if action is None or (mine and method != 'GET'):

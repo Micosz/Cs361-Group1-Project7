@@ -70,7 +70,7 @@ class PartnerRepository:
     def mutate(self, kind: str, action: str, payload: dict, record: dict | None,
                parent: dict | None, conditions, idempotency_key: str | None,
                upload=None) -> dict:
-        if kind not in self.supported_kinds or action not in {'create', 'update'} or upload is not None:
+        if kind not in self.supported_kinds or action not in {'create', 'update', 'delete'} or upload is not None:
             raise AuthError('PERMISSION_UNAVAILABLE', 503)
         with self._lock:
             # 1. Preconditions & Concurrency Checks
@@ -133,6 +133,13 @@ class PartnerRepository:
                 if not is_create and record:
                     if record.get('partnerId') != parent.get('id') or record.get('scopeId') != parent.get('scopeId'):
                         raise AuthError('NOT_FOUND', 404)
+
+            if action == 'delete':
+                if kind != 'contact' or not record or not parent:
+                    raise AuthError('NOT_FOUND', 404)
+                del self.rows[(kind, record['id'])]
+                self.writes += 1
+                return copy.deepcopy(record)
 
             if kind == 'activity':
                 # Primary partner reference (required, must exist in same scope)

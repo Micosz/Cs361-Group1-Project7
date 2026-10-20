@@ -62,6 +62,8 @@ def action_roles(kind, action):
         return {'coordinator', 'staff'}
     if action in {'upload', 'delete'} and kind == 'document':
         return {'coordinator', 'staff'}
+    if action == 'delete' and kind == 'contact':
+        return {'coordinator', 'staff'}
     return set()
 
 

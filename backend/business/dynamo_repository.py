@@ -156,6 +156,8 @@ class DynamoBusinessRepository:
         return self.documents.content(document, disposition)
 
     def mutate(self, kind, action, payload, record, parent, conditions, idempotency_key, upload=None):
+        if action == 'delete' and kind == 'contact':
+            return self._delete_contact(record, parent, conditions)
         now = int(self.clock())
         actor = self.service.users.get(conditions.user_id)
         if not actor or actor.authz_version != conditions.authz_version:
@@ -327,3 +329,42 @@ class DynamoBusinessRepository:
                 raise AuthError('VERSION_CONFLICT', 409) from None
             raise
         return copy.deepcopy(saved)
+
+    def _delete_contact(self, record, parent, conditions):
+        """Delete one authorized contact atomically with actor/session/parent checks."""
+        if (not record or record.get('entityType') != 'contact' or not parent
+                or parent.get('entityType') != 'partner'
+                or record.get('partnerId') != parent.get('id')):
+            raise AuthError('NOT_FOUND', 404)
+        now = int(self.clock())
+        actor = self.service.users.get(conditions.user_id)
+        if not actor or actor.authz_version != conditions.authz_version:
+            raise AuthError('SESSION_REVOKED', 401)
+        checks = transaction_checks(conditions, user_table=self.users, session_table=self.sessions,
+                                    business_table=self.table, now=now)
+        for check in checks:
+            item = check.get('ConditionCheck', {})
+            if item.get('TableName') == self.table and conditions.parent_id is not None:
+                item['TableName'] = self._table(parent['entityType'])
+                item['Key'] = self._key(parent['entityType'], parent)
+        delete = {
+            'TableName': self._table('contact'),
+            'Key': self._key('contact', record),
+            'ConditionExpression': '#v = :v AND #s = :scope AND #kind = :kind AND #parent = :parent',
+            'ExpressionAttributeNames': {'#v': 'version', '#s': 'scopeId', '#kind': 'entityType', '#parent': 'partnerId'},
+            'ExpressionAttributeValues': values({
+                ':v': conditions.target_version, ':scope': conditions.scope_id,
+                ':kind': 'contact', ':parent': parent['id'],
+            }),
+        }
+        checks.append({'Delete': delete})
+        if len(checks) > 100:
+            raise AuthError('TOO_MANY_REFERENCES', 422)
+        try:
+            self.client.transact_write_items(TransactItems=checks)
+        except Exception as error:
+            code = getattr(error, 'response', {}).get('Error', {}).get('Code')
+            if code == 'TransactionCanceledException':
+                raise AuthError('VERSION_CONFLICT', 409) from None
+            raise
+        return copy.deepcopy(record)

@@ -17,10 +17,11 @@ class BusinessRepository(Protocol):
     def mutate(self, kind: str, action: str, payload: dict, record: dict | None,
                parent: dict | None, conditions: WriteConditions,
                idempotency_key: str | None, upload=None) -> dict:
-        """Values + references + atomic checks/write + stamps; return saved record.
+        """Values + references + atomic checks/write + stamps; return saved/deleted record.
 
         Capture the trusted request context when constructing the adapter.
         WriteConditions is not enough to authorize referenced records/assignees.
-        Must reject unsupported kinds/uploads; never return an unsaved payload.
+        Must reject unsupported kinds/uploads; never return an unsaved payload. Delete is
+        supported only for explicitly authorized child resources and must be atomic.
         """
         ...
