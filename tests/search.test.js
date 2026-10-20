@@ -662,7 +662,7 @@ test('public partner and activity modals show legacy evidence as clickable Sourc
     const p = page();
     const legacyText = 'MoU partnership details<br>หลักฐาน: <a href="https://example.edu/mou">University announcement</a>';
     p.context.getPublicActivities = async () => [];
-    p.context.getPublicPartnerById = async () => ({ id: 'legacy-partner', name: 'Legacy Partner', full_description: legacyText });
+    p.context.getPublicPartnerById = async () => ({ id: 'legacy-partner', name: 'Legacy Partner', full_description: legacyText, businessRecord: true });
     await p.context.openModal('legacy-partner', 'partner');
     let sources = p.get('modalDetails').children.find(node => node.className === 'legacy-description-sources');
     assert.ok(sources);
@@ -670,7 +670,7 @@ test('public partner and activity modals show legacy evidence as clickable Sourc
     assert.equal(sources.children[1].textContent, 'University announcement');
     assert.equal(sources.children[1].href, 'https://example.edu/mou');
 
-    p.context.getPublicActivityById = async () => ({ id: 'legacy-activity', title: 'Legacy Activity', partnerId: 'legacy-partner', partnerName: 'Legacy Partner', full_description: legacyText });
+    p.context.getPublicActivityById = async () => ({ id: 'legacy-activity', title: 'Legacy Activity', partnerId: 'legacy-partner', partnerName: 'Legacy Partner', full_description: legacyText, businessRecord: true });
     await p.context.openModal('legacy-activity', 'activity');
     sources = p.get('modalDetails').children.find(node => node.className === 'legacy-description-sources');
     assert.ok(sources);
@@ -746,6 +746,16 @@ test('created activity details use the article layout with safe text and authori
     assert.equal(content.children[4].textContent,'More information');
     const empty=p.context.createActivityDetailContent({title:'No photo',businessRecord:true,summary:'Only summary',fullDescription:''});
     assert.equal(empty.children.length,2,'no invented artwork or empty detail labels');
+});
+
+test('public activity article converts legacy evidence markup even when row is marked businessRecord', () => {
+    const p=page();
+    const content=p.context.createActivityDetailContent({title:'Legacy activity',businessRecord:true,
+        full_description:'Activity details<br>หลักฐาน: <a href="https://example.edu/activity">Event source</a>'});
+    const description=content.children.find(node=>node.className==='legacy-description-sources');
+    assert.ok(description);
+    assert.equal(content.children.find(node=>node.tagName==='p'&&node.textContent==='Activity details').textContent,'Activity details');
+    assert.equal(description.children[1].href,'https://example.edu/activity');
 });
 
 
