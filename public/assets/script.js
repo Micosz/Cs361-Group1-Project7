@@ -69,7 +69,10 @@ function fetchPartnersData() {
             try {
                 const published = await loadJson('/api/public/records', 8000);
                 const combined = new Map(rawData.map(row => [row.id,row]));
-                for (const row of published) if (row.visibility === 'public') combined.set(row.id,{...combined.get(row.id),...row,businessRecord:row.businessRecord !== false});
+                // Published API rows are user-authored plain text. Keep this
+                // renderer hint local; internal storage flags never belong in
+                // the anonymous public payload.
+                for (const row of published) if (row.visibility === 'public') combined.set(row.id,{...combined.get(row.id),...row,businessRecord:true});
                 rawData = Array.from(combined.values());
             } catch (error) {
                 console.warn('Published records unavailable:', error);

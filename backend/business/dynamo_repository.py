@@ -138,7 +138,6 @@ class DynamoBusinessRepository:
             projected = public_projection(row.get('entityType'), row, partners)
             if projected is not None:
                 projected['visibility'] = 'public'
-                projected['businessRecord'] = not row.get('legacySource',False)
                 if row.get('legacySource') and row.get('entityType') == 'activity':
                     labels = row.get('co_hosts',[])
                     if isinstance(labels,list) and all(isinstance(label,str) for label in labels):

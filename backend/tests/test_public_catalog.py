@@ -11,7 +11,11 @@ class PublicCatalogTests(unittest.TestCase):
     def test_public_catalog_hides_private_rows_and_editor_fields(self):
         rows = [
             dict(id='visible', entityType='partner', name='Public', publication='public',
-                 responsibleUserIds=['secret-user'], scopeId='private-scope', version=3),
+                 responsibleUserIds=['secret-user'], scopeId='private-scope', version=3,
+                 businessRecord=True, legacySource=False, objectKey='secret-object-key',
+                 authToken='secret-token'),
+            dict(id='demo', entityType='partner', name='QA Staff demo', publication='public',
+                 legacySource=True, businessRecord=False),
             dict(id='hidden', entityType='partner', name='Private', publication='internal'),
             dict(id='conflict', entityType='partner', name='Conflict', publication='public', visibility='private'),
             dict(id='news', entityType='activity', title='Public event', publication='public',
@@ -23,13 +27,15 @@ class PublicCatalogTests(unittest.TestCase):
         def scan(**query):
             calls.append(query)
             if 'ExclusiveStartKey' not in query:
-                return {'Items':[values(row) for row in rows[:2]], 'LastEvaluatedKey':values({'id':'cursor'})}
-            return {'Items':[values(row) for row in rows[2:]]}
+                return {'Items':[values(row) for row in rows[:3]], 'LastEvaluatedKey':values({'id':'cursor'})}
+            return {'Items':[values(row) for row in rows[3:]]}
         repository = DynamoBusinessRepository(SimpleNamespace(scan=scan), 'business', None, 'users', 'sessions')
         result = repository.public_catalog()
-        self.assertEqual({'visible','news'}, {row['id'] for row in result})
+        self.assertEqual({'visible','demo','news'}, {row['id'] for row in result})
         self.assertTrue(all(row['visibility']=='public' for row in result))
-        self.assertFalse({'responsibleUserIds','scopeId','version'} & set().union(*(row.keys() for row in result)))
+        response_fields = set().union(*(row.keys() for row in result))
+        self.assertFalse({'responsibleUserIds','scopeId','version','businessRecord',
+                          'legacySource','objectKey','authToken'} & response_fields)
         self.assertEqual(2,len(calls))
         self.assertTrue(all(call['ConsistentRead'] for call in calls))
 
