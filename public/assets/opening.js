@@ -45,7 +45,7 @@
         let sceneHeight = 1;
         let sceneTravel = 1;
         let sceneProgress = -1;
-        const sceneMode = () => Boolean(boardScene) && !reduced.matches && !compact.matches && innerHeight > 650;
+        const sceneMode = () => Boolean(boardScene) && !document.body.classList.contains('feedback-inbox-view') && !reduced.matches && !compact.matches && innerHeight > 650;
         const clamp = value => Math.max(0, Math.min(1, value));
         function paintScene(element, styles) {
             if (!element) return;
