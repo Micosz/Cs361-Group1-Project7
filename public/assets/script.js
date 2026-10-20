@@ -69,10 +69,7 @@ function fetchPartnersData() {
             try {
                 const published = await loadJson('/api/public/records', 8000);
                 const combined = new Map(rawData.map(row => [row.id,row]));
-                // Published API rows are user-authored plain text. Keep this
-                // renderer hint local; internal storage flags never belong in
-                // the anonymous public payload.
-                for (const row of published) if (row.visibility === 'public') combined.set(row.id,{...combined.get(row.id),...row,businessRecord:true});
+                for (const row of published) if (row.visibility === 'public') combined.set(row.id,{...combined.get(row.id),...row,businessRecord:row.businessRecord !== false});
                 rawData = Array.from(combined.values());
             } catch (error) {
                 console.warn('Published records unavailable:', error);
@@ -630,6 +627,57 @@ function createActivityDetailContent(record) {
     return content;
 }
 
+// Older public records may store source links as HTML inside full_description.
+// Parse that markup inertly, then rebuild only plain text and safe HTTP(S) links.
+function createLegacyDescriptionNodes(value, { partner = false } = {}) {
+    const parsed = new DOMParser().parseFromString(String(value || ''), 'text/html');
+    parsed.querySelectorAll('br').forEach(node => node.replaceWith(parsed.createTextNode('\n')));
+    const rawText = parsed.body.textContent || '';
+    const sourceMarker = /(?:หลักฐาน|Sources)\s*:/i.exec(rawText);
+    const descriptionText = (sourceMarker ? rawText.slice(0, sourceMarker.index) : rawText).trim();
+    const paragraph = document.createElement('p');
+    paragraph.textContent = descriptionText;
+    paragraph.style.lineHeight = '1.6';
+    paragraph.style.color = 'var(--text-dark)';
+    paragraph.style.marginBottom = '1.5rem';
+    if (partner) {
+        paragraph.style.fontWeight = 'bold';
+        paragraph.style.fontSize = '1.1em';
+    } else {
+        paragraph.style.textAlign = 'justify';
+    }
+
+    if (!sourceMarker) return [paragraph];
+
+    const sources = document.createElement('div');
+    sources.className = 'legacy-description-sources';
+    const label = document.createElement('strong');
+    label.textContent = 'Sources: ';
+    sources.appendChild(label);
+    const anchors = [...parsed.querySelectorAll('a')];
+    const validAnchors = anchors.map(node => {
+        const href = node.getAttribute('href') || '';
+        try {
+            const url = new URL(href);
+            return ['http:', 'https:'].includes(url.protocol) ? { href: url.href, text: node.textContent.trim() || url.hostname } : null;
+        } catch { return null; }
+    }).filter(Boolean);
+    if (validAnchors.length) {
+        validAnchors.forEach((source, index) => {
+            if (index) sources.appendChild(document.createTextNode(' · '));
+            const link = document.createElement('a');
+            link.textContent = source.text;
+            link.href = source.href;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            sources.appendChild(link);
+        });
+    } else {
+        sources.appendChild(document.createTextNode(rawText.slice(sourceMarker.index + sourceMarker[0].length).trim()));
+    }
+    return [paragraph, sources];
+}
+
 async function openModal(id, type, protectedPartner = null) {
     let data = null;
     let allActivities;
@@ -701,13 +749,12 @@ async function openModal(id, type, protectedPartner = null) {
         }
 
         const partnerDetailText = data.full_description || data.summary || '';
-        // Keep the existing source-backed description and evidence links.
         if (data.businessRecord) {
             modalDetails.replaceChildren();
             const description = document.createElement('p'); description.textContent = partnerDetailText;
             modalDetails.appendChild(description);
         } else {
-            modalDetails.innerHTML = `<p style="font-weight: bold; font-size: 1.1em; margin-bottom: 1.5rem; color: var(--text-dark); line-height: 1.6;">${partnerDetailText}</p>`;
+            modalDetails.replaceChildren(...createLegacyDescriptionNodes(partnerDetailText, { partner: true }));
         }
         renderPartnerActivityHistory(modalDetails, data.id, allActivities);
 
@@ -727,7 +774,10 @@ async function openModal(id, type, protectedPartner = null) {
         }
 
         const detailText = data.full_description ? data.full_description : data.summary;
-        let detailsHTML = `<p style="line-height: 1.6; color: var(--text-dark); text-align: justify; margin-bottom: 1.5rem;">${detailText}</p>`;
+        const descriptionNodes = data.businessRecord
+            ? [Object.assign(document.createElement('p'), { textContent: detailText || '' })]
+            : createLegacyDescriptionNodes(detailText);
+        let detailsHTML = '';
 
         // หา Event อื่นๆ ที่มาจากบริษัทเดียวกัน (และไม่ใช่ตัวมันเอง)
         const relatedActivities = allActivities.filter(a => a.partnerId === data.partnerId && a.id !== data.id);
@@ -742,6 +792,7 @@ async function openModal(id, type, protectedPartner = null) {
         }
 
         modalDetails.innerHTML = detailsHTML;
+        if (descriptionNodes.length) modalDetails.prepend(...descriptionNodes);
     }
 
     if (type === 'activity' && window.CstuRecords?.openPublicActivity) {
