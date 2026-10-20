@@ -37,6 +37,7 @@
         html[data-embed] input, html[data-embed] select, html[data-embed] textarea { box-sizing:border-box; max-width:100%; }
     </style>
     <link rel="stylesheet" href="assets/entry-forms.css?v=1">
+    <link rel="stylesheet" href="assets/roles.css?v=1">
     <script src="assets/entry-forms.js?v=1" defer></script>
 </head>
 <body>
@@ -98,28 +99,36 @@
             </div>
         </form>
     </dialog>
-    <dialog id="role-dialog" style="padding:2rem;max-width:600px">
-        <form id="role-form">
+    <dialog id="role-dialog">
+        <form id="role-form" class="role-form">
             <h2>จัดการสิทธิ์ผู้ใช้</h2>
-            <p>มอบหมายหรือถอนบทบาทเฉพาะขอบเขตที่คุณจัดการได้ การถอนบทบาทไม่ปิดบัญชี</p>
-            <p><label>ขอบเขต <select id="role-scope" required></select></label></p>
-            <p><label>ค้นหาชื่อบัญชี <input id="role-search" type="search" autocomplete="off" maxlength="80" placeholder="พิมพ์ชื่ออย่างน้อย 2 ตัวอักษร"></label>
-                <button id="search-role-targets" type="button">ค้นหาชื่อ</button></p>
-            <p id="role-target-status" role="status"></p>
-            <p><label>เลือกบัญชี <select id="role-target" required disabled><option value="">ค้นหาชื่อก่อน</option></select></label>
-                <button id="load-user" type="button" disabled>ดูสิทธิ์บัญชีนี้</button></p>
-            <p id="role-user"></p>
-            <fieldset id="role-choices" disabled><legend>บทบาทในขอบเขตนี้</legend>
+            <p class="role-intro">มอบหมายหรือถอนบทบาทเฉพาะขอบเขตที่คุณจัดการได้ การถอนบทบาทไม่ปิดบัญชี</p>
+            <div class="role-fields">
+                <p class="role-field"><label>ขอบเขต <select id="role-scope" required></select></label></p>
+                <div class="role-search-group">
+                    <p class="role-field"><label>ค้นหาชื่อบัญชี <input id="role-search" type="search" autocomplete="off" maxlength="80" placeholder="พิมพ์ชื่ออย่างน้อย 2 ตัวอักษร"></label></p>
+                    <button id="search-role-targets" type="button">ค้นหาชื่อ</button>
+                </div>
+                <p id="role-target-status" class="role-target-status" role="status" aria-live="polite"></p>
+                <div class="role-target-group">
+                    <p class="role-field"><label>เลือกบัญชี <select id="role-target" required disabled><option value="">ค้นหาชื่อก่อน</option></select></label></p>
+                    <button id="load-user" type="button" disabled>ดูสิทธิ์บัญชีนี้</button>
+                </div>
+            </div>
+            <p id="role-user" class="role-user-summary"></p>
+            <fieldset id="role-choices" class="role-choices" disabled><legend>บทบาทในขอบเขตนี้</legend>
                 <label><input type="checkbox" name="role" value="student"> นักศึกษา</label>
                 <label><input type="checkbox" name="role" value="coordinator"> ผู้ประสานงาน</label>
                 <label><input type="checkbox" name="role" value="staff"> เจ้าหน้าที่</label>
                 <label><input type="checkbox" name="role" value="executive"> ผู้บริหาร</label>
             </fieldset>
-            <p><label><input id="confirm-identity" type="checkbox"> ตรวจหลักฐานและยืนยันการผูกตัวตนของบัญชีนี้แล้ว</label></p>
-            <p>ไม่เลือกบทบาทใดเลยเพื่อถอนทุกบทบาทในขอบเขตที่เลือก</p>
-            <p id="role-status" role="status"></p>
-            <button id="save-roles" type="submit" disabled>บันทึกสิทธิ์</button>
-            <button id="close-roles" type="button">ปิด</button>
+            <p class="role-confirmation"><label><input id="confirm-identity" type="checkbox"> ตรวจหลักฐานและยืนยันการผูกตัวตนของบัญชีนี้แล้ว</label></p>
+            <p class="role-revoke-note">ไม่เลือกบทบาทใดเลยเพื่อถอนทุกบทบาทในขอบเขตที่เลือก</p>
+            <p id="role-status" class="role-status" role="status" aria-live="polite"></p>
+            <div class="role-actions">
+                <button id="close-roles" type="button" class="role-cancel">ปิด</button>
+                <button id="save-roles" type="submit" disabled>บันทึกสิทธิ์</button>
+            </div>
         </form>
     </dialog>
 
