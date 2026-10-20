@@ -145,12 +145,12 @@
             }
         } catch { /* Public details remain readable if management is unavailable. */ }
     }
-    function mountDetailActions(fresh, record, resourceKind, current, page) {
+    function mountDetailActions(fresh, record, resourceKind, current, page, target = $('detail-actions')) {
         const canEdit = (identity, item) => window.CstuWork.canEdit(identity,item) &&
             !(resourceKind === 'activities' && item.publication === 'public' &&
               !window.CstuWork.roles(identity,item.scopeId).includes('staff'));
         if (!canEdit(fresh,record)) return;
-        for (const [action,label] of [['edit','แก้ไข'], ...(['agreements','exchanges'].includes(resourceKind) ? [['status','จัดการสถานะ'],['documents','จัดการเอกสาร']] : [])]) {
+        for (const [action,label] of [['edit','แก้ไข']]) {
             const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
             button.disabled = !window.CstuWork.handler(resourceKind,action);
             button.onclick = async () => {
@@ -165,7 +165,7 @@
                 } catch (error) { if (current === detailRevision) $('detail-status').textContent = errorMessage(error); }
                 finally { button.disabled = !window.CstuWork.handler(resourceKind,action); }
             };
-            $('detail-actions').appendChild(button);
+            target.appendChild(button);
         }
     }
     function mountFeedback(record, resourceKind, identity) {
@@ -186,8 +186,10 @@
             if (!fresh?.user || current !== detailRevision || page !== revision || !dialog.open) return;
             const latest = (await window.CstuAuth.request('/activities/'+encodeURIComponent(record.id))).data;
             if (current !== detailRevision || page !== revision || !dialog.open || latest?.id !== record.id) return;
+            const actions = document.createElement('div'); actions.className = 'detail-record-actions';
+            $('detail-fields').appendChild(actions);
+            mountDetailActions(fresh,latest,'activities',current,page,actions);
             mountFeedback(latest, 'activities', fresh);
-            mountDetailActions(fresh,latest,'activities',current,page);
         } catch { /* A public article stays readable when management is unavailable. */ }
     }
     async function detail(row, trigger) {
@@ -227,12 +229,15 @@
                 const history = document.createElement('section'); $('detail-fields').appendChild(history);
                 window.PartnerHistory.mount(history, record, fresh);
             }
+            const actions = document.createElement('div'); actions.className = 'detail-record-actions';
+            mountDetailActions(fresh, record, kind, current, page, actions);
             if (['agreements','exchanges'].includes(kind) && window.DocumentComponent) {
                 const docs = document.createElement('section'); $('detail-fields').appendChild(docs);
-                window.DocumentComponent.mount(docs, kind === 'agreements' ? 'agreement' : 'exchange', record);
+                window.DocumentComponent.mount(docs, kind === 'agreements' ? 'agreement' : 'exchange', record, {actions});
+            } else {
+                $('detail-fields').appendChild(actions);
             }
             mountFeedback(record, kind, fresh);
-            mountDetailActions(fresh, record, kind, current, page);
         } catch (error) {
             if (current !== detailRevision || page !== revision) return;
             $('detail-title').textContent = 'รายละเอียด'; $('detail-status').textContent = errorMessage(error);
