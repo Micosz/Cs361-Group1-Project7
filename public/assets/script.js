@@ -613,8 +613,15 @@ function createActivityDetailContent(record) {
     // renderer may supply source-backed HTML below this shared header.
     if (record.businessRecord !== false) {
         for (const text of [record.summary,record.fullDescription || record.full_description].filter((text,index,all)=>typeof text==='string' && text.trim() && all.indexOf(text)===index)) {
-            const paragraph=document.createElement('p');paragraph.className='activity-detail-description';
-            paragraph.textContent=text;content.appendChild(paragraph);
+            if (hasLegacySourceLinks(text)) {
+                for (const node of createLegacyDescriptionNodes(text)) {
+                    node.classList.add('activity-detail-description');
+                    content.appendChild(node);
+                }
+            } else {
+                const paragraph=document.createElement('p');paragraph.className='activity-detail-description';
+                paragraph.textContent=text;content.appendChild(paragraph);
+            }
         }
     }
     if (relationships?.agreements?.length) {
@@ -676,6 +683,10 @@ function createLegacyDescriptionNodes(value, { partner = false } = {}) {
         sources.appendChild(document.createTextNode(rawText.slice(sourceMarker.index + sourceMarker[0].length).trim()));
     }
     return [paragraph, sources];
+}
+
+function hasLegacySourceLinks(value) {
+    return typeof value === 'string' && /(?:หลักฐาน|Sources)\s*:/i.test(value) && /<a\b/i.test(value);
 }
 
 async function openModal(id, type, protectedPartner = null) {
@@ -749,7 +760,7 @@ async function openModal(id, type, protectedPartner = null) {
         }
 
         const partnerDetailText = data.full_description || data.summary || '';
-        if (data.businessRecord) {
+        if (data.businessRecord && !hasLegacySourceLinks(partnerDetailText)) {
             modalDetails.replaceChildren();
             const description = document.createElement('p'); description.textContent = partnerDetailText;
             modalDetails.appendChild(description);
@@ -774,7 +785,7 @@ async function openModal(id, type, protectedPartner = null) {
         }
 
         const detailText = data.full_description ? data.full_description : data.summary;
-        const descriptionNodes = data.businessRecord
+        const descriptionNodes = data.businessRecord && !hasLegacySourceLinks(detailText)
             ? [Object.assign(document.createElement('p'), { textContent: detailText || '' })]
             : createLegacyDescriptionNodes(detailText);
         let detailsHTML = '';
@@ -1051,7 +1062,3 @@ async function checkAgreementEntryVisibility() {
     } catch {
         btn.style.display = 'none';
     }
-}
-window.addEventListener('authchange', checkAgreementEntryVisibility);
-window.addEventListener('pageshow', checkAgreementEntryVisibility);
-document.addEventListener('DOMContentLoaded', checkAgreementEntryVisibility);
