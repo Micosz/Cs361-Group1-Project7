@@ -988,7 +988,17 @@ class AgreementTests(unittest.TestCase):
                 ('/api/agreements/'+aid+'/status', 'POST', {'to': 'expired'}),
                 ('/api/agreements', 'POST', {'title': 'Injected'})]:
             self.assertEqual(403, self.call(self.event(path, method, payload, **{'if-match': '"2"'}))['statusCode'])
-        self.assertIn(self.call(self.event('/api/agreements/'+aid+'/documents'))['statusCode'], (403,404))
+        self.repo.rows[('document', 'private-doc')] = {
+            'id': 'private-doc', 'entityType': 'document', 'scopeId': 'c1',
+            'parentType': 'agreement', 'parentId': aid, 'version': 1,
+            'audience': 'internal', 'containsPersonal': False, 'uploadState': 'ready',
+            'displayName': 'SECRET.pdf', 'objectKey': 'SECRET',
+        }
+        documents = self.call(self.event('/api/agreements/'+aid+'/documents'))
+        self.assertEqual(200, documents['statusCode'])
+        self.assertEqual([], json.loads(documents['body'])['data'])
+        self.assertEqual(404, self.call(self.event('/api/documents/private-doc'))['statusCode'])
+        self.assertEqual(404, self.call(self.event('/api/documents/private-doc/content'))['statusCode'])
         self.login_as(user_context('student', 'c1', 'student_b').user)
         self.assertEqual(404, self.call(self.event('/api/agreements/'+aid))['statusCode'])
         self.login_as(user_context('student', 'c2', 'student_a').user)
