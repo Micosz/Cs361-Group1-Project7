@@ -221,7 +221,7 @@ class DynamoBusinessRepository:
             ref_pairs += [('agreement', effective['agreementId'])]
         for entity, key in ref_pairs:
             require_reference(context, reference(entity, key), scope)
-        for field, participant in [('responsibleUserIds', False), ('participantUserIds', True)]:
+        for field, participant in [('responsibleUserIds', False), ('participantUserIds', True), ('readerUserIds', True)]:
             for key in effective.get(field, []):
                 require_assignee(user(key), scope, participant=participant)
 

@@ -312,10 +312,10 @@ class AgreementTests(unittest.TestCase):
                                           **{'if-match': '"1"'}))
         self.assertEqual(403, exec_patch['statusCode'])
 
-        # Student has no access to agreements (403 on create/read/update)
+        # Unselected student cannot read; student writes remain forbidden
         self.login_as(user_context('student', 'c1', 'u1').user)
         stu_read = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
-        self.assertEqual(403, stu_read['statusCode'])
+        self.assertEqual(404, stu_read['statusCode'])
         stu_post = self.call(self.event('/api/agreements', 'POST', payload))
         self.assertEqual(403, stu_post['statusCode'])
 
@@ -960,3 +960,49 @@ class AgreementTests(unittest.TestCase):
         self.assertEqual(200, res_coord_ok['statusCode'])
         self.assertEqual('active', json.loads(res_coord_ok['body'])['data']['status'])
 
+
+    def test_selected_student_summary_read_and_revoke_after_activation(self):
+        student = user_context('student', 'c1', 'student_a').user
+        self.mock_user_dict['student_a'] = student
+        created = self.call(self.event('/api/agreements', 'POST', {
+            'title': 'Student readable MoU', 'agreementType': 'MoU',
+            'partnerIds': ['partner-001'], 'scopeId': 'c1',
+            'startDate': '2025-01-01', 'endDate': '2099-12-31',
+            'readerUserIds': ['student_a'], 'internalNote': 'SECRET',
+            'renewalNote': 'SECRET',
+        }))
+        self.assertEqual(201, created['statusCode'])
+        aid = json.loads(created['body'])['data']['id']
+        self.assertEqual(200, self.call(self.event('/api/agreements/'+aid+'/status', 'POST',
+            {'to': 'active'}, **{'if-match': '"1"'}))['statusCode'])
+        self.login_as(student)
+        response = self.call(self.event('/api/agreements/'+aid))
+        self.assertEqual(200, response['statusCode'])
+        summary = json.loads(response['body'])['data']
+        self.assertEqual({'id', 'entityType', 'title', 'agreementType', 'startDate', 'endDate', 'status'}, set(summary))
+        self.assertEqual('active', summary['status'])
+        listing = self.call(self.event('/api/agreements'))
+        self.assertEqual(200, listing['statusCode'])
+        self.assertNotIn('SECRET', listing['body'])
+        for path, method, payload in [('/api/agreements/'+aid, 'PATCH', {'readerUserIds': ['student_a']}),
+                ('/api/agreements/'+aid+'/status', 'POST', {'to': 'expired'}),
+                ('/api/agreements', 'POST', {'title': 'Injected'})]:
+            self.assertEqual(403, self.call(self.event(path, method, payload, **{'if-match': '"2"'}))['statusCode'])
+        self.assertIn(self.call(self.event('/api/agreements/'+aid+'/documents'))['statusCode'], (403,404))
+        self.login_as(user_context('student', 'c1', 'student_b').user)
+        self.assertEqual(404, self.call(self.event('/api/agreements/'+aid))['statusCode'])
+        self.login_as(user_context('student', 'c2', 'student_a').user)
+        self.assertEqual(404, self.call(self.event('/api/agreements/'+aid))['statusCode'])
+        self.login_as(user_context('staff', 'c1', 'u1').user)
+        revoked = self.call(self.event('/api/agreements/'+aid, 'PATCH',
+            {'readerUserIds': []}, **{'if-match': '"2"'}))
+        self.assertEqual(200, revoked['statusCode'])
+        self.login_as(student)
+        self.assertEqual(404, self.call(self.event('/api/agreements/'+aid))['statusCode'])
+        self.assertEqual([], json.loads(self.call(self.event('/api/agreements'))['body'])['data'])
+
+    def test_reader_assignment_rejects_nonstudents_and_invalid_lists(self):
+        base = {'title': 'Read access', 'agreementType': 'MoU', 'partnerIds': ['partner-001'], 'scopeId': 'c1'}
+        for readers in (None, 'student_a', ['u1'], ['missing'], ['a','a']):
+            response = self.call(self.event('/api/agreements', 'POST', dict(base, readerUserIds=readers)))
+            self.assertEqual(422, response['statusCode'])

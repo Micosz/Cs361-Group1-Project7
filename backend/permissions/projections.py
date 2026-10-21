@@ -17,7 +17,7 @@ FIELDS = {
 ARRAYS = {
     'partner': {'responsibleUserIds'},
     'activity': {'responsibleUserIds'},
-    'agreement': {'responsibleUserIds', 'partnerIds'},
+    'agreement': {'responsibleUserIds', 'partnerIds', 'readerUserIds'},
     'exchange': {'partnerIds', 'responsibleUserIds', 'participantUserIds'},
 }
 STUDENT = {'id', 'title', 'startDate', 'endDate', 'status', 'supportingInfoForParticipant'}
@@ -32,6 +32,8 @@ def pick(record, fields):
 
 def project(context, kind, record, parent=None):
     roles = require_record(context, kind, 'read', record, parent)
+    if kind == 'agreement' and not roles & {'staff', 'coordinator', 'executive'}:
+        return pick(record, {'id', 'entityType', 'title', 'agreementType', 'startDate', 'endDate', 'status'})
     if kind == 'exchange' and roles == {'student'}:
         return pick(record, STUDENT)
     fields = COMMON | FIELDS[kind]

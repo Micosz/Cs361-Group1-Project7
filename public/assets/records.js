@@ -231,7 +231,8 @@
             }
             const actions = document.createElement('div'); actions.className = 'detail-record-actions';
             mountDetailActions(fresh, record, kind, current, page, actions);
-            if (['agreements','exchanges'].includes(kind) && window.DocumentComponent) {
+            if (['agreements','exchanges'].includes(kind) && window.DocumentComponent
+                    && !(kind === 'agreements' && !record.scopeId)) {
                 const docs = document.createElement('section'); $('detail-fields').appendChild(docs);
                 window.DocumentComponent.mount(docs, kind === 'agreements' ? 'agreement' : 'exchange', record, {actions});
             } else {
@@ -331,7 +332,7 @@
             if (!session?.user) { host.hidden = true; updateTabs([]); return; }
             const roles = window.CstuWork.roles(session);
             updateTabs(roles);
-            if (!roles.some(role => ['coordinator','staff','executive'].includes(role)) && !(kind === 'exchanges' && roles.includes('student'))) {
+            if (!roles.some(role => ['coordinator','staff','executive'].includes(role)) && !(['agreements','exchanges'].includes(kind) && roles.includes('student'))) {
                 host.hidden = true; return;
             }
             nav();
@@ -421,7 +422,7 @@
         $('tabExchange').hidden = !internal && !roles.includes('student');
         $('board-overview').hidden = !roles.some(role => ['staff','executive'].includes(role));
         $('board-overview').textContent = roles.includes('executive') ? 'ภาพรวมความร่วมมือ' : 'สรุปข้อมูลตามสิทธิ์';
-        if ((kind === 'agreements' && !internal) || (kind === 'exchanges' && $('tabExchange').hidden) || ((overview || feedbackInbox) && !roles.some(role => ['staff','executive'].includes(role)))) {
+        if ((kind === 'agreements' && !internal && !roles.includes('student')) || (kind === 'exchanges' && $('tabExchange').hidden) || ((overview || feedbackInbox) && !roles.some(role => ['staff','executive'].includes(role)))) {
             kind = 'activities'; overview = false; feedbackInbox = false; config = window.CstuWork.kinds.activities;
             params = new URLSearchParams(); setupFilters();
         }
@@ -458,7 +459,7 @@
         if (detail?.selectId && detail.selectId !== (kind === 'partners' ? 'filterCollab' : 'filterEvent')) return;
         if (!['partners','activities','agreements'].includes(kind)) return;
         if (eventKinds.includes(kind)) {
-            const internal = window.CstuWork.roles(session).some(role => ['staff','coordinator','executive'].includes(role));
+            const internal = window.CstuWork.roles(session).some(role => ['student','staff','coordinator','executive'].includes(role));
             kind = $('filterEvent').value === 'mou' && internal ? 'agreements' : 'activities';
             eventKind = kind; config = window.CstuWork.kinds[kind]; setupFilters();
         }

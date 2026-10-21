@@ -51,7 +51,7 @@ def action_roles(kind, action):
     if kind not in BUSINESS | CHILDREN:
         return set()
     if action == 'read':
-        return ({'student', 'coordinator', 'staff', 'executive'} if kind in {'exchange', 'document'}
+        return ({'student', 'coordinator', 'staff', 'executive'} if kind in {'agreement', 'exchange', 'document'}
                 else {'coordinator', 'staff'} if kind == 'contact'
                 else {'coordinator', 'staff', 'executive'})
     if action == 'create':
@@ -115,7 +115,10 @@ def allowed_roles(context, kind, action, record, parent=None):
         roles.discard('staff')
     if not linked(base, 'responsibleUserIds', user.user_id):
         roles.discard('coordinator')
-    if base.get('entityType') != 'exchange' or not linked(base, 'participantUserIds', user.user_id):
+    student_reader = (kind == 'agreement' and action == 'read'
+                      and linked(base, 'readerUserIds', user.user_id))
+    if not student_reader and (base.get('entityType') != 'exchange'
+            or not linked(base, 'participantUserIds', user.user_id)):
         roles.discard('student')
     if kind == 'document':
         if record.get('uploadState') == 'deleted':
@@ -166,6 +169,8 @@ def validate_fields(context, kind, action, payload, record=None, parent=None):
         fields.add('responsibleUserIds')
         if kind in DISPLAY:
             fields.add('publication')
+    if kind == 'agreement' and action in {'create', 'update'} and 'staff' in roles:
+        fields.add('readerUserIds')
     unknown = set(payload) - fields
     if unknown:
         # Permission-sensitive injection must not be silently ignored.
