@@ -5,6 +5,8 @@
     let params = new URLSearchParams(), kind = 'partners', overview = false, feedbackInbox = false, config = window.CstuWork.kinds.partners;
     const host = $('home-records');
     const eventKinds = ['activities','agreements'];
+    const publicAgreements = (target = kind, identity = session) => target === 'agreements' && !window.CstuWork.roles(identity).some(role => ['staff','coordinator','executive'].includes(role));
+    const listPath = target => publicAgreements(target) ? '/public/agreements' : target === 'exchanges' && !window.CstuWork.roles(session).some(role => ['coordinator','staff','executive'].includes(role)) ? '/me/exchanges' : '/'+target;
     let keyword = '';
     let partnerRows = [], eventRows = [];
     const boardParent = host.parentNode;
@@ -200,8 +202,9 @@
         $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); if (!dialog.open) dialog.showModal();
         try {
             const fresh = await window.CstuAuth.refresh();
-            if (!fresh?.user) { redirectLogin(); return; }
-            const result = await window.CstuAuth.request('/' + kind + '/' + encodeURIComponent(row.id));
+            if (!fresh?.user && kind !== 'agreements') { redirectLogin(); return; }
+            const prefix = publicAgreements(kind, fresh) ? '/public/agreements' : '/'+kind;
+            const result = await window.CstuAuth.request(prefix + '/' + encodeURIComponent(row.id));
             if (current !== detailRevision || page !== revision || !dialog.open) return;
             session = fresh;
             const record = result.data;
@@ -293,8 +296,7 @@
         const request = {cursor,current}; moreRequest = request;
         $('records-retry').hidden = true; status('กำลังโหลดรายการเพิ่มเติม');
         try {
-            const result = validateList(await window.CstuAuth.request('/'+(targetKind === 'exchanges' &&
-                !window.CstuWork.roles(session).some(role => ['coordinator','staff','executive'].includes(role)) ? 'me/exchanges' : targetKind)+'?'+query(cursor)));
+            const result = validateList(await window.CstuAuth.request(listPath(targetKind)+'?'+query(cursor)));
             if (current !== revision || targetKind !== kind || nextCursor !== cursor) return;
             if (result.page.nextCursor === cursor) throw Error('CURSOR_DID_NOT_ADVANCE');
             if (targetKind === 'partners') {
@@ -329,10 +331,10 @@
             if (!window.CstuAuth.enabled()) { status('พื้นที่ผู้ใช้ยังไม่เปิดใช้งาน'); return; }
             session = await window.CstuAuth.refresh();
             if (current !== revision) return;
-            if (!session?.user) { host.hidden = true; updateTabs([]); return; }
+            if (!session?.user && kind !== 'agreements') { host.hidden = true; updateTabs([]); return; }
             const roles = window.CstuWork.roles(session);
             updateTabs(roles);
-            if (!roles.some(role => ['coordinator','staff','executive'].includes(role)) && !(['agreements','exchanges'].includes(kind) && roles.includes('student'))) {
+            if (!roles.some(role => ['coordinator','staff','executive'].includes(role)) && kind !== 'agreements' && !(kind === 'exchanges' && roles.includes('student'))) {
                 host.hidden = true; return;
             }
             nav();
@@ -360,7 +362,7 @@
             if (kind === 'activities' && !['all','academic_activity','event','research'].includes($('filterEvent').value)) {
                 host.hidden = true; return;
             }
-            const result = validateList(await window.CstuAuth.request((kind === 'exchanges' && !roles.some(role => ['coordinator','staff','executive'].includes(role)) ? '/me/exchanges' : '/'+kind)+'?'+query()));
+            const result = validateList(await window.CstuAuth.request(listPath(kind)+'?'+query()));
             if (current !== revision) return;
             status(result.count ? `พบ ${result.count} รายการในขอบเขตที่มีสิทธิ์` : 'ไม่พบรายการตามเงื่อนไข');
             if (!result.count && ['partners','activities','agreements'].includes(kind)) host.hidden = true;
@@ -422,7 +424,7 @@
         $('tabExchange').hidden = !internal && !roles.includes('student');
         $('board-overview').hidden = !roles.some(role => ['staff','executive'].includes(role));
         $('board-overview').textContent = roles.includes('executive') ? 'ภาพรวมความร่วมมือ' : 'สรุปข้อมูลตามสิทธิ์';
-        if ((kind === 'agreements' && !internal && !roles.includes('student')) || (kind === 'exchanges' && $('tabExchange').hidden) || ((overview || feedbackInbox) && !roles.some(role => ['staff','executive'].includes(role)))) {
+        if ((kind === 'exchanges' && $('tabExchange').hidden) || ((overview || feedbackInbox) && !roles.some(role => ['staff','executive'].includes(role)))) {
             kind = 'activities'; overview = false; feedbackInbox = false; config = window.CstuWork.kinds.activities;
             params = new URLSearchParams(); setupFilters();
         }
@@ -460,7 +462,7 @@
         if (!['partners','activities','agreements'].includes(kind)) return;
         if (eventKinds.includes(kind)) {
             const internal = window.CstuWork.roles(session).some(role => ['student','staff','coordinator','executive'].includes(role));
-            kind = $('filterEvent').value === 'mou' && internal ? 'agreements' : 'activities';
+            kind = $('filterEvent').value === 'mou' ? 'agreements' : 'activities';
             eventKind = kind; config = window.CstuWork.kinds[kind]; setupFilters();
         }
         params.delete('id'); load();

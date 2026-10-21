@@ -115,6 +115,28 @@ class DynamoBusinessRepository:
                     break
         return rows
 
+    def public_agreements(self):
+        from ..permissions.projections import public_projection
+        rows, cursor = [], None
+        while True:
+            query = dict(TableName=self.table, ConsistentRead=True,
+                         FilterExpression='#kind = :kind',
+                         ExpressionAttributeNames={'#kind': 'entityType'},
+                         ExpressionAttributeValues=values({':kind': 'agreement'}))
+            if cursor:
+                query['ExclusiveStartKey'] = cursor
+            result = self.client.scan(**query)
+            for item in result.get('Items', []):
+                record = decode(item)
+                if record.get('entityType') != 'agreement' or record.get('source_state') == 'retired':
+                    continue
+                projected = public_projection('agreement', record)
+                if projected is not None:
+                    rows.append(projected)
+            cursor = result.get('LastEvaluatedKey')
+            if not cursor:
+                return rows
+
     def public_catalog(self):
         # Public reads never reuse editor projections, assignments or child records.
         from ..permissions.projections import public_projection
@@ -221,7 +243,7 @@ class DynamoBusinessRepository:
             ref_pairs += [('agreement', effective['agreementId'])]
         for entity, key in ref_pairs:
             require_reference(context, reference(entity, key), scope)
-        for field, participant in [('responsibleUserIds', False), ('participantUserIds', True), ('readerUserIds', True)]:
+        for field, participant in [('responsibleUserIds', False), ('participantUserIds', True)]:
             for key in effective.get(field, []):
                 require_assignee(user(key), scope, participant=participant)
 

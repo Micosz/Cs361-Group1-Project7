@@ -413,10 +413,10 @@ class AgreementTests(unittest.TestCase):
             'scopeId': 'c1',
             'status': 'draft',
             'version': 1,
-            'publication': 'public',  # Even if injected maliciously
+            'publication': 'internal',  # Explicitly private agreements stay hidden
         }
         proj = public_projection('agreement', agreement_rec)
-        self.assertIsNone(proj, "Agreements must never be exposed via public projections")
+        self.assertIsNone(proj, "Internal agreements must never be exposed via public projections")
 
     # -------------------------------------------------------------
     # 7. List and Query Filter
@@ -961,58 +961,35 @@ class AgreementTests(unittest.TestCase):
         self.assertEqual('active', json.loads(res_coord_ok['body'])['data']['status'])
 
 
-    def test_selected_student_summary_read_and_revoke_after_activation(self):
-        student = user_context('student', 'c1', 'student_a').user
-        self.mock_user_dict['student_a'] = student
+    def test_public_agreement_student_summary_and_unpublish_after_activation(self):
         created = self.call(self.event('/api/agreements', 'POST', {
-            'title': 'Student readable MoU', 'agreementType': 'MoU',
+            'title': 'Published MoU', 'agreementType': 'MoU',
             'partnerIds': ['partner-001'], 'scopeId': 'c1',
             'startDate': '2025-01-01', 'endDate': '2099-12-31',
-            'readerUserIds': ['student_a'], 'internalNote': 'SECRET',
-            'renewalNote': 'SECRET',
+            'publication': 'public', 'internalNote': 'SECRET', 'renewalNote': 'SECRET',
         }))
         self.assertEqual(201, created['statusCode'])
         aid = json.loads(created['body'])['data']['id']
         self.assertEqual(200, self.call(self.event('/api/agreements/'+aid+'/status', 'POST',
             {'to': 'active'}, **{'if-match': '"1"'}))['statusCode'])
-        self.login_as(student)
+        self.login_as(user_context('student', 'c1', 'student_any').user)
         response = self.call(self.event('/api/agreements/'+aid))
         self.assertEqual(200, response['statusCode'])
-        summary = json.loads(response['body'])['data']
-        self.assertEqual({'id', 'entityType', 'title', 'agreementType', 'startDate', 'endDate', 'status'}, set(summary))
-        self.assertEqual('active', summary['status'])
-        listing = self.call(self.event('/api/agreements'))
-        self.assertEqual(200, listing['statusCode'])
-        self.assertNotIn('SECRET', listing['body'])
-        for path, method, payload in [('/api/agreements/'+aid, 'PATCH', {'readerUserIds': ['student_a']}),
-                ('/api/agreements/'+aid+'/status', 'POST', {'to': 'expired'}),
-                ('/api/agreements', 'POST', {'title': 'Injected'})]:
-            self.assertEqual(403, self.call(self.event(path, method, payload, **{'if-match': '"2"'}))['statusCode'])
-        self.repo.rows[('document', 'private-doc')] = {
-            'id': 'private-doc', 'entityType': 'document', 'scopeId': 'c1',
-            'parentType': 'agreement', 'parentId': aid, 'version': 1,
-            'audience': 'internal', 'containsPersonal': False, 'uploadState': 'ready',
-            'displayName': 'SECRET.pdf', 'objectKey': 'SECRET',
-        }
-        documents = self.call(self.event('/api/agreements/'+aid+'/documents'))
-        self.assertEqual(200, documents['statusCode'])
-        self.assertEqual([], json.loads(documents['body'])['data'])
-        self.assertEqual(404, self.call(self.event('/api/documents/private-doc'))['statusCode'])
-        self.assertEqual(404, self.call(self.event('/api/documents/private-doc/content'))['statusCode'])
-        self.login_as(user_context('student', 'c1', 'student_b').user)
-        self.assertEqual(404, self.call(self.event('/api/agreements/'+aid))['statusCode'])
-        self.login_as(user_context('student', 'c2', 'student_a').user)
-        self.assertEqual(404, self.call(self.event('/api/agreements/'+aid))['statusCode'])
+        self.assertNotIn('SECRET', response['body'])
+        self.assertEqual({'id', 'entityType', 'title', 'agreementType', 'startDate', 'endDate', 'status'},
+            set(json.loads(response['body'])['data']))
+        self.assertEqual(403, self.call(self.event('/api/agreements/'+aid, 'PATCH',
+            {'publication':'public'}, **{'if-match': '"2"'}))['statusCode'])
         self.login_as(user_context('staff', 'c1', 'u1').user)
-        revoked = self.call(self.event('/api/agreements/'+aid, 'PATCH',
-            {'readerUserIds': []}, **{'if-match': '"2"'}))
-        self.assertEqual(200, revoked['statusCode'])
-        self.login_as(student)
+        self.assertEqual(200, self.call(self.event('/api/agreements/'+aid, 'PATCH',
+            {'publication':'internal'}, **{'if-match': '"2"'}))['statusCode'])
+        self.login_as(user_context('student', 'c1', 'student_any').user)
         self.assertEqual(404, self.call(self.event('/api/agreements/'+aid))['statusCode'])
-        self.assertEqual([], json.loads(self.call(self.event('/api/agreements'))['body'])['data'])
 
-    def test_reader_assignment_rejects_nonstudents_and_invalid_lists(self):
-        base = {'title': 'Read access', 'agreementType': 'MoU', 'partnerIds': ['partner-001'], 'scopeId': 'c1'}
-        for readers in (None, 'student_a', ['u1'], ['missing'], ['a','a']):
-            response = self.call(self.event('/api/agreements', 'POST', dict(base, readerUserIds=readers)))
-            self.assertEqual(422, response['statusCode'])
+    def test_publication_rejects_invalid_values_and_old_reader_assignment(self):
+        base = {'title': 'Publication', 'agreementType':'MoU', 'partnerIds':['partner-001'], 'scopeId':'c1'}
+        for publication in (None, [], {}, 'Public', True):
+            self.assertEqual(422, self.call(self.event('/api/agreements', 'POST',
+                dict(base, publication=publication)))['statusCode'])
+        self.assertEqual(422, self.call(self.event('/api/agreements', 'POST',
+            dict(base, readerUserIds=['student_a'])))['statusCode'])

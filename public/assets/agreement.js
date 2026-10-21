@@ -628,12 +628,15 @@
             form.appendChild(createField('agreement-form-responsible', 'ผู้รับผิดชอบ (Responsible User IDs)', respInput));
         }
 
-        let readersInput = null;
+        let publicationInput = null;
         if (isStaff) {
-            readersInput = document.createElement('input');
-            readersInput.type = 'text';
-            readersInput.value = (agreement?.readerUserIds || []).join(', ');
-            form.appendChild(createField('agreement-form-readers', 'นักศึกษาที่อ่านข้อมูลสรุปได้ (แก้ไขไม่ได้)', readersInput));
+            publicationInput = document.createElement('select');
+            for (const [value, label] of [['internal','ภายใน'], ['public','Public — ทุกคนอ่านข้อมูลสรุปได้']]) {
+                const option = document.createElement('option'); option.value = value; option.textContent = label;
+                publicationInput.appendChild(option);
+            }
+            publicationInput.value = agreement?.publication || 'internal';
+            form.appendChild(createField('agreement-form-publication', 'การเผยแพร่ข้อมูลสรุป MoU', publicationInput));
         }
 
         // Status container
@@ -729,7 +732,7 @@
                 }
             }
 
-            if (readersInput) payload.readerUserIds = [...new Set(readersInput.value.split(',').map(v => v.trim()).filter(Boolean))];
+            if (publicationInput) payload.publication = publicationInput.value;
 
             if (isCreate) {
                 payload.scopeId = scopeInput.value.trim();
@@ -804,7 +807,6 @@
         if (!dlg.open) dlg.showModal();
         if (window.SelectionFields) {
             const fields=[{input:partnerInput,kind:'partners',label:'คู่ความร่วมมือ (เลือกได้หลายรายการ)',required:true}];
-            if(readersInput)fields.push({input:readersInput,kind:'participant',label:'นักศึกษาที่อ่านข้อมูลสรุปได้ (แก้ไขไม่ได้)'});
             if(respInput)fields.push({input:respInput,kind:'responsible',label:'ผู้รับผิดชอบ (เลือกได้หลายคน)'});
             window.SelectionFields.mount({form,scope:scopeInput || (()=>agreement.scopeId),fields,submit:submitBtn,status:statusContainer});
         }

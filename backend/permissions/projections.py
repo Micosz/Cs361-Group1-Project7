@@ -7,7 +7,7 @@ COMMON = {'id', 'entityType', 'version', 'createdAt', 'updatedAt'}
 FIELDS = {
     'partner': {'name', 'type', 'summary', 'fullDescription', 'location', 'websiteUrl', 'logoPath', 'publication'},
     'activity': {'title', 'type', 'summary', 'fullDescription', 'partnerId', 'periodText', 'periodDate', 'imagePath', 'publication', 'outcomeSummary'},
-    'agreement': {'title', 'agreementType', 'startDate', 'endDate', 'status', 'renewalDueOn', 'renewalNote', 'internalNote'},
+    'agreement': {'title', 'agreementType', 'startDate', 'endDate', 'status', 'renewalDueOn', 'renewalNote', 'internalNote', 'publication'},
     'exchange': {'title', 'agreementId', 'startDate', 'endDate', 'status', 'supportingInfo', 'supportingInfoForParticipant', 'outcomeSummary'},
     'feedback': {'parentId', 'parentType', 'occurredOn', 'sourceType', 'comment', 'improvement'},
     'contact': {'partnerId', 'name', 'position', 'email', 'phone'},
@@ -17,7 +17,7 @@ FIELDS = {
 ARRAYS = {
     'partner': {'responsibleUserIds'},
     'activity': {'responsibleUserIds'},
-    'agreement': {'responsibleUserIds', 'partnerIds', 'readerUserIds'},
+    'agreement': {'responsibleUserIds', 'partnerIds'},
     'exchange': {'partnerIds', 'responsibleUserIds', 'participantUserIds'},
 }
 STUDENT = {'id', 'title', 'startDate', 'endDate', 'status', 'supportingInfoForParticipant'}
@@ -60,7 +60,10 @@ def visible_records(context, kind, records, parent=None):
     return [r for r in records if allowed_roles(context, kind, 'read', r, parent)]
 
 
+AGREEMENT_PUBLIC = {'id', 'entityType', 'title', 'agreementType', 'startDate', 'endDate', 'status', 'publication'}
+
 PUBLIC_FIELDS = {
+    'agreement': AGREEMENT_PUBLIC,
     'partner': {'id', 'name', 'type', 'summary', 'full_description', 'location', 'website_url', 'logo_path'},
     'activity': {'id', 'title', 'type', 'summary', 'full_description', 'partnerId', 'period', 'period_date', 'image_path', 'visibility'},
 }
@@ -77,6 +80,8 @@ def published(record):
 
 
 def public_projection(kind, record, partners=None):
+    if kind == 'agreement' and record.get('publication') != 'public':
+        return None
     if kind not in PUBLIC_FIELDS or not published(record):
         return None
     normalized = dict(record)

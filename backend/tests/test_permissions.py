@@ -47,9 +47,9 @@ class PolicyTests(unittest.TestCase):
                                    or action == 'status' and kind in {'agreement', 'exchange'}
                                    and role in {'staff', 'coordinator'})
                         if allowed:
-                            require_record(context(role), kind, action, row(kind))
+                            require_record(context(role), kind, action, row(kind, publication='public' if kind == 'agreement' else 'internal'))
                         else:
-                            self.deny(403, lambda: require_record(context(role), kind, action, row(kind)))
+                            self.deny(403, lambda: require_record(context(role), kind, action, row(kind, publication='public' if kind == 'agreement' else 'internal')))
 
     def test_same_role_cannot_cross_scope_or_guess_missing_record(self):
         for role in ('staff', 'coordinator', 'executive', 'student'):
