@@ -79,7 +79,7 @@ def page(rows, event, service, kind=None):
         rows.sort(key=lambda r: r.get('occurredOn') or '', reverse=True)
     # Include the authorized projection snapshot so record edits/assignment changes
     # invalidate pagination rather than shifting a stale page across permissions.
-    binding = json.dumps([event['rawPath'], token_hash(session_cookie(event)), needle, limit, {k: query[k] for k in sorted(query) if k not in {'q', 'limit', 'cursor'}}, rows],
+    binding = json.dumps([event['rawPath'], token_hash(session_cookie(event) or ''), needle, limit, {k: query[k] for k in sorted(query) if k not in {'q', 'limit', 'cursor'}}, rows],
                          sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()
     fingerprint = hashlib.sha256(binding).hexdigest()
     secret = service.policy.csrf_secret
