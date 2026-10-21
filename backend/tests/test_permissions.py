@@ -22,7 +22,7 @@ def context(role='staff', scope='c1', user='u1', extra=()):
 
 def row(kind='exchange', key='e1', scope='c1', **fields):
     base = dict(id=key, entityType=kind, scopeId=scope, version=1,
-                responsibleUserIds=['u1'], participantUserIds=['u1'],
+                responsibleUserIds=['u1'], participantUserIds=['u1'], readerUserIds=['u1'],
                 title='Demo', publication='internal')
     if kind == 'activity':
         base.update(partnerId='p1', coHostPartnerIds=[], agreementIds=[])
@@ -42,7 +42,7 @@ class PolicyTests(unittest.TestCase):
                 for action in ('read', 'update', 'status', 'delete'):
                     with self.subTest(kind=kind, role=role, action=action):
                         allowed = (action == 'read' and (role in {'staff', 'coordinator', 'executive'}
-                                   or role == 'student' and kind == 'exchange')
+                                   or role == 'student' and kind in {'agreement', 'exchange'})
                                    or action == 'update' and role in {'staff', 'coordinator'}
                                    or action == 'status' and kind in {'agreement', 'exchange'}
                                    and role in {'staff', 'coordinator'})

@@ -51,7 +51,7 @@ class WorkspaceStorageTests(unittest.TestCase):
         result, _ = self.call('/api/agreements/' + row['id'], 'PATCH', {'title': 'คำขอเก่า'}, version=1)
         self.assertEqual(409, result['statusCode'])
         self.actor = 'student-a'
-        self.assertEqual(403, self.call('/api/agreements/' + row['id'])[0]['statusCode'])
+        self.assertEqual(404, self.call('/api/agreements/' + row['id'])[0]['statusCode'])
 
     def test_contact_delete_is_atomic_in_dynamo_adapter(self):
         result, body = self.call('/api/partners/partner-demo/contacts', 'POST',

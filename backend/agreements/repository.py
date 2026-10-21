@@ -194,6 +194,10 @@ class AgreementRepository:
                     from ..permissions.policy import require_assignee
                     require_assignee(caller, conditions.scope_id, participant=False)
 
+            for uid in payload.get('readerUserIds', []):
+                from ..permissions.policy import require_assignee
+                require_assignee(self._get_user(uid), conditions.scope_id, participant=True)
+
             # 4. Build and Persist Record
             now_iso = datetime.now(timezone.utc).isoformat()
             if is_create:
