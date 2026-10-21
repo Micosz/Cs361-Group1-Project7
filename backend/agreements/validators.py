@@ -20,7 +20,7 @@ ALLOWED_FIELDS = {
     'renewalNote',
     'internalNote',
     'responsibleUserIds',
-    'readerUserIds',
+    'publication',
     'scopeId',
     'status',
 }
@@ -135,14 +135,9 @@ def validate_agreement_payload(payload: dict, is_create: bool = True):
         if len(set(resp)) != len(resp):
             raise AuthError('INVALID_FIELDS', 422)
 
-    # Explicit readers are optional; [] revokes all student read access.
-    if 'readerUserIds' in payload:
-        readers = payload['readerUserIds']
-        if (not isinstance(readers, list) or len(readers) > 20
-                or any(not isinstance(uid, str) or not uid or uid != uid.strip()
-                       or len(uid) > 200 for uid in readers)
-                or len(set(readers)) != len(readers)):
-            raise AuthError('INVALID_FIELDS', 422)
+    if 'publication' in payload and (not isinstance(payload['publication'], str)
+            or payload['publication'] not in {'internal', 'public'}):
+        raise AuthError('INVALID_FIELDS', 422)
 
     # Validate status
     if 'status' in payload and payload['status'] is not None:

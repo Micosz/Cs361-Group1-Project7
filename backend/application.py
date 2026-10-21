@@ -17,6 +17,8 @@ class AuthApplication:
             if event.get('version') != '2.0':
                 raise AuthError('UNSUPPORTED_EVENT', 400)
             path = event.get('rawPath', '')
+            if path == '/api/public/agreements' or path.startswith('/api/public/agreements/'):
+                return self.public_agreements(event)
             if path == '/api/public/records':
                 return self.public_catalog(event)
             if path == '/api/selection-partners':
@@ -38,6 +40,27 @@ class AuthApplication:
             return result
         except Exception:
             return error_response('AUTH_UNAVAILABLE', 503, event)
+
+    def public_agreements(self, event):
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        if self.repository is None or not hasattr(self.repository, 'public_agreements'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        rows = self.repository.public_agreements()
+        path = event['rawPath']
+        if path != '/api/public/agreements':
+            key = path[len('/api/public/agreements/'):]
+            if not key or '/' in key or event.get('queryStringParameters'):
+                raise AuthError('NOT_FOUND', 404)
+            record = next((row for row in rows if row['id'] == key), None)
+            if record is None:
+                raise AuthError('NOT_FOUND', 404)
+            return response(200, {'data': record})
+        from .permissions.listing import page
+        if 'scopeId' in (event.get('queryStringParameters') or {}):
+            raise AuthError('INVALID_QUERY', 422)
+        data, count, pagination = page(rows, event, self.sessions, 'agreement')
+        return response(200, {'data': data, 'count': count, 'page': pagination})
 
     def public_catalog(self, event):
         if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':

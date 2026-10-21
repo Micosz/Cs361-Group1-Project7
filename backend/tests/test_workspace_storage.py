@@ -265,3 +265,34 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.assertTrue(any(item.get('ConditionCheck',{}).get('TableName')=='Partner' for item in transaction))
         self.assertTrue(all('type' in item['ConditionCheck']['Key'] for item in transaction if item.get('ConditionCheck',{}).get('TableName')=='Partner'))
         self.assertTrue(any(item.get('Put',{}).get('TableName')=='business' for item in transaction))
+
+    def test_anonymous_public_mou_summary_and_unpublish(self):
+        from backend.permissions.transactions import values
+        self.repository.client.scan = lambda **kwargs: {'Items': [values(row) for row in self.repository.client.rows.values()]}
+        private = self.create_agreement()
+        result, body = self.call('/api/agreements', 'POST', dict(title='Public safe MoU',
+            agreementType='MoU', scopeId='cs-demo', partnerIds=['partner-demo'],
+            publication='public', internalNote='SECRET', renewalNote='SECRET'), key='public-mou-test-1')
+        self.assertEqual(201, result['statusCode'], body)
+        public = body['data']
+        def anonymous(path, method='GET', query=None):
+            return self.app.handle(dict(version='2.0', rawPath=path,
+                requestContext={'http':{'method':method}}, queryStringParameters=query))
+        for path in ['/api/public/agreements', '/api/public/agreements/'+public['id']]:
+            response = anonymous(path)
+            self.assertEqual(200, response['statusCode'], response)
+            self.assertNotIn('SECRET', response['body'])
+            self.assertNotIn('responsibleUserIds', response['body'])
+            self.assertNotIn('scopeId', response['body'])
+        listing = json.loads(anonymous('/api/public/agreements')['body'])
+        self.assertEqual([public['id']], [r['id'] for r in listing['data']])
+        self.assertEqual(404, anonymous('/api/public/agreements/'+private['id'])['statusCode'])
+        self.assertEqual(405, anonymous('/api/public/agreements/'+public['id'], 'PATCH')['statusCode'])
+        self.assertEqual(404, anonymous('/api/public/agreements/'+public['id']+'/documents')['statusCode'])
+        self.assertEqual(422, anonymous('/api/public/agreements', query={'startDate':'invalid'})['statusCode'])
+        self.assertEqual(0, json.loads(anonymous('/api/public/agreements', query={'q':'SECRET'})['body'])['count'])
+        result, body = self.call('/api/agreements/'+public['id'], 'PATCH',
+            {'publication':'internal'}, version=public['version'])
+        self.assertEqual(200, result['statusCode'], body)
+        self.assertEqual(404, anonymous('/api/public/agreements/'+public['id'])['statusCode'])
+        self.assertEqual([], json.loads(anonymous('/api/public/agreements')['body'])['data'])

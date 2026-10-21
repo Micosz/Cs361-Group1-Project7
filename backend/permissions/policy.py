@@ -116,7 +116,7 @@ def allowed_roles(context, kind, action, record, parent=None):
     if not linked(base, 'responsibleUserIds', user.user_id):
         roles.discard('coordinator')
     student_reader = (kind == 'agreement' and action == 'read'
-                      and linked(base, 'readerUserIds', user.user_id))
+                      and base.get('publication') == 'public')
     if not student_reader and (base.get('entityType') != 'exchange'
             or not linked(base, 'participantUserIds', user.user_id)):
         roles.discard('student')
@@ -170,7 +170,7 @@ def validate_fields(context, kind, action, payload, record=None, parent=None):
         if kind in DISPLAY:
             fields.add('publication')
     if kind == 'agreement' and action in {'create', 'update'} and 'staff' in roles:
-        fields.add('readerUserIds')
+        fields.add('publication')
     unknown = set(payload) - fields
     if unknown:
         # Permission-sensitive injection must not be silently ignored.
