@@ -96,7 +96,7 @@
 
 **ข้อแลกเปลี่ยน:** ความสัมพันธ์ต้องประกอบใน application และการค้นหาปัจจุบันทำกับข้อมูลที่โหลดมาฝั่ง frontend หากข้อมูลเพิ่มขึ้นหรือจำเป็นต้องค้นหาความสัมพันธ์/ช่วงเวลาที่ซับซ้อนขึ้น ต้องทบทวนวิธี query, index และทางเลือกฐานข้อมูลอีกครั้ง
 
-อ่านเหตุผลและทางเลือกเพิ่มเติมใน [ADR สำหรับ V2](docs/architecture/ADR-001-v2-hosting.md) และดู [แผนภาพสถาปัตยกรรม V2](docs/architecture/v2-architecture-diagram.png)
+อ่านเหตุผลและทางเลือกเพิ่มเติมใน [ADR สำหรับ V2](docs/architecture/v2/ADR-001-v2-hosting.md) และดู [แผนภาพสถาปัตยกรรม V2](docs/architecture/v2/v2-architecture-diagram.png)
 
 <details open>
 <summary><strong>🛠️ Technology stack</strong></summary>
@@ -196,8 +196,8 @@ npm test
 
 | อ่านเรื่องอะไร | เปิดเอกสาร |
 | --- | --- |
-| ระบบเชื่อมต่อกันอย่างไร | [แผนภาพสถาปัตยกรรม](docs/architecture/v2-architecture-diagram.png) |
-| ทำไมเลือกบริการ AWS เหล่านี้ | [เหตุผลการออกแบบ · ADR](docs/architecture/ADR-001-v2-hosting.md) |
+| ระบบเชื่อมต่อกันอย่างไร | [แผนภาพสถาปัตยกรรม](docs/architecture/v2/v2-architecture-diagram.png) |
+| ทำไมเลือกบริการ AWS เหล่านี้ | [เหตุผลการออกแบบ · ADR](docs/architecture/v2/ADR-001-v2-hosting.md) |
 | ตรวจสอบการค้นหาอย่างไร | [บันทึกผลทดสอบ Search](docs/evidence/v2-evidence.md#v2-search-verification) |
 
 <sub>บันทึกผลทดสอบ Search เป็นหลักฐานก่อนเพิ่มระบบข้อมูลสำรอง</sub>
@@ -211,7 +211,7 @@ npm test
 
 | หมวด | เปิดเอกสาร |
 | --- | --- |
-| สถาปัตยกรรม | [เหตุผลการเลือก Hosting](docs/architecture/ADR-001-v1-hosting.md) · [แผนภาพระบบ](docs/architecture/v1-architecture-diagram.png) |
+| สถาปัตยกรรม | [เหตุผลการเลือก Hosting](docs/architecture/v1/ADR-001-v1-hosting.md) · [แผนภาพระบบ](docs/architecture/v1/v1-architecture-diagram.png) |
 | ข้อมูลและหน้าจอ | [โครงสร้างข้อมูล JSON](docs/data/data-guide.md#v1-data) · [การออกแบบหน้าเว็บ](docs/design/v1-design.md) |
 | การเผยแพร่และหลักฐาน | [ขั้นตอน Deploy บน S3](docs/deployment/v1-deployment.md) · [หลักฐานส่งมอบ V1](docs/evidence/v1-evidence.md) |
 | การใช้ AI | [AI Usage Declaration](docs/ai-usage/v1-ai-usage-declaration.md) |

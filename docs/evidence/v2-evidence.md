@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 12040)
+Total output lines: 276
+
 # V2 Release Evidence
 
 รวมหลักฐานเดิมตามงานและวันที่ตรวจ ผลย้อนหลังไม่ได้ยืนยันบริการหรือ deployment ปัจจุบัน
@@ -36,7 +39,7 @@
 
 ### Search rule
 
-เลือกค้นจาก `name` ขององค์กรและ `title` ของกิจกรรมตาม [ข้อกำหนด V2](../architecture/ADR-001-v2-hosting.md) ที่ระบุการค้นหาด้วยชื่อ และตามกฎ Browse ที่มีอยู่ ใช้ `filterBrowseRecords()` ร่วมกันทั้ง suggestions และการ์ด รวมถึง filter ประเภทของแต่ละส่วน การค้นหาไม่แยกตัวพิมพ์ใหญ่/เล็กและ trim ช่องว่าง Suggestions ยังแสดงสูงสุด 6 รายการ
+เลือกค้นจาก `name` ขององค์กรและ `title` ของกิจกรรมตาม [ข้อกำหนด V2](../architecture/v2/ADR-001-v2-hosting.md) ที่ระบุการค้นหาด้วยชื่อ และตามกฎ Browse ที่มีอยู่ ใช้ `filterBrowseRecords()` ร่วมกันทั้ง suggestions และการ์ด รวมถึง filter ประเภทของแต่ละส่วน การค้นหาไม่แยกตัวพิมพ์ใหญ่/เล็กและ trim ช่องว่าง Suggestions ยังแสดงสูงสุด 6 รายการ
 
 ดังนั้น summary, location, partnerName และ co_hosts ไม่ใช่ฟิลด์ค้นหา แต่ยังแสดงในข้อมูล/รายละเอียดตามเดิม วิธีนี้ทำให้รายการแนะนำไม่แสดงผลที่การ์ดค้นไม่พบ และไม่ขยายขอบเขตฟีเจอร์
 
@@ -131,45 +134,7 @@ Public frontend ปัจจุบันยัง Browse, Search, Filter แล�
 | S10 แก้ช่วงวัน / ล้างวัน | คืนผล; clear ไม่ล้าง keyword/type | ผ่าน: แก้เป็น 15/10/2563 ทั้งสองค่า Roadshow กลับมา; clear แล้ว ISO/display ว่าง, keyword `KBTG`, type `event` คงเดิม | Production browser; S08 และขั้นตอนทำซ้ำ |
 | S11 debounce/cache/race/empty/retry | request แชร์กันและผลเก่าไม่ทับใหม่; error ลองใหม่ได้ | ผ่านใน mock รวม HTTP/network/JSON/shape failure, empty success และ backup | Local mocked tests; [ผลเต็ม](assets/v2/issue-88/automated-tests.txt) |
 | S12 co-host / dates / Thai digits | ความสัมพันธ์คงเดิม; วัน inclusive, one-sided, undated และ พ.ศ. ถูกต้อง | ผ่านใน mock; ไม่อ้างว่า browser ตรวจครบทุกกรณี | Local mocked tests; [ผลเต็ม](assets/v2/issue-88/automated-tests.txt) |
-| S13 ขอบเขต public ของ snapshot | ทุกรายการมี explicit public และ IDs ไม่ซ้ำ | ผ่านระดับรายการ: 26 records, ไม่มี non-public/duplicate ID; ไม่ใช่การรับรอง field-level privacy | Local + live artifact ตรงกัน; [inspection](assets/v2/issue-88/inspection.json) |
-| S14 workflow อัปเดต backup | validate ก่อนเขียน; run ขณะ API พร้อม; deploy ต่อได้ | static logic มีแล้ว; `gh run list --workflow update-data-backup.yml --limit 5` คืน `[]`; ยังไม่มีหลักฐาน run/deploy chain จากการตรวจนี้ | Static + GitHub read-only; [workflow](../../.github/workflows/update-data-backup.yml) |
-| S15 แก้ DynamoDB → refresh | หน้าใหม่อ่านค่าล่าสุด; ผู้ไม่มีสิทธิ์เขียนถูกปฏิเสธ | **ยังตรวจไม่ได้:** API 500 และไม่ได้ใช้ AWS Console/credentials; ไม่ทำการเขียนข้อมูลจริง | หลักฐานย้อนหลัง #43/#46/#55 ไม่แทนผลปัจจุบัน |
-
-<a id="v2-review-issue-88-หลักฐานเดิมจาก-issues"></a>
-
-### หลักฐานเดิมจาก Issues
-
-อ่าน body และ comments ปัจจุบันของ issues ต่อไปนี้; ลิงก์ภาพเป็นหลักฐานที่ผู้เขียนแนบ ไม่ได้ตรวจภาพย้อนหลังทุกใบหรือยืนยันว่าเป็น deployed commit ปัจจุบัน
-
-| Issue | หลักฐานที่พบ | ใช้ยืนยันอะไรได้ / ช่องว่าง |
-| --- | --- | --- |
-| [#43](https://github.com/Micosz/Cs361-Group1-Project7/issues/43) | [comment เพิ่มค่า a แล้วแก้เป็น b และเรียกกลับ](https://github.com/Micosz/Cs361-Group1-Project7/issues/43#issuecomment-5645139478) | เป็นรายงานการอ่านกลับย้อนหลัง; ยังไม่พบผล direct write denial ใน comment ที่อ่าน |
-| [#46](https://github.com/Micosz/Cs361-Group1-Project7/issues/46) | [comment อธิบาย Lambda/API/CORS และ reconstruction](https://github.com/Micosz/Cs361-Group1-Project7/issues/46#issuecomment-5654170710) | เป็นหลักฐาน implementation ตามผู้เขียน; backend source/IaC ไม่อยู่ใน repo จึงยังตรวจ config ปัจจุบันไม่ได้ |
-| [#48](https://github.com/Micosz/Cs361-Group1-Project7/issues/48) | [ภาพ search สองภาพ](https://github.com/Micosz/Cs361-Group1-Project7/issues/48#issuecomment-5654811874) และ verification 3 ต.ค. | ใช้เป็นประวัติ; ผล S04–S06 เป็นการตรวจใหม่ผ่าน backup |
-| [#49](https://github.com/Micosz/Cs361-Group1-Project7/issues/49) | [ภาพ filter สองภาพ](https://github.com/Micosz/Cs361-Group1-Project7/issues/49#issuecomment-5654712992) | ไม่ใช้ภาพอย่างเดียวสรุปกติกาช่วงวัน; อ่านโค้ดและตรวจ S08–S12 เพิ่ม |
-| [#55](https://github.com/Micosz/Cs361-Group1-Project7/issues/55) | [ภาพข้อมูล/ความสัมพันธ์](https://github.com/Micosz/Cs361-Group1-Project7/issues/55#issuecomment-5983975306) | Issue ปิดและ checklist ไม่ยืนยัน API/deployment ปัจจุบัน; S01 แสดงข้อจำกัดใหม่ |
-| [#65](https://github.com/Micosz/Cs361-Group1-Project7/issues/65) | body ระบุ manual backup workflow และ fallback; ไม่มี comments ที่อ่านพบ | frontend fallback ยืนยันใหม่แล้ว; workflow → commit → Amplify ยังต้องมี run/deployment record |
-
-<a id="v2-review-issue-88-ความต่างเอกสารกับโค้ดปัจจุบัน"></a>
-
-### ความต่างเอกสารกับโค้ดปัจจุบัน
-
-| หัวข้อ | หลักฐานเดิม | รุ่นที่ตรวจ |
-| --- | --- | --- |
-| Fallback | verification 3 ต.ค. ไม่มี JSON fallback | [script.js](../../public/assets/script.js) เรียก API ก่อน, timeout 8s แล้วโหลด backup อีกไม่เกิน 8s; ทั้งสองล้มเหลวจึงแสดง error และลองใหม่จาก Search/filter ได้ |
-| Visibility | verification เดิมยอมรับ visibility ว่าง | ขั้นโหลดปัจจุบันยอมรับ `access_level === 'public' OR visibility === 'public'`; mock ตรวจว่าไม่มี explicit public ถูกตัดออก แต่ไม่ได้ปฏิเสธ conflicting flags ทุกแบบ |
-| Snapshot cache | เดิม cache API ต่อหน้า | ปัจจุบัน cache snapshot สำเร็จทั้ง API และ backup ต่อหน้า; ถ้า backup โหลดสำเร็จ API กลับมาพร้อมภายหลังก็ต้อง reload เพื่ออ่านใหม่ ไม่มี background refresh |
-| ช่วงวัน | หลักฐานเดิมเน้น keyword/type | ปัจจุบันใช้ `period_date` เป็นวัน ISO, inclusive start/end และรองรับข้างเดียว; องค์กรผ่านเมื่อมีกิจกรรมสาธารณะเดียวที่อยู่ในทั้งสองขอบเขต รวม co-host ไม่ใช่การวัดช่วงอายุ MoU |
-| การแสดงปี | หลักฐาน UI ก่อนหน้าระบุ 43 cases | date adapter รับ พ.ศ./เลขไทยแล้วแปลง ค.ศ. ครั้งเดียว; รอบนี้มี 44 cases เพราะ login clean-route case เพิ่มแล้ว |
-| โครงสร้างไฟล์ | เอกสารเก่าอ้าง `assets/script.js` และ `index.html` | source ปัจจุบันอยู่ใต้ `public/`; Amplify `baseDirectory: public`, URL ยัง `/assets/...` |
-
-`period` เป็นข้อความแสดงผลและ `period_date` เป็นวันที่ใช้กรอง ไม่ใช่ interval overlap ของข้อตกลง; เมื่อเลือกวัน รายการไม่มี `period_date` จะไม่ผ่าน filter (ทดสอบด้วย fixture; snapshot จริงรอบนี้ทั้ง 13 กิจกรรมมีวัน) ควรยืนยันกับทีมว่ากติกานี้ตรง Requirement ที่ส่ง
-
-<a id="v2-review-issue-88-ปัญหาและข้อจำกัดที่ส่งต่อได้"></a>
-
-### ปัญหาและข้อจำกัดที่ส่งต่อได้
-
-1. **API unavailable — ยืนยันอาการแล้ว:** เปิด endpoint ด้วย curl หรือเปิดหน้าใหม่ดู console จะพบ HTTP 500 ตามรอบตรวจ; ส่งผลให้เว็บใช้ snapshot และตรวจ read-after-update ไม่ได้ ต้องให้ผู้รับผิดชอบ AWS ตรวจ Lambda logs/IAM/table/Lab status ก่อนสรุปสาเหตุ ไม่เปลี่ยน AWS ในงานนี้
+| S13 ขอ…2040 tokens truncated…AWS ในงานนี้
 2. **Field boundary ยังไม่ถูกบังคับใน backup pipeline — ยืนยันจากโค้ด:** workflow ตรวจชนิดข้อมูล, id, explicit public และ id ซ้ำ จากนั้นเขียนทั้ง record ลงไฟล์; frontend กรองรายการแล้ว spread record ทั้งก้อน ไม่มี field allowlist การเพิ่ม internal field ใน record ที่ยัง public จะทำให้ pipeline เก็บ field นั้นด้วย ต้องกำหนด public projection ก่อน V3 ไม่ได้อ้างว่าพบข้อมูลลับรั่วใน snapshot รอบนี้
 3. **Ownership ยังไม่มีใน snapshot — ยืนยันขอบเขตไฟล์:** top-level fields ไม่มี user/owner/participant identifiers; `coordinators` ไม่ใช่หลักฐานสิทธิ์บัญชี ต้องออกแบบ mapping/legacy handling ก่อนใช้กับ role/record authorization ไม่สรุป schema จริงใน DynamoDB จาก snapshot อย่างเดียว
 4. **Snapshot freshness — ยืนยันจากโค้ด:** workflow มีเฉพาะ `workflow_dispatch` ไม่รันตามเวลา และหน้า cache backup จน reload; notice บอกว่าอาจไม่ล่าสุดแต่ไม่ระบุ snapshot timestamp ต้องตรวจ freshness แยกจากการเปิดเว็บสำเร็จ
