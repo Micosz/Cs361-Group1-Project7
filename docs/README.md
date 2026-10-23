@@ -1,27 +1,29 @@
 # เอกสารโครงการ
 
-เลือกอ่านตามงาน ไม่ต้องอ่านทุกไฟล์ เอกสารผลตรวจเป็นหลักฐาน ณ วันที่ระบุ ไม่ใช่สถานะ deployment ปัจจุบัน
+เลือกอ่านตามเวอร์ชันหรืองาน เอกสารแต่ละรุ่นบันทึกขอบเขตและสถาปัตยกรรมของช่วงนั้น; evidence เป็นผลตรวจ ณ วันที่ระบุ ไม่ใช่สถานะ deployment ปัจจุบัน
+
+## เอกสารตามเวอร์ชัน
+
+| เวอร์ชัน | เริ่มจาก | เอกสารประกอบ |
+| --- | --- | --- |
+| **V1 · Public Collaboration Profile** | [Design](design/v1-design.md) | [Hosting ADR](architecture/v1/ADR-001-v1-hosting.md), [Architecture diagram](architecture/v1/v1-architecture-diagram.png), [Data guide](data/data-guide.md#v1-data), [Evidence](evidence/v1-evidence.md), [AI Usage Declaration](ai-usage/v1-ai-usage-declaration.md) |
+| **V2 · Collaboration Repository** | [Hosting ADR](architecture/v2/ADR-001-v2-hosting.md) | [Architecture diagram](architecture/v2/v2-architecture-diagram.png), [Evidence](evidence/v2-evidence.md) |
+| **V3 · Secure Collaboration Workspace** | [Design baseline](design/v3-design.md#design-baseline) | [Hosting ADR](architecture/v3/ADR-001-v3-hosting.md), [Architecture diagram](architecture/v3/v3-architecture-diagram.png), [API routes](architecture/v3/v3-api-routes.md), [Deployment guide](deployment/v3-deployment.md), [Evidence](evidence/v3-evidence.md) |
+
+## เอกสารข้ามเวอร์ชันและการทำงานกับ source ปัจจุบัน
 
 | ต้องการทำอะไร | เริ่มอ่าน |
 | --- | --- |
-| Deploy และตรวจระบบ V3 | [คู่มือ Deploy V3](deployment/v3-deployment.md) |
-| เตรียม business table และ private documents | [Workspace integration และ storage](evidence/v3-evidence.md#workspace-83-86-integration) |
-| ต่อหรือแก้ backend / frontend | [API contracts](design/v3-design.md#api-flows), [Data model](design/v3-design.md#data-model), [Permission matrix](design/v3-design.md#scope-permissions) |
-| ทำความเข้าใจเหตุผลการออกแบบ / migration | [V3 design baseline](design/v3-design.md#design-baseline) |
-| ตรวจแหล่งข้อมูลสาธารณะ | [Sources](data/data-guide.md#sources), [ข้อมูล V1 และ source sync](data/data-guide.md#v1-data) |
+| Deploy และตรวจ workflow ที่รวมใน repository | [Deployment guide](deployment/v3-deployment.md) — เนื้อหาอิง workflow และ config ที่เอกสาร V3 ระบุ; ไม่ใช่หลักฐานว่า AWS ปัจจุบันตรงกัน |
+| เตรียมข้อมูลคู่ความร่วมมือและตรวจ source sync | [Data guide](data/data-guide.md) |
+| ต่อหรือแก้ backend/frontend ตามสัญญา V3 | [API contracts](design/v3-design.md#api-flows), [Data model](design/v3-design.md#data-model), [Permission matrix](design/v3-design.md#scope-permissions) |
+| ดูภาพและเหตุผลการออกแบบแยกตามรุ่น | [Architecture index](architecture/README.md) |
 
 ## หลักฐานแยกตามเวอร์ชัน
 
-- [V1 Evidence](evidence/v1-evidence.md) — หลักฐานส่งมอบรุ่นแรก
-- [V2 Evidence](evidence/v2-evidence.md) — Search, review #88 และ follow-up #89
-- [V3 Evidence](evidence/v3-evidence.md) — auth, permissions, CI/CD และ integration ฟีเจอร์ภายใน
-- รูปและผลตรวจดิบเก็บใน `evidence/assets/` เป็นไฟล์แนบ ไม่ต้องอ่านเพื่อเริ่มงาน
+- [V1 Evidence](evidence/v1-evidence.md)
+- [V2 Evidence](evidence/v2-evidence.md)
+- [V3 Evidence](evidence/v3-evidence.md)
+- รูปและผลตรวจดิบเก็บใน `evidence/assets/`; แต่ละรายการระบุวันที่และขอบเขตไว้ในเอกสารของรุ่น
 
-## เอกสารย้อนหลังสำหรับอ้างอิงและส่งงาน
-
-V1/V2 design, architecture และ release evidence ยังเก็บไว้เป็นประวัติ; คู่มือ deployment รุ่นก่อนถูกรวมไว้ใน V3
-รวมถึง [AI Usage Declaration ของ V1](ai-usage/v1-ai-usage-declaration.md)
-ใช้เป็นประวัติของแต่ละรุ่น ไม่ใช้แทนคู่มือ V3 หรือผลตรวจระบบจริงล่าสุด
-
-คู่มือส่งงานให้ AI ราย issue และบันทึกเตรียม UI/prototype login เก่าถูกนำออกแล้ว
-ข้อกำหนดหลักและหลักฐานการทดสอบไม่ได้ถูกลบตามคู่มือเหล่านั้น
+เอกสารของแต่ละรุ่นใช้ยืนยันขอบเขตของรุ่นนั้น ไม่ใช้แทนเอกสารหรือหลักฐานของรุ่นอื่น; เอกสารที่ระบุว่าเป็น design baseline ก็ไม่ใช่หลักฐานการใช้งานจริงโดยตัวมันเอง
