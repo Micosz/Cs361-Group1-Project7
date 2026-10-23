@@ -307,16 +307,14 @@ objects ที่ไม่มี metadata และอายุมากกว�
 
 <a id="workspace-83-86-integration-ทดลองในเครื่อง"></a>
 
-### ทดลองในเครื่อง
+### ทดสอบ integration ด้วยข้อมูลจำลอง
 
 ```bash
 python -m pip install -r backend/requirements.txt
-python tools/mock-auth/server.py --workspace --port 8765
+python -m unittest discover -s backend/tests -p 'test_workspace_storage.py' -v
 ```
 
-เปิด http://127.0.0.1:8765/login.html บัญชี staff/coordinator/student-a/student-b/executive
-ใช้รหัสผ่าน `mock`; Partner จำลองใช้ `partner-demo` ข้อมูลทั้งหมดจำลองและ reset เมื่อ restart
-บัญชี/ไฟล์จริงไม่ใช้ในเครื่องทดสอบนี้
+การทดสอบใช้บัญชีและ AWS doubles สังเคราะห์ในหน่วยความจำ; ไม่มีหน้า login จำลองและไม่เรียก AWS/TU
 
 <a id="workspace-83-86-integration-ข้อจำกัดที่ตรวจพบในรอบนี้"></a>
 

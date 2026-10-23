@@ -1,6 +1,5 @@
 """Shared API/storage integration with explicit local AWS doubles, not deployment proof."""
 import base64
-import importlib.util
 import json
 from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
@@ -9,13 +8,12 @@ import unittest
 from backend.auth.session_service import COOKIE_NAME
 from backend.business.dynamo_repository import DynamoBusinessRepository
 
-spec = importlib.util.spec_from_file_location('workspace_server', Path(__file__).parents[2] / 'tools/mock-auth/server.py')
-local = importlib.util.module_from_spec(spec); spec.loader.exec_module(local)
+from support.mock_auth import make_app
 
 
 class WorkspaceStorageTests(unittest.TestCase):
     def setUp(self):
-        self.app, catalog = local.make_app(8765, writable=True)
+        self.app, catalog = make_app(8765, writable=True)
         self.ids = {entry['username']: entry['id'] for entry in catalog}
         self.repository = self.app.repository
         self.actor = 'staff'

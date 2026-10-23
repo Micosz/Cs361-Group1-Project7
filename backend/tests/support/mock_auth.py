@@ -1,17 +1,13 @@
-#!/usr/bin/env python3
-"""Local-only demo. Workspace uses backend dependencies and AWS doubles; never contacts AWS or TU."""
-import argparse
+"""Synthetic auth and storage fixtures for backend integration tests only."""
 import copy
-import json
-from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 import secrets
 import sys
 import time
-from urllib.parse import urlsplit, parse_qsl
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
+
 from backend.application import AuthApplication
 from backend.auth.accounts import AccountService
 from backend.auth.roles import RoleService
@@ -133,7 +129,7 @@ def make_app(port, writable=False):
     records = ReadOnlyRecords(users)
     if writable:
         import importlib.util
-        spec = importlib.util.spec_from_file_location('local_workspace', ROOT / 'tools/mock-auth/workspace_store.py')
+        spec = importlib.util.spec_from_file_location('local_workspace', Path(__file__).with_name('workspace_store.py'))
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
         seed = records.rows + [dict(id='partner-demo', entityType='partner', schemaVersion=3,
             scopeId=SCOPE, version=1, name='คู่ความร่วมมือจำลอง', type='university',
@@ -145,75 +141,3 @@ def make_app(port, writable=False):
         records, _, _ = module.make_repository(service, accounts, sessions, seed)
     return AuthApplication(service, Provider(), linker, RoleService(accounts), Limiter(), records), users
 
-
-def make_handler(app, users, port):
-    origin = f'http://127.0.0.1:{port}'
-    class Handler(SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs): super().__init__(*args, directory=str(ROOT / 'public'), **kwargs)
-        def log_message(self, *args): pass  # No cookies, passwords, requests or profile logs.
-        def send_data(self, status, content, content_type='application/json; charset=utf-8', headers=None, cookies=()):
-            self.send_response(status)
-            self.send_header('content-type', content_type)
-            self.send_header('cache-control', 'no-store')
-            self.send_header('x-content-type-options', 'nosniff')
-            for k, v in (headers or {}).items():
-                if k.lower() not in {'content-type', 'cache-control', 'x-content-type-options'}: self.send_header(k, v)
-            for cookie in cookies:
-                # Transport-only adaptation for loopback HTTP. Production cookie policy stays untouched.
-                self.send_header('Set-Cookie', cookie.replace(COOKIE_NAME + '=', 'cstuhub_mock=').replace('; Secure', ''))
-            self.end_headers()
-            self.wfile.write(content if isinstance(content, bytes) else content.encode())
-        def dispatch(self):
-            if self.headers.get('Host') != f'127.0.0.1:{port}':
-                self.send_data(403, '{"error":"LOCAL_HOST_REQUIRED"}'); return
-            parsed = urlsplit(self.path)
-            if parsed.path.startswith('/api/'):
-                request_headers = {k.lower(): v for k,v in self.headers.items()}
-                request_origin = request_headers.get('origin')
-                if self.command != 'GET' and request_origin != origin:
-                    self.send_data(403, '{"error":{"code":"ORIGIN_DENIED"}}'); return
-                if request_origin == origin: request_headers['origin'] = app.sessions.policy.origin
-                try: length = int(self.headers.get('Content-Length', '0'))
-                except ValueError: length = -1
-                if not 0 <= length <= 4 * 1024 * 1024:
-                    self.send_data(413, '{"error":"BODY_TOO_LARGE"}'); return
-                import base64
-                raw = base64.b64encode(self.rfile.read(length)).decode()
-                cookie = self.headers.get('Cookie', '').replace('cstuhub_mock=', COOKIE_NAME + '=')
-                event = dict(version='2.0', rawPath=parsed.path, headers=request_headers, cookies=[cookie],
-                    requestContext={'http': {'method': self.command, 'sourceIp': '127.0.0.1'}},
-                    queryStringParameters=dict(parse_qsl(parsed.query)), body=raw, isBase64Encoded=True)
-                result = app.handle(event)
-                content = base64.b64decode(result['body']) if result.get('isBase64Encoded') else result['body']
-                self.send_data(result['statusCode'], content, result['headers'].get('content-type', 'application/json; charset=utf-8'), headers=result['headers'], cookies=result.get('cookies', []))
-            elif self.command != 'GET': self.send_data(405, '{"error":"METHOD_NOT_ALLOWED"}')
-            elif parsed.path == '/assets/auth-config.js':
-                self.send_data(200, 'window.CSTU_AUTH_CONFIG = Object.freeze({enabled:true});', 'text/javascript')
-            elif parsed.path == '/__mock/users': self.send_data(200, json.dumps(users, ensure_ascii=False))
-            elif parsed.path in {'/', '/mock.html', '/mock.js'}:
-                filename = 'mock.html' if parsed.path in {'/', '/mock.html'} else 'mock.js'
-                self.send_data(200, (ROOT / 'tools/mock-auth' / filename).read_text(),
-                               'text/html; charset=utf-8' if filename.endswith('html') else 'text/javascript')
-            else: super().do_GET()
-        do_GET = dispatch
-        do_POST = dispatch
-        do_PATCH = dispatch
-        do_DELETE = dispatch
-        def do_HEAD(self): self.send_data(405, '')
-    return Handler
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--port', type=int, default=8765)
-    parser.add_argument('--workspace', action='store_true', help='Enable synthetic writable workspace; resets on restart')
-    args = parser.parse_args()
-    if not 1024 <= args.port <= 65535: parser.error('port must be 1024–65535')
-    app, users = make_app(args.port, writable=args.workspace)
-    server = HTTPServer(('127.0.0.1', args.port), make_handler(app, users, args.port))
-    print(f'Mock #81: http://127.0.0.1:{args.port}/mock.html\nLocal synthetic data only. Stop/reset: Ctrl+C then run again.', flush=True)
-    try: server.serve_forever()
-    except KeyboardInterrupt: pass
-    finally: server.server_close()
-
-if __name__ == '__main__': main()
