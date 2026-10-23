@@ -4,10 +4,7 @@
 
 | ต้องการทำอะไร | เริ่มอ่าน |
 | --- | --- |
-| ตั้ง pipeline Python / AWS สำหรับระบบภายใน | [Python auth deployment](deployment/python-auth-cicd.md) |
-| ตั้ง auth, ตารางผู้ใช้ และ Session | [Auth integration](deployment/auth-integration.md) |
-| ตั้ง TU authentication / บัญชีทดสอบ | [TU authentication](deployment/tu-authentication.md), [Course test login](deployment/course-test-login.md) |
-| Deploy Node Lambda เดิม | [Lambda CI/CD](deployment/lambda-cicd.md) |
+| Deploy และตรวจระบบ V3 | [คู่มือ Deploy V3](deployment/v3-deployment.md) |
 | เตรียม business table และ private documents | [Workspace integration และ storage](evidence/v3-evidence.md#workspace-83-86-integration) |
 | ต่อหรือแก้ backend / frontend | [API contracts](design/v3-design.md#api-flows), [Data model](design/v3-design.md#data-model), [Permission matrix](design/v3-design.md#scope-permissions) |
 | ทำความเข้าใจเหตุผลการออกแบบ / migration | [V3 design baseline](design/v3-design.md#design-baseline) |
@@ -22,7 +19,7 @@
 
 ## เอกสารย้อนหลังสำหรับอ้างอิงและส่งงาน
 
-V1/V2 design, architecture, deployment และ release evidence ยังเก็บไว้ในโฟลเดอร์เดิม
+V1/V2 design, architecture และ release evidence ยังเก็บไว้เป็นประวัติ; คู่มือ deployment รุ่นก่อนถูกรวมไว้ใน V3
 รวมถึง [AI Usage Declaration ของ V1](ai-usage/v1-ai-usage-declaration.md)
 ใช้เป็นประวัติของแต่ละรุ่น ไม่ใช้แทนคู่มือ V3 หรือผลตรวจระบบจริงล่าสุด
 

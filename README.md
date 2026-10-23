@@ -213,7 +213,7 @@ npm test
 | --- | --- |
 | สถาปัตยกรรม | [เหตุผลการเลือก Hosting](docs/architecture/v1/ADR-001-v1-hosting.md) · [แผนภาพระบบ](docs/architecture/v1/v1-architecture-diagram.png) |
 | ข้อมูลและหน้าจอ | [โครงสร้างข้อมูล JSON](docs/data/data-guide.md#v1-data) · [การออกแบบหน้าเว็บ](docs/design/v1-design.md) |
-| การเผยแพร่และหลักฐาน | [ขั้นตอน Deploy บน S3](docs/deployment/v1-deployment.md) · [หลักฐานส่งมอบ V1](docs/evidence/v1-evidence.md) |
+| การเผยแพร่และหลักฐาน | [คู่มือ Deploy ปัจจุบัน (V3)](docs/deployment/v3-deployment.md) · [หลักฐานส่งมอบ V1](docs/evidence/v1-evidence.md) |
 | การใช้ AI | [AI Usage Declaration](docs/ai-usage/v1-ai-usage-declaration.md) |
 
 </details>
@@ -223,7 +223,7 @@ npm test
 
 <br>
 
-Repository นี้มี frontend, สคริปต์ migration, workflow อัปเดตข้อมูลสำรอง และ source ของ Lambda ทั้งสามใน `backend/lambda/` พร้อม [CI/CD สำหรับ Learner Lab](docs/deployment/lambda-cicd.md) ส่วนการตั้งค่า API Gateway/DynamoDB ยังดูแลแยกบน AWS
+Repository นี้มี frontend, สคริปต์ migration, workflow อัปเดตข้อมูลสำรอง และ source ของ Lambda ทั้งสามใน `backend/lambda/` พร้อม [คู่มือ Deploy V3](docs/deployment/v3-deployment.md) ส่วนการตั้งค่า API Gateway/DynamoDB ยังดูแลแยกบน AWS
 
 </details>
 

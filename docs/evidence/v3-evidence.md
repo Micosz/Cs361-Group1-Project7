@@ -65,7 +65,7 @@ getPublicPartners มี mapping/CORS/query เดิม ไม่มีกา�
 
 ### ส่วนที่ยังไม่ได้ทดสอบ
 
-**ไม่ได้ deploy หรือ invoke functions และไม่ได้ merge PR** จึงยังไม่มี GitHub Actions deployment run หรือ API smoke ของ commit นี้ ต้อง review/merge main ขณะ Lab/credentials พร้อม แล้วเก็บ run URL, Git SHA, CodeSha256 ราย function และผล API smoke แยกตาม [คู่มือ](../deployment/lambda-cicd.md)
+**ไม่ได้ deploy หรือ invoke functions และไม่ได้ merge PR** จึงยังไม่มี GitHub Actions deployment run หรือ API smoke ของ commit นี้ ต้อง review/merge main ขณะ Lab/credentials พร้อม แล้วเก็บ run URL, Git SHA, CodeSha256 ราย function และผล API smoke ตาม [คู่มือ Deploy V3](../deployment/v3-deployment.md)
 
 PR CI ใช้ mocks และไม่รับ AWS Secrets; credential expiration/renewal ยังเป็น manual ตาม Learner Lab ไม่ได้สร้าง IAM/OIDC/resources หรือเปลี่ยน AWS configuration
 
@@ -103,7 +103,7 @@ PR CI ใช้ mocks และไม่รับ AWS Secrets; credential expira
 3. เชื่อม account-linking/Session/local rate limit ตาม #74/#76/#78/#90 โดยไม่ใช้ profile/role จาก Browser เป็นหลักฐาน
 4. หลัง deploy ที่ได้รับอนุมัติ ทดสอบบัญชี student/employee ที่อนุญาตและกรณีผิดพลาด เก็บเฉพาะ HTTP/code/ผลที่ปกปิดตัวตน ไม่แนบ password/key/raw profile
 
-รายละเอียดและขั้นตอน: [คู่มือ #75](../deployment/tu-authentication.md)
+ดูแนวทาง deploy และตรวจ #75 ใน [คู่มือ Deploy V3](../deployment/v3-deployment.md)
 
 
 <a id="auth-integration-74-80"></a>
@@ -132,7 +132,7 @@ PR CI ใช้ mocks และไม่รับ AWS Secrets; credential expira
 
 ไม่ได้ deploy Python API, เปลี่ยน AWS, เรียก TU ด้วยบัญชีจริง หรือทดสอบ cookie/routing บน Amplify จริง ระบบใหม่ปิดไว้ด้วย frontend config และ backend environment gate และพัก automatic Lambda deployment ระหว่างเตรียม #81
 
-ขั้นตอนและไฟล์หลัก: [auth-integration.md](../deployment/auth-integration.md) การผ่าน CI เป็นหลักฐานระดับ source/mock เท่านั้น งาน deployment และ acceptance บน AWS ยังต้องตรวจใน #81
+แนวทาง deployment: [คู่มือ Deploy V3](../deployment/v3-deployment.md) การผ่าน CI เป็นหลักฐานระดับ source/mock เท่านั้น งาน deployment และ acceptance บน AWS ยังต้องตรวจใน #81
 
 
 <a id="v3-permissions-issue-79"></a>

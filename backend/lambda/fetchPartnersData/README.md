@@ -6,4 +6,4 @@ Source จาก Lambda เดิมใน `us-east-1` ตรวจเมื่�
 
 ชื่อ AWS ที่ตรวจพบคือ `fetchPartnersData` (มี s) ไม่ใช่ `fetchPartnerData`
 
-ดู [คู่มือ CI/CD](../../../docs/deployment/lambda-cicd.md)
+ดู [คู่มือ Deploy V3](../../../docs/deployment/v3-deployment.md)
