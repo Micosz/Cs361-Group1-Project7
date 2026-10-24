@@ -6,6 +6,7 @@
     'use strict';
     let dispose;
     let presented = false;
+    const reloadIntro = window.__CSTUHubReloadIntro;
     const catalog = new Map(); // Retain preview artwork when returning from the browser cache.
     function mount() {
         const hero = document.querySelector('.hero-section');
@@ -387,6 +388,17 @@
     }
     const start = () => { dispose?.(); dispose = mount(); };
     window.addEventListener('pagehide', () => { dispose?.(); dispose = undefined; });
-    window.addEventListener('pageshow', event => { if (event.persisted) start(); });
-    start();
+    window.addEventListener('pageshow', event => {
+        if (event.persisted) { start(); return; }
+        if (!reloadIntro) return;
+        const root = document.documentElement;
+        const scrollBehavior = root.style.scrollBehavior;
+        root.style.scrollBehavior = 'auto';
+        window.scrollTo(0, 0);
+        root.style.scrollBehavior = scrollBehavior;
+        if (reloadIntro.previousMode !== null) history.scrollRestoration = reloadIntro.previousMode;
+        delete window.__CSTUHubReloadIntro;
+        start();
+    });
+    if (!reloadIntro) start();
 })();

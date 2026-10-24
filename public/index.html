@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>CSTUHub - Information Board</title>
+    <script>
+        (() => {
+            const navigation = performance.getEntriesByType?.('navigation')?.[0];
+            const isReload = navigation?.type === 'reload' || performance.navigation?.type === 1;
+            const alternateView = new URLSearchParams(location.search).has('view');
+            if (!isReload || location.hash || alternateView) return;
+            const previousMode = 'scrollRestoration' in history ? history.scrollRestoration : null;
+            if (previousMode !== null) history.scrollRestoration = 'manual';
+            window.__CSTUHubReloadIntro = { previousMode };
+        })();
+    </script>
     <link rel="stylesheet" href="assets/styles.css?v=3">
     <link rel="stylesheet" href="assets/spatial.css?v=10">
     <link rel="stylesheet" href="assets/showcase.css?v=4">
@@ -34,7 +45,7 @@
     <script src="assets/role-menu.js?v=account-1" defer></script>
     <script src="assets/filter-presentation.js?v=5" defer></script>
     <script src="assets/presentation.js?v=home-workspace-16" defer></script>
-    <script src="assets/opening.js?v=home-workspace-17" defer></script>
+    <script src="assets/opening.js?v=home-workspace-18" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/entry-forms.css?v=2">
     <script src="assets/entry-forms.js?v=2" defer></script>
