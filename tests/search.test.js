@@ -25,7 +25,7 @@ const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(
 
 // Minimal DOM/timer mocks run the production script, including its startup listeners.
 // These tests do not contact AWS and are separate from the real-browser verification.
-function page(fetchImpl = async () => response()) {
+function page(fetchImpl = async () => response(), hostname = 'main.d2q46seuxuluap.amplifyapp.com') {
     const elements = new Set();
     const listeners = new Map();
     const timeouts = new Map();
@@ -82,6 +82,7 @@ function page(fetchImpl = async () => response()) {
     };
     const context = vm.createContext({
         document, window: { getComputedStyle: () => ({}), addEventListener() {} },
+        location: { hostname },
         URL,
         DOMParser: class {
             parseFromString(html) {
@@ -141,6 +142,17 @@ test('startup shares one request, writes each grid once, and starts one ticker',
     assert.equal(p.get('eventGrid').writes, 1);
     assert.equal(p.intervals.size, 1);
     assert.match(p.get('heroTitle1').textContent, /Alpha|Beta/);
+});
+
+test('Free Tier uses its Amplify API rewrite while Learner Lab keeps its API Gateway URL', async () => {
+    const urls = [];
+    const freeTier = page(async url => { urls.push(url); return response(); }, 'main.d1l97oh16w2h6u.amplifyapp.com');
+    await freeTier.context.fetchPartnersData();
+    assert.equal(urls[0], '/fetchPartnersData');
+
+    const learnerLab = page(async url => { urls.push(url); return response(); });
+    await learnerLab.context.fetchPartnersData();
+    assert.equal(urls[1], 'https://eb49u61kph.execute-api.us-east-1.amazonaws.com/default/fetchPartnersData');
 });
 
 test('search, filters, modal, and ticker reuse the successful API snapshot', async () => {
