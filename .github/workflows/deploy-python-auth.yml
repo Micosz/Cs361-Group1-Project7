@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-python-auth-us-east-1
+  group: deploy-python-auth-ap-southeast-2
   cancel-in-progress: false
 
 jobs:
@@ -32,33 +32,32 @@ jobs:
 
   deploy:
     needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.LAMBDA_DEPLOYMENT_PAUSED != 'true'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.LAMBDA_DEPLOYMENT_PAUSED != 'true' && vars.AWS_DEPLOY_ROLE_ARN != ''
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
     env:
-      AWS_REGION: us-east-1
-      AWS_DEFAULT_REGION: us-east-1
+      AWS_REGION: ap-southeast-2
+      AWS_DEFAULT_REGION: ap-southeast-2
       AWS_PAGER: ''
       LAMBDA_FUNCTION: CSTUHubAuth
       # Same HTTPS origin as the frontend; no API Gateway hostname fallback.
       API_ORIGIN: ${{ vars.CSTUHUB_API_ORIGIN }}
+      AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
     steps:
       - uses: actions/checkout@v4
-      - name: Require temporary Learner Lab credentials
-        env:
-          ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          SECRET_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      - name: Require the Free Tier role and API origin
         run: |
           set -euo pipefail
-          test -n "$ACCESS_KEY" && test -n "$SECRET_KEY" && test -n "$SESSION_TOKEN"
+          test -n "$AWS_DEPLOY_ROLE_ARN"
           test -n "$API_ORIGIN"
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-southeast-2
+          allowed-account-ids: '781485979426'
           mask-aws-account-id: true
           unset-current-credentials: true
           retry-max-attempts: 2
@@ -105,7 +104,7 @@ jobs:
           import boto3
           c = json.loads(Path(os.environ['RUNNER_TEMP'], 'auth-config.json').read_text())
           e = c.get('Environment', {}).get('Variables', {})
-          required = ('SESSION_TABLE', 'USER_TABLE', 'IDENTITY_TABLE', 'LOGIN_RATE_TABLE',
+          required = ('SESSION_TABLE', 'USER_TABLE', 'IDENTITY_TABLE', 'LOGIN_RATE_TABLE', 'PARTNER_TABLE',
                       'BUSINESS_TABLE', 'DOCUMENT_BUCKET', 'SESSION_ORIGIN', 'STUDENT_SCOPE_ID',
                       'SESSION_CSRF_SECRET', 'IDENTITY_HMAC_SECRET')
           if any(not e.get(k) for k in required) or e.get('AUTH_V3_ENABLED') != 'true':
@@ -142,8 +141,17 @@ jobs:
                   ttl = db.describe_time_to_live(TableName=e[key])['TimeToLiveDescription']
                   if ttl.get('TimeToLiveStatus') != 'ENABLED' or ttl.get('AttributeName') != ttl_key:
                       raise SystemExit('Required TTL not enabled: ' + key)
+          if e['PARTNER_TABLE'] in {e[key] for key in tables}:
+              raise SystemExit('Partner table must remain separate from auth and business tables')
+          partner = db.describe_table(TableName=e['PARTNER_TABLE'])['Table']
+          expected_partner_keys = [{'AttributeName': 'id', 'KeyType': 'HASH'},
+                                   {'AttributeName': 'type', 'KeyType': 'RANGE'}]
+          partner_attributes = {a['AttributeName']: a['AttributeType'] for a in partner['AttributeDefinitions']}
+          if (partner['TableStatus'] != 'ACTIVE' or partner['KeySchema'] != expected_partner_keys
+                  or partner_attributes.get('id') != 'S' or partner_attributes.get('type') != 'S'):
+              raise SystemExit('Incorrect Partner table schema/status: PARTNER_TABLE')
           s3 = boto3.client('s3')
-          region = s3.get_bucket_location(Bucket=e['DOCUMENT_BUCKET'])['LocationConstraint'] or 'us-east-1'
+          region = s3.get_bucket_location(Bucket=e['DOCUMENT_BUCKET'])['LocationConstraint'] or os.environ['AWS_REGION']
           if region != os.environ['AWS_REGION']:
               raise SystemExit('Document bucket must be in the Lambda region')
           block = s3.get_public_access_block(Bucket=e['DOCUMENT_BUCKET'])['PublicAccessBlockConfiguration']

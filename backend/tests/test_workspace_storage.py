@@ -57,7 +57,7 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.assertEqual(201, result['statusCode'], body)
         contact = body['data']
         self.app.repository = DynamoBusinessRepository(self.repository.client, 'business', self.app.sessions,
-            'users', 'sessions', self.repository.documents, partner_table='Partner')
+            'users', 'sessions', self.repository.documents, partner_table='CSTUHub-Partner')
 
         result, body = self.call('/api/partners/partner-demo/contacts/' + contact['id'], 'DELETE',
                                  version=contact['version'])
@@ -199,10 +199,10 @@ class WorkspaceStorageTests(unittest.TestCase):
 
 
     def test_existing_partner_table_keeps_fields_and_checks_cross_table_references(self):
-        self.repository.partner_table = 'Partner'
+        self.repository.partner_table = 'CSTUHub-Partner'
         original_query=self.repository.client.query
         def original_table_query(**kwargs):
-            if kwargs.get('TableName')=='Partner':
+            if kwargs.get('TableName')=='CSTUHub-Partner':
                 from backend.auth.dynamo_accounts import decode
                 from backend.permissions.transactions import values
                 key=decode(kwargs['ExpressionAttributeValues'])[':id']
@@ -217,7 +217,7 @@ class WorkspaceStorageTests(unittest.TestCase):
         saved=self.repository.client.rows['partner-demo']
         self.assertEqual(['https://example.test/source'],saved['source_urls'])
         self.assertEqual('Original source',saved['full_description'])
-        self.assertEqual('Partner',self.repository.client.transactions[-1][-1]['Put']['TableName'])
+        self.assertEqual('CSTUHub-Partner',self.repository.client.transactions[-1][-1]['Put']['TableName'])
         self.assertEqual({'id','type'},set(self.repository._key('partner',saved)))
         result, body = self.call('/api/activities','POST',dict(scopeId='cs-demo',title='Event in original table',
             type='event',summary='Test',partnerId='partner-demo',publication='public'),key='original-table-activity')
@@ -225,20 +225,20 @@ class WorkspaceStorageTests(unittest.TestCase):
         row=self.repository.client.rows[body['data']['id']]
         self.assertEqual('public',row['visibility'])
         self.assertEqual('public',row['access_level'])
-        self.assertTrue(any(item.get('Put',{}).get('TableName')=='Partner' for item in self.repository.client.transactions[-1]))
+        self.assertTrue(any(item.get('Put',{}).get('TableName')=='CSTUHub-Partner' for item in self.repository.client.transactions[-1]))
         agreement=self.create_agreement()
         transaction=self.repository.client.transactions[-1]
-        self.assertTrue(any(item.get('ConditionCheck',{}).get('TableName')=='Partner' for item in transaction))
-        self.assertTrue(all('type' in item['ConditionCheck']['Key'] for item in transaction if item.get('ConditionCheck',{}).get('TableName')=='Partner'))
+        self.assertTrue(any(item.get('ConditionCheck',{}).get('TableName')=='CSTUHub-Partner' for item in transaction))
+        self.assertTrue(all('type' in item['ConditionCheck']['Key'] for item in transaction if item.get('ConditionCheck',{}).get('TableName')=='CSTUHub-Partner'))
         self.assertTrue(any(item.get('Put',{}).get('TableName')=='business' for item in transaction))
         self.assertEqual('agreement',self.repository.get('agreement',agreement['id'])['entityType'])
 
     def test_partner_scan_and_contact_parent_check_use_original_table(self):
         from backend.permissions.transactions import values
-        self.repository.partner_table='Partner'
+        self.repository.partner_table='CSTUHub-Partner'
         original_query=self.repository.client.query
         def original_table_query(**kwargs):
-            if kwargs.get('TableName')=='Partner':
+            if kwargs.get('TableName')=='CSTUHub-Partner':
                 from backend.auth.dynamo_accounts import decode
                 from backend.permissions.transactions import values
                 key=decode(kwargs['ExpressionAttributeValues'])[':id']
@@ -254,14 +254,14 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.repository.client.scan=scan
         result, body=self.call('/api/partners')
         self.assertEqual(200,result['statusCode'],body)
-        self.assertEqual('Partner',scans[0]['TableName'])
+        self.assertEqual('CSTUHub-Partner',scans[0]['TableName'])
         self.assertTrue(scans[0]['ConsistentRead'])
         self.assertIn('partner-demo',[row['id'] for row in body['data']])
         result, body=self.call('/api/partners/partner-demo/contacts','POST',{'name':'Test contact'},key='original-table-contact')
         self.assertEqual(201,result['statusCode'],body)
         transaction=self.repository.client.transactions[-1]
-        self.assertTrue(any(item.get('ConditionCheck',{}).get('TableName')=='Partner' for item in transaction))
-        self.assertTrue(all('type' in item['ConditionCheck']['Key'] for item in transaction if item.get('ConditionCheck',{}).get('TableName')=='Partner'))
+        self.assertTrue(any(item.get('ConditionCheck',{}).get('TableName')=='CSTUHub-Partner' for item in transaction))
+        self.assertTrue(all('type' in item['ConditionCheck']['Key'] for item in transaction if item.get('ConditionCheck',{}).get('TableName')=='CSTUHub-Partner'))
         self.assertTrue(any(item.get('Put',{}).get('TableName')=='business' for item in transaction))
 
     def test_anonymous_public_mou_summary_and_unpublish(self):

@@ -15,12 +15,13 @@ async function load(name, options = {}) {
   class ScanCommand { constructor(input) { this.input = input; } }
   let scanPage = 0;
   const DynamoDBDocumentClient = { from() { return { send: async command => {
-    assert.equal(command.input.TableName, 'Partner');
+    assert.equal(command.input.TableName, 'CSTUHub-Partner');
     if (options.failure) throw new Error('synthetic AWS outage');
     if (options.pages) return options.pages[scanPage++];
     return { Items: options.items || [] };
   } }; } };
-  const context = vm.createContext({ console: options.console || silentConsole, URL, AbortController, setTimeout, clearTimeout, process: { env: options.env || {} },
+  const context = vm.createContext({ console: options.console || silentConsole, URL, AbortController, setTimeout, clearTimeout,
+                                    process: { env: { PARTNER_TABLE: 'CSTUHub-Partner', ...(options.env || {}) } },
                                     fetch: options.fetch || (() => { throw new Error('Unexpected network call'); }) });
   if (filename.endsWith('.cjs')) {
     context.exports = {};

@@ -3,6 +3,7 @@ const { DynamoDBDocumentClient, ScanCommand } = require("@aws-sdk/lib-dynamodb")
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
+const partnerTable = process.env.PARTNER_TABLE;
 
 exports.handler = async (event) => {
     // ต้องใส่ CORS เสมอ เพื่อให้หน้าเว็บ (Browser) ยิงข้ามโดเมนมาขอข้อมูลได้
@@ -14,7 +15,7 @@ exports.handler = async (event) => {
 
     try {
         const command = new ScanCommand({
-            TableName: "Partner",
+            TableName: partnerTable,
         });
 
         const response = await docClient.send(command);

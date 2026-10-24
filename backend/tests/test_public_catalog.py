@@ -60,9 +60,9 @@ class PublicCatalogTests(unittest.TestCase):
         def query(**kwargs):
             calls.append(kwargs)
             return {'Items':[values(row) for row in rows]}
-        repository=DynamoBusinessRepository(SimpleNamespace(query=query),'business',None,'users','sessions',partner_table='Partner')
+        repository=DynamoBusinessRepository(SimpleNamespace(query=query),'business',None,'users','sessions',partner_table='CSTUHub-Partner')
         self.assertEqual('event',repository.get('activity','same')['type'])
-        self.assertEqual('Partner',calls[0]['TableName'])
+        self.assertEqual('CSTUHub-Partner',calls[0]['TableName'])
         self.assertTrue(calls[0]['ConsistentRead'])
         rows[0]['source_state']='active'
         with self.assertRaises(AuthError):repository.get('activity','same')

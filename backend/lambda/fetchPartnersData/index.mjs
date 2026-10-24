@@ -3,16 +3,17 @@ import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
+const partnerTable = process.env.PARTNER_TABLE;
 
 export const handler = async (event) => {
     try {
         const command = new ScanCommand({
-            TableName: "Partner"
+            TableName: partnerTable
         });
         let response = await docClient.send(command);
         const items = [...(response.Items || [])];
         while (response.LastEvaluatedKey) {
-            response = await docClient.send(new ScanCommand({TableName:"Partner",ExclusiveStartKey:response.LastEvaluatedKey}));
+            response = await docClient.send(new ScanCommand({TableName:partnerTable,ExclusiveStartKey:response.LastEvaluatedKey}));
             items.push(...(response.Items || []));
         }
 

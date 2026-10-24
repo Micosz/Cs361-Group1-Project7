@@ -76,9 +76,9 @@ node scripts/build-source-backup.cjs --check
 
 ### Sync GitHub ไป DynamoDB
 
-เมื่อเปลี่ยน `data/partners.json` ให้รันคำสั่งด้านบนแล้ว commit ทั้งไฟล์ต้นทางและ fallback เมื่อรวมเข้า `main` workflow **Sync GitHub source catalog to DynamoDB** จะ sync ไปตาราง `Partner` ใน `us-east-1` โดยอัตโนมัติ ใช้ค่าบัญชี/ตารางจาก `data/source-sync-config.json` และทดสอบข้อมูลก่อนเชื่อม AWS มี Run workflow แบบ `apply` และ `dry-run` สำหรับ main เท่านั้น
+เมื่อเปลี่ยน `data/partners.json` ให้รันคำสั่งด้านบนแล้ว commit ทั้งไฟล์ต้นทางและ fallback workflow **Sync GitHub source catalog to DynamoDB** จะ sync ไป `CSTUHub-Partner` ใน `ap-southeast-2` เมื่อ repository variable `AWS_DEPLOY_ROLE_ARN` ชี้ไปยัง deploy role ที่เชื่อถือเฉพาะ repository/branch `main` โดยใช้บัญชีและชื่อตารางจาก `data/source-sync-config.json` มี Run workflow แบบ `apply` และ `dry-run` สำหรับ main เท่านั้น
 
-- ใช้ GitHub Secrets เดิม: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` ไม่ใส่คีย์ในไฟล์หรือ log; session ของ Learner Lab หมดอายุได้ ต้องอัปเดตทั้งสามค่าแล้ว rerun งานที่ล้มเหลว
+- ใช้ GitHub OIDC ผ่าน `AWS_DEPLOY_ROLE_ARN` ไม่เก็บ AWS keys ใน GitHub Secrets; บัญชี Free Tier ปัจจุบันติด explicit deny ของ AWS Organizations SCP ต่อ OIDC provider/role จึงยังไม่มี role นี้ และ cloud deploy/sync jobs จะ skip จนกว่าจะตั้ง role ที่ใช้งานได้ หากต้อง sync ก่อน ให้รันจาก CloudShell ในบัญชี Free Tier หลังตรวจแผนข้อมูล
 - GitHub เป็นต้นทาง ไม่ดึง API กลับมาเขียนทับข้อมูลใน repository อีกต่อไป Workflow เดิม `update-data-backup.yml` เปลี่ยนเป็นตรวจข้อมูลอย่างเดียว
 - key จริงของ Partner คือ `id` + `type` การเปลี่ยน type จึงเลิกเผยแพร่ key เก่าและเพิ่ม key ใหม่ รายการที่ถูกนำออกใช้ `source_state: retired` และตั้งทั้ง `access_level`/`visibility` เป็น `private`; ไม่ลบเนื้อหาเก่า
 - sync เฉพาะ key เดิม 26 รายการที่ตรวจว่าเป็นสาธารณะ หรือรายการที่ automation นี้ดูแลแล้ว ไม่ scan/แทนที่ทั้งตาราง ไม่รับข้อมูลส่วนตัว ชื่อผู้ประสานงานใหม่ หรือฟิลด์สิทธิ์ผ่านชุดข้อมูลนี้ หากพบข้อมูลภายใน ฟิลด์ที่ไม่รู้จัก หรือรายการที่ระบบอื่นดูแลใน key เป้าหมาย จะหยุดทั้งชุด
@@ -87,7 +87,7 @@ node scripts/build-source-backup.cjs --check
 
 หยุด automation ได้ด้วย repository variable `SOURCE_DATA_SYNC_PAUSED=true` เมื่อแก้ไขเหตุขัดข้องแล้วลบ variable/ตั้ง `false` และ Run workflow อีกครั้ง งานที่ค้างจะอ่าน main ล่าสุดก่อน sync การแก้ไฟล์ที่ไม่ได้อยู่ในชุดข้อมูลนี้ไม่แตะฐานข้อมูล
 
-การย้อนข้อมูล: revert การเปลี่ยนชุดข้อมูลใน GitHub แล้วสร้าง fallback ให้ตรงกันก่อนรวมเข้า main ระบบจะนำชุดนั้นกลับขึ้น Partner และเลิกเผยแพร่รายการที่ถูกนำออก หากต้องกลับไปข้อมูลก่อนเปิด automation ซึ่งยังไม่มี evidence fields ตามชุดใหม่ ให้หยุด automation และใช้ `snapshot`/`original_key` ของ revision ใน PartnerSourceSync โดยตรวจ scope/ค่าปัจจุบันก่อน restore ห้ามเขียน snapshot ทับการแก้ไขใหม่ของเพื่อนโดยไม่ตรวจ
+การย้อนข้อมูล: revert การเปลี่ยนชุดข้อมูลใน GitHub แล้วสร้าง fallback ให้ตรงกันก่อนรวมเข้า main ระบบจะนำชุดนั้นกลับขึ้น `CSTUHub-Partner` และเลิกเผยแพร่รายการที่ถูกนำออก หากต้องกลับไปข้อมูลก่อนเปิด automation ซึ่งยังไม่มี evidence fields ตามชุดใหม่ ให้หยุด automation และใช้ `snapshot`/`original_key` ของ revision ใน PartnerSourceSync โดยตรวจ scope/ค่าปัจจุบันก่อน restore ห้ามเขียน snapshot ทับการแก้ไขใหม่ของเพื่อนโดยไม่ตรวจ
 
 `migrate.js` ยังเป็นเครื่องมือเก่าและไม่ใช้ใน workflow ใหม่นี้ ไม่ควรรันซ้ำ เพราะจะข้าม ownership/backup/transaction checks การกรองวันที่ในหน้าเว็บปัจจุบันยังใช้วันเริ่ม ไม่ได้ตรวจช่วงวันที่ทับซ้อนหรือเดือนที่ไม่รู้วัน การ sync สำเร็จในฐานข้อมูลไม่ได้ยืนยันว่า Amplify deploy รูปใหม่แล้ว
 
@@ -175,10 +175,10 @@ node scripts/build-source-backup.cjs --check
 | **Ascend Group (C75) และ SET (C03) — สถานประกอบการในทะเบียนสหกิจ; แยกจากหน้าหลัก** | รายชื่อที่หลักสูตรอนุญาตในปี 2569; ยังไม่ยืนยันว่ารับนักศึกษาจริง วันฝึกงาน หรือ MoU ของ Ascend ตามข้อมูลเดิม | [ทะเบียนสหกิจ 2569 ที่เว็บสาขาเชื่อมถึง](https://docs.google.com/spreadsheets/d/1mrexRW94TkVQUK91wLhqQtbEBResL4OBc9BWzcsvOjE/edit?usp=sharing); ยังไม่พบหลักฐานนอกสหกิจในสามแหล่งที่ตรวจ จึงไม่คืนเป็น Collaborator ของหน้าหลักรอบนี้ |
 
 
-## การใช้ตาราง Partner เดิมกับระบบจัดการ
+## การใช้ตาราง CSTUHub-Partner กับระบบจัดการ
 
-กำหนด `PARTNER_TABLE=Partner` โดยใช้ composite key เดิม `(id, type)` ให้ Python backend อ่านและเขียนคู่ความร่วมมือกับกิจกรรมในตารางเดิม โดยคง ID, field สำหรับหน้าสาธารณะ และข้อมูลอ้างอิงจากแหล่งต้นทางไว้ เพิ่มเพียง metadata สำหรับ scope, version และสิทธิ์ในรายการเดิม ส่วน Agreement, Exchange, Contact, History และ Document metadata ยังใช้ `BUSINESS_TABLE` ตามเดิม การตรวจ version, parent และ reference ทำใน transaction ข้ามตารางเดียวกัน
+กำหนด `PARTNER_TABLE=CSTUHub-Partner` โดยใช้ composite key เดิม `(id, type)` ให้ Python backend และ Lambda catalog อ่านข้อมูลจากตารางนี้ โดยคง ID, field สำหรับหน้าสาธารณะ และข้อมูลอ้างอิงจากแหล่งต้นทางไว้ เพิ่มเพียง metadata สำหรับ scope, version และสิทธิ์ในรายการเดิม ส่วน Agreement, Exchange, Contact, History และ Document metadata ยังใช้ `BUSINESS_TABLE` ตามเดิม การตรวจ version, parent และ reference ทำใน transaction ข้ามตารางเดียวกัน
 
-Public reader ส่งเฉพาะ field ของข้อมูลเผยแพร่ ไม่ส่ง metadata บัญชีหรือผู้รับผิดชอบ และ backend เขียน alias เช่น `full_description`, `logo_path`, `period_date` ให้ตัวอ่านเดิมใช้ต่อได้ ไม่ต้องสร้างตารางใหม่หรือย้ายรายการเก่าออกจาก `Partner`.
+Public reader ส่งเฉพาะ field ของข้อมูลเผยแพร่ ไม่ส่ง metadata บัญชีหรือผู้รับผิดชอบ และ backend เขียน alias เช่น `full_description`, `logo_path`, `period_date` ให้ตัวอ่านเดิมใช้ต่อได้ โดยคัดลอกข้อมูลเดิมมา `CSTUHub-Partner`; ตาราง `Partner` เก็บไว้เป็นสำเนาสำหรับ rollback.
 
 รายการต้นทางที่มี `source_state=retired` คงอยู่ในตาราง แต่การอ่านและจัดการใช้รายการ active ของ ID นั้นเท่านั้น ถ้าพบ active มากกว่าหนึ่งแถว ระบบปฏิเสธการแก้ไขแทนการเลือกแถวเอง.
