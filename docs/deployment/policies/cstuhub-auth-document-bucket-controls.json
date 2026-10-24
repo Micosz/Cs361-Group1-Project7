@@ -1,0 +1,11 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadPrivateDocumentBucketPublicAccessBlock",
+      "Effect": "Allow",
+      "Action": "s3:GetBucketPublicAccessBlock",
+      "Resource": "arn:aws:s3:::cstuhub-private-documents-781485979426-ap-southeast-2"
+    }
+  ]
+}
