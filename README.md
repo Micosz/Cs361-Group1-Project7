@@ -55,22 +55,22 @@ README นี้เป็นจุดเริ่มต้นของ repositor
 
 ## Getting Started
 
-ต้องมี Python 3 สำหรับเปิด frontend แบบ static และ Node.js สำหรับ build/test:
+ต้องมี Python 3 สำหรับเปิด frontend แบบ static และ Node.js สำหรับตรวจไฟล์หน้า Login:
 
 ```bash
 git clone https://github.com/Micosz/Cs361-Group1-Project7.git
 cd Cs361-Group1-Project7
-npm test
+npm run build
 python3 -m http.server 8000 --directory public
 ```
 
-เปิด [http://localhost:8000](http://localhost:8000) ใน browser คำสั่ง `npm test` จะ build route สำหรับหน้า Login ผ่าน `pretest` ก่อนทดสอบ; static server ไม่ได้เปิด API, authentication หรือ AWS resources ในเครื่อง
+เปิด [http://localhost:8000](http://localhost:8000) ใน browser; `npm run build` ตรวจว่าไฟล์หน้า Login ที่เผยแพร่มีอยู่ ส่วน static server ไม่ได้เปิด API, authentication หรือ AWS resources ในเครื่อง
 
 ## Documentation
 
 - [เลือกเอกสารตามงานและเวอร์ชัน](docs/README.md)
 - [คู่มือข้อมูลและแหล่งข้อมูล](docs/data/data-guide.md)
-- [คู่มือ deploy workflow ใน repository](docs/deployment/v3-deployment.md) — คู่มือนี้รวม workflow ที่บันทึกไว้ใน V3; ตรวจ build/deployment และ AWS environment จริงแยกก่อนสรุปสถานะเว็บ
+- [คู่มือ Deploy V3](docs/deployment/v3-deployment.md) — ขั้นตอนและสิ่งที่ต้องตรวจ; ยืนยันสถานะ build/deployment และ AWS environment จากระบบจริงแยกต่างหาก
 - [หลักฐาน V1](docs/evidence/v1-evidence.md) · [V2](docs/evidence/v2-evidence.md) · [V3](docs/evidence/v3-evidence.md)
 
 ## Team
@@ -96,8 +96,7 @@ URL บนเว็บเหมือนเดิม เช่น `/login/` แ�
 หน้า Login แก้ HTML ที่ `public/login.html` จุดเดียว ส่วน CSS/JS อยู่ที่ `public/assets/login.css` และ `public/assets/login.js`
 หน้า `/login/` ใช้ไฟล์ `public/login/index.html` ที่เก็บใน Git พร้อม `<base href="../">`
 เพื่อให้ assets และลิงก์กลับหน้าหลักทำงานเหมือน `/login.html`; ให้แก้ไฟล์นี้ควบคู่กับ `public/login.html`
-และตรวจความตรงกันด้วย `npm test` ส่วน `npm run build` ตรวจว่าไฟล์ route มีอยู่
+ส่วน `npm run build` ใช้ตรวจว่าไฟล์ route มีอยู่
 
-`npm test` เรียก build ผ่าน `pretest` ก่อนทดสอบเสมอ; Amplify เรียก `npm run build` โดยตรงตาม `amplify.yml`
-ไฟล์ทดสอบยังรันเองได้ด้วย `npm test`; Amplify เผยแพร่ `public/` โดยตรง ไม่สร้าง `dist/`
-ไฟล์ทดสอบ, ข้อมูลต้นฉบับ `data/partners.json` และ docs อยู่นอก `public/` และไม่ถูกส่งขึ้นเว็บไซต์
+Amplify เรียก `npm run build` ตาม `amplify.yml` และเผยแพร่ `public/` โดยตรง ไม่สร้าง `dist/`; คำสั่ง build ตรวจว่าไฟล์หน้า Login มีอยู่ ปัจจุบันไม่มี frontend test suite ใน `tests/` หรือคำสั่ง `npm test` ใน repository
+ข้อมูลต้นฉบับ `data/partners.json` และ docs อยู่นอก `public/` และไม่ถูกส่งขึ้นเว็บไซต์; ชุดทดสอบ Backend แยกอยู่ใน `backend/tests/`

@@ -7,9 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').accessSync('public/login/index.html')\"",
-    "pretest": "npm run build",
-    "test": "node --test tests/search.test.js tests/date-presentation.test.js tests/login-presentation.test.js tests/auth-client.test.cjs tests/catalog-backup.test.cjs tests/agreement-component.test.cjs tests/exchange-workspace.test.cjs tests/work-navigation.test.cjs tests/partner-history.test.cjs tests/activity-workspace.test.cjs tests/selection-fields.test.cjs tests/feedback.test.cjs tests/feedback-inbox.test.cjs tests/documents.test.cjs tests/overview.test.cjs"
+    "build": "node -e \"require('node:fs').accessSync('public/login/index.html')\""
   },
   "repository": {
     "type": "git",

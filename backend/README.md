@@ -14,12 +14,13 @@ From the repository root, using Python 3.12+:
 python3 -m venv backend/.venv
 backend/.venv/bin/python -m pip install -r backend/requirements.txt
 backend/.venv/bin/python -m unittest discover -s backend/tests -v
-npm test
 ```
 
 The Python suite exercises lifecycle/HTTP behavior using a deterministic test
 store, and DynamoDB request contracts using botocore Stubber. It makes no AWS/TU
-requests. GitHub Actions runs the backend suite separately from frontend checks.
+requests. The current repository has no GitHub Actions workflows; backend tests
+remain manually runnable with the command above. The former root frontend test
+suite is no longer included.
 
 ## What is implemented
 

@@ -63,7 +63,7 @@ Session ถูกอ่านใหม่ก่อนคืนผล mutation; �
 
 ## หลักฐานและส่วนที่เหลือ
 
-รัน `python3 -m unittest discover -s backend/tests -v` และ `npm test` จาก root รายละเอียดผลอยู่ที่ [หลักฐาน #79](../../docs/evidence/v3-evidence.md#v3-permissions-issue-79)
+รัน `python3 -m unittest discover -s backend/tests -v` จาก root รายละเอียดผลอยู่ที่ [หลักฐาน #79](../../docs/evidence/v3-evidence.md#v3-permissions-issue-79)
 
 ยังไม่มี production business repository, multipart/file stream adapter, การตั้งค่า AWS business routes หรือการเปลี่ยน public Lambda/backup workflow ตัวจริง `lambda_function.handler` ของ #78 ยังส่งเพียง session service; business request ที่มีสิทธิ์จะได้ 503 จนฉีด repository ที่ทำตามสัญญาข้างต้น ส่วน public routes เดิมและ frontend ไม่ได้เปลี่ยนมาใช้ projection ใหม่นี้โดยอัตโนมัติ
 

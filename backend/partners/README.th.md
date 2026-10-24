@@ -18,7 +18,6 @@ Activity/History validators เป็นส่วนเตรียม ไม่
 
 ```sh
 python3 -m unittest discover -s backend/tests -p 'test_partner_contact.py' -v
-npm test
 ```
 
 ผลเหล่านี้เป็น local/mock ไม่ใช่ DynamoDB หรือเว็บจริง Issue #94 ยังต้องเปิดจน acceptance ของฟอร์ม/storage/integration พร้อม
