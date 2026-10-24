@@ -24,6 +24,19 @@
 | Lambda / API | ไม่มี deployment workflow ใน repository ปัจจุบัน; deploy เฉพาะเมื่อเลือก AWS account/region/function/API ที่ถูกต้องและตรวจ config ก่อน/หลัง |
 | DynamoDB / S3 | ใช้ resource ที่เตรียมไว้; การ deploy source ไม่ได้สร้างหรือตรวจ schema, permission หรือ object privacy ให้อัตโนมัติ |
 
+### IAM สำหรับเอกสารแนบส่วนตัว
+
+การอัปโหลดและอ่านเอกสารเรียก [GetPublicAccessBlock](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetPublicAccessBlock.html)
+ซึ่งต้องมี IAM action `s3:GetBucketPublicAccessBlock` เพื่อตรวจว่า bucket ยังปิด public access อยู่
+ก่อนทำงานกับ object เมื่อ 24 ต.ค. 2026 ตรวจ role `CSTUHubAuthExecutionRole` ใน Free Tier account
+`781485979426` พบว่ามีสิทธิ์อ่าน/เขียน/ลบ object ใน bucket เอกสารแล้ว แต่ขาด action ตรวจ bucket นี้
+ทำให้ Lambda ตอบ `PERMISSION_UNAVAILABLE` เมื่ออัปโหลดไฟล์แนบ
+
+เพิ่ม policy จาก [cstuhub-auth-document-bucket-controls.json](policies/cstuhub-auth-document-bucket-controls.json)
+เป็น policy แบบ additive ให้ role เดิม โดยคง inline policy `CSTUHubAuthRuntime` ไว้ เพราะมีสิทธิ์ DynamoDB
+และ action อื่นที่ระบบใช้อยู่ การ merge source ไม่เปลี่ยน IAM บน AWS; ผู้ดูแลต้องแนบ policy ใน Console
+แล้วทดสอบอัปโหลดใหม่ก่อนถือว่าแก้ปัญหาบนเว็บแล้ว
+
 ## ตรวจหลัง Deploy
 
 1. บันทึก commit SHA และ environment ที่เปลี่ยน
