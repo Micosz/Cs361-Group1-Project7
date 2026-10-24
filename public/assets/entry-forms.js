@@ -108,7 +108,14 @@
             if (status) { status.classList.add('entry-status'); footer.prepend(status); }
             if (!footer.querySelector('button[type="button"]')) {
                 const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'ยกเลิก';
-                cancel.onclick = () => form.closest('dialog')?.close(); footer.append(cancel);
+                cancel.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const dialog = form.closest('dialog');
+                    if (dialog?.open) dialog.close('cancel');
+                    else form.reset();
+                });
+                footer.append(cancel);
             }
             form.append(footer);
         }

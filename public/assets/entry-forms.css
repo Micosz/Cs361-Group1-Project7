@@ -20,7 +20,9 @@
 .entry-dialog:has(.entry-form) > button#detail-close { float: right; margin: 16px 20px 0; }
 .entry-dialog:has(.entry-form) > h2, .entry-dialog:has(.entry-form) > div:has(> h2) { padding: 24px 28px 0; margin: 0; }
 .entry-dialog:has(.entry-form) #detail-body { padding: 0; }
+.entry-dialog:has(.entry-form) #detail-actions { display: block; margin: 0; }
 .entry-form { --entry-accent: var(--tu-red, #c3002f); padding: 24px 28px 0; font-family: inherit; color: #292329; }
+.entry-dialog:has(.entry-form) .entry-form { box-sizing: border-box; width: 100%; }
 .entry-heading { padding-right: 64px; }
 .entry-form h2 { font-size: clamp(1.25rem, 3vw, 1.6rem); line-height: 1.5; color: var(--entry-accent); margin: 0 0 8px; }
 .entry-intro { margin-bottom: 24px; }
@@ -45,7 +47,7 @@
 .entry-form .entry-required { color: var(--entry-accent); }
 .entry-hint { display: block; color: #77696f; font-size: .8rem; font-weight: 400; line-height: 1.6; margin-top: 7px; }
 .entry-form [hidden] { display: none !important; }
-.entry-form .entry-actions { position: sticky; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin: 20px -28px 0; padding: 16px 28px; border-top: 1px solid #eadfe0; background: #fffdf9f5; backdrop-filter: blur(8px); }
+.entry-form .entry-actions { position: static; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin: 20px -28px 0; padding: 16px 28px; border-top: 1px solid #eadfe0; background: #fffdf9; }
 .entry-form .entry-actions button { min-height: 44px; width: auto; min-width: 100px; margin: 0; padding: 10px 20px; border: 1px solid #d8cbcf; border-radius: 8px; background: #fff !important; color: #59414a !important; font: inherit; font-weight: 600; box-shadow: none; cursor: pointer; }
 .entry-form .entry-actions button[type=submit] { order: 2; border-color: var(--entry-accent); background: var(--entry-accent) !important; color: #fff !important; }
 .entry-form .entry-actions button:hover { border-color: var(--entry-accent); }
