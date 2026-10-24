@@ -118,7 +118,7 @@
       "task": "เมื่อเชื่อม CRUD/ public projection V3 ให้รักษาป้าย activity_tags ที่ผ่าน validation เพื่อให้ตัวกรอง MoU ยังทำงาน; กิจกรรมวิชาการไม่รวมข่าวที่ติด mou, ประเภท event ยังแสดง Spark Camp ได้; การจัดการ Agreement/เอกสารยังตาม #83/#84"
     }
   ],
-  "deployment_note": "เมื่อรวมชุดข้อมูลบน main จะ sync ตาราง CSTUHub-Partner ใน ap-southeast-2 ผ่าน sync-source-data.yml โดยตรวจ ownership และสำรองใน PartnerSourceSync; ใช้แผนใหม่แทน migrate.js; การเชื่อม AWS ใช้ Free Tier deployment role ตามที่กำหนดใน workflow; ดู docs/data/data-guide.md",
+  "deployment_note": "GitHub Actions catalog sync ถูกถอดออกแล้ว ไม่มีการ sync อัตโนมัติจาก data/partners.json ไป DynamoDB; การออกแบบวิธี sync ใหม่ยังค้างอยู่ ดู docs/data/data-guide.md",
   "image_sources": [
     {
       "path": "resources/IPB2.jpg",

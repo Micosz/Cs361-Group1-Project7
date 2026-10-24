@@ -1,6 +1,6 @@
-# คู่มือข้อมูลสาธารณะและ source sync
+# คู่มือข้อมูลสาธารณะ
 
-`data/` เก็บข้อมูลต้นทาง/config ที่เครื่องมือใช้ ส่วนคู่มือนี้อธิบายโครงสร้าง ขั้นตอน sync และที่มาข้อมูล วันที่ในแต่ละส่วนเป็นวันที่ตรวจเดิม
+`data/` เก็บข้อมูลต้นทาง ส่วนคู่มือนี้อธิบายโครงสร้างและที่มาข้อมูล วันที่ในแต่ละส่วนเป็นวันที่ตรวจเดิม
 
 ## สารบัญ
 
@@ -72,24 +72,13 @@ node scripts/build-source-backup.cjs
 node scripts/build-source-backup.cjs --check
 ```
 
-<a id="v1-data-sync-github-ไป-dynamodb"></a>
+<a id="v1-data-catalog-deployment"></a>
 
-### Sync GitHub ไป DynamoDB
+### การเผยแพร่ข้อมูล catalog
 
-เมื่อเปลี่ยน `data/partners.json` ให้รันคำสั่งด้านบนแล้ว commit ทั้งไฟล์ต้นทางและ fallback workflow **Sync GitHub source catalog to DynamoDB** จะ sync ไป `CSTUHub-Partner` ใน `ap-southeast-2` เมื่อ repository variable `AWS_DEPLOY_ROLE_ARN` ชี้ไปยัง deploy role ที่เชื่อถือเฉพาะ repository/branch `main` โดยใช้บัญชีและชื่อตารางจาก `data/source-sync-config.json` มี Run workflow แบบ `apply` และ `dry-run` สำหรับ main เท่านั้น
+การลบ GitHub Actions ทำให้ไม่มี workflow sync ข้อมูลจาก `data/partners.json` ไป DynamoDB โดยอัตโนมัติแล้ว สคริปต์ sync และ config เก่าถูกถอดออก; การ build หรือ deploy หน้าเว็บอย่างเดียวไม่เขียนทับข้อมูลใน DynamoDB
 
-- ใช้ GitHub OIDC ผ่าน `AWS_DEPLOY_ROLE_ARN` ไม่เก็บ AWS keys ใน GitHub Secrets; บัญชี Free Tier ปัจจุบันติด explicit deny ของ AWS Organizations SCP ต่อ OIDC provider/role จึงยังไม่มี role นี้ และ cloud deploy/sync jobs จะ skip จนกว่าจะตั้ง role ที่ใช้งานได้ หากต้อง sync ก่อน ให้รันจาก CloudShell ในบัญชี Free Tier หลังตรวจแผนข้อมูล
-- GitHub เป็นต้นทาง ไม่ดึง API กลับมาเขียนทับข้อมูลใน repository อีกต่อไป Workflow เดิม `update-data-backup.yml` เปลี่ยนเป็นตรวจข้อมูลอย่างเดียว
-- key จริงของ Partner คือ `id` + `type` การเปลี่ยน type จึงเลิกเผยแพร่ key เก่าและเพิ่ม key ใหม่ รายการที่ถูกนำออกใช้ `source_state: retired` และตั้งทั้ง `access_level`/`visibility` เป็น `private`; ไม่ลบเนื้อหาเก่า
-- sync เฉพาะ key เดิม 26 รายการที่ตรวจว่าเป็นสาธารณะ หรือรายการที่ automation นี้ดูแลแล้ว ไม่ scan/แทนที่ทั้งตาราง ไม่รับข้อมูลส่วนตัว ชื่อผู้ประสานงานใหม่ หรือฟิลด์สิทธิ์ผ่านชุดข้อมูลนี้ หากพบข้อมูลภายใน ฟิลด์ที่ไม่รู้จัก หรือรายการที่ระบบอื่นดูแลใน key เป้าหมาย จะหยุดทั้งชุด
-- ก่อนเปลี่ยนรายการ จะสำรอง snapshot ในตาราง **PartnerSourceSync** และบันทึก control/revision ที่นั่น ครั้งแรกจะสร้างตารางนี้แบบ on-demand หากยังไม่มี ข้อมูลสำรองไม่อยู่ใน Partner และไม่ส่งผ่าน API สาธารณะ ไม่มีการอัปโหลด snapshot เป็น artifact ของ Actions
-- เขียนข้อมูล สำรอง และปรับ control ด้วย transaction เดียวพร้อมเงื่อนไขตรวจค่าก่อนหน้า ถ้ามีใครแก้ข้อมูลระหว่างเตรียมและเขียน จะไม่เขียนบางส่วน จากนั้นอ่านกลับแบบ consistent เพื่อตรวจผล กรณีเกิน 100 operations/ขนาดที่รองรับจะหยุดเพื่อทบทวน ไม่แบ่งเขียนจนเกิดข้อมูลครึ่งชุด
-
-หยุด automation ได้ด้วย repository variable `SOURCE_DATA_SYNC_PAUSED=true` เมื่อแก้ไขเหตุขัดข้องแล้วลบ variable/ตั้ง `false` และ Run workflow อีกครั้ง งานที่ค้างจะอ่าน main ล่าสุดก่อน sync การแก้ไฟล์ที่ไม่ได้อยู่ในชุดข้อมูลนี้ไม่แตะฐานข้อมูล
-
-การย้อนข้อมูล: revert การเปลี่ยนชุดข้อมูลใน GitHub แล้วสร้าง fallback ให้ตรงกันก่อนรวมเข้า main ระบบจะนำชุดนั้นกลับขึ้น `CSTUHub-Partner` และเลิกเผยแพร่รายการที่ถูกนำออก หากต้องกลับไปข้อมูลก่อนเปิด automation ซึ่งยังไม่มี evidence fields ตามชุดใหม่ ให้หยุด automation และใช้ `snapshot`/`original_key` ของ revision ใน PartnerSourceSync โดยตรวจ scope/ค่าปัจจุบันก่อน restore ห้ามเขียน snapshot ทับการแก้ไขใหม่ของเพื่อนโดยไม่ตรวจ
-
-`migrate.js` ยังเป็นเครื่องมือเก่าและไม่ใช้ใน workflow ใหม่นี้ ไม่ควรรันซ้ำ เพราะจะข้าม ownership/backup/transaction checks การกรองวันที่ในหน้าเว็บปัจจุบันยังใช้วันเริ่ม ไม่ได้ตรวจช่วงวันที่ทับซ้อนหรือเดือนที่ไม่รู้วัน การ sync สำเร็จในฐานข้อมูลไม่ได้ยืนยันว่า Amplify deploy รูปใหม่แล้ว
+การสร้าง fallback สำหรับหน้าเว็บยังทำได้ด้วย `node scripts/build-source-backup.cjs` และตรวจความตรงกันด้วย `node scripts/build-source-backup.cjs --check` วิธี sync ฐานข้อมูลแบบใหม่ยังไม่ได้กำหนด ให้ตรวจแหล่งข้อมูลและขอบเขตการเขียนก่อนทำด้วยวิธีอื่น ห้ามรัน `migrate.js` ซ้ำโดยไม่ทบทวนผลกระทบ เพราะเป็นเครื่องมือ migration รุ่นเก่า
 
 <a id="v1-data-json-structure"></a>
 
