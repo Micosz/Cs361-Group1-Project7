@@ -4,20 +4,29 @@
     let state = null;
     const enabled = () => window.CSTU_AUTH_CONFIG?.enabled === true;
     async function request(path, options = {}) {
+        const { timeoutMs = 15000, ...fetchOptions } = options;
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 15000);
-        const external = options.signal;
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const external = fetchOptions.signal;
         const abort = () => controller.abort();
         external?.addEventListener('abort', abort, { once: true });
         if (external?.aborted) controller.abort();
         try {
             const response = await fetch('/api' + path, {
-                ...options, credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
-                headers: { ...(typeof FormData !== 'undefined' && options.body instanceof FormData ? {} : {'Content-Type': 'application/json'}), ...(options.headers || {}) }
+                ...fetchOptions, credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
+                headers: { ...(typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData ? {} : {'Content-Type': 'application/json'}), ...(fetchOptions.headers || {}) }
             });
             let data;
-            try { data = await response.json(); }
-            catch { throw new Error('คำตอบจากระบบไม่ถูกต้อง'); }
+            const responseText = await response.text();
+            try { data = responseText ? JSON.parse(responseText) : {}; }
+            catch {
+                const contentType = response.headers.get('content-type')?.split(';')[0].trim();
+                const details = ['HTTP ' + response.status, contentType].filter(Boolean).join(', ');
+                const error = new Error('คำตอบจากระบบไม่ถูกต้อง (' + details + ')');
+                error.status = response.status;
+                error.contentType = contentType;
+                throw error;
+            }
             if (!response.ok) {
                 const error = new Error(data.error?.code || 'ระบบไม่พร้อมใช้งาน');
                 error.status = response.status;

@@ -2,6 +2,8 @@
 (() => {
     'use strict';
     const MAX_FILE_SIZE = 3 * 1024 * 1024;
+    // Let API Gateway return its 25-second integration timeout before the browser aborts.
+    const UPLOAD_TIMEOUT_MS = 30000;
 
     function canUpload(session, record) {
         return (session?.grants || []).some(g => g.active !== false && g.scopeId === record.scopeId &&
@@ -175,7 +177,8 @@
                         body.append('audience', item.audience); body.append('containsPersonal', String(item.personal));
                         try {
                             await window.CstuAuth.request('/' + kind + 's/' + encodeURIComponent(record.id) + '/documents', {
-                                method: 'POST', body, headers: {'X-CSRF-Token': fresh.csrfToken, 'Idempotency-Key': item.requestKey}
+                                method: 'POST', body, timeoutMs: UPLOAD_TIMEOUT_MS,
+                                headers: {'X-CSRF-Token': fresh.csrfToken, 'Idempotency-Key': item.requestKey}
                             });
                             if (item.previewUrl) window.URL?.revokeObjectURL?.(item.previewUrl);
                             queued.splice(queued.indexOf(item), 1);
