@@ -14,7 +14,7 @@
 
 | ส่วน | วิธีทำงาน |
 | --- | --- |
-| Frontend | Merge เข้า `main` แล้วตรวจ Amplify build จาก `amplify.yml` ซึ่งรัน `npm test` และเผยแพร่ `public/` |
+| Frontend | Amplify build จาก `amplify.yml` รัน `npm run build` และเผยแพร่ `public/`; frontend tests ใน `tests/` ยังรันเองได้ด้วย `npm test` แต่ไม่ได้เป็น build gate |
 | Node Lambda | `fetchPartnersData`, `getPublicPartners`, `tuAuthLogin`; push `main` ที่แก้ source ใน allowlist จะ deploy เฉพาะ function ที่เปลี่ยน; แก้ workflow/packager ส่วนกลางอาจ deploy ทั้งชุด |
 | Python `CSTUHubAuth` | Workflow รันทดสอบบน PR; deploy จาก `main` หลัง push ที่แตะ `backend/**` หรือสั่ง `workflow_dispatch` บน `main` และตรวจ config/resources เดิมก่อนอัปเดต code |
 | API Gateway, DynamoDB, S3 | ใช้ทรัพยากรที่เตรียมไว้แล้ว; workflow ไม่สร้างหรือแก้ config/schema ของบริการเหล่านี้ |

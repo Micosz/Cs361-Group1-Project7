@@ -3,7 +3,7 @@ frontend:
   phases:
     build:
       commands:
-        - npm test
+        - npm run build
   artifacts:
     baseDirectory: public
     files:

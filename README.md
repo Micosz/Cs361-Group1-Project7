@@ -98,7 +98,7 @@ URL บนเว็บเหมือนเดิม เช่น `/login/` แ�
 โดยอัตโนมัติพร้อม `<base href="../">` เพื่อให้ assets และลิงก์กลับหน้าหลักทำงานเหมือน `/login.html`
 ไฟล์ที่สร้างถูก ignore ใน Git ห้ามแก้โดยตรง เพราะจะถูกเขียนทับเมื่อ build
 
-`npm test` เรียก build ผ่าน `pretest` ก่อนทดสอบเสมอ จึงใช้คำสั่ง build เดิมของ Amplify ได้
-`amplify.yml` ยังคงเผยแพร่ `public/` โดยตรง ไม่สร้าง `dist/` และไม่ต้องแก้ค่าใน AWS Amplify
+`npm test` เรียก build ผ่าน `pretest` ก่อนทดสอบเสมอ; Amplify เรียก `npm run build` โดยตรงตาม `amplify.yml`
+ไฟล์ทดสอบยังรันเองได้ด้วย `npm test`; Amplify เผยแพร่ `public/` โดยตรง ไม่สร้าง `dist/`
 หากมี changes จาก branch เก่าที่แก้ `public/login/index.html` ให้ย้าย changes นั้นมา `public/login.html` แล้ว build ใหม่
 ไฟล์ migration, ข้อมูลต้นฉบับ `data/partners.json`, tests และ docs อยู่นอก `public/` และไม่ถูกส่งขึ้นเว็บไซต์

@@ -30,7 +30,7 @@ AWS ระบุว่า custom auth แบบ Lambda ใช้กับ Manage
 
 สำหรับ Authentication เสนอให้ใช้ทางเลือก **1: TU API ผ่าน Backend และ Session ของ CSTUHub** เป็น baseline ปัจจุบัน เพราะตรงกับ source และ contract ที่มีอยู่; ยังไม่ใช่การปฏิเสธ Cognito ถ้า TU ยืนยัน OIDC/SAML ได้ หรือทีมเลือกจัดการบัญชีแยก สามารถประเมินทางเลือก 2/3 พร้อม identity-linking, Session/token และ authorization design ใหม่ก่อนตัดสินใจ
 
-- Amplify build ใช้ `amplify.yml`: รัน `npm test` และเผยแพร่ไฟล์จาก `public/`. ไฟล์นี้ไม่ได้บันทึก `/api` rewrite; ต้องตรวจการตั้งค่า Rewrites and redirects ของ Amplify แยกต่างหาก
+- Amplify build ใช้ `amplify.yml`: รัน `npm run build` และเผยแพร่ไฟล์จาก `public/`; frontend tests รันเองได้ด้วย `npm test`. ไฟล์นี้ไม่ได้บันทึก `/api` rewrite; ต้องตรวจการตั้งค่า Rewrites and redirects ของ Amplify แยกต่างหาก
 - Lambda เป็นจุดบังคับใช้ session, role, scope และ policy; login adapter ใน source เรียก `tuAuthLogin` ฝั่ง server. ห้ามนับการมี `tuAuthLogin` ใน repository เป็นหลักฐานว่า TU API หรือ Login ทำงานได้ใน AWS
 - DynamoDB เป็นที่เก็บบัญชี/Identity link/session/rate limit และข้อมูลระบบผ่าน adapters ที่อ่านชื่อ resource จาก environment. ข้อเสนอนี้ไม่ได้กำหนดว่าต้องรวม/แยกตารางอย่างไร และไม่ได้ยืนยันชื่อตารางจริง
 - เอกสารเก็บใน S3 แบบ private; API ตรวจสิทธิ์ก่อนอ่าน metadata/content และส่งเนื้อหากลับ. ไม่เผย public object URL
