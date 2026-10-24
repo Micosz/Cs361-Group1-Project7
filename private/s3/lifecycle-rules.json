@@ -1,0 +1,20 @@
+{
+  "Rules": [
+    {
+      "ID": "CSTUHubExpireUploadStaging",
+      "Status": "Enabled",
+      "Filter": {"Prefix": "documents/staging/"},
+      "Expiration": {"Days": 1},
+      "NoncurrentVersionExpiration": {"NoncurrentDays": 1},
+      "AbortIncompleteMultipartUpload": {"DaysAfterInitiation": 1}
+    },
+    {
+      "ID": "CSTUHubPrivateReadyVersionRetention",
+      "Status": "Enabled",
+      "Filter": {"Prefix": "documents/ready/"},
+      "NoncurrentVersionExpiration": {"NoncurrentDays": 90},
+      "Expiration": {"ExpiredObjectDeleteMarker": true},
+      "AbortIncompleteMultipartUpload": {"DaysAfterInitiation": 1}
+    }
+  ]
+}

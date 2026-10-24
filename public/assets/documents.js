@@ -1,7 +1,6 @@
 /* Shared private documents for Agreement, Exchange and read-only viewers. */
 (() => {
     'use strict';
-    const MAX_FILE_SIZE = 3 * 1024 * 1024;
     // Let API Gateway return its 25-second integration timeout before the browser aborts.
     const UPLOAD_TIMEOUT_MS = 30000;
 
@@ -17,6 +16,7 @@
         const list = document.createElement('ul'); container.append(title, status, list);
         const queued = [];
         let identity = null;
+        let uploadConfig = {directUpload: false};
         const imageDocument = doc => ['image/png', 'image/jpeg'].includes(doc.mime);
 
         async function load() {
@@ -28,7 +28,7 @@
                     for (const doc of result.data) {
                         if (doc.uploadState !== 'ready') continue;
                         const li = document.createElement('li'), link = document.createElement('a');
-                        link.textContent = doc.displayName + ' (' + Math.round(doc.size / 1024) + ' KB)';
+                        link.textContent = doc.displayName + ' (' + window.CstuPrivateDocuments.formatSize(doc.size) + ')';
                         link.href = '/api/documents/' + encodeURIComponent(doc.id) + '/content?disposition=attachment';
                         link.target = '_blank'; link.rel = 'noopener'; li.appendChild(link);
                         if (imageDocument(doc) && canUpload(identity, record)) {
@@ -65,10 +65,14 @@
             await load();
             const session = identity;
             if (!container.isConnected || !canUpload(session, record)) return;
+            uploadConfig = await window.CstuPrivateDocuments.configuration();
 
             const form = document.createElement('form');
             const fileLabel = document.createElement('label');
-            fileLabel.textContent = 'แนบไฟล์ (PDF, DOCX, PNG, JPEG ไม่เกิน 3 MiB) ';
+            fileLabel.textContent = uploadConfig.directUpload
+                ? 'แนบไฟล์ (PDF/DOCX ไม่เกิน ' + window.CstuPrivateDocuments.formatSize(uploadConfig.documentMaxBytes)
+                    + ', PNG/JPEG ไม่เกิน ' + window.CstuPrivateDocuments.formatSize(uploadConfig.imageMaxBytes) + ') '
+                : 'แนบไฟล์ (PDF, DOCX, PNG, JPEG ไม่เกิน 3 MiB) ';
             const fileInput = document.createElement('input');
             fileInput.type = 'file'; fileInput.multiple = true; fileInput.accept = '.pdf,.docx,.png,.jpg,.jpeg';
             fileLabel.appendChild(fileInput);
@@ -151,8 +155,9 @@
             fileInput.onchange = () => {
                 const files = Array.from(fileInput.files || []);
                 for (const selected of files) {
-                    if (selected.size > MAX_FILE_SIZE) {
-                        status.textContent = 'ไฟล์ ' + selected.name + ' ต้องไม่เกิน 3 MiB'; continue;
+                    const limit = window.CstuPrivateDocuments.sizeLimit(selected, uploadConfig);
+                    if (selected.size > limit) {
+                        status.textContent = 'ไฟล์ ' + selected.name + ' ต้องไม่เกิน ' + window.CstuPrivateDocuments.formatSize(limit); continue;
                     }
                     if (queued.some(item => item.file.name === selected.name && item.file.size === selected.size && item.file.lastModified === selected.lastModified)) continue;
                     queued.push({file: selected, audience: 'internal', personal: false, requestKey: crypto.randomUUID()});
@@ -176,10 +181,15 @@
                         const body = new FormData(); body.append('file', item.file); body.append('displayName', item.file.name);
                         body.append('audience', item.audience); body.append('containsPersonal', String(item.personal));
                         try {
-                            await window.CstuAuth.request('/' + kind + 's/' + encodeURIComponent(record.id) + '/documents', {
-                                method: 'POST', body, timeoutMs: UPLOAD_TIMEOUT_MS,
-                                headers: {'X-CSRF-Token': fresh.csrfToken, 'Idempotency-Key': item.requestKey}
-                            });
+                            if (uploadConfig.directUpload) {
+                                await window.CstuPrivateDocuments.upload(kind, record, item,
+                                    message => { status.textContent = item.file.name + ': ' + message; });
+                            } else {
+                                await window.CstuAuth.request('/' + kind + 's/' + encodeURIComponent(record.id) + '/documents', {
+                                    method: 'POST', body, timeoutMs: UPLOAD_TIMEOUT_MS,
+                                    headers: {'X-CSRF-Token': fresh.csrfToken, 'Idempotency-Key': item.requestKey}
+                                });
+                            }
                             if (item.previewUrl) window.URL?.revokeObjectURL?.(item.previewUrl);
                             queued.splice(queued.indexOf(item), 1);
                         } catch (error) { errors.push(item.file.name + ': ' + error.message); }

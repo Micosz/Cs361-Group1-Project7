@@ -1,0 +1,12 @@
+{
+  "CORSRules": [
+    {
+      "ID": "CSTUHubMainPrivateDocuments",
+      "AllowedOrigins": ["https://main.d1l97oh16w2h6u.amplifyapp.com"],
+      "AllowedMethods": ["POST", "GET", "HEAD"],
+      "AllowedHeaders": ["content-type", "x-amz-*"],
+      "ExposeHeaders": ["ETag", "x-amz-version-id", "x-amz-checksum-sha256"],
+      "MaxAgeSeconds": 300
+    }
+  ]
+}

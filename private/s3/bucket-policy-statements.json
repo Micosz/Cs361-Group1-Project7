@@ -1,0 +1,16 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CSTUHubDenyInsecureTransport",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::cstuhub-private-documents-781485979426-ap-southeast-2",
+        "arn:aws:s3:::cstuhub-private-documents-781485979426-ap-southeast-2/*"
+      ],
+      "Condition": {"Bool": {"aws:SecureTransport": "false", "aws:PrincipalIsAWSService": "false"}}
+    }
+  ]
+}

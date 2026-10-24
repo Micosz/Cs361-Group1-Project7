@@ -17,6 +17,9 @@ class AuthApplication:
             if event.get('version') != '2.0':
                 raise AuthError('UNSUPPORTED_EVENT', 400)
             path = event.get('rawPath', '')
+            from .documents.direct_gateway import handles, DirectUploadGateway
+            if handles(path):
+                return DirectUploadGateway(self.sessions, self.repository).handle(event)
             if path == '/api/public/agreements' or path.startswith('/api/public/agreements/'):
                 return self.public_agreements(event)
             if path == '/api/public/records':
