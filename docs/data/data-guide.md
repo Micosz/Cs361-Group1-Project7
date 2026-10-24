@@ -65,12 +65,7 @@ Collaborator กับ MoU แยกกัน: รายชื่อในเค
 
 กิจกรรมมีเจ้าของข้อมูลหนึ่งแห่งใน `collaborations`; `co_hosts` ระบุเฉพาะผู้ร่วมจัด/ร่วมดำเนินการที่มีหลักฐาน เพื่อให้ V2 เชื่อมกิจกรรมร่วมได้โดยไม่บันทึก ID กิจกรรมซ้ำ หน่วยงานของวิทยากรและผู้ให้คำปรึกษาอยู่ใน `organization_roles` ตามบทบาทจริง
 
-เมื่อแก้ชุดข้อมูล ให้สร้าง fallback และตรวจความสอดคล้อง:
-
-```sh
-node scripts/build-source-backup.cjs
-node scripts/build-source-backup.cjs --check
-```
+เมื่อแก้ชุดข้อมูล ให้ปรับ `data/partners.json` และ `public/data/partner-data-backup.json` ใน changeset เดียวกัน; test จะตรวจว่าข้อมูลแบนใน fallback ตรงกับข้อมูลต้นทางและรักษา ID/visibility ไว้
 
 <a id="v1-data-catalog-deployment"></a>
 
@@ -78,7 +73,7 @@ node scripts/build-source-backup.cjs --check
 
 การลบ GitHub Actions ทำให้ไม่มี workflow sync ข้อมูลจาก `data/partners.json` ไป DynamoDB โดยอัตโนมัติแล้ว สคริปต์ sync และ config เก่าถูกถอดออก; การ build หรือ deploy หน้าเว็บอย่างเดียวไม่เขียนทับข้อมูลใน DynamoDB
 
-การสร้าง fallback สำหรับหน้าเว็บยังทำได้ด้วย `node scripts/build-source-backup.cjs` และตรวจความตรงกันด้วย `node scripts/build-source-backup.cjs --check` วิธี sync ฐานข้อมูลแบบใหม่ยังไม่ได้กำหนด ให้ตรวจแหล่งข้อมูลและขอบเขตการเขียนก่อนทำด้วยวิธีอื่น ห้ามรัน `migrate.js` ซ้ำโดยไม่ทบทวนผลกระทบ เพราะเป็นเครื่องมือ migration รุ่นเก่า
+ไม่มีสคริปต์สร้างหรือ sync catalog แล้ว หน้าเว็บใช้ `public/data/partner-data-backup.json` เป็น fallback เมื่อ API ใช้ไม่ได้; การ build/deploy ไม่เขียนทับ DynamoDB วิธี sync ฐานข้อมูลแบบใหม่ยังไม่ได้กำหนด ให้ตรวจแหล่งข้อมูลและขอบเขตการเขียนก่อนทำด้วยวิธีอื่น ห้ามรัน `migrate.js` ซ้ำโดยไม่ทบทวนผลกระทบ เพราะเป็นเครื่องมือ migration รุ่นเก่า
 
 <a id="v1-data-json-structure"></a>
 
