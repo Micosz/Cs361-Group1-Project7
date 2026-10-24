@@ -1,4 +1,8 @@
-const API_URL = 'https://eb49u61kph.execute-api.us-east-1.amazonaws.com/default/fetchPartnersData'; 
+// Keep Learner Lab on its existing API while Free Tier uses its Amplify API rewrite.
+const API_URL = typeof location !== 'undefined' &&
+    location.hostname === 'main.d1l97oh16w2h6u.amplifyapp.com'
+    ? '/fetchPartnersData'
+    : 'https://eb49u61kph.execute-api.us-east-1.amazonaws.com/default/fetchPartnersData';
 
 // Cache only a successful API snapshot for this page; reload to get fresh data.
 let partnersDataCache = null;
