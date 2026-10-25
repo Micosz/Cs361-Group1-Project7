@@ -130,12 +130,19 @@
                 edit.disabled = !window.CstuWork.handler('partners','edit'); actions.appendChild(edit);
                 edit.onclick = async () => {
                     edit.disabled = true; message.textContent = '';
+                    const viewport = container.closest('.modal-content');
+                    const scrollTop = viewport?.scrollTop;
                     try {
                         const session = await window.CstuAuth.refresh();
                         const latest = (await window.CstuAuth.request('/partners/'+encodeURIComponent(id))).data;
                         if (!container.isConnected) return;
                         if (!window.CstuWork.canEdit(session,latest)) throw Object.assign(Error(),{status:403});
                         await window.CstuWork.handler('partners','edit')({container:editor, record:latest, session,
+                            onCancel: () => {
+                                if (!container.isConnected) return;
+                                edit.focus({preventScroll:true});
+                                if (viewport) viewport.scrollTop = scrollTop;
+                            },
                             auth:window.CstuAuth, reload:async () => {
                                 window.invalidatePublicData?.();
                                 await window.renderCollaboratorCards?.();
