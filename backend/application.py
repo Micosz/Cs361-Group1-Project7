@@ -116,11 +116,15 @@ class AuthApplication:
         if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
             raise AuthError('METHOD_NOT_ALLOWED', 405)
         query = event.get('queryStringParameters') or {}
-        if (set(query) != {'scopeId', 'q'} or not isinstance(query['scopeId'], str)
-                or not 1 <= len(query['scopeId']) <= 100
-                or not isinstance(query['q'], str) or not 2 <= len(query['q'].strip()) <= 80):
+        if (not isinstance(query.get('scopeId'), str) or not 1 <= len(query['scopeId']) <= 100
+                or set(query) - {'scopeId', 'q'}):
             raise AuthError('INVALID_QUERY', 422)
-        scope, term = query['scopeId'], query['q'].strip()
+        term = ''
+        if 'q' in query and query['q'] != '':
+            if not isinstance(query['q'], str) or not 2 <= len(query['q'].strip()) <= 80:
+                raise AuthError('INVALID_QUERY', 422)
+            term = query['q'].strip()
+        scope = query['scopeId']
         require_role_management_scope(context, scope)
         rows = self.accounts.store.role_targets(scope, term)
         # A revoked session must not receive names collected before revocation.

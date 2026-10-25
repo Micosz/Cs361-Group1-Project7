@@ -18,9 +18,19 @@ class RoleTargetTests(unittest.TestCase):
         return AuthApplication(None, None, SimpleNamespace(store=store), None, None), SimpleNamespace(user=user)
 
     def event(self, scope='cs-demo', term='ar', method='GET'):
+        query = {'scopeId': scope}
+        if term is not None:
+            query['q'] = term
         return {'version': '2.0', 'rawPath': '/api/role-targets',
-            'queryStringParameters': {'scopeId': scope, 'q': term},
+            'queryStringParameters': query,
             'requestContext': {'http': {'method': method}}}
+
+    def test_omitted_query_term_returns_all_targets_in_scope(self):
+        app, context = self.app()
+        with patch('backend.application.require_session', return_value=context):
+            result = app.handle(self.event(term=None))
+        self.assertEqual(200, result['statusCode'])
+        self.assertEqual([('cs-demo', '')], self.calls)
 
     def test_scoped_manager_gets_only_minimal_names_and_session_is_rechecked(self):
         app, context = self.app()

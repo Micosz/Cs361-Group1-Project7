@@ -37,7 +37,8 @@
         function form(row=null){
             editor.replaceChildren();const form=document.createElement('form');
             const field=(label,node)=>{const p=document.createElement('p'),l=document.createElement('label');l.textContent=label+' ';l.appendChild(node);p.appendChild(l);form.appendChild(p);return node;};
-            const date=field('วันที่รับ Feedback',document.createElement('input'));date.type='date';date.required=true;date.value=row?.occurredOn||'';
+            const today=new Date().toISOString().slice(0, 10);
+            const date=field('วันที่รับ Feedback (บันทึกอัตโนมัติ)',document.createElement('input'));date.type='text';date.readOnly=true;date.required=true;date.value=row?.occurredOn||today;date.style.backgroundColor='#f7f2ee';date.style.cursor='default';
             const source=field('แหล่งที่มา',document.createElement('select'));
             for(const [value,label] of Object.entries(sources)){const option=document.createElement('option');option.value=value;option.textContent=label;source.appendChild(option);}source.value=row?.sourceType||'participant';
             const comment=field('ความคิดเห็น (ไม่ใส่ข้อมูลระบุตัวบุคคล)',document.createElement('textarea'));comment.required=true;comment.maxLength=10000;comment.value=row?.comment||'';
@@ -50,7 +51,7 @@
             let fingerprint=null,key=null;
             form.onsubmit=async event=>{
                 event.preventDefault();if(save.disabled)return;
-                const payload={occurredOn:date.value,sourceType:source.value,comment:comment.value.trim(),improvement:improvement.value.trim(),respondentName:name.value.trim()};
+                const payload={occurredOn:date.value||today,sourceType:source.value,comment:comment.value.trim(),improvement:improvement.value.trim(),respondentName:name.value.trim()};
                 if(!payload.comment){message.textContent='กรุณากรอกความคิดเห็น';return;}
                 const next=JSON.stringify(payload);if(next!==fingerprint){fingerprint=next;key=crypto.randomUUID();}
                 save.disabled=true;message.textContent='กำลังบันทึก';

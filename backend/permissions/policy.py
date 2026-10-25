@@ -113,6 +113,7 @@ def allowed_roles(context, kind, action, record, parent=None):
     roles = matching_roles(context, base) & action_roles(kind, action)
     if kind == 'feedback' and action == 'update' and record.get('createdBy') != user.user_id:
         roles.discard('staff')
+        roles.discard('coordinator')
     if not linked(base, 'responsibleUserIds', user.user_id):
         roles.discard('coordinator')
     student_reader = (kind == 'agreement' and action == 'read'
