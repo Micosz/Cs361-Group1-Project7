@@ -446,6 +446,7 @@
         if (scroll) window.dispatchEvent(new Event('cstu:board'));
     }
     async function openRoles() {
+        window.dispatchEvent(new Event('cstu:board'));
         const fresh = await window.CstuAuth.refresh().catch(() => null);
         if (!fresh?.capabilities?.some(c => c.name === 'manageRoles')) return;
         clear(); lastTrigger = document.querySelector('#authNavButtons button');
@@ -483,6 +484,7 @@
         if (url.origin !== location.origin || !/\/(index|records)\.html$/.test(url.pathname)) return;
         if (url.searchParams.get('view') === 'roles') {
             event.preventDefault(); if ($('role-menu')?.open) $('role-menu').close();
+            window.dispatchEvent(new Event('cstu:board'));
             openRoles(); return;
         }
         const target = url.searchParams.get('kind') || (['overview','feedback'].includes(url.searchParams.get('view')) ? url.searchParams.get('view') : null);
@@ -490,6 +492,7 @@
         event.preventDefault();
         const menu = $('role-menu'); if (menu?.open) menu.close();
         if (typeof window.closeModal === 'function') window.closeModal();
+        window.dispatchEvent(new Event('cstu:board'));
         open(target,url.searchParams.get('action'),url.searchParams.get('id'),true);
     });
     form.onsubmit = event => { event.preventDefault(); params.delete('id'); load(); };
@@ -501,6 +504,6 @@
     window.addEventListener('authchange', () => { ++revision; clear(); host.hidden = true; updateTabs([]); load(); });
     window.addEventListener('pageshow', event => { if (event.persisted) load(); });
     const initial = new URLSearchParams(location.search);
-    if (initial.get('view') === 'roles') openRoles();
+    if (initial.get('view') === 'roles') { window.dispatchEvent(new Event('cstu:board')); openRoles(); }
     else open(initial.get('kind') || (['overview','feedback'].includes(initial.get('view')) ? initial.get('view') : 'partners'),initial.get('action'),initial.get('id'),Boolean(initial.size));
 })();
