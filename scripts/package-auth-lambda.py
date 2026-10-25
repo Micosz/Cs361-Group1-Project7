@@ -1,4 +1,4 @@
-"""Package committed Auth source for manual Lambda deployment; never calls AWS."""
+"""Package committed Auth source for manual or CI deployment; never calls AWS."""
 import argparse
 import ast
 import base64
@@ -41,8 +41,12 @@ def main():
     with output.open('xb') as stream:
         with zipfile.ZipFile(stream, 'w', zipfile.ZIP_DEFLATED) as archive:
             for path, source in sorted(sources.items()):
-                archive.writestr(path, source)
-            archive.writestr('SOURCE_COMMIT', commit + '\n')
+                info = zipfile.ZipInfo(path, date_time=(1980, 1, 1, 0, 0, 0))
+                info.compress_type = zipfile.ZIP_DEFLATED
+                archive.writestr(info, source)
+            info = zipfile.ZipInfo('SOURCE_COMMIT', date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, commit + '\n')
     digest = base64.b64encode(hashlib.sha256(output.read_bytes()).digest()).decode()
     print(f'Source commit: {commit}\nPython files: {len(sources)}\nZIP: {output}\nCodeSha256: {digest}')
     print('Source only; uses boto3 supplied by the AWS Lambda Python runtime. No AWS changes made.')

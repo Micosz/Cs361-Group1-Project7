@@ -5,7 +5,7 @@
 ## สิ่งที่ repository ทำอยู่
 
 - Frontend ใช้ `amplify.yml`: รัน `npm run build` แล้วเผยแพร่ไฟล์ใน `public/`; คำสั่ง build ตรวจว่า `public/login/index.html` มีอยู่
-- GitHub `main` ไม่มี `.github/workflows/`; จึงไม่มี GitHub Actions สำหรับทดสอบหรือ deploy ใน repository ปัจจุบัน
+- GitHub Actions ใน `.github/workflows/lambda-deploy.yml` ตรวจ syntax/แพ็ก source และ deploy เฉพาะ `CSTUHubAuth` เมื่อเปลี่ยน Backend แล้ว merge เข้า `main`; ดู [คู่มือ Lambda CI/CD](../../deploy/README.md)
 - ชุดทดสอบ frontend ระดับ root ถูกนำออกแล้ว; ชุดทดสอบ Backend ยังอยู่ใน `backend/tests/` และรันเองได้ด้วยคำสั่งใน [Backend README](../../backend/README.md)
 - Source ของ Lambda และโครงสร้าง AWS ใน repository ไม่ได้หมายความว่า Lambda/API ถูก deploy อัตโนมัติหรือ config ตรงกับ AWS ปัจจุบัน
 
@@ -21,7 +21,7 @@
 | ส่วน | สิ่งที่ต้องตรวจ |
 | --- | --- |
 | Frontend | ตรวจ build log และ deployed commit ใน Amplify; `amplify.yml` ระบุ build command และโฟลเดอร์เผยแพร่ แต่การเชื่อม app/branch ต้องยืนยันใน Console |
-| Lambda / API | ไม่มี deployment workflow ใน repository ปัจจุบัน; deploy เฉพาะเมื่อเลือก AWS account/region/function/API ที่ถูกต้องและตรวจ config ก่อน/หลัง |
+| Lambda / API | Workflow ปล่อยเฉพาะโค้ด `CSTUHubAuth` ผ่าน OIDC ไปบัญชี `781485979426`, `ap-southeast-2`; API config และ Lambda อีกสามตัวใช้วิธีเดิม |
 | DynamoDB / S3 | ใช้ resource ที่เตรียมไว้; การ deploy source ไม่ได้สร้างหรือตรวจ schema, permission หรือ object privacy ให้อัตโนมัติ |
 
 ### IAM สำหรับเอกสารแนบส่วนตัว
@@ -41,7 +41,7 @@
 
 1. บันทึก commit SHA และ environment ที่เปลี่ยน
 2. ตรวจผล build และ deployed commit ใน Amplify
-3. เปิด [เว็บ production](https://main.d2q46seuxuluap.amplifyapp.com/) แล้วตรวจหน้า/ข้อมูลที่เปลี่ยน
+3. เปิด [เว็บ production](https://main.d1l97oh16w2h6u.amplifyapp.com/) แล้วตรวจหน้า/ข้อมูลที่เปลี่ยน
 4. เรียก API และตรวจ Login/สิทธิ์/เอกสารตามขอบเขตที่เปลี่ยน โดยแยกผล browser/API จริงออกจากผล unit หรือ mock tests
 
 หาก build, deploy หรือ smoke test ล้มเหลว ให้หยุดและตรวจ log, commit และ AWS environment ก่อนลองซ้ำ
