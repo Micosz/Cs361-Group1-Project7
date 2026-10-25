@@ -224,5 +224,27 @@
         } catch (error) { status.textContent = 'ตรวจสิทธิ์ไม่ได้: ' + error.message; }
     }
 
+    // ฟังก์ชันจัดการเมื่อกดปุ่ม "ยกเลิก" ใน Modal แก้ไขคู่ความร่วมมือ
+    function handleCancelEditPartner(partnerId, event) {
+        if (event) event.preventDefault(); // ป้องกันไม่ให้ submit หรือ reset ฟอร์ม
+
+        // 1. ซ่อน Modal แก้ไข
+        const editModal = document.getElementById('edit-partner-modal') || document.querySelector('.edit-partner-modal') || document.querySelector('#record-detail-modal');
+        if (editModal) {
+            editModal.style.display = 'none';
+            editModal.classList.remove('show');
+        }
+
+        // 2. เรียกแสดง Modal รายละเอียดของ Card เดิม
+        if (typeof window.openPartnerDetailModal === 'function') {
+            window.openPartnerDetailModal(partnerId);
+        } else if (typeof window.showRecordDetail === 'function') {
+            window.showRecordDetail(partnerId);
+        } else if (typeof window.renderPartnerDetail === 'function') {
+            window.renderPartnerDetail(partnerId);
+        }
+    }
+
     window.DocumentComponent = {mount};
+    window.handleCancelEditPartner = handleCancelEditPartner;
 })();
