@@ -6,7 +6,7 @@
     "Action": "sts:AssumeRoleWithWebIdentity",
     "Condition": {"StringEquals": {
       "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-      "token.actions.githubusercontent.com:sub": "repo:Micosz/Cs361-Group1-Project7:ref:refs/heads/main"
+      "token.actions.githubusercontent.com:sub": "repo:Micosz@179280452/Cs361-Group1-Project7@1336187059:ref:refs/heads/main"
     }}
   }]
 }
