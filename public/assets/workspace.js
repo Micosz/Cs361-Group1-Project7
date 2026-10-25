@@ -430,6 +430,7 @@ async function refreshWorkspace() {
         if (new URLSearchParams(location.search).get('embed') === 'roles' && managed.length) {
             const roleDialog = document.getElementById('role-dialog');
             if (roleDialog && !roleDialog.open) roleDialog.showModal();
+            loadRoleTargets();
         }
 
         // Exchange section handling
@@ -473,7 +474,10 @@ async function refreshWorkspace() {
         }
     } catch { workspaceStatus.textContent = 'ตรวจสิทธิ์ไม่ได้ กรุณาลองใหม่ภายหลัง'; }
 }
-openRoles.onclick = () => document.getElementById('role-dialog').showModal();
+openRoles.onclick = () => {
+    document.getElementById('role-dialog').showModal();
+    loadRoleTargets();
+};
 function closeRoles(saved = false) {
     invalidateSelection();
     document.getElementById('role-dialog').close();
@@ -483,30 +487,50 @@ function closeRoles(saved = false) {
 }
 document.getElementById('close-roles').onclick = () => closeRoles();
 document.getElementById('role-dialog').addEventListener('cancel', event => { event.preventDefault(); closeRoles(); });
-function clearRoleTargets() {
-    target.replaceChildren(new Option('ค้นหาชื่อก่อน', ''));
+async function loadRoleTargets(term = '') {
+    invalidateSelection(); roleStatus.textContent = '';
+    const scopeId = scope.value, requestRevision = roleLoadRevision;
+    if (!scopeId) return;
+    target.replaceChildren(new Option('กำลังโหลดบัญชี...', ''));
     target.disabled = true;
-}
-roleSearch.addEventListener('input', () => { invalidateSelection(); clearRoleTargets(); roleTargetStatus.textContent = ''; });
-scope.addEventListener('change', () => { invalidateSelection(); clearRoleTargets(); roleTargetStatus.textContent = ''; });
-target.addEventListener('change', () => loadSelectedRoleUser());
-document.getElementById('search-role-targets').onclick = async () => {
-    invalidateSelection(); clearRoleTargets(); roleStatus.textContent = '';
-    const term = roleSearch.value.trim(), scopeId = scope.value;
-    if (term.length < 2 || !scopeId) { roleTargetStatus.textContent = 'พิมพ์ชื่ออย่างน้อย 2 ตัวอักษรและเลือกขอบเขตก่อน'; return; }
-    roleTargetStatus.textContent = 'กำลังค้นหาบัญชีในขอบเขตนี้...';
+    roleTargetStatus.textContent = term ? 'กำลังค้นหาบัญชีในขอบเขตนี้...' : 'กำลังโหลดรายชื่อบัญชี...';
     try {
-        const result = await window.CstuAuth.request('/role-targets?scopeId=' + encodeURIComponent(scopeId) + '&q=' + encodeURIComponent(term));
-        if (roleSearch.value.trim() !== term || scope.value !== scopeId) return;
-        target.replaceChildren(new Option('เลือกบัญชี', ''));
-        for (const user of result.data) {
+        const query = term ? '&q=' + encodeURIComponent(term) : '';
+        const result = await window.CstuAuth.request('/role-targets?scopeId=' + encodeURIComponent(scopeId) + query);
+        if (requestRevision !== roleLoadRevision || scope.value !== scopeId) return;
+        const items = Array.isArray(result?.data) ? result.data : [];
+        target.replaceChildren(new Option(items.length ? 'เลือกบัญชี' : 'ไม่พบบัญชีในขอบเขตนี้', ''));
+        for (const user of items) {
             const identity = user.identityVerified ? '' : ' · ต้องตรวจตัวตน';
             const suffix = String(user.id).slice(-6);
             target.appendChild(new Option(user.displayName + identity + ' · #' + suffix, user.id));
         }
-        target.disabled = result.data.length === 0;
-        roleTargetStatus.textContent = result.data.length ? `พบ ${result.data.length} บัญชีที่จัดการได้` : 'ไม่พบบัญชีในขอบเขตนี้';
-    } catch { roleTargetStatus.textContent = 'ค้นหาไม่ได้ หรือคุณไม่มีสิทธิ์จัดการขอบเขตนี้'; }
+        target.disabled = items.length === 0;
+        roleTargetStatus.textContent = items.length ? `พบ ${items.length} บัญชีที่จัดการได้` : 'ไม่พบบัญชีในขอบเขตนี้';
+    } catch {
+        if (requestRevision !== roleLoadRevision || scope.value !== scopeId) return;
+        target.replaceChildren(new Option('ค้นหาชื่อก่อน', ''));
+        roleTargetStatus.textContent = 'ค้นหาไม่ได้ หรือคุณไม่มีสิทธิ์จัดการขอบเขตนี้';
+    }
+}
+function clearRoleTargets() {
+    loadRoleTargets();
+}
+roleSearch.addEventListener('input', () => {
+    invalidateSelection();
+    if (!roleSearch.value.trim()) {
+        loadRoleTargets();
+    }
+});
+scope.addEventListener('change', () => { invalidateSelection(); loadRoleTargets(); });
+target.addEventListener('change', () => loadSelectedRoleUser());
+document.getElementById('search-role-targets').onclick = async () => {
+    const term = roleSearch.value.trim();
+    if (term.length > 0 && term.length < 2) {
+        roleTargetStatus.textContent = 'พิมพ์ชื่ออย่างน้อย 2 ตัวอักษรและเลือกขอบเขตก่อน';
+        return;
+    }
+    await loadRoleTargets(term);
 };
 async function loadSelectedRoleUser() {
     invalidateSelection(); roleStatus.textContent = '';

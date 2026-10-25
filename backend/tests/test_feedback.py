@@ -114,6 +114,9 @@ class FeedbackTests(unittest.TestCase):
         self.actor = 'staff'
         self.assertEqual(200, self.call(base + '/' + own['id'], 'PATCH', {'comment':'Staff edited'}, version=1)[0]['statusCode'])
         self.assertIn(self.call(base + '/' + other['id'], 'PATCH', {'comment':'Staff must not edit'}, version=1)[0]['statusCode'], (403, 404))
+        self.actor = 'coordinator'
+        self.assertIn(self.call(base + '/' + own['id'], 'PATCH', {'comment':'Coordinator must not edit others'}, version=2)[0]['statusCode'], (403, 404))
+        self.actor = 'staff'
         response, body = self.call('/api/feedback?limit=100')
         self.assertEqual(200, response['statusCode'], body)
         indexed = {row['id']:row for row in body['data']}

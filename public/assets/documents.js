@@ -13,7 +13,7 @@
         container.replaceChildren();
         const title = document.createElement('h3'); title.textContent = 'เอกสารแนบ';
         const status = document.createElement('p'); status.setAttribute('role', 'status');
-        const list = document.createElement('ul'); container.append(title, status, list);
+        const list = document.createElement('ul'); list.className = 'document-list'; container.append(title, status, list);
         const queued = [];
         let identity = null;
         let uploadConfig = {directUpload: false};
@@ -26,14 +26,43 @@
                     const result = await window.CstuAuth.request('/' + kind + 's/' + encodeURIComponent(record.id) + '/documents?limit=100' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
                     for (const doc of result.data) {
                         if (doc.uploadState !== 'ready') continue;
-                        const li = document.createElement('li'), link = document.createElement('a');
-                        link.textContent = doc.displayName + ' (' + window.CstuPrivateDocuments.formatSize(doc.size) + ')';
+                        const li = document.createElement('li');
+                        li.className = 'document-item';
+
+                        const info = document.createElement('div');
+                        info.className = 'document-info';
+
+                        const icon = document.createElement('span');
+                        const isPdf = /\.pdf$/i.test(doc.displayName) || doc.mime === 'application/pdf';
+                        icon.className = 'document-icon ' + (isPdf ? 'doc-pdf' : 'doc-image');
+                        icon.setAttribute('aria-hidden', 'true');
+                        icon.innerHTML = isPdf
+                            ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>'
+                            : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>';
+
+                        const meta = document.createElement('div');
+                        meta.className = 'document-meta';
+
+                        const link = document.createElement('a');
+                        link.className = 'document-link';
+                        link.textContent = doc.displayName;
                         link.href = '/api/documents/' + encodeURIComponent(doc.id) + '/content?disposition=attachment';
-                        link.target = '_blank'; link.rel = 'noopener'; li.appendChild(link);
+                        link.target = '_blank'; link.rel = 'noopener';
+
+                        const size = document.createElement('span');
+                        size.className = 'document-size';
+                        size.textContent = window.CstuPrivateDocuments.formatSize(doc.size);
+
+                        meta.append(link, size);
+                        info.append(icon, meta);
+                        li.appendChild(info);
+
                         if (canUpload(identity, record)) {
                             const remove = document.createElement('button'); remove.type = 'button';
-                            remove.className = 'document-remove-image'; remove.textContent = 'ลบ';
+                            remove.className = 'document-remove-image';
+                            remove.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg><span>ลบ</span>';
                             remove.setAttribute('aria-label', 'ลบเอกสาร ' + doc.displayName);
+                            remove.title = 'ลบเอกสาร ' + doc.displayName;
                             remove.onclick = async () => {
                                 if (!window.confirm('ลบเอกสาร “' + doc.displayName + '” ออกจากรายการนี้?')) return;
                                 remove.disabled = true;

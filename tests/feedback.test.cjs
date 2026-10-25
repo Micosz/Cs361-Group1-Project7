@@ -26,6 +26,7 @@ function createElement(tag) {
         maxLength: 0,
         isConnected: true,
         attributes: {},
+        style: {},
         children: [],
         parentNode: null,
         onclick: null,

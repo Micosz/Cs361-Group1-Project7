@@ -116,7 +116,7 @@ def allowed_roles(context, kind, action, record, parent=None):
         return set()
     roles = matching_roles(context, base) & action_roles(kind, action)
     if kind == 'feedback' and action == 'update' and record.get('createdBy') != user.user_id:
-        roles -= {'staff', 'student'}
+        roles -= {'staff', 'coordinator', 'student'}
     if not linked(base, 'responsibleUserIds', user.user_id):
         roles.discard('coordinator')
     from ..relationships.activity_links import published
