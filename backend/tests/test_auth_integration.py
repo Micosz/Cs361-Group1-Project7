@@ -187,6 +187,47 @@ class IntegrationTests(unittest.TestCase):
         with self.assertRaises(AuthError):
             self.app.roles.update(no_capability, target['id'], payload, 3, 'x', 1000)
 
+    def test_assigned_executive_gains_and_loses_scoped_role_management(self):
+        manager = self.linker.link({'username': 'seed-exec', 'type': 'employee'})
+        delegate = self.linker.link({'username': 'suttipoch', 'type': 'employee'})
+        colleague = self.linker.link({'username': 'colleague', 'type': 'employee'})
+        self.store.rows[manager['id']]['identityVerified'] = True
+        self.store.rows[manager['id']]['grants'] = [dict(role='executive', scopeId='cs-demo', active=True)]
+        prior = self.sessions.create_anonymous()
+        manager_session = self.sessions.issue_authenticated(manager['id'], prior.token, 'https://example.com', prior.csrf_token)
+        # Existing executive with empty stored capabilities still gets manageRoles in session & policy.
+        self.assertEqual([{'name': 'manageRoles', 'scopeId': 'cs-demo'}],
+                         self.sessions.state(manager_session.token)['capabilities'])
+        manager_ctx = self.sessions.validate(manager_session.token)
+        self.app.roles.update(manager_ctx, delegate['id'],
+                              dict(scopeId='cs-demo', roles=['executive'], confirmIdentity=True), 1, 'fixture-hash', 1000)
+        prior = self.sessions.create_anonymous()
+        delegate_session = self.sessions.issue_authenticated(delegate['id'], prior.token, 'https://example.com', prior.csrf_token)
+        self.assertEqual([{'name': 'manageRoles', 'scopeId': 'cs-demo'}],
+                         self.sessions.state(delegate_session.token)['capabilities'])
+        delegate_ctx = self.sessions.validate(delegate_session.token)
+        # Newly assigned executive can manage roles for others in cs-demo, but not self or other scopes.
+        self.app.roles.update(delegate_ctx, colleague['id'],
+                              dict(scopeId='cs-demo', roles=['staff'], confirmIdentity=True), 1, 'fixture-hash', 1000)
+        for bad_target, bad_scope in [(delegate['id'], 'cs-demo'), (colleague['id'], 'other')]:
+            with self.assertRaises(AuthError) as denied:
+                self.app.roles.update(delegate_ctx, bad_target,
+                                      dict(scopeId=bad_scope, roles=['staff'], confirmIdentity=True), 2, 'fixture-hash', 1000)
+            self.assertEqual(403, denied.exception.status)
+        # Demoting executive to staff removes manageRoles and revokes the old session.
+        self.app.roles.update(manager_ctx, delegate['id'],
+                              dict(scopeId='cs-demo', roles=['staff'], confirmIdentity=True), 2, 'fixture-hash', 1000)
+        with self.assertRaises(AuthError):
+            self.sessions.validate(delegate_session.token)
+        prior = self.sessions.create_anonymous()
+        demoted_session = self.sessions.issue_authenticated(delegate['id'], prior.token, 'https://example.com', prior.csrf_token)
+        self.assertEqual([], self.sessions.state(demoted_session.token)['capabilities'])
+        demoted_ctx = self.sessions.validate(demoted_session.token)
+        with self.assertRaises(AuthError) as forbidden:
+            self.app.roles.update(demoted_ctx, colleague['id'],
+                                  dict(scopeId='cs-demo', roles=['coordinator'], confirmIdentity=True), 2, 'fixture-hash', 1000)
+        self.assertEqual(403, forbidden.exception.status)
+
     def test_atomic_dynamo_role_write_includes_user_session_target_and_link_guards(self):
         captured = []
         client = SimpleNamespace(transact_write_items=lambda **kw: captured.append(kw))

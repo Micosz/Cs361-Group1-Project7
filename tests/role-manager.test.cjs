@@ -45,3 +45,31 @@ test('close cancels an outstanding account load and tells the parent to close',a
  assert.equal(h.messages[0].type,'roles-closed');assert.equal(h.element('save-roles').disabled,true);
  assert.equal(h.element('role-user').textContent,'');
 });
+test('executive grant confers scoped role management in auth-client and role-menu without duplicate badges',async()=>{
+ const authSource=fs.readFileSync('public/assets/auth-client.js','utf8');
+ const menuSource=fs.readFileSync('public/assets/role-menu.js','utf8');
+ const mkNode=tag=>({tag,children:[],textContent:'',className:'',href:'',hidden:false,style:{},attributes:{},
+  append(...items){this.children.push(...items);},appendChild(item){this.children.push(item);},
+  replaceChildren(...items){this.children=items;},prepend(item){this.children.unshift(item);},
+  querySelector(){return null;},contains(){return true;},setAttribute(k,v){this.attributes[k]=v;},
+  classList:{remove(){},add(){},toggle(){}},addEventListener(){},close(){},showModal(){},getBoundingClientRect(){}});
+ const nodes={authNavButtons:mkNode('div'),'role-menu':mkNode('dialog'),'role-menu-links':mkNode('div'),
+  'role-menu-status':mkNode('p'),'role-menu-logout':mkNode('button'),'role-menu-account':mkNode('div'),'close-role-menu':mkNode('button')};
+ const session={user:{id:'u-exec',displayName:'สุทธิพจน์ ทดสอบ',accountType:'tu'},
+  grants:[{role:'executive',scopeId:'cs-demo'}],capabilities:[],csrfToken:'a'.repeat(64)};
+ const ctx={window:null,document:{getElementById:id=>nodes[id]||mkNode('div'),createElement:mkNode,body:{style:{}}},
+  CSTU_AUTH_CONFIG:{enabled:true},fetch:async()=>({ok:true,status:200,text:async()=>JSON.stringify(session),headers:{get:()=>'application/json'}}),
+  AbortController,setTimeout,clearTimeout,Event,matchMedia:()=>({matches:true}),addEventListener(){}};
+ ctx.window=ctx;
+ ctx.CstuWork={menu:()=>[{label:'รวม Feedback',href:'index.html?view=feedback#board-section',description:'Feedback'}]};
+ vm.createContext(ctx);
+ vm.runInContext(authSource,ctx);
+ assert.deepEqual([...ctx.CstuAuth.managedScopes(session)],['cs-demo']);
+ assert.deepEqual([...ctx.CstuAuth.managedScopes({...session,capabilities:[{name:'manageRoles',scopeId:'cs-demo'}]})],['cs-demo']);
+ vm.runInContext(menuSource,ctx);
+ await new Promise(r=>setTimeout(r,20));
+ const labels=nodes['role-menu-links'].children.map(link=>link.children[0].textContent);
+ assert.deepEqual(labels,['รวม Feedback','จัดการสิทธิ์ผู้ใช้']);
+ const badges=nodes['role-menu-account'].children[1].children.map(span=>span.textContent);
+ assert.deepEqual(badges,['Executive · cs-demo','จัดการสิทธิ์ · cs-demo']);
+});

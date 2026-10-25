@@ -105,5 +105,9 @@
     }
     channel?.addEventListener('message', () => window.dispatchEvent(new Event('authchange')));
     window.CstuAuth = { state: () => state, enabled, refresh, login, logout, request, mutate, remove, create,
-        roles: data => [...new Set((data?.grants || []).map(g => g.role))] };
+        roles: data => [...new Set((data?.grants || []).map(g => g.role))],
+        managedScopes: data => [...new Set([
+            ...(data?.capabilities || []).filter(c => c.active !== false && c.name === 'manageRoles').map(c => c.scopeId),
+            ...(data?.grants || []).filter(g => g.active !== false && g.role === 'executive').map(g => g.scopeId)
+        ].filter(Boolean))] };
 })();

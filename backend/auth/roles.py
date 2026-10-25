@@ -29,12 +29,26 @@ class RoleService:
             raise AuthError('VERSION_CONFLICT', 409)
         if payload.get('confirmIdentity') is not True:
             raise AuthError('IDENTITY_REVIEW_REQUIRED', 409)
+        had_executive = any(g.get('scopeId') == scope and g.get('role') == 'executive'
+                            and g.get('active') is True for g in original.get('grants', []))
         updated = deepcopy(original)
         # Replace grants ONLY in the manager's selected scope, preserving others.
         updated['grants'] = [g for g in original.get('grants', []) if g.get('scopeId') != scope]
         timestamp = datetime.fromtimestamp(now, timezone.utc).isoformat()
         updated['grants'] += [dict(id=str(uuid.uuid4()), role=r, scopeId=scope, active=True,
                                   grantedBy=context.user.user_id, grantedAt=timestamp) for r in payload['roles']]
+        existing_capabilities = list(original.get('capabilities', []))
+        if 'executive' in payload['roles']:
+            updated['capabilities'] = [
+                c for c in existing_capabilities
+                if not (c.get('name') == 'manageRoles' and c.get('scopeId') == scope)
+            ] + [dict(name='manageRoles', scopeId=scope, active=True,
+                      grantedBy=context.user.user_id, grantedAt=timestamp)]
+        elif had_executive:
+            updated['capabilities'] = [
+                c for c in existing_capabilities
+                if not (c.get('name') == 'manageRoles' and c.get('scopeId') == scope)
+            ]
         updated['identityVerified'] = True
         updated['authzVersion'] = expected_version + 1
         updated['updatedBy'] = context.user.user_id

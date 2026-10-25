@@ -457,7 +457,11 @@
     }
     async function openRoles() {
         const fresh = await window.CstuAuth.refresh().catch(() => null);
-        if (!fresh?.capabilities?.some(c => c.name === 'manageRoles')) return;
+        const canManageRoles = window.CstuAuth?.managedScopes
+            ? window.CstuAuth.managedScopes(fresh).length > 0
+            : Boolean(fresh?.capabilities?.some(c => c.active !== false && c.name === 'manageRoles')
+                || fresh?.grants?.some(g => g.active !== false && g.role === 'executive'));
+        if (!canManageRoles) return;
         clear(); lastTrigger = document.querySelector('#authNavButtons button');
         $('detail-title').textContent = 'จัดการสิทธิ์ผู้ใช้';
         const frame = document.createElement('iframe'); frame.title = 'จัดการสิทธิ์ผู้ใช้';

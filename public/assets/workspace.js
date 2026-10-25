@@ -415,7 +415,12 @@ async function refreshWorkspace() {
         if (!session?.user) { window.location.replace('login.html'); return; }
         const view = new URLSearchParams(window.location.search).get('view');
         userRoles = window.CstuAuth.roles(session);
-        const managed = [...new Set(session.capabilities.filter(c => c.name === 'manageRoles').map(c => c.scopeId))];
+        const managed = window.CstuAuth?.managedScopes
+            ? window.CstuAuth.managedScopes(session)
+            : [...new Set([
+                ...(session.capabilities || []).filter(c => c.active !== false && c.name === 'manageRoles').map(c => c.scopeId),
+                ...(session.grants || []).filter(g => g.active !== false && g.role === 'executive').map(g => g.scopeId)
+            ].filter(Boolean))];
         if (view && (view === 'roles' ? !managed.length : !userRoles.includes(view))) {
             workspaceStatus.textContent = 'คุณไม่มีสิทธิ์เข้าพื้นที่นี้'; return;
         }
