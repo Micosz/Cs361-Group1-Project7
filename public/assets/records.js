@@ -33,7 +33,7 @@
         $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); $('detail-title').textContent = ''; $('detail-status').textContent = '';
     }
     function clear() {
-        document.body.classList.remove('feedback-inbox-view');
+        document.body.classList.toggle('feedback-inbox-view', feedbackInbox);
         partnerRows = []; eventRows = [];
         document.querySelectorAll('.protected-partner-card,.protected-event-card').forEach(card => card.remove());
         document.querySelectorAll('[data-protected-duplicate]').forEach(card => { card.hidden = false; card.removeAttribute('data-protected-duplicate'); });
@@ -47,7 +47,17 @@
             503:'ระบบข้อมูลยังไม่พร้อมใช้งาน กรุณาลองใหม่ภายหลัง'})[error.status] || 'โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่';
     }
     function redirectLogin() { location.replace('login.html'); }
-    function nav() { $('record-links').replaceChildren(); }
+    function nav() {
+        const links = $('record-links');
+        links.replaceChildren();
+        links.setAttribute('aria-label', feedbackInbox ? 'การนำทางกลับหน้าหลัก' : 'ชนิดข้อมูล');
+        if (!feedbackInbox) return;
+        const back = document.createElement('a');
+        back.href = 'index.html?kind=partners#board-section';
+        back.className = 'feedback-inbox-back';
+        back.textContent = '← กลับหน้าหลัก';
+        links.appendChild(back);
+    }
     function query(cursor = null) {
         const query = new URLSearchParams();
         if (['partners','activities','agreements'].includes(kind)) {
@@ -337,6 +347,7 @@
     }
     async function load() {
         const current = ++revision; moreRequest = null; autoLoadPaused = false; clear(); host.hidden = false; form.hidden = true; status('กำลังตรวจสิทธิ์');
+        if (feedbackInbox) { $('records-title').textContent = 'รวม Feedback'; nav(); }
         try {
             if (!window.CstuAuth.enabled()) { status('พื้นที่ผู้ใช้ยังไม่เปิดใช้งาน'); return; }
             session = await window.CstuAuth.refresh();
@@ -409,7 +420,7 @@
             if (params.get('id')) await detail({id:params.get('id')}, null);
         } catch (error) {
             if (current !== revision) return;
-            clear(); status(errorMessage(error)); $('records-retry').hidden = false;
+            clear(); if (feedbackInbox) nav(); status(errorMessage(error)); $('records-retry').hidden = false;
             if (error.status === 401) redirectLogin();
         }
     }
@@ -452,18 +463,26 @@
             if (kind === 'agreements') { $('filterEvent').value = 'mou'; window.renderEventCards?.(); }
         }
         syncBoard();
+        if (!feedbackInbox && location.search && new URLSearchParams(location.search).get('view') === 'feedback') {
+            try { window.history?.replaceState?.(null, '', 'index.html#board-section'); } catch { /* Local previews may restrict History API. */ }
+        }
+        if (scroll) {
+            if (feedbackInbox) window.scrollTo?.({top:0,behavior:'auto'});
+            else window.dispatchEvent(new Event('cstu:board'));
+        }
         await load();
-        if (scroll) window.dispatchEvent(new Event('cstu:board'));
+        if (scroll && !feedbackInbox) window.dispatchEvent(new Event('cstu:board'));
     }
     async function openRoles() {
-        window.dispatchEvent(new Event('cstu:board'));
+        if (!feedbackInbox) window.dispatchEvent(new Event('cstu:board'));
         const fresh = await window.CstuAuth.refresh().catch(() => null);
         const canManageRoles = window.CstuAuth?.managedScopes
             ? window.CstuAuth.managedScopes(fresh).length > 0
             : Boolean(fresh?.capabilities?.some(c => c.active !== false && c.name === 'manageRoles')
                 || fresh?.grants?.some(g => g.active !== false && g.role === 'executive'));
         if (!canManageRoles) return;
-        clear(); lastTrigger = document.querySelector('#authNavButtons button');
+        const trigger = document.querySelector('#authNavButtons button');
+        closeDetail(); lastTrigger = trigger;
         $('detail-title').textContent = 'จัดการสิทธิ์ผู้ใช้';
         const frame = document.createElement('iframe'); frame.title = 'จัดการสิทธิ์ผู้ใช้';
         roleFrame = frame;
@@ -498,7 +517,6 @@
         if (url.origin !== location.origin || !/\/(index|records)\.html$/.test(url.pathname)) return;
         if (url.searchParams.get('view') === 'roles') {
             event.preventDefault(); if ($('role-menu')?.open) $('role-menu').close();
-            window.dispatchEvent(new Event('cstu:board'));
             openRoles(); return;
         }
         const target = url.searchParams.get('kind') || (['overview','feedback'].includes(url.searchParams.get('view')) ? url.searchParams.get('view') : null);
@@ -506,7 +524,6 @@
         event.preventDefault();
         const menu = $('role-menu'); if (menu?.open) menu.close();
         if (typeof window.closeModal === 'function') window.closeModal();
-        window.dispatchEvent(new Event('cstu:board'));
         open(target,url.searchParams.get('action'),url.searchParams.get('id'),true);
     });
     form.onsubmit = event => { event.preventDefault(); params.delete('id'); load(); };
