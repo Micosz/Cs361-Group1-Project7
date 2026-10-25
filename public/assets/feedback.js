@@ -1,30 +1,41 @@
 /* Scoped feedback uses the parent record's permissions; no public storage fallback. */
 (() => {
     'use strict';
+    function canCreateFeedback(session, parent) {
+        if (!session?.user) return false;
+        if (window.CstuWork.canEdit(session, parent)) return true;
+        return window.CstuWork.roles(session, parent?.scopeId).includes('student');
+    }
     async function mount(container, parent, kind, session) {
         if (!['activities','exchanges'].includes(kind) || !session?.user ||
-            !window.CstuWork.roles(session).some(role=>['coordinator','staff','executive'].includes(role))) return;
+            !window.CstuWork.roles(session).some(role=>['student','coordinator','staff','executive'].includes(role))) return;
         const heading=document.createElement('h3');heading.textContent='ความคิดเห็นและผลตอบรับ (Feedback)';
         const status=document.createElement('p');status.setAttribute('role','status');
         const list=document.createElement('ol'), editor=document.createElement('div');
         container.className='feedback-section';container.append(heading,status,list,editor);
         const base='/'+kind+'/'+encodeURIComponent(parent.id)+'/feedback';
-        const parentEditable=window.CstuWork.canEdit(session,parent);
         const sources={participant:'ผู้เข้าร่วม',partner:'คู่ความร่วมมือ',other:'อื่น ๆ'};
+        const add=document.createElement('button');add.type='button';add.textContent='เพิ่ม Feedback';
+        let addMounted=false;
+        const syncAddButton=allowed=>{
+            if(allowed && !addMounted){container.appendChild(add);addMounted=true;}
+            else if(!allowed && addMounted){add.remove?.();addMounted=false;}
+        };
         let revision=0;
         async function load() {
             const current=++revision;list.replaceChildren();status.textContent='กำลังโหลด Feedback';
             try {
-                let cursor=null,total=0;
+                let cursor=null,total=0,firstPage=true;
                 do {
                     const result=await window.CstuAuth.request(base+'?limit=100'+(cursor?'&cursor='+encodeURIComponent(cursor):''));
-                    if(current!==revision || !container.isConnected)return;
+                    if(current!==revision || container.isConnected===false)return;
+                    if(firstPage && typeof result.canCreate==='boolean'){syncAddButton(result.canCreate);firstPage=false;}
                     for(const row of result.data){
                         const li=document.createElement('li');
                         const meta=document.createElement('p');meta.textContent=row.occurredOn+' · '+(sources[row.sourceType]||row.sourceType);
                         const comment=document.createElement('p');comment.textContent=row.comment;
                         li.append(meta,comment);
-                        if(row.improvement){const text=document.createElement('p');text.textContent='สิ่งที่ควรปรับปรุง: '+row.improvement;li.appendChild(text);}
+                        if(row.improvement){const text=document.createElement('p');text.textContent='สิ่งที่ควรปรับปรุง: '+textValue(row.improvement);li.appendChild(text);}
                         if(row.respondentName){const name=document.createElement('p');name.textContent='ผู้ให้ผลตอบรับ (ภายใน): '+row.respondentName;li.appendChild(name);}
                         if(row.canEdit){const edit=document.createElement('button');edit.type='button';edit.textContent='แก้ไข Feedback';edit.onclick=()=>form(row);li.appendChild(edit);}
                         list.appendChild(li);total++;
@@ -32,8 +43,14 @@
                     cursor=result.page.nextCursor;
                 }while(cursor);
                 status.textContent=total?'':'ยังไม่มี Feedback';
-            }catch(error){if(current===revision && container.isConnected)status.textContent='โหลด Feedback ไม่ได้: '+error.message;}
+            }catch(error){
+                if(current===revision && container.isConnected!==false){
+                    if(error.status===403||error.status===404)syncAddButton(false);
+                    status.textContent='โหลด Feedback ไม่ได้: '+error.message;
+                }
+            }
         }
+        function textValue(value){return String(value??'');}
         function form(row=null){
             editor.replaceChildren();const form=document.createElement('form');
             const field=(label,node)=>{const p=document.createElement('p'),l=document.createElement('label');l.textContent=label+' ';l.appendChild(node);p.appendChild(l);form.appendChild(p);return node;};
@@ -50,21 +67,23 @@
             let fingerprint=null,key=null;
             form.onsubmit=async event=>{
                 event.preventDefault();if(save.disabled)return;
-                const payload={occurredOn:date.value,sourceType:source.value,comment:comment.value.trim(),improvement:improvement.value.trim(),respondentName:name.value.trim()};
+                const payload={occurredOn:date.value,sourceType:source.value,comment:comment.value.trim(),improvement:improvement.value.trim()};
+                if(!row || 'respondentName' in row || name.value.trim())payload.respondentName=name.value.trim();
                 if(!payload.comment){message.textContent='กรุณากรอกความคิดเห็น';return;}
                 const next=JSON.stringify(payload);if(next!==fingerprint){fingerprint=next;key=crypto.randomUUID();}
                 save.disabled=true;message.textContent='กำลังบันทึก';
                 try{
                     if(row)await window.CstuAuth.mutate(base+'/'+encodeURIComponent(row.id),payload,row.version);
                     else await window.CstuAuth.create(base,payload,key);
-                    if(!container.isConnected)return;
+                    if(container.isConnected===false)return;
                     editor.replaceChildren();await load();
                 }catch(error){message.textContent=error.status===409?'ข้อมูลเปลี่ยนแล้ว กรุณายกเลิกและเปิด Feedback ล่าสุดเพื่อตรวจทาน':error.status===403||error.status===404?'คุณไม่มีสิทธิ์จัดการ Feedback นี้แล้ว':'บันทึกไม่ได้: '+error.message;}
                 finally{save.disabled=false;}
             };
-            comment.focus();
+            comment.focus?.();
         }
-        if(parentEditable){const add=document.createElement('button');add.type='button';add.textContent='เพิ่ม Feedback';add.onclick=()=>form();container.appendChild(add);}
+        add.onclick=()=>form();
+        syncAddButton(canCreateFeedback(session,parent));
         await load();
     }
     window.CstuFeedback={mount};

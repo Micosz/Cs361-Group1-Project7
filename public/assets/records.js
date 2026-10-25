@@ -21,6 +21,17 @@
         if (!sentinel.hidden && sentinel.getBoundingClientRect().top < window.innerHeight + 400) loadMore();
     }, {passive:true});
     const status = text => { $('records-status').textContent = text; };
+    function showDetailDialog() {
+        if (typeof window.closeModal === 'function') window.closeModal();
+        if (!dialog.open) dialog.showModal();
+    }
+    function closeDetail() {
+        lastTrigger = null;
+        roleFrame?.remove(); roleFrame = null;
+        ++detailRevision;
+        if (dialog.open) dialog.close();
+        $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); $('detail-title').textContent = ''; $('detail-status').textContent = '';
+    }
     function clear() {
         document.body.classList.remove('feedback-inbox-view');
         partnerRows = []; eventRows = [];
@@ -28,8 +39,7 @@
         document.querySelectorAll('[data-protected-duplicate]').forEach(card => { card.hidden = false; card.removeAttribute('data-protected-duplicate'); });
         sentinel.remove(); $('records-content').replaceChildren(); sentinel.hidden = true;
         $('records-retry').hidden = true; nextCursor = null;
-        ++detailRevision; if (dialog.open) dialog.close();
-        $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); $('detail-title').textContent = '';
+        closeDetail();
     }
     function errorMessage(error) {
         return ({401:'Session หมดอายุ กรุณาเข้าสู่ระบบใหม่', 403:'คุณไม่มีสิทธิ์ใช้งานส่วนนี้', 404:'ไม่พบรายการหรือไม่มีสิทธิ์เข้าถึง',
@@ -182,7 +192,7 @@
         $('detail-status').textContent = '';
         $('detail-fields').replaceChildren(content);
         $('detail-actions').replaceChildren();
-        if (!dialog.open) dialog.showModal();
+        showDetailDialog();
         try {
             const fresh = await window.CstuAuth.refresh();
             if (!fresh?.user || current !== detailRevision || page !== revision || !dialog.open) return;
@@ -199,7 +209,7 @@
         if (kind === 'activities' && row.publication === 'public' && typeof window.openModal === 'function') return window.openModal(row.id,'activity');
         const current = ++detailRevision, page = revision;
         lastTrigger = trigger; $('detail-title').textContent = 'กำลังโหลด'; $('detail-status').textContent = '';
-        $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); if (!dialog.open) dialog.showModal();
+        $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); showDetailDialog();
         try {
             const fresh = await window.CstuAuth.refresh();
             if (!fresh?.user && kind !== 'agreements') { redirectLogin(); return; }
@@ -345,7 +355,7 @@
                 if (!window.CstuOverview) { status('ส่วนภาพรวมยังโหลดไม่สำเร็จ'); return; }
                 await window.CstuOverview.render($('records-content'),session);
                 if (current !== revision) return;
-                status('แสดงเฉพาะข้อมูลในขอบเขตที่คุณมีสิทธิ์'); return;
+                status(''); return;
             }
             if (feedbackInbox) {
                 if (!roles.some(role => ['staff','executive'].includes(role))) { status('คุณไม่มีสิทธิ์ใช้งานส่วนนี้'); return; }
@@ -393,7 +403,7 @@
                 status(''); $('detail-title').textContent = config.create;
                 lastTrigger = document.querySelector('#authNavButtons button');
                 params.delete('action');
-                if (kind === 'partners' && !dialog.open) dialog.showModal();
+                if (kind === 'partners') showDetailDialog();
                 await runForm('create',null,$('detail-actions')); return;
             }
             if (params.get('id')) await detail({id:params.get('id')}, null);
@@ -453,7 +463,7 @@
         const frame = document.createElement('iframe'); frame.title = 'จัดการสิทธิ์ผู้ใช้';
         roleFrame = frame;
         frame.src = 'workspace.html?view=roles&embed=roles'; frame.style.cssText = 'width:100%;height:65vh;border:0';
-        $('detail-actions').appendChild(frame); if (!dialog.open) dialog.showModal();
+        $('detail-actions').appendChild(frame); showDetailDialog();
     }
     window.addEventListener('message', event => {
         if (event.origin !== location.origin || event.source !== roleFrame?.contentWindow
@@ -461,7 +471,7 @@
         roleFrame.remove(); roleFrame = null;
         dialog.close(); lastTrigger?.focus();
     });
-    window.CstuRecords = {open, filter:browseFilter, renderPartnerCards, renderEventCards, attachPartnerManagement, openPublicActivity};
+    window.CstuRecords = {open, filter:browseFilter, renderPartnerCards, renderEventCards, attachPartnerManagement, openPublicActivity, closeDetail};
     $('tabExchange').addEventListener('click', () => open('exchanges'));
     function browseFilter(detail) {
         if (typeof detail?.keyword === 'string') keyword = detail.keyword;
