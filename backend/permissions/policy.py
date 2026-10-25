@@ -51,13 +51,17 @@ def action_roles(kind, action):
     if kind not in BUSINESS | CHILDREN:
         return set()
     if action == 'read':
-        return ({'student', 'coordinator', 'staff', 'executive'} if kind in {'agreement', 'exchange', 'document'}
+        return ({'student', 'coordinator', 'staff', 'executive'} if kind in {'activity', 'agreement', 'exchange', 'document', 'feedback'}
                 else {'coordinator', 'staff'} if kind == 'contact'
                 else {'coordinator', 'staff', 'executive'})
     if action == 'create':
-        return {'staff'} if kind == 'partner' else {'coordinator', 'staff'}
+        return ({'staff'} if kind == 'partner'
+                else {'student', 'coordinator', 'staff'} if kind == 'feedback'
+                else {'coordinator', 'staff'})
     if action == 'update':
-        return {'coordinator', 'staff'} if kind != 'document' else set()
+        return ({'student', 'coordinator', 'staff'} if kind == 'feedback'
+                else {'coordinator', 'staff'} if kind != 'document'
+                else set())
     if action == 'status' and kind in STATUS:
         return {'coordinator', 'staff'}
     if action in {'upload', 'delete'} and kind == 'document':
@@ -112,13 +116,16 @@ def allowed_roles(context, kind, action, record, parent=None):
         return set()
     roles = matching_roles(context, base) & action_roles(kind, action)
     if kind == 'feedback' and action == 'update' and record.get('createdBy') != user.user_id:
-        roles.discard('staff')
-        roles.discard('coordinator')
+        roles -= {'staff', 'coordinator', 'student'}
     if not linked(base, 'responsibleUserIds', user.user_id):
         roles.discard('coordinator')
-    student_reader = (kind == 'agreement' and action == 'read'
+    from ..relationships.activity_links import published
+    student_agreement = (kind == 'agreement' and action == 'read'
                       and base.get('publication') == 'public')
-    if not student_reader and (base.get('entityType') != 'exchange'
+    student_activity = (base.get('entityType') == 'activity' and published(base)
+                        and (kind == 'activity' and action == 'read'
+                             or kind == 'feedback' and action in {'read', 'create', 'update'}))
+    if not (student_agreement or student_activity) and (base.get('entityType') != 'exchange'
             or not linked(base, 'participantUserIds', user.user_id)):
         roles.discard('student')
     if kind == 'document':

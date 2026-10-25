@@ -54,9 +54,16 @@ body:has(#record-detail[open]) .spatial-track {
 #record-detail button[type=submit] { background: #bd0031; color: white; }
 #record-detail :focus-visible, #home-records :focus-visible { outline: 3px solid #bd0031; outline-offset: 3px; }
 
+#record-links:empty, #records-status:empty { display: none; }
 #board-overview[hidden], #tabExchange[hidden] { display: none !important; }
-#board-overview { font: inherit; padding: .65rem 1rem; border: 1px solid #d8c9c1; border-radius: 8px; background: #fffdf9; cursor: pointer; }
-#board-overview.active { border-color:#bd0033; background:#bd0033; color:#fff; }
+#board-overview { display: inline-flex; align-items: center; gap: .55rem; min-height: 44px; margin-bottom: .5rem; font: inherit; font-size: .875rem; font-weight: 600; padding: .6rem 1.35rem; color: #35272b; border: 1px solid #ded2ca; border-radius: 999px; background: #fffdf9; box-shadow: 0 8px 20px -16px rgb(72 18 33 / 28%); cursor: pointer; }
+#board-overview::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #d59420; box-shadow: 0 0 0 3px rgb(213 148 32 / 18%); flex-shrink: 0; }
+#board-overview.active { border-color: var(--tu-red, #c3002f); background: var(--tu-red, #c3002f); color: #fff; box-shadow: 0 10px 24px -12px rgb(195 0 47 / 48%); }
+#board-overview.active::before { background: var(--tu-yellow, #ffd13f); box-shadow: 0 0 0 3px rgb(255 209 63 / 28%); }
+@media (hover: hover) and (pointer: fine) {
+    #board-overview:not(.active):hover { border-color: var(--tu-red, #c3002f); background: #fff4f6; color: #9f0026; }
+    #board-overview.active:hover { border-color: var(--tu-red-hover, #9f0026); background: var(--tu-red-hover, #9f0026); color: #fff; }
+}
 
 /* One card layout for public and authorized records. */
 .card .browse-card-open { border: 0; background: transparent; padding: 0; color: inherit; font: inherit; font-weight: inherit; line-height: inherit; text-align: left; cursor: pointer; }

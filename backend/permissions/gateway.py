@@ -203,8 +203,13 @@ class PermissionGateway:
                         projected['parentTitle'] = row_parent.get('title', '')
                     rows.append(projected)
                 data, count, pagination = page(rows, event, self.service, kind)
-                return response(200, {'data': data, 'count': count, 'page': pagination,
-                                      'requestId': event.get('requestContext', {}).get('requestId', '')})
+                result_body = {'data': data, 'count': count, 'page': pagination,
+                               'requestId': event.get('requestContext', {}).get('requestId', '')}
+                if kind == 'feedback' and parent is not None:
+                    candidate = {'entityType': 'feedback', 'scopeId': parent['scopeId'],
+                                 'parentType': parent['entityType'], 'parentId': parent['id']}
+                    result_body['canCreate'] = bool(allowed_roles(context, 'feedback', 'create', candidate, parent))
+                return response(200, result_body)
             if query:
                 raise AuthError('INVALID_QUERY', 422)
             request_headers = headers(event)

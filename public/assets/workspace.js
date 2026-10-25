@@ -157,6 +157,8 @@ async function openMyExchangeDetail(ex) {
 
     myExchangeDetailDocsStatus.textContent = 'กำลังโหลดเอกสาร...';
     myExchangeDetailDocsList.replaceChildren();
+    const myExchangeDetailFeedback = document.getElementById('my-exchange-detail-feedback');
+    if (myExchangeDetailFeedback) myExchangeDetailFeedback.replaceChildren();
 
     myExchangeDialog.showModal();
 
@@ -180,6 +182,8 @@ async function openMyExchangeDetail(ex) {
             return;
         } else if (err.status === 404) {
             myExchangeDetailInfo.textContent = 'ไม่พบโครงการแลกเปลี่ยน หรือคุณไม่ได้เป็นผู้เข้าร่วมโครงการนี้แล้ว';
+            myExchangeDetailDocsStatus.textContent = '';
+            return;
         }
     }
 
@@ -217,6 +221,12 @@ async function openMyExchangeDetail(ex) {
             return;
         }
         myExchangeDetailDocsStatus.textContent = 'โหลดเอกสารไม่สำเร็จ';
+    }
+    if (myExchangeDetailFeedback && window.CstuFeedback) {
+        const session = await window.CstuAuth.refresh().catch(() => null);
+        if (session?.user && myExchangeDialog.open) {
+            await window.CstuFeedback.mount(myExchangeDetailFeedback, ex, 'exchanges', session);
+        }
     }
 }
 
@@ -479,7 +489,7 @@ document.getElementById('close-roles').onclick = () => closeRoles();
 document.getElementById('role-dialog').addEventListener('cancel', event => { event.preventDefault(); closeRoles(); });
 async function loadRoleTargets(term = '') {
     invalidateSelection(); roleStatus.textContent = '';
-    const scopeId = scope.value;
+    const scopeId = scope.value, requestRevision = roleLoadRevision;
     if (!scopeId) return;
     target.replaceChildren(new Option('กำลังโหลดบัญชี...', ''));
     target.disabled = true;
@@ -487,7 +497,7 @@ async function loadRoleTargets(term = '') {
     try {
         const query = term ? '&q=' + encodeURIComponent(term) : '';
         const result = await window.CstuAuth.request('/role-targets?scopeId=' + encodeURIComponent(scopeId) + query);
-        if (scope.value !== scopeId) return;
+        if (requestRevision !== roleLoadRevision || scope.value !== scopeId) return;
         const items = Array.isArray(result?.data) ? result.data : [];
         target.replaceChildren(new Option(items.length ? 'เลือกบัญชี' : 'ไม่พบบัญชีในขอบเขตนี้', ''));
         for (const user of items) {
@@ -498,6 +508,7 @@ async function loadRoleTargets(term = '') {
         target.disabled = items.length === 0;
         roleTargetStatus.textContent = items.length ? `พบ ${items.length} บัญชีที่จัดการได้` : 'ไม่พบบัญชีในขอบเขตนี้';
     } catch {
+        if (requestRevision !== roleLoadRevision || scope.value !== scopeId) return;
         target.replaceChildren(new Option('ค้นหาชื่อก่อน', ''));
         roleTargetStatus.textContent = 'ค้นหาไม่ได้ หรือคุณไม่มีสิทธิ์จัดการขอบเขตนี้';
     }

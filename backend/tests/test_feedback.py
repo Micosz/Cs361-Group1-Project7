@@ -10,7 +10,7 @@ class FeedbackTests(unittest.TestCase):
     setUp = storage_tests.WorkspaceStorageTests.setUp
     call = storage_tests.WorkspaceStorageTests.call
 
-    def parent(self, kind='exchange', assigned=True):
+    def parent(self, kind='exchange', assigned=True, key_suffix='', **extra):
         self.actor = 'staff'
         payload = dict(title='Feedback parent', scopeId='cs-demo',
                        responsibleUserIds=[self.ids['coordinator']] if assigned else [self.ids['staff']])
@@ -18,8 +18,9 @@ class FeedbackTests(unittest.TestCase):
             payload.update(type='event', summary='Demo', partnerId='partner-demo')
         else:
             payload['partnerIds'] = ['partner-demo']
+        payload.update(extra)
         response, body = self.call('/api/' + ('activities' if kind == 'activity' else 'exchanges'),
-                                   'POST', payload, key='parent-create-' + kind + str(assigned))
+                                   'POST', payload, key='parent-create-' + kind + str(assigned) + key_suffix)
         self.assertEqual(201, response['statusCode'], body)
         return body['data']
 
@@ -58,7 +59,7 @@ class FeedbackTests(unittest.TestCase):
             self.assertEqual(403, self.create(base)[0]['statusCode'])
             self.assertEqual(403, self.call(base + '/' + row['id'], 'PATCH', {'comment': 'No'}, version=2)[0]['statusCode'])
 
-    def test_unassigned_coordinator_and_students_denied_even_for_exchange_participants(self):
+    def test_unassigned_coordinator_and_non_participant_students_denied(self):
         parent = self.parent(assigned=False)
         base = self.base(parent)
         for actor in ('coordinator', 'student-a', 'student-b', 'employee'):
@@ -115,6 +116,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertIn(self.call(base + '/' + other['id'], 'PATCH', {'comment':'Staff must not edit'}, version=1)[0]['statusCode'], (403, 404))
         self.actor = 'coordinator'
         self.assertIn(self.call(base + '/' + own['id'], 'PATCH', {'comment':'Coordinator must not edit others'}, version=2)[0]['statusCode'], (403, 404))
+        self.actor = 'staff'
         response, body = self.call('/api/feedback?limit=100')
         self.assertEqual(200, response['statusCode'], body)
         indexed = {row['id']:row for row in body['data']}
@@ -132,6 +134,68 @@ class FeedbackTests(unittest.TestCase):
 
         self.actor = 'coordinator'
         self.assertIn(self.call('/api/feedback')[0]['statusCode'], (403, 404))
+        self.actor = 'student-a'
+        self.assertIn(self.call('/api/feedback')[0]['statusCode'], (403, 404))
+
+    def test_student_feedback_on_participating_exchange_and_public_activity(self):
+        exchange = self.parent('exchange', key_suffix='-stu-ex',
+                               participantUserIds=[self.ids['student-a'], self.ids['student-b']])
+        ex_base = self.base(exchange)
+        staff_row = self.create(ex_base, comment='Staff note', respondentName='Staff private')[1]['data']
+
+        self.actor = 'student-a'
+        list_res, list_body = self.call(ex_base)
+        self.assertEqual(200, list_res['statusCode'], list_body)
+        self.assertTrue(list_body['canCreate'])
+        self.assertFalse(list_body['data'][0]['canEdit'])
+        for field in ('respondentName', 'createdBy', 'updatedBy', 'scopeId'):
+            self.assertNotIn(field, list_body['data'][0])
+
+        create_res, create_body = self.create(ex_base, comment='Student A feedback',
+                                              respondentName='Student optional internal')
+        self.assertEqual(201, create_res['statusCode'], create_body)
+        own = create_body['data']
+        self.assertTrue(own['canEdit'])
+        self.assertNotIn('respondentName', own)
+
+        patch_res, patch_body = self.call(ex_base + '/' + own['id'], 'PATCH',
+                                          {'comment': 'Student A updated'}, version=1)
+        self.assertEqual(200, patch_res['statusCode'], patch_body)
+        self.assertEqual('Student A updated', patch_body['data']['comment'])
+        self.assertEqual('Student optional internal', self.repository.client.rows[own['id']]['respondentName'])
+        self.assertEqual(404, self.call(ex_base + '/' + staff_row['id'], 'PATCH',
+                                        {'comment': 'Not mine'}, version=1)[0]['statusCode'])
+
+        self.actor = 'student-b'
+        other_list_res, other_list = self.call(ex_base)
+        self.assertEqual(200, other_list_res['statusCode'], other_list)
+        by_id = {row['id']: row for row in other_list['data']}
+        self.assertFalse(by_id[own['id']]['canEdit'])
+        self.assertEqual(404, self.call(ex_base + '/' + own['id'], 'PATCH',
+                                        {'comment': 'Student B hijack'}, version=2)[0]['statusCode'])
+
+        internal_activity = self.parent('activity', key_suffix='-act-int', publication='internal')
+        self.actor = 'student-a'
+        self.assertEqual(404, self.call('/api/activities/' + internal_activity['id'])[0]['statusCode'])
+        self.assertEqual(404, self.call(self.base(internal_activity))[0]['statusCode'])
+        self.assertEqual(404, self.create(self.base(internal_activity))[0]['statusCode'])
+
+        public_activity = self.parent('activity', key_suffix='-act-pub',
+                                      publication='public', outcomeSummary='Internal outcome')
+        act_base = self.base(public_activity)
+        self.actor = 'student-a'
+        act_res, act_body = self.call('/api/activities/' + public_activity['id'])
+        self.assertEqual(200, act_res['statusCode'], act_body)
+        for field in ('outcomeSummary', 'scopeId', 'responsibleUserIds'):
+            self.assertNotIn(field, act_body['data'])
+        act_fb_res, act_fb_body = self.create(act_base, comment='Public activity student feedback')
+        self.assertEqual(201, act_fb_res['statusCode'], act_fb_body)
+        self.assertTrue(act_fb_body['data']['canEdit'])
+        self.assertEqual(200, self.call(act_base + '/' + act_fb_body['data']['id'], 'PATCH',
+                                        {'comment': 'Public activity student edited'}, version=1)[0]['statusCode'])
+        self.actor = 'executive'
+        exec_list = self.call(act_base)[1]
+        self.assertFalse(exec_list['canCreate'])
 
     def test_anonymous_and_wrong_methods_denied(self):
         base = self.base(self.parent())
