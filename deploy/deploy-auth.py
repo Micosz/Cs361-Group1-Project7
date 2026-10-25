@@ -93,7 +93,7 @@ def main():
         "--revision-id", current["RevisionId"],
         "--zip-file", f"fileb://{args.zip.resolve()}",
         "--publish")
-    aws("lambda", "wait", "function-updated-v2", "--function-name", FUNCTION)
+    aws("lambda", "wait", "function-updated", "--function-name", FUNCTION)
     after = configuration()
     if (after["CodeSha256"] != digest or after["LastUpdateStatus"] != "Successful"
             or any(before.get(key) != after.get(key) for key in stable)):
