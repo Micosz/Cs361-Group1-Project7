@@ -118,6 +118,12 @@
             renderScene();
         };
         updateSceneMode();
+        const bodyObserver = typeof MutationObserver === 'function'
+            ? new MutationObserver(() => {
+                if (sceneMode() !== sceneEnabled) updateSceneMode();
+            })
+            : null;
+        bodyObserver?.observe(document.body, { attributes: true, attributeFilter: ['class'] });
         on(reduced, 'change', updateSceneMode);
         on(window, 'resize', updateSceneMode);
         on(window, 'scroll', () => {
@@ -130,6 +136,10 @@
             navigationFrame = requestAnimationFrame(() => {
                 navigationFrame = 0;
                 updateSceneMode();
+                if (document.body.classList.contains('feedback-inbox-view')) {
+                    window.scrollTo({ top: 0, behavior: 'auto' });
+                    return;
+                }
                 // Measure after layout settles. Never target the moving, transformed
                 // board on desktop, and finish the full scene travel even at half pixels.
                 const navbar = document.querySelector('.navbar');
@@ -376,6 +386,7 @@
             disposed = true;
             controller.abort();
             observer.disconnect();
+            bodyObserver?.disconnect();
             tickerObserver.disconnect();
             cancelAnimationFrame(resizeFrame);
             cancelAnimationFrame(navigationFrame);

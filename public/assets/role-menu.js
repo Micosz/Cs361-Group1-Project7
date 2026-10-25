@@ -41,7 +41,7 @@
         accountDetails.append(fullName, permissions);
     }
     const closeButton = document.getElementById('close-role-menu');
-    let revision = 0, closing = null, locked = false, previousOverflow = '';
+    let revision = 0, openRevision = 0, closing = null, locked = false, previousOverflow = '';
     const lockScroll = () => {
         if (locked) return;
         previousOverflow = document.body.style.overflow;
@@ -52,13 +52,15 @@
         document.body.style.overflow = previousOverflow; locked = false;
     };
     function finishClose() {
+        ++openRevision;
         clearTimeout(closing); closing = null;
-        dialog.classList.remove('is-open');
+        dialog.classList.remove('is-open', 'instant');
         if (dialog.open) dialog.close();
         restoreScroll();
         host.querySelector('button')?.setAttribute('aria-expanded', 'false');
     }
     function close(event) {
+        ++openRevision;
         if (!dialog.open) return;
         dialog.classList.toggle('instant', event?.detail === 0);
         dialog.classList.remove('is-open');
@@ -85,11 +87,13 @@
                 trigger.setAttribute('aria-controls', 'role-menu'); trigger.setAttribute('aria-expanded', 'false');
                 trigger.onclick = async event => {
                     // Re-check role/session whenever opening; do not trust a stale menu.
+                    const currentOpen = ++openRevision;
                     await refresh();
-                    if (!host.contains(trigger) || status.textContent) return;
+                    if (currentOpen !== openRevision || !host.contains(trigger) || status.textContent) return;
                     clearTimeout(closing); closing = null;
                     dialog.classList.toggle('instant', event.detail === 0);
-                    dialog.showModal(); lockScroll();
+                    if (!dialog.open) dialog.showModal();
+                    lockScroll();
                     dialog.getBoundingClientRect();
                     dialog.classList.add('is-open'); trigger.setAttribute('aria-expanded', 'true');
                 };
@@ -121,7 +125,13 @@
         if (!event.target.closest('a, button, .account-details')) close(event);
     });
     dialog.addEventListener('cancel', event => { event.preventDefault(); close({detail: 0}); });
-    dialog.addEventListener('close', () => { restoreScroll(); dialog.classList.remove('is-open'); host.querySelector('button')?.setAttribute('aria-expanded','false'); });
+    dialog.addEventListener('close', () => {
+        ++openRevision;
+        clearTimeout(closing); closing = null;
+        restoreScroll();
+        dialog.classList.remove('is-open', 'instant');
+        host.querySelector('button')?.setAttribute('aria-expanded','false');
+    });
     logout.onclick = async () => {
         logout.disabled = true; status.textContent = '';
         try { await window.CstuAuth.logout(); finishClose(); await refresh(); }
