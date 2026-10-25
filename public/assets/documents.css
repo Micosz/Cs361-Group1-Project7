@@ -128,3 +128,22 @@
   cursor: pointer;
   accent-color: #2563eb;
 }
+
+.event-log-actions,
+.form-actions,
+#record-detail .form-actions,
+.dialog-actions {
+  display: flex !important;
+  flex-direction: row-reverse !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-top: 16px !important;
+  width: 100% !important;
+}
+
+.event-log-actions button,
+.form-actions button,
+#record-detail .form-actions button {
+  margin: 0 !important;
+}
