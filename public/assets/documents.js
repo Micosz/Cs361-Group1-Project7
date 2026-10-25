@@ -144,7 +144,6 @@
                             item.personal = false;
                             if (personalControl) personalControl.checked = false;
                         }
-                        if (personalControl) personalControl.disabled = item.audience !== 'participants';
                     };
                     accessLabel.appendChild(access);
                     controlsRow.appendChild(accessLabel);
@@ -156,11 +155,14 @@
                         personal.type = 'checkbox'; 
                         personal.className = 'document-checkbox';
                         personal.checked = item.personal;
-                        personal.disabled = item.audience !== 'participants';
                         personalControl = personal;
                         personal.onchange = () => {
                             if (item.personal !== personal.checked) item.requestKey = crypto.randomUUID();
                             item.personal = personal.checked;
+                            if (item.personal && item.audience !== 'participants') {
+                                item.audience = 'participants';
+                                access.value = 'participants';
+                            }
                         };
                         personalLabel.append(personal, document.createTextNode(' มีข้อมูลส่วนบุคคลของผู้เข้าร่วม'));
                         controlsRow.appendChild(personalLabel);
@@ -226,16 +228,14 @@
 
     // ฟังก์ชันจัดการเมื่อกดปุ่ม "ยกเลิก" ใน Modal แก้ไขคู่ความร่วมมือ
     function handleCancelEditPartner(partnerId, event) {
-        if (event) event.preventDefault(); // ป้องกันไม่ให้ submit หรือ reset ฟอร์ม
+        if (event) event.preventDefault();
 
-        // 1. ซ่อน Modal แก้ไข
         const editModal = document.getElementById('edit-partner-modal') || document.querySelector('.edit-partner-modal') || document.querySelector('#record-detail-modal');
         if (editModal) {
             editModal.style.display = 'none';
             editModal.classList.remove('show');
         }
 
-        // 2. เรียกแสดง Modal รายละเอียดของ Card เดิม
         if (typeof window.openPartnerDetailModal === 'function') {
             window.openPartnerDetailModal(partnerId);
         } else if (typeof window.showRecordDetail === 'function') {
