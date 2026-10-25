@@ -693,7 +693,23 @@ function hasLegacySourceLinks(value) {
     return typeof value === 'string' && /(?:หลักฐาน|Sources)\s*:/i.test(value) && /<a\b/i.test(value);
 }
 
+let modalRenderVersion = 0;
+
+function showDetailModal() {
+    if (window.CstuRecords?.closeDetail) {
+        window.CstuRecords.closeDetail();
+    } else {
+        const recordDetail = document.getElementById('record-detail');
+        if (recordDetail?.open) recordDetail.close();
+    }
+    const detailModal = document.getElementById('detailModal');
+    const modalContent = detailModal.querySelector?.('.modal-content');
+    if (modalContent) modalContent.scrollTop = 0;
+    detailModal.style.display = 'flex';
+}
+
 async function openModal(id, type, protectedPartner = null) {
+    const version = ++modalRenderVersion;
     let data = null;
     let allActivities;
     try {
@@ -708,16 +724,17 @@ async function openModal(id, type, protectedPartner = null) {
             data = await getPublicActivityById(id);
         }
     } catch (error) {
+        if (version !== modalRenderVersion) return;
         document.getElementById('modalTitle').textContent = 'โหลดข้อมูลไม่สำเร็จ';
         document.getElementById('modalName').textContent = '';
         document.getElementById('modalInfo').textContent = '';
         document.getElementById('modalImage').style.display = 'none';
         showDataLoadError(document.getElementById('modalDetails'));
-        document.getElementById('detailModal').style.display = 'flex';
+        showDetailModal();
         return;
     }
 
-    if (!data) return;
+    if (version !== modalRenderVersion || !data) return;
 
     const modalImage = document.getElementById('modalImage');
     const modalDetails = document.getElementById('modalDetails');
@@ -825,10 +842,11 @@ async function openModal(id, type, protectedPartner = null) {
         modalDetails.appendChild(actions);
         window.CstuWork.attachDetailAction(actions, type === 'partner' ? 'partners' : 'activities', data.id);
     }
-    document.getElementById('detailModal').style.display = 'flex';
+    showDetailModal();
 }
 
 function closeModal() {
+    ++modalRenderVersion;
     document.getElementById('detailModal').style.display = 'none';
     document.getElementById('modalDetails').querySelectorAll?.('.partner-management').forEach(node => node.remove());
 }
