@@ -147,3 +147,146 @@
 #record-detail .form-actions button {
   margin: 0 !important;
 }
+
+.exchange-section-title,
+h2:has(+ .exchange-subtitle) {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  position: relative;
+  padding-left: 12px;
+  margin-bottom: 4px;
+}
+
+.exchange-section-title::before,
+h2:has(+ .exchange-subtitle)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 15%;
+  height: 70%;
+  width: 4px;
+  background-color: #a4002c;
+  border-radius: 2px;
+}
+
+.exchange-subtitle {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 20px;
+}
+
+.exchange-filter-card,
+.exchange-search-bar {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
+}
+
+.exchange-filter-card input[type="text"],
+.exchange-filter-card input[type="date"],
+.exchange-filter-card select {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  color: #334155;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.exchange-filter-card input:focus,
+.exchange-filter-card select:focus {
+  border-color: #a4002c;
+  box-shadow: 0 0 0 3px rgba(164, 0, 44, 0.1);
+}
+
+.btn-exchange-search,
+button.btn-search {
+  background-color: #a4002c !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 20px !important;
+  padding: 8px 20px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 8px rgba(164, 0, 44, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-exchange-search:hover,
+button.btn-search:hover {
+  background-color: #800022 !important;
+  transform: translateY(-1px);
+}
+
+.btn-exchange-reset,
+button.btn-reset {
+  background-color: #ffffff !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 20px !important;
+  padding: 8px 18px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-exchange-reset:hover,
+button.btn-reset:hover {
+  background-color: #f8fafc !important;
+}
+
+.exchange-card,
+.exchange-item-card {
+  background: #ffffff;
+  border: 1px solid #fee2e2;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.exchange-card:hover,
+.exchange-item-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(164, 0, 44, 0.08);
+  border-color: #fca5a5;
+}
+
+.exchange-card-title,
+.exchange-item-card a,
+.exchange-item-card .title-badge {
+  display: inline-block;
+  background-color: #fef2f2;
+  color: #a4002c;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  border: 1px solid #fecdd3;
+  margin-bottom: 12px;
+}
+
+.exchange-card-meta,
+.exchange-item-card .meta-info {
+  font-size: 0.8125rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.exchange-status-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
