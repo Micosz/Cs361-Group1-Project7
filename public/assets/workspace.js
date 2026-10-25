@@ -5,12 +5,11 @@ const scope = document.getElementById('role-scope');
 const target = document.getElementById('role-target');
 const roleSearch = document.getElementById('role-search');
 const roleTargetStatus = document.getElementById('role-target-status');
-const loadUserButton = document.getElementById('load-user');
 const choices = document.getElementById('role-choices');
 const saveRoles = document.getElementById('save-roles');
 const roleStatus = document.getElementById('role-status');
 const openAgreements = document.getElementById('open-agreements');
-let version = null, selectedTarget = null, selectedScope = null;
+let version = null, selectedTarget = null, selectedScope = null, roleLoadRevision = 0;
 let userRoles = [];
 let currentSubmissionKey = null;
 let submissionFingerprint = null;
@@ -60,6 +59,7 @@ const myExchangeDetailDocsList = document.getElementById('my-exchange-detail-doc
 const myExchangeDetailCloseBtn = document.getElementById('my-exchange-detail-close-btn');
 
 function invalidateSelection() {
+    roleLoadRevision++;
     version = null; selectedTarget = null; selectedScope = null;
     choices.disabled = true; saveRoles.disabled = true;
     document.getElementById('role-user').textContent = '';
@@ -464,15 +464,22 @@ async function refreshWorkspace() {
     } catch { workspaceStatus.textContent = 'ตรวจสิทธิ์ไม่ได้ กรุณาลองใหม่ภายหลัง'; }
 }
 openRoles.onclick = () => document.getElementById('role-dialog').showModal();
-document.getElementById('close-roles').onclick = () => document.getElementById('role-dialog').close();
+function closeRoles(saved = false) {
+    invalidateSelection();
+    document.getElementById('role-dialog').close();
+    if (new URLSearchParams(location.search).get('embed') === 'roles' && window.parent !== window) {
+        window.parent.postMessage({type: saved ? 'roles-saved' : 'roles-closed'}, location.origin);
+    }
+}
+document.getElementById('close-roles').onclick = () => closeRoles();
+document.getElementById('role-dialog').addEventListener('cancel', event => { event.preventDefault(); closeRoles(); });
 function clearRoleTargets() {
     target.replaceChildren(new Option('ค้นหาชื่อก่อน', ''));
     target.disabled = true;
-    loadUserButton.disabled = true;
 }
 roleSearch.addEventListener('input', () => { invalidateSelection(); clearRoleTargets(); roleTargetStatus.textContent = ''; });
 scope.addEventListener('change', () => { invalidateSelection(); clearRoleTargets(); roleTargetStatus.textContent = ''; });
-target.addEventListener('change', () => { invalidateSelection(); loadUserButton.disabled = !target.value; });
+target.addEventListener('change', () => loadSelectedRoleUser());
 document.getElementById('search-role-targets').onclick = async () => {
     invalidateSelection(); clearRoleTargets(); roleStatus.textContent = '';
     const term = roleSearch.value.trim(), scopeId = scope.value;
@@ -491,32 +498,38 @@ document.getElementById('search-role-targets').onclick = async () => {
         roleTargetStatus.textContent = result.data.length ? `พบ ${result.data.length} บัญชีที่จัดการได้` : 'ไม่พบบัญชีในขอบเขตนี้';
     } catch { roleTargetStatus.textContent = 'ค้นหาไม่ได้ หรือคุณไม่มีสิทธิ์จัดการขอบเขตนี้'; }
 };
-loadUserButton.onclick = async () => {
+async function loadSelectedRoleUser() {
     invalidateSelection(); roleStatus.textContent = '';
-    const id = target.value, scopeId = scope.value;
+    const id = target.value, scopeId = scope.value, requestRevision = roleLoadRevision;
     if (!id || !scopeId) return;
+    roleStatus.textContent = 'กำลังโหลดสิทธิ์บัญชี';
     try {
         const result = await window.CstuAuth.request('/users/' + encodeURIComponent(id)
             + '/roles?scopeId=' + encodeURIComponent(scopeId));
-        if (target.value.trim() !== id || scope.value !== scopeId) return;
+        if (requestRevision !== roleLoadRevision || target.value.trim() !== id || scope.value !== scopeId) return;
         const user = result.data;
         version = user.authzVersion; selectedTarget = id; selectedScope = scopeId;
         document.getElementById('role-user').textContent = user.displayName + (user.identityVerified ? ' · ยืนยันตัวตนแล้ว' : ' · ยังไม่ยืนยันตัวตน โปรดตรวจหลักฐานก่อนบันทึก');
-        for (const input of choices.querySelectorAll('input')) input.checked = user.grants.some(g => g.role === input.value && g.active);
+        const active = user.grants.filter(g => g.active !== false && g.scopeId === scopeId);
+        for (const input of choices.querySelectorAll('input')) input.checked = active.length <= 1 && input.value === (active[0]?.role || '');
+        roleStatus.textContent = active.length > 1 ? 'บัญชีเดิมมีหลายบทบาท กรุณาเลือกหนึ่งบทบาทก่อนบันทึก' : '';
         choices.disabled = false; saveRoles.disabled = false;
-    } catch { roleStatus.textContent = 'ไม่พบบัญชี หรือคุณไม่มีสิทธิ์จัดการบัญชีนี้'; }
-};
+    } catch { if (requestRevision === roleLoadRevision) roleStatus.textContent = 'ไม่พบบัญชี หรือคุณไม่มีสิทธิ์จัดการบัญชีนี้'; }
+}
 document.getElementById('role-form').onsubmit = async event => {
     event.preventDefault();
     if (version === null || saveRoles.disabled || selectedTarget !== target.value || selectedScope !== scope.value) return;
+    const checked = [...choices.querySelectorAll('input:checked')];
+    if (checked.length !== 1) { roleStatus.textContent = 'กรุณาเลือกหนึ่งบทบาท หรือเลือกถอนสิทธิ์'; return; }
+    if (!document.getElementById('confirm-identity').checked) { roleStatus.textContent = 'กรุณาตรวจหลักฐานและติ๊กยืนยันก่อนบันทึก'; return; }
     saveRoles.disabled = true;
     try {
         const result = await window.CstuAuth.mutate('/users/' + encodeURIComponent(selectedTarget) + '/roles', {
-            scopeId: selectedScope, roles: [...choices.querySelectorAll('input:checked')].map(i => i.value),
+            scopeId: selectedScope, roles: checked.map(i => i.value).filter(Boolean),
             confirmIdentity: document.getElementById('confirm-identity').checked
         }, version);
         version = result.data.authzVersion;
-        roleStatus.textContent = 'บันทึกสิทธิ์แล้ว Session เดิมของผู้ใช้ต้องเข้าสู่ระบบใหม่';
+        closeRoles(true);
     } catch {
         invalidateSelection(); roleStatus.textContent = 'บันทึกไม่ได้ กรุณาตรวจสิทธิ์/การยืนยันตัวตนและค้นหาบัญชีใหม่';
     } finally { saveRoles.disabled = version === null; }

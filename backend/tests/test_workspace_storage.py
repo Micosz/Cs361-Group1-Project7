@@ -141,10 +141,10 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.actor = 'staff'
         self.assertEqual(200, self.call(path, 'DELETE', version=1)[0]['statusCode'])
 
-    def test_image_delete_does_not_delete_other_document_types(self):
+    def test_document_delete_supports_pdf_with_same_permission_guards(self):
         _, document = self.image_fixture('application/pdf')
-        self.assertEqual(404, self.call('/api/documents/' + document['id'], 'DELETE', version=1)[0]['statusCode'])
-        self.assertEqual(200, self.call('/api/documents/' + document['id'] + '/content')[0]['statusCode'])
+        self.assertEqual(200, self.call('/api/documents/' + document['id'], 'DELETE', version=1)[0]['statusCode'])
+        self.assertEqual(404, self.call('/api/documents/' + document['id'] + '/content')[0]['statusCode'])
 
     def test_reference_race_and_failed_upload_cleanup(self):
         def change_reference():

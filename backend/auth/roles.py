@@ -17,7 +17,7 @@ class RoleService:
                 or not isinstance(payload.get('scopeId'), str) or not payload['scopeId']
                 or not isinstance(payload.get('roles'), list)
                 or not all(isinstance(r, str) and r in ROLES for r in payload['roles'])
-                or len(set(payload['roles'])) != len(payload['roles'])
+                or len(payload['roles']) > 1
                 or type(payload.get('confirmIdentity', False)) is not bool):
             raise AuthError('INVALID_FIELDS', 422)
         scope = payload['scopeId']
@@ -27,7 +27,7 @@ class RoleService:
             raise AuthError('NOT_FOUND', 404)
         if original.get('authzVersion') != expected_version:
             raise AuthError('VERSION_CONFLICT', 409)
-        if not original.get('identityVerified') and payload.get('confirmIdentity') is not True:
+        if payload.get('confirmIdentity') is not True:
             raise AuthError('IDENTITY_REVIEW_REQUIRED', 409)
         updated = deepcopy(original)
         # Replace grants ONLY in the manager's selected scope, preserving others.

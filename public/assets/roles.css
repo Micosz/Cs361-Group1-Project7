@@ -69,7 +69,7 @@
 
 .role-fields > .role-target-status:empty { display: none; }
 .role-fields > .role-target-status:not(:empty) { grid-column: 1 / -1; margin: -.55rem 0 0; color: #665960; }
-.role-target-group { grid-column: 1 / -1; }
+.role-target-group { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr); }
 
 .role-search-group button,
 .role-target-group button,
