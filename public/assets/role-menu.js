@@ -9,6 +9,12 @@
     const logout = document.getElementById('role-menu-logout');
     const accountDetails = document.getElementById('role-menu-account');
     const roleNames = {student:'Student', coordinator:'Coordinator', staff:'Staff', executive:'Executive'};
+    const managedScopes = session => window.CstuAuth?.managedScopes
+        ? window.CstuAuth.managedScopes(session)
+        : [...new Set([
+            ...(session?.capabilities || []).filter(c => c.active !== false && c.name === 'manageRoles').map(c => c.scopeId),
+            ...(session?.grants || []).filter(g => g.active !== false && g.role === 'executive').map(g => g.scopeId)
+        ].filter(Boolean))];
     const firstName = value => typeof value === 'string' ? value.trim().split(/\s+/u)[0] || '' : '';
     function showAccount(session) {
         if (!accountDetails) return;
@@ -30,7 +36,7 @@
         const fullName = document.createElement('strong'); fullName.className = 'account-details-name'; fullName.textContent = name;
         const permissions = document.createElement('div'); permissions.className = 'account-details-grants';
         const entries = grants.map(g => (roleNames[g.role] || g.role) + ' · ' + g.scopeId);
-        for (const capability of session.capabilities || []) if (capability.active !== false && capability.name === 'manageRoles') entries.push('จัดการสิทธิ์ · ' + capability.scopeId);
+        for (const scopeId of managedScopes(session)) entries.push('จัดการสิทธิ์ · ' + scopeId);
         for (const text of [...new Set(entries.length ? entries : ['ยังไม่ได้รับบทบาทงาน'])]) { const badge = document.createElement('span'); badge.textContent = text; permissions.append(badge); }
         accountDetails.append(fullName, permissions);
     }
@@ -99,7 +105,7 @@
             };
             const roles = window.CstuAuth.roles(session);
             for (const item of window.CstuWork.menu(session)) append(item.label, item.href, item.description);
-            if (session.capabilities.some(c => c.name === 'manageRoles')) append('จัดการสิทธิ์ผู้ใช้', 'index.html?view=roles#board-section', 'มอบหมายและถอนบทบาทในขอบเขตที่ดูแล');
+            if (managedScopes(session).length) append('จัดการสิทธิ์ผู้ใช้', 'index.html?view=roles#board-section', 'มอบหมายและถอนบทบาทในขอบเขตที่ดูแล');
             if (!roles.length) append('รอมอบหมายสิทธิ์', 'index.html#board-section', 'บัญชีของคุณยังไม่ได้รับบทบาทงานภายใน');
         } catch {
             if (current !== revision) return;

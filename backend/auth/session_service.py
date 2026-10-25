@@ -75,13 +75,19 @@ class UserState:
             and g.get("role") in {"student", "coordinator", "staff", "executive"}
             and isinstance(g.get("scopeId"), str) and g["scopeId"]
         ]
-        capabilities = [
-            {"name": g["name"], "scopeId": g["scopeId"]}
-            for g in self.capabilities
-            if isinstance(g, dict) and g.get("active") is True
-            and g.get("name") == "manageRoles"
-            and isinstance(g.get("scopeId"), str) and g["scopeId"]
-        ]
+        seen_scopes = set()
+        capabilities = []
+        for g in self.capabilities:
+            if (isinstance(g, dict) and g.get("active") is True
+                    and g.get("name") == "manageRoles"
+                    and isinstance(g.get("scopeId"), str) and g["scopeId"]
+                    and g["scopeId"] not in seen_scopes):
+                seen_scopes.add(g["scopeId"])
+                capabilities.append({"name": "manageRoles", "scopeId": g["scopeId"]})
+        for g in grants:
+            if g["role"] == "executive" and g["scopeId"] not in seen_scopes:
+                seen_scopes.add(g["scopeId"])
+                capabilities.append({"name": "manageRoles", "scopeId": g["scopeId"]})
         return grants, capabilities
 
 
