@@ -109,4 +109,3 @@ html:has(#detailModal[style*="display: flex"]), body:has(#detailModal[style*="di
 /* Keep record editing beside upload, above the feedback section. */
 .document-form-actions, .detail-record-actions { display:flex; flex-wrap:wrap; align-items:center; gap:.75rem; margin:.75rem 0; }
 .document-form-actions .detail-record-actions { margin:0; }
-.document-remove-image { margin-left:.75rem; color:#a4002c; }

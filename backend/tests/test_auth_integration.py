@@ -163,8 +163,15 @@ class IntegrationTests(unittest.TestCase):
         issued = self.sessions.issue_authenticated(manager['id'], prior.token, 'https://example.com', prior.csrf_token)
         context = self.sessions.validate(issued.token)
         payload = dict(scopeId='cs-demo', roles=['staff'], confirmIdentity=True)
+        with self.assertRaises(AuthError) as multiple:
+            self.app.roles.update(context, target['id'], dict(payload, roles=['staff','executive']), 1, 'x', 1000)
+        self.assertEqual('INVALID_FIELDS', multiple.exception.code)
         self.app.roles.update(context, target['id'], payload, 1, 'fixture-hash', 1000)
         self.assertTrue(self.store.get(target['id']).identity_verified)
+        with self.assertRaises(AuthError) as unchecked:
+            self.app.roles.update(context, target['id'], dict(payload, confirmIdentity=False), 2, 'x', 1000)
+        self.assertEqual('IDENTITY_REVIEW_REQUIRED', unchecked.exception.code)
+        self.assertEqual(2, self.store.user(target['id'])['authzVersion'])
         prior = self.sessions.create_anonymous()
         target_session = self.sessions.issue_authenticated(target['id'], prior.token, 'https://example.com', prior.csrf_token)
         self.app.roles.update(context, target['id'], dict(payload, roles=[]), 2, 'fixture-hash', 1000)

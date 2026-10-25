@@ -7,10 +7,11 @@
     <script src="assets/auth-config.js" defer></script>
     <script src="assets/auth-client.js?v=auth-4" defer></script>
     <script src="assets/private-documents.js?v=s3-1" defer></script>
-    <script src="assets/documents.js?v=private-s3-1" defer></script>
+    <script src="assets/documents.js?v=private-s3-2" defer></script>
+    <link rel="stylesheet" href="assets/documents.css?v=1">
     <script src="assets/selection-fields.js?v=selection-3" defer></script>
     <script src="assets/agreement.js?v=selection-3" defer></script>
-    <script src="assets/workspace.js?v=role-picker-1" defer></script>
+    <script src="assets/workspace.js?v=role-picker-2" defer></script>
     <script src="assets/activity-links.js?v=entry-1" defer></script>
     <script src="assets/activity-workspace.js?v=selection-3" defer></script>
     <script>
@@ -38,7 +39,7 @@
         html[data-embed] input, html[data-embed] select, html[data-embed] textarea { box-sizing:border-box; max-width:100%; }
     </style>
     <link rel="stylesheet" href="assets/entry-forms.css?v=1">
-    <link rel="stylesheet" href="assets/roles.css?v=1">
+    <link rel="stylesheet" href="assets/roles.css?v=2">
     <script src="assets/entry-forms.js?v=1" defer></script>
 </head>
 <body>
@@ -113,18 +114,18 @@
                 <p id="role-target-status" class="role-target-status" role="status" aria-live="polite"></p>
                 <div class="role-target-group">
                     <p class="role-field"><label>เลือกบัญชี <select id="role-target" required disabled><option value="">ค้นหาชื่อก่อน</option></select></label></p>
-                    <button id="load-user" type="button" disabled>ดูสิทธิ์บัญชีนี้</button>
                 </div>
             </div>
             <p id="role-user" class="role-user-summary"></p>
-            <fieldset id="role-choices" class="role-choices" disabled><legend>บทบาทในขอบเขตนี้</legend>
-                <label><input type="checkbox" name="role" value="student"> นักศึกษา</label>
-                <label><input type="checkbox" name="role" value="coordinator"> ผู้ประสานงาน</label>
-                <label><input type="checkbox" name="role" value="staff"> เจ้าหน้าที่</label>
-                <label><input type="checkbox" name="role" value="executive"> ผู้บริหาร</label>
+            <fieldset id="role-choices" class="role-choices" disabled><legend>บทบาทในขอบเขตนี้ (เลือกได้หนึ่งบทบาท)</legend>
+                <label><input type="radio" name="role" value=""> ไม่มีบทบาท / ถอนสิทธิ์</label>
+                <label><input type="radio" name="role" value="student"> นักศึกษา</label>
+                <label><input type="radio" name="role" value="coordinator"> ผู้ประสานงาน</label>
+                <label><input type="radio" name="role" value="staff"> เจ้าหน้าที่</label>
+                <label><input type="radio" name="role" value="executive"> ผู้บริหาร</label>
             </fieldset>
-            <p class="role-confirmation"><label><input id="confirm-identity" type="checkbox"> ตรวจหลักฐานและยืนยันการผูกตัวตนของบัญชีนี้แล้ว</label></p>
-            <p class="role-revoke-note">ไม่เลือกบทบาทใดเลยเพื่อถอนทุกบทบาทในขอบเขตที่เลือก</p>
+            <p class="role-confirmation"><label><input id="confirm-identity" type="checkbox" required> ตรวจหลักฐานและยืนยันการผูกตัวตนของบัญชีนี้แล้ว</label></p>
+            <p class="role-revoke-note">เลือก “ไม่มีบทบาท / ถอนสิทธิ์” เพื่อถอนบทบาทในขอบเขตที่เลือก</p>
             <p id="role-status" class="role-status" role="status" aria-live="polite"></p>
             <div class="role-actions">
                 <button id="close-roles" type="button" class="role-cancel">ปิด</button>

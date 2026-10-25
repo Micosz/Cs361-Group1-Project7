@@ -17,7 +17,6 @@
         const queued = [];
         let identity = null;
         let uploadConfig = {directUpload: false};
-        const imageDocument = doc => ['image/png', 'image/jpeg'].includes(doc.mime);
 
         async function load() {
             status.textContent = 'กำลังโหลดเอกสาร'; list.replaceChildren();
@@ -31,22 +30,22 @@
                         link.textContent = doc.displayName + ' (' + window.CstuPrivateDocuments.formatSize(doc.size) + ')';
                         link.href = '/api/documents/' + encodeURIComponent(doc.id) + '/content?disposition=attachment';
                         link.target = '_blank'; link.rel = 'noopener'; li.appendChild(link);
-                        if (imageDocument(doc) && canUpload(identity, record)) {
+                        if (canUpload(identity, record)) {
                             const remove = document.createElement('button'); remove.type = 'button';
-                            remove.className = 'document-remove-image'; remove.textContent = 'ลบรูปภาพ';
-                            remove.setAttribute('aria-label', 'ลบรูปภาพ ' + doc.displayName);
+                            remove.className = 'document-remove-image'; remove.textContent = 'ลบ';
+                            remove.setAttribute('aria-label', 'ลบเอกสาร ' + doc.displayName);
                             remove.onclick = async () => {
-                                if (!window.confirm('ลบรูปภาพ “' + doc.displayName + '” ออกจากรายการนี้?')) return;
+                                if (!window.confirm('ลบเอกสาร “' + doc.displayName + '” ออกจากรายการนี้?')) return;
                                 remove.disabled = true;
                                 try {
                                     const fresh = await window.CstuAuth.refresh();
-                                    if (!canUpload(fresh, record)) throw Error('คุณไม่มีสิทธิ์ลบรูปภาพนี้');
+                                    if (!canUpload(fresh, record)) throw Error('คุณไม่มีสิทธิ์ลบเอกสารนี้');
                                     await window.CstuAuth.request('/documents/' + encodeURIComponent(doc.id), {
                                         method: 'DELETE', headers: {'X-CSRF-Token': fresh.csrfToken, 'If-Match': '"' + doc.version + '"'}
                                     });
-                                    await load(); status.textContent = 'ลบรูปภาพเรียบร้อย';
+                                    await load(); status.textContent = 'ลบเอกสารเรียบร้อย';
                                 } catch (error) {
-                                    status.textContent = 'ลบรูปภาพไม่ได้: ' + error.message;
+                                    status.textContent = 'ลบเอกสารไม่ได้: ' + error.message;
                                     remove.disabled = false;
                                 }
                             };

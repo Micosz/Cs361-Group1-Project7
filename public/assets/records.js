@@ -10,7 +10,7 @@
     let keyword = '';
     let partnerRows = [], eventRows = [];
     const boardParent = host.parentNode;
-    let eventKind = 'activities';
+    let eventKind = 'activities', roleFrame = null;
     let revision = 0, detailRevision = 0, session = null, nextCursor = null, lastTrigger = null, moreRequest = null, autoLoadPaused = false;
     const sentinel = $('records-sentinel');
     const pageObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
@@ -451,9 +451,16 @@
         clear(); lastTrigger = document.querySelector('#authNavButtons button');
         $('detail-title').textContent = 'จัดการสิทธิ์ผู้ใช้';
         const frame = document.createElement('iframe'); frame.title = 'จัดการสิทธิ์ผู้ใช้';
+        roleFrame = frame;
         frame.src = 'workspace.html?view=roles&embed=roles'; frame.style.cssText = 'width:100%;height:65vh;border:0';
         $('detail-actions').appendChild(frame); if (!dialog.open) dialog.showModal();
     }
+    window.addEventListener('message', event => {
+        if (event.origin !== location.origin || event.source !== roleFrame?.contentWindow
+            || !['roles-saved','roles-closed'].includes(event.data?.type)) return;
+        roleFrame.remove(); roleFrame = null;
+        dialog.close(); lastTrigger?.focus();
+    });
     window.CstuRecords = {open, filter:browseFilter, renderPartnerCards, renderEventCards, attachPartnerManagement, openPublicActivity};
     $('tabExchange').addEventListener('click', () => open('exchanges'));
     function browseFilter(detail) {
@@ -490,7 +497,7 @@
     $('records-retry').onclick = () => { autoLoadPaused = false; nextCursor ? loadMore() : load(); };
     $('detail-close').onclick = () => dialog.close();
     dialog.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
-    dialog.addEventListener('close', () => { ++detailRevision; $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); lastTrigger?.focus(); });
+    dialog.addEventListener('close', () => { roleFrame?.remove(); roleFrame = null; ++detailRevision; $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); lastTrigger?.focus(); });
     window.addEventListener('authchange', () => { ++revision; clear(); host.hidden = true; updateTabs([]); load(); });
     window.addEventListener('pageshow', event => { if (event.persisted) load(); });
     const initial = new URLSearchParams(location.search);

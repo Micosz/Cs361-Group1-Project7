@@ -1,0 +1,8 @@
+/* Compact remove action, including inside the shared record dialog. */
+#record-detail .document-remove-image, .document-remove-image {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: auto; min-height: 32px; margin-left: .6rem; padding: .25rem .65rem;
+    font: inherit; font-size: .85rem; line-height: 1.2;
+    border: 1px solid #d9c8cd; border-radius: 6px;
+    background: #fff; color: #a4002c; cursor: pointer;
+}

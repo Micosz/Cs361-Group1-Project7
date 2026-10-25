@@ -123,8 +123,7 @@ def allowed_roles(context, kind, action, record, parent=None):
     if kind == 'document':
         if record.get('uploadState') == 'deleted':
             return set()
-        if action == 'delete' and (record.get('uploadState') != 'ready'
-                or record.get('mime') not in {'image/png', 'image/jpeg'}):
+        if action == 'delete' and record.get('uploadState') != 'ready':
             return set()
         audience, personal = record.get('audience'), record.get('containsPersonal')
         if audience not in {'internal', 'participants'} or type(personal) is not bool:
