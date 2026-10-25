@@ -157,6 +157,8 @@ async function openMyExchangeDetail(ex) {
 
     myExchangeDetailDocsStatus.textContent = 'กำลังโหลดเอกสาร...';
     myExchangeDetailDocsList.replaceChildren();
+    const myExchangeDetailFeedback = document.getElementById('my-exchange-detail-feedback');
+    if (myExchangeDetailFeedback) myExchangeDetailFeedback.replaceChildren();
 
     myExchangeDialog.showModal();
 
@@ -180,6 +182,8 @@ async function openMyExchangeDetail(ex) {
             return;
         } else if (err.status === 404) {
             myExchangeDetailInfo.textContent = 'ไม่พบโครงการแลกเปลี่ยน หรือคุณไม่ได้เป็นผู้เข้าร่วมโครงการนี้แล้ว';
+            myExchangeDetailDocsStatus.textContent = '';
+            return;
         }
     }
 
@@ -217,6 +221,12 @@ async function openMyExchangeDetail(ex) {
             return;
         }
         myExchangeDetailDocsStatus.textContent = 'โหลดเอกสารไม่สำเร็จ';
+    }
+    if (myExchangeDetailFeedback && window.CstuFeedback) {
+        const session = await window.CstuAuth.refresh().catch(() => null);
+        if (session?.user && myExchangeDialog.open) {
+            await window.CstuFeedback.mount(myExchangeDetailFeedback, ex, 'exchanges', session);
+        }
     }
 }
 

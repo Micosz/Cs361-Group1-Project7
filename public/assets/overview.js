@@ -25,7 +25,9 @@
         label.appendChild(input); return {label, input};
     };
     const counter = (container, value) => {
-        const row = text('p', `${labels[value[0]] || value[0]} · ${value[1]} รายการ`, 'overview-breakdown-row');
+        const row = text('p', undefined, 'overview-breakdown-row');
+        const sep = text('span', ' · ', 'overview-breakdown-sep'); sep.setAttribute('aria-hidden', 'true');
+        row.append(text('span', labels[value[0]] || value[0], 'overview-breakdown-label'), sep, text('strong', `${value[1]} รายการ`, 'overview-breakdown-count'));
         container.appendChild(row);
     };
     const countRows = values => Object.entries(values || {}).sort(([a], [b]) => a.localeCompare(b));
@@ -70,15 +72,15 @@
         const stakeholderType = select('ประเภท Stakeholder', [['', 'ทั้งหมด'], ...['company','university','government','research_institute','internship'].map(value => [value, labels[value]])], 'stakeholderType');
         const activityType = select('ประเภทกิจกรรม', [['', 'ทั้งหมด'], ...['academic_activity','event','research'].map(value => [value, labels[value]])], 'activityType');
         const status = select('สถานะข้อตกลง / แลกเปลี่ยน', [['', 'ทั้งหมด'], ...['draft','active','expired','terminated','ongoing','completed','cancelled'].map(value => [value, labels[value]])], 'status');
-        const startLabel = text('label', 'ตั้งแต่'), start = document.createElement('input'); start.type = 'date'; start.name = 'startDate'; startLabel.appendChild(start);
-        const endLabel = text('label', 'ถึง'), end = document.createElement('input'); end.type = 'date'; end.name = 'endDate'; endLabel.appendChild(end);
+        const startLabel = text('label', 'ตั้งแต่'), start = document.createElement('input'); start.type = 'date'; start.name = 'startDate'; start.lang = 'th-TH'; startLabel.appendChild(start);
+        const endLabel = text('label', 'ถึง'), end = document.createElement('input'); end.type = 'date'; end.name = 'endDate'; end.lang = 'th-TH'; endLabel.appendChild(end);
         const dateHint = text('small', 'ช่วงวันที่กรองกิจกรรม ข้อตกลง การแลกเปลี่ยน และ Feedback; ยอด Stakeholder นับตามประเภทที่เลือก', 'overview-filter-hint');
         for (const field of [scope, stakeholderType, activityType, status]) filters.appendChild(field.label);
         filters.append(startLabel, endLabel, dateHint);
         const actions = text('div', undefined, 'overview-actions');
-        const apply = text('button', 'แสดงผล'); apply.type = 'submit';
-        const reset = text('button', 'ล้างตัวกรอง'); reset.type = 'reset';
-        const download = text('button', 'ส่งออกรายงาน CSV'); download.type = 'button'; download.disabled = true;
+        const apply = text('button', 'แสดงผล', 'overview-btn-primary'); apply.type = 'submit';
+        const reset = text('button', 'ล้างตัวกรอง', 'overview-btn-secondary'); reset.type = 'reset';
+        const download = text('button', 'ส่งออกรายงาน CSV', 'overview-btn-export'); download.type = 'button'; download.disabled = true;
         actions.append(apply, reset, download); filters.appendChild(actions);
         const statusText = text('p', 'กำลังโหลดข้อมูลสรุป', 'overview-status'); statusText.setAttribute('role', 'status');
         const tabs = text('nav', undefined, 'overview-tabs'); tabs.setAttribute('aria-label', 'ส่วนของภาพรวม'); tabs.setAttribute('role', 'tablist');
@@ -136,7 +138,7 @@
                     const li = document.createElement('li');
                     li.append(text('p', `${item.date || 'ไม่ระบุวันที่'} · ${labels[item.sourceType] || item.sourceType || 'Feedback'} · ${labels[item.parentType] || item.parentType}: ${item.parentTitle || ''}`, 'overview-muted'));
                     if (item.comment) li.append(text('p', item.comment));
-                    if (item.improvement) li.append(text('p', `ข้อเสนอแนะ: ${item.improvement}`));
+                    if (item.improvement) li.append(text('p', `ข้อเสนอแนะ: ${item.improvement}`, 'overview-improvement'));
                     list.appendChild(li);
                 }
                 if (!list.children.length) block.appendChild(text('p', 'ยังไม่มี Feedback ในข้อมูลที่ตรงกับเงื่อนไข', 'overview-empty'));
@@ -157,7 +159,7 @@
             }
         }
         async function load() {
-            const current = ++requestNumber; statusText.textContent = 'กำลังโหลดข้อมูลสรุป'; download.disabled = true;
+            const current = ++requestNumber; statusText.dataset.state = 'loading'; statusText.textContent = 'กำลังโหลดข้อมูลสรุป'; download.disabled = true;
             const query = new URLSearchParams();
             for (const input of [scope.input, stakeholderType.input, activityType.input, status.input, start, end]) if (input.value) query.set(input.name, input.value);
             try {
@@ -165,13 +167,13 @@
                 if (current !== requestNumber) return;
                 result = response?.data;
                 if (!result || result.role !== role || !result.stakeholders || !result.feedback || !result.outcomes) throw Error('ข้อมูลสรุปไม่ครบ');
-                drawPane(); statusText.textContent = 'แสดงเฉพาะข้อมูลในขอบเขตที่คุณมีสิทธิ์'; download.disabled = false;
+                drawPane(); statusText.dataset.state = 'ready'; statusText.textContent = 'แสดงเฉพาะข้อมูลในขอบเขตที่คุณมีสิทธิ์'; download.disabled = false;
             } catch (error) {
                 if (current !== requestNumber) return;
                 if (error.status === 401) { location.replace('login.html'); return; }
                 result = null; pane.replaceChildren(text('p', error.status === 403 || error.status === 404
                     ? 'คุณไม่มีสิทธิ์ดูข้อมูลตามเงื่อนไขนี้' : 'โหลดข้อมูลสรุปไม่สำเร็จ กรุณาลองใหม่', 'overview-empty'));
-                statusText.textContent = 'ไม่สามารถโหลดภาพรวมได้';
+                statusText.dataset.state = 'error'; statusText.textContent = 'ไม่สามารถโหลดภาพรวมได้';
             }
         }
         filters.addEventListener('submit', event => { event.preventDefault(); load(); });

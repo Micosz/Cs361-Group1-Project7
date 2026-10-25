@@ -42,14 +42,16 @@ class PolicyTests(unittest.TestCase):
                 for action in ('read', 'update', 'status', 'delete'):
                     with self.subTest(kind=kind, role=role, action=action):
                         allowed = (action == 'read' and (role in {'staff', 'coordinator', 'executive'}
-                                   or role == 'student' and kind in {'agreement', 'exchange'})
+                                   or role == 'student' and kind in {'activity', 'agreement', 'exchange'})
                                    or action == 'update' and role in {'staff', 'coordinator'}
                                    or action == 'status' and kind in {'agreement', 'exchange'}
                                    and role in {'staff', 'coordinator'})
                         if allowed:
-                            require_record(context(role), kind, action, row(kind, publication='public' if kind == 'agreement' else 'internal'))
+                            require_record(context(role), kind, action, row(kind, publication='public' if kind in {'activity', 'agreement'} else 'internal'))
                         else:
-                            self.deny(403, lambda: require_record(context(role), kind, action, row(kind, publication='public' if kind == 'agreement' else 'internal')))
+                            self.deny(403, lambda: require_record(context(role), kind, action, row(kind, publication='public' if kind in {'activity', 'agreement'} else 'internal')))
+        for kind in ('activity', 'agreement'):
+            self.deny(404, lambda: require_record(context('student'), kind, 'read', row(kind, publication='internal')))
 
     def test_same_role_cannot_cross_scope_or_guess_missing_record(self):
         for role in ('staff', 'coordinator', 'executive', 'student'):
