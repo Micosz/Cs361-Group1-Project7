@@ -92,6 +92,9 @@
                 queue.replaceChildren();
                 for (const item of queued) {
                     const row = document.createElement('li'); row.className = 'document-upload-item';
+                    
+                    const leftCol = document.createElement('div'); leftCol.className = 'document-upload-left-col';
+                    
                     const preview = document.createElement('span'); preview.className = 'document-upload-preview';
                     preview.setAttribute('aria-hidden', 'true');
                     const image = /^image\/(png|jpeg)$/i.test(item.file.type || '');
@@ -102,12 +105,30 @@
                     } else {
                         preview.textContent = (item.file.name.split('.').pop() || 'FILE').slice(0, 5).toUpperCase();
                     }
-                    const details = document.createElement('span'); details.className = 'document-upload-details';
+
+                    const remove = document.createElement('button'); remove.type = 'button'; 
+                    remove.className = 'btn-remove-file';
+                    remove.textContent = 'นำออก';
+                    remove.setAttribute('aria-label', 'นำ ' + item.file.name + ' ออกจากรายการ');
+                    remove.onclick = () => {
+                        if (item.previewUrl) window.URL?.revokeObjectURL?.(item.previewUrl);
+                        queued.splice(queued.indexOf(item), 1); renderQueue();
+                    };
+
+                    leftCol.append(preview, remove);
+
+                    const rightCol = document.createElement('div'); rightCol.className = 'document-upload-right-col';
+
+                    const details = document.createElement('div'); details.className = 'document-upload-details';
                     const name = document.createElement('strong'); name.textContent = item.file.name;
                     const size = document.createElement('small'); size.textContent = ' (' + Math.max(1, Math.ceil(item.file.size / 1024)) + ' KB)';
                     details.append(name, size);
 
-                    const accessLabel = document.createElement('label'); accessLabel.textContent = 'สิทธิ์การอ่าน ';
+                    const controlsRow = document.createElement('div'); controlsRow.className = 'document-controls-row';
+
+                    const accessLabel = document.createElement('label'); 
+                    accessLabel.className = 'document-access-label';
+                    accessLabel.textContent = 'สิทธิ์การอ่าน ';
                     const access = document.createElement('select'); access.value = item.audience;
                     let personalControl = null;
                     const audiences = [['internal', 'ส่วนตัว · ผู้มีสิทธิ์ภายใน']];
@@ -126,11 +147,15 @@
                         if (personalControl) personalControl.disabled = item.audience !== 'participants';
                     };
                     accessLabel.appendChild(access);
+                    controlsRow.appendChild(accessLabel);
 
-                    row.append(preview, details, accessLabel);
                     if (kind === 'exchange') {
-                        const personalLabel = document.createElement('label'), personal = document.createElement('input');
-                        personal.type = 'checkbox'; personal.checked = item.personal;
+                        const personalLabel = document.createElement('label');
+                        personalLabel.className = 'document-personal-label';
+                        const personal = document.createElement('input');
+                        personal.type = 'checkbox'; 
+                        personal.className = 'document-checkbox';
+                        personal.checked = item.personal;
                         personal.disabled = item.audience !== 'participants';
                         personalControl = personal;
                         personal.onchange = () => {
@@ -138,15 +163,12 @@
                             item.personal = personal.checked;
                         };
                         personalLabel.append(personal, document.createTextNode(' มีข้อมูลส่วนบุคคลของผู้เข้าร่วม'));
-                        row.appendChild(personalLabel);
+                        controlsRow.appendChild(personalLabel);
                     }
-                    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'นำออก';
-                    remove.setAttribute('aria-label', 'นำ ' + item.file.name + ' ออกจากรายการ');
-                    remove.onclick = () => {
-                        if (item.previewUrl) window.URL?.revokeObjectURL?.(item.previewUrl);
-                        queued.splice(queued.indexOf(item), 1); renderQueue();
-                    };
-                    row.appendChild(remove); queue.appendChild(row);
+
+                    rightCol.append(details, controlsRow);
+                    row.append(leftCol, rightCol);
+                    queue.appendChild(row);
                 }
                 submit.disabled = queued.length === 0;
             }
