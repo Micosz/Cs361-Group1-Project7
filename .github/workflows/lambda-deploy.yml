@@ -1,0 +1,86 @@
+name: Package and deploy Auth Lambda
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '!backend/lambda/**'
+      - '!backend/tests/**'
+      - 'scripts/package-auth-lambda.py'
+      - 'deploy/**'
+      - '.github/workflows/lambda-deploy.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '!backend/lambda/**'
+      - '!backend/tests/**'
+      - 'scripts/package-auth-lambda.py'
+      - 'deploy/**'
+      - '.github/workflows/lambda-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Check syntax and package source
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Package committed Python source (no test suite)
+        run: |
+          python -c "import ast; from pathlib import Path; ast.parse(Path('deploy/deploy-auth.py').read_text())"
+          python scripts/package-auth-lambda.py "$RUNNER_TEMP/auth.zip"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: auth-${{ github.sha }}
+          path: ${{ runner.temp }}/auth.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy CSTUHubAuth
+    needs: package
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: cstuhub-auth-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ap-southeast-2
+      AWS_PAGER: ''
+      AWS_CLI_AUTO_PROMPT: 'off'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: auth-${{ github.sha }}
+          path: ${{ runner.temp }}/auth-package
+      - uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
+        with:
+          role-to-assume: arn:aws:iam::781485979426:role/CSTUHubGitHubAuthDeployRole
+          aws-region: ap-southeast-2
+          allowed-account-ids: '781485979426'
+          role-duration-seconds: 900
+          role-session-name: github-${{ github.run_id }}
+      - name: Back up, deploy and verify code identity
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: python deploy/deploy-auth.py "$RUNNER_TEMP/auth-package/auth.zip" "$RELEASE_COMMIT"
