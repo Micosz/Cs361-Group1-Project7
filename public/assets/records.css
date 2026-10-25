@@ -12,7 +12,15 @@
 .records-list li { padding: 1rem 0; border-bottom: 1px solid #ddd; overflow-wrap: anywhere; }
 .records-list button { background: transparent; border: 0; text-align: left; color: #9e1233; }
 .records-list small { display: block; margin-top: .4rem; }
-#record-detail { position: fixed; overscroll-behavior: contain; width: min(90vw, 700px); max-height: 85vh; padding: 1.5rem; border: 1px solid #ddd; border-radius: 12px; overflow: auto; }
+#record-detail { position: fixed; z-index: 100; overscroll-behavior: contain; width: min(90vw, 700px); max-height: 85vh; padding: 1.5rem; border: 1px solid #ddd; border-radius: 12px; overflow: auto; }
+
+/* Prevent background floating elements from blocking interactions with open modals */
+body:has(#record-detail[open]) .orbit-layer,
+body:has(#record-detail[open]) .hero-animation,
+body:has(#record-detail[open]) .float-card,
+body:has(#record-detail[open]) .spatial-track {
+    pointer-events: none !important;
+}
 #record-detail::backdrop { background: #0006; }
 #detail-fields dt { font-weight: bold; margin-top: 1rem; }
 #detail-fields dd { margin: .25rem 0; white-space: pre-wrap; overflow-wrap: anywhere; }
