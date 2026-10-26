@@ -5,7 +5,7 @@
         partners: [['name','ชื่อ',true],['type','ประเภท',true],['summary','สรุป',true],['location','สถานที่',true],['websiteUrl','เว็บไซต์'],['logoPath','ภาพโลโก้'],['fullDescription','รายละเอียด']],
         activities: [['title','ชื่อกิจกรรม',true],['type','ประเภท',true],['summary','สรุป',true],['partnerId','รหัสคู่ความร่วมมือหลัก',true],['coHostPartnerIds','รหัสผู้จัดร่วม คั่นด้วยจุลภาค'],['agreementIds','รหัสข้อตกลงที่เชื่อม คั่นด้วยจุลภาค'],['periodDate','วันจัดกิจกรรม'],['periodText','ช่วงเวลา'],['imagePath','ภาพกิจกรรม'],['fullDescription','รายละเอียด']]
     };
-    function open(kind, {container,record,session,reload}) {
+    function open(kind, {container,record,session,reload,onCancel}) {
         container.replaceChildren();
         const form = document.createElement('form'), fields = {};
         if (kind === 'partners') form.id = 'partner-entry-form';
@@ -47,7 +47,18 @@
         }
         const status = document.createElement('p'); status.setAttribute('role','status');
         const save = document.createElement('button');save.type='submit';save.textContent='บันทึก';
-        form.append(status,save);container.appendChild(form);
+        const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'ยกเลิก';
+        cancel.onclick = () => {
+            if (save.disabled) return;
+            container.replaceChildren();
+            if (onCancel) onCancel();
+            else {
+                const dialog = container.closest('dialog');
+                if (dialog?.open) dialog.close('cancel');
+            }
+        };
+        const actions = document.createElement('div'); actions.append(save,cancel);
+        form.append(status,actions);container.appendChild(form);
         let key = null, previous = null;
         form.onsubmit = async event => {
             event.preventDefault();if(save.disabled)return;
@@ -60,14 +71,14 @@
             if(!canAssign){delete payload.responsibleUserIds;delete payload.publication;}
             if(!record)payload.scopeId=scope.value;
             const fingerprint=JSON.stringify(payload);if(previous!==fingerprint){previous=fingerprint;key=crypto.randomUUID();}
-            save.disabled=true;status.textContent='กำลังบันทึก';
+            save.disabled=true;cancel.disabled=true;status.textContent='กำลังบันทึก';
             try {
                 if(record)await window.CstuAuth.mutate('/'+kind+'/'+encodeURIComponent(record.id),payload,record.version);
                 else await window.CstuAuth.create('/'+kind,payload,key);
                 status.textContent='บันทึกแล้ว';await reload();
             } catch(error) {
                 status.textContent=error.status===409 ? 'ข้อมูลเปลี่ยนแล้ว กรุณาปิดและเปิดรายละเอียดใหม่เพื่อตรวจทาน' : 'บันทึกไม่ได้: '+error.message;
-            } finally {save.disabled=false;}
+            } finally {save.disabled=false;cancel.disabled=false;}
         };
         if (kind === 'partners' && fields.responsibleUserIds && window.SelectionFields) {
             window.SelectionFields.mount({form,scope,fields:[{input:fields.responsibleUserIds,kind:'responsible',label:'ผู้รับผิดชอบ (เลือกได้หลายคน)'}],submit:save,status});
