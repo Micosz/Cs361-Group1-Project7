@@ -39,6 +39,20 @@
         };
         const boardScene = document.querySelector('.board-scene');
         const heading = hero.querySelector('.hero-content');
+        const subject = hero.querySelector('.heading-subject');
+        const boardTitle = boardScene?.querySelector('.page-title h1');
+        const boardSubtitle = boardScene?.querySelector('.page-title h2');
+        const boardTabs = boardScene?.querySelector('.tabs');
+        const boardContent = boardScene?.querySelector('main');
+        const welcomeParts = [...hero.querySelectorAll('.heading-intro, .heading-end, .hero-features, .hero-btn')];
+        const bridge = document.createElement('span');
+        bridge.className = 'scene-title-bridge';
+        bridge.setAttribute('aria-hidden', 'true');
+        bridge.textContent = subject?.textContent || '';
+        bridge.hidden = true;
+        document.body.append(bridge);
+        let titleGeometry;
+        const originalInert = { hero: hero.inert, board: boardScene?.inert };
         const sceneStyles = new Map();
         let sceneEnabled = false;
         let sceneFrame = 0;
@@ -48,6 +62,8 @@
         let sceneProgress = -1;
         const sceneMode = () => Boolean(boardScene) && !document.body.classList.contains('feedback-inbox-view') && !reduced.matches && !compact.matches && innerHeight > 650;
         const clamp = value => Math.max(0, Math.min(1, value));
+        const ease = value => { const t = clamp(value); return t * t * (3 - 2 * t); };
+        const mix = (from, to, t) => from + (to - from) * t;
         function paintScene(element, styles) {
             if (!element) return;
             let original = sceneStyles.get(element);
@@ -60,6 +76,34 @@
         function clearSceneStyles() {
             sceneStyles.forEach((styles, element) => Object.assign(element.style, styles));
             sceneStyles.clear();
+            bridge.hidden = true;
+            hero.inert = originalInert.hero;
+            if (boardScene) boardScene.inert = originalInert.board;
+        }
+        function measureTitle() {
+            if (!sceneEnabled || !subject || !boardTitle) return;
+            // Only startup/font/resize/intro completion reads layout. Scrolling
+            // interpolates these endpoints, including when moving backwards.
+            const from = subject.getBoundingClientRect();
+            const to = boardTitle.getBoundingClientRect();
+            const heroBox = hero.getBoundingClientRect();
+            const sourceStyle = getComputedStyle(subject);
+            const targetStyle = getComputedStyle(boardTitle);
+            const scale = parseFloat(targetStyle.fontSize) / parseFloat(sourceStyle.fontSize);
+            Object.assign(bridge.style, {
+                width: `${from.width}px`, height: `${from.height}px`,
+                fontFamily: sourceStyle.fontFamily, fontSize: sourceStyle.fontSize,
+                fontWeight: sourceStyle.fontWeight, lineHeight: sourceStyle.lineHeight,
+                letterSpacing: sourceStyle.letterSpacing
+            });
+            titleGeometry = {
+                x: from.left, y: from.top + 92 - heroBox.top,
+                endX: to.left + (to.width - from.width * scale) / 2,
+                endY: to.top + scrollY - sceneTravel + (to.height - from.height * scale) / 2,
+                tracking: parseFloat(sourceStyle.letterSpacing) || 0,
+                endTracking: (parseFloat(targetStyle.letterSpacing) || 0) / scale,
+                scale
+            };
         }
         function renderScene() {
             sceneFrame = 0;
@@ -69,36 +113,62 @@
             if (!sceneDirty && progress === sceneProgress) return;
             sceneProgress = progress;
             sceneDirty = false;
-            const exit = clamp(progress / .34);
-            const visibility = exit < 1 ? 'visible' : 'hidden';
+            const exit = ease((progress - .03) / .55);
+            const copyExit = ease(progress / .38);
+            const arrival = ease((progress - .08) / .74);
+            const titleTravel = ease(progress / .82);
+            const movingTitle = settled && titleGeometry && progress > 0 && progress < .82;
+            bridge.hidden = !movingTitle;
+            if (movingTitle) {
+                const geometry = titleGeometry;
+                Object.assign(bridge.style, {
+                    transform: `translate3d(${mix(geometry.x, geometry.endX, titleTravel)}px,${mix(geometry.y, geometry.endY, titleTravel)}px,0) scale(${mix(1, geometry.scale, titleTravel)})`,
+                    letterSpacing: `${mix(geometry.tracking, geometry.endTracking, titleTravel)}px`,
+                    color: `rgb(${Math.round(mix(195, 32, titleTravel))} ${Math.round(mix(0, 32, titleTravel))} ${Math.round(mix(47, 32, titleTravel))})`
+                });
+            }
+            // Keep the original semantic headings. Only the aria-hidden copy
+            // travels between them; opacity hands off without duplicate text.
+            if (settled) {
+                paintScene(heading, { visibility: progress < .86 ? 'visible' : 'hidden' });
+                paintScene(subject, { opacity: progress === 0 || !titleGeometry ? '1' : '0' });
+                welcomeParts.forEach(element => paintScene(element, {
+                    opacity: String(1 - copyExit), transform: `translateY(${-24 * copyExit}px)`
+                }));
+            }
             const opacity = String(1 - exit);
-            // The opening owns the heading until its temporary animations finish.
-            if (settled) paintScene(heading, {
-                opacity, visibility,
-                transform: `translateY(${-24 * exit}px) scale(${1 - .03 * exit})`
-            });
+            const visibility = exit < 1 ? 'visible' : 'hidden';
             liveCards.forEach((card, index) => paintScene(card, {
                 opacity, visibility,
-                translate: `${(index === 1 ? 100 : -100) * exit}px ${-36 * exit}px`
+                translate: `${(index === 1 ? 72 : -72) * exit}px ${-28 * exit}px`
             }));
             tiles.forEach(item => {
                 if (!item.destination) return;
                 paintScene(item.drift, {
                     opacity, visibility,
-                    transform: `translate(${item.destination.x * .25 * exit}px,${item.destination.y * .2 * exit}px) scale(${1 + .12 * exit})`
+                    transform: `translate(${item.destination.x * .18 * exit}px,${item.destination.y * .14 * exit}px) scale(${1 - .08 * exit})`
                 });
             });
-            // Welcome leaves first; then the board title arrives near mid-screen.
-            // A short reading beat precedes the rise into normal document scrolling.
-            const entrance = clamp((progress - .36) / .20);
-            const rise = clamp((progress - .72) / .28);
-            const boardOffset = sceneHeight * .30 * (1 - rise) + 40 * (1 - entrance);
+            // The rounded board rises beneath the shared heading, overlapping
+            // the departing orbit instead of leaving an empty interval.
+            const boardOffset = (sceneHeight + 40) * (1 - arrival);
             paintScene(boardScene, {
-                opacity: String(entrance),
-                visibility: progress > .36 ? 'visible' : 'hidden',
-                pointerEvents: progress >= .56 ? 'auto' : 'none',
+                opacity: '1', visibility: progress > 0 ? 'visible' : 'hidden',
+                pointerEvents: progress >= .72 ? 'auto' : 'none',
                 transform: `translateY(${(progress - 1) * sceneTravel + boardOffset}px)`
             });
+            paintScene(boardTitle, { opacity: progress >= .82 || !titleGeometry ? '1' : '0' });
+            [[boardSubtitle, .36], [boardTabs, .46], [boardContent, .56]].forEach(([element, start]) => {
+                const reveal = ease((progress - start) / .26);
+                paintScene(element, { opacity: String(reveal), transform: `translateY(${18 * (1 - reveal)}px)` });
+            });
+            // This layer is created by constellation.js after the opening mounts.
+            paintScene(hero.querySelector('.constellation-backdrop'), {
+                opacity: String(1 - ease((progress - .12) / .74)),
+                transform: `scale(${1 - .16 * titleTravel}) translateY(${-24 * titleTravel}px)`
+            });
+            hero.inert = progress >= .58 || originalInert.hero;
+            boardScene.inert = progress < .72 || originalInert.board;
         }
         function scheduleScene(refresh = false) {
             if (!sceneEnabled || disposed) return;
@@ -106,6 +176,7 @@
             if (!sceneFrame) sceneFrame = requestAnimationFrame(renderScene);
         }
         const updateSceneMode = () => {
+            clearSceneStyles();
             sceneEnabled = sceneMode();
             cancelAnimationFrame(sceneFrame);
             sceneFrame = 0;
@@ -113,11 +184,12 @@
             sceneHeight = Math.max(1, innerHeight - 92);
             // Keep this travel in sync with the 2.5-view hero track in opening.css.
             sceneTravel = sceneHeight * 1.5;
-            if (!sceneEnabled) clearSceneStyles();
             document.body.classList.toggle('scene-ready', sceneEnabled);
+            measureTitle();
             renderScene();
         };
         updateSceneMode();
+        document.fonts?.ready.then(() => { if (!disposed) updateSceneMode(); });
         const bodyObserver = typeof MutationObserver === 'function'
             ? new MutationObserver(() => {
                 if (sceneMode() !== sceneEnabled) updateSceneMode();
@@ -215,6 +287,8 @@
             const tileWidth = tiles[0].tile.offsetWidth || 126;
             const width = box.width;
             const height = box.height;
+            // Optional decorative themes can inset companions without changing the scene layout.
+            const orbitInset = Math.max(.8, Math.min(1, parseFloat(getComputedStyle(hero).getPropertyValue('--orbit-inset')) || 1));
             const destinations = cards.map((card, index) => ({
                 x: card.left + card.width / 2 - box.left - width / 2,
                 y: card.top + card.height / 2 - box.top - height / 2,
@@ -235,9 +309,10 @@
                 y: height - (phone ? 24 + 29 : 26 + 34) - height / 2,
                 angle: 0, scale: Math.min(1, companionWidth / tileWidth), opacity: 1
             } : {
-                x: width * x - width / 2,
-                y: Math.max(roomy ? 88 : 62, Math.min(height - (roomy ? 88 : 76), height * y)) - height / 2,
-                angle, scale: width < 1100 ? .84 : 1, opacity: 1
+                x: (width * x - width / 2) * orbitInset,
+                // Keep the upper logos clear of the welcome text while insetting the bottom row.
+                y: (Math.max(roomy ? 88 : 62, Math.min(height - (roomy ? 88 : 76), height * y)) - height / 2) * (y < .5 ? 1 : orbitInset),
+                angle, scale: (width < 1100 ? .84 : 1) * orbitInset, opacity: 1
             }));
             tiles.forEach(item => {
                 item.destination = destinations[item.slot];
@@ -258,7 +333,7 @@
             releaseDecode?.();
             releaseDecode = undefined;
             tiles.forEach(item => { if (item.slot >= 3 && item.tile.disabled) item.tile.disabled = false; });
-            if (!wasSettled) scheduleScene(true);
+            if (!wasSettled) updateSceneMode();
             // Inline endpoints are already present beneath the temporary animations.
         }
         function run() {
@@ -269,7 +344,7 @@
             const box = hero.getBoundingClientRect();
             const radiusX = compact.matches ? Math.min(box.width * .31, 150) : Math.min(box.width * .23, 245);
             const radiusY = compact.matches ? Math.min(box.width * .31, 150) : Math.min(box.height * .32, 225);
-            const duration = compact.matches ? 1100 : 2300;
+            const duration = parseFloat(getComputedStyle(hero).getPropertyValue('--opening-duration')) || (compact.matches ? 1100 : 2300);
             // Keep the compact orbit near the message rather than halfway down
             // the tall mobile card list. Touch/scroll can still settle it immediately.
             const centerY = compact.matches ? Math.min(190, box.height / 2) - box.height / 2 : 0;
@@ -394,6 +469,7 @@
             clearSceneStyles();
             finish();
             layer?.remove();
+            bridge.remove();
             document.body.classList.remove('scene-ready');
         };
     }

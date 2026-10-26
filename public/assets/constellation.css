@@ -1,0 +1,172 @@
+/* Connected Constellation: decoration only, on top of the existing scene layout.
+   The original opening owns scroll and card placement; these loops never do. */
+body:has(.constellation-ready) {
+    background-color: #fffdf9;
+    background-image: radial-gradient(ellipse at 3% 30%, #f8e4e7 0%, transparent 43%),
+        radial-gradient(ellipse at 97% 78%, #fff0c6 0%, transparent 43%),
+        radial-gradient(ellipse at 50% 42%, #fff 15%, #fffdf8 65%);
+    background-size: 100% 100svh;
+    background-repeat: no-repeat;
+}
+.hero-section.constellation-ready {
+    --orbit-inset: .9;
+    --opening-duration: 3800;
+    background: transparent;
+}
+/* Reuse the orbital scene as a faint continuation behind the glass header.
+   This layer never participates in layout or intercepts controls. */
+.constellation-canopy {
+    position: absolute; inset: 0 0 auto; height: 280px; overflow: hidden;
+    pointer-events: none; user-select: none; z-index: 0; opacity: .52;
+    mask-image: linear-gradient(#000 0%, #000 35%, transparent 100%);
+    -webkit-mask-image: linear-gradient(#000 0%, #000 35%, transparent 100%);
+    transition: opacity 600ms ease;
+}
+.constellation-canopy .galaxy-scene {
+    position: absolute; top: -330px; left: 50%; width: max(100%, 1000px);
+    max-width: none; height: 600px; transform: translateX(-50%);
+}
+.constellation-canopy[data-visible="false"] { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+    .constellation-canopy { transition: none; }
+}
+.constellation-ready.hero-section::before,
+.constellation-ready.hero-section::after { display: none; }
+.constellation-backdrop {
+    position: absolute; inset: 0; z-index: 0; overflow: hidden;
+    pointer-events: none; user-select: none;
+    opacity: 1; transition: opacity 600ms ease;
+}
+.galaxy-camera { position: absolute; inset: 0; transform-origin: 50% 50%; }
+.galaxy-scene { display: block; width: 100%; height: 100%; overflow: visible; }
+.constellation-ready.intro-pending .galaxy-camera { transform: scale(2.2) rotate(-7deg); opacity: .45; }
+.galaxy-near-stars { opacity: .1; transition: opacity 1200ms ease; }
+.constellation-ready:is(.intro-pending, .intro-playing) .galaxy-near-stars { opacity: 1; }
+.constellation-ready[data-constellation-visible="false"] .constellation-backdrop { opacity: 0; }
+.constellation-toggle {
+    position: absolute; right: 24px; bottom: 12px; z-index: 5;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    min-height: 36px; padding: 6px 12px; border: 1px solid #e7d7cd;
+    border-radius: 999px; background: #fffdf9; color: #6d514e;
+    font: inherit; font-size: .75rem; line-height: 1.5; cursor: pointer;
+}
+.constellation-toggle:hover { border-color: #c3002f; color: #950024; }
+.constellation-toggle:focus-visible { outline: 2px solid #c3002f; outline-offset: 3px; }
+.constellation-toggle[hidden] { display: none; }
+.constellation-ready .hero-animation .float-card,
+.constellation-ready .orbit-tile {
+    border-color: #e799a7;
+    box-shadow: 0 3px 8px -5px rgb(120 35 45 / 12%), 0 16px 34px -22px rgb(100 42 37 / 30%);
+    transition: border-color 280ms ease, box-shadow 280ms ease;
+}
+.constellation-ready .hero-btn {
+    background: #171b20; border-color: #171b20;
+    box-shadow: 0 8px 20px -14px rgb(25 30 35 / 45%);
+}
+.grid > .card { transition: border-color 280ms ease, box-shadow 280ms ease; }
+@media (hover: hover) and (pointer: fine) {
+    .constellation-ready .hero-animation .float-card:hover,
+    .constellation-ready .orbit-tile:not(:disabled):hover {
+        border-color: #c3002f;
+        box-shadow: 0 0 0 3px rgb(231 167 41 / 13%), 0 18px 38px -22px rgb(129 32 50 / 35%);
+    }
+    .grid > .card:hover { box-shadow: 0 14px 32px -23px rgb(125 26 44 / 35%); }
+}
+@keyframes constellation-float { from { translate: 0 -3px; } to { translate: 0 3px; } }
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+    .constellation-ready .hero-animation .float-card { scale: .9; }
+    .constellation-ready .hero-animation .card-top {
+        top: 48px; left: clamp(56px, 5.5vw, 92px); transform-origin: top left;
+    }
+    .constellation-ready .hero-animation .card-mid {
+        top: 156px; right: clamp(56px, 5.5vw, 92px); transform-origin: top right;
+    }
+    .constellation-ready .hero-animation .card-bot {
+        bottom: 52px; left: clamp(60px, 6vw, 100px); transform-origin: bottom left;
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    @media (min-width: 1024px) {
+        .constellation-ready[data-constellation-float="true"] .hero-animation .float-card {
+            animation: constellation-float 8s ease-in-out infinite alternate;
+        }
+        .constellation-ready[data-constellation-float="true"] .hero-animation .card-mid { animation-duration: 10s; animation-delay: -3s; }
+        .constellation-ready[data-constellation-float="true"] .hero-animation .card-bot { animation-duration: 12s; animation-delay: -5s; }
+        .constellation-ready[data-constellation-float="true"] .hero-animation .float-card:is(:hover, :focus-within) { animation-play-state: paused; }
+    }
+}
+@media (max-width: 1023px) {
+    .hero-section.constellation-ready { --opening-duration: 2400; }
+    .constellation-backdrop { height: 520px; opacity: .75; }
+    .galaxy-scene { width: 900px; max-width: none; position: absolute; left: 50%; transform: translateX(-50%); }
+    .constellation-toggle { bottom: 4px; right: 20px; min-height: 44px; font-size: .6875rem; padding: 4px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .constellation-ready.intro-pending .galaxy-camera { transform: none; opacity: 1; }
+    .constellation-backdrop, .galaxy-near-stars, .constellation-ready .hero-animation .float-card, .constellation-ready .orbit-tile, .grid > .card { transition: none; }
+    .constellation-toggle { display: none; }
+}
+
+/* Frosted rail from the selected header concept, in the compact dock footprint.
+   Keep the surface on a pseudo-element so suggestions can escape its round edge. */
+.navbar {
+    position: sticky; top: 16px; width: min(1040px, 74vw); min-height: 72px;
+    margin: 16px auto 0; padding: 10px 24px; gap: 20px;
+    border: 0; border-radius: 999px; background: transparent;
+    box-shadow: 0 12px 34px -19px rgb(88 39 46 / 30%);
+    isolation: isolate;
+}
+.navbar::before {
+    inset: 0; border: 1px solid rgb(255 255 255 / 90%); border-radius: inherit;
+    background: rgb(255 253 251 / 78%);
+    backdrop-filter: blur(18px) saturate(120%);
+    -webkit-backdrop-filter: blur(18px) saturate(120%);
+    box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(211 184 186 / 12%);
+}
+.navbar .logo { padding-right: 20px; border-right: 1px solid #d7cbcb; }
+.navbar .search-wrapper { max-width: none; }
+.navbar .search-container { align-items: center; border-color: transparent; background: rgb(255 255 255 / 48%); }
+.header-search-icon { flex: 0 0 auto; margin-left: 15px; font-size: 18px; color: #312a2d; }
+.navbar .search-container input { padding-inline: 12px; font-size: .9375rem; }
+.navbar .search-btn { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 44px; width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%; font-size: 18px; }
+.navbar .auth-buttons { padding-left: 20px; border-left: 1px solid #d7cbcb; gap: 10px; }
+.navbar .login-btn { min-height: 44px; padding-inline: 22px; background: #171b20; color: #fff; border: 1px solid #171b20; }
+.navbar .search-container:focus-within { outline: 2px solid #c3002f; outline-offset: 3px; border-color: transparent; box-shadow: none; }
+.navbar .suggestions-dropdown { border-radius: 20px; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .navbar::before { background: #fffdfb; }
+}
+@media (hover: hover) and (pointer: fine) {
+    .navbar .login-btn:hover { color: #fff; background: #30363e; border-color: #30363e; }
+}
+@media (max-width: 1100px) {
+    .navbar { width: calc(100% - 40px); padding-inline: 20px; gap: 16px; }
+    .navbar .logo { padding-right: 16px; }
+    .navbar .auth-buttons { padding-left: 16px; }
+}
+@media (max-width: 767px) {
+    .navbar { top: max(8px, env(safe-area-inset-top)); width: calc(100% - 24px); margin: 8px auto 0; padding: 12px 16px; border-radius: 28px; gap: 10px 12px; }
+    .navbar .logo, .navbar .auth-buttons { padding: 0; border: 0; }
+    .navbar .search-container input { font-size: .875rem; padding-inline: 10px; }
+    .header-search-icon { margin-left: 12px; font-size: 16px; }
+    .navbar .login-btn { padding-inline: 16px; }
+}
+
+/* The shared heading is a decorative copy only; real headings stay in the DOM.
+   It exists above the incoming panel and below the floating header/modals. */
+.scene-title-bridge {
+    position: fixed; top: 0; left: 0; margin: 0; z-index: 8;
+    transform-origin: 0 0; pointer-events: none; user-select: none;
+    white-space: nowrap; text-align: center;
+}
+.scene-title-bridge[hidden] { display: none; }
+.board-scene { border-radius: 40px 40px 0 0; box-shadow: 0 -18px 48px -40px rgb(115 59 65 / 25%); }
+@media (prefers-reduced-motion: no-preference) and (min-width: 1024px) and (min-height: 651px) {
+    .scene-ready .hero-scroll { margin-top: 4px; }
+    .scene-ready .board-scene { opacity: 1; }
+    .scene-ready .constellation-backdrop { transition: none; }
+    .scene-ready .hero-content { transform: none; }
+}
+@media (max-width: 767px) {
+    .board-scene { border-radius: 28px 28px 0 0; }
+}
