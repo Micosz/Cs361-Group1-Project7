@@ -1,6 +1,7 @@
 # Lambda CI/CD
 
-รอบแรกดูแลเฉพาะ `CSTUHubAuth` ในบัญชี `781485979426`, Region `ap-southeast-2`.
+ดูแลเฉพาะ `CSTUHubAuth` ในบัญชี `781485979426`, Region `ap-southeast-1` (Singapore).
+รายละเอียดการย้ายและย้อนกลับไป Sydney อยู่ใน [V4 deployment](../docs/deployment/v4-deployment.md).
 ใช้ Lambda, environment variables, execution role, API และ DynamoDB เดิมทั้งหมด.
 อีกสามตัว (`tuAuthLogin`, `fetchPartnersData`, `getPublicPartners`) ยังปล่อยด้วยวิธีเดิม.
 

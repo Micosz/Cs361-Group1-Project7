@@ -4,7 +4,8 @@
 
 - API/validation: `backend/documents/direct_*.py`
 - Browser upload: `public/assets/private-documents.js`
-- Bucket: `cstuhub-private-documents-781485979426-ap-southeast-2` (Sydney)
+- Bucket หลัก: `cstuhub-private-documents-781485979426-ap-southeast-1` (Singapore)
+- เก็บ bucket Sydney เดิมไว้สำหรับการย้อนกลับ ดู [V4 deployment](../../docs/deployment/v4-deployment.md)
 
 ## การทำงาน
 

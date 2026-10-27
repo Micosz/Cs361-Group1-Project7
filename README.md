@@ -16,7 +16,7 @@
 </p>
 
 <p>
-  <a href="https://main.d2q46seuxuluap.amplifyapp.com/"><img src="https://img.shields.io/badge/Open_Website-18181B?style=for-the-badge&amp;logo=googlechrome&amp;logoColor=white" alt="Open website"></a>
+  <a href="https://main.d1d0za87xu48iv.amplifyapp.com/"><img src="https://img.shields.io/badge/Open_Website-18181B?style=for-the-badge&amp;logo=googlechrome&amp;logoColor=white" alt="Open website"></a>
   <a href="#project-versions"><img src="https://img.shields.io/badge/Project_Versions-18181B?style=for-the-badge&amp;logo=readthedocs&amp;logoColor=white" alt="Project versions"></a>
   <a href="https://github.com/Micosz/Cs361-Group1-Project7/issues"><img src="https://img.shields.io/badge/Project_Issues-18181B?style=for-the-badge&amp;logo=github&amp;logoColor=white" alt="Project issues"></a>
 </p>
@@ -67,6 +67,8 @@ python3 -m http.server 8000 --directory public
 เปิด [http://localhost:8000](http://localhost:8000) ใน browser; `npm run build` ตรวจว่าไฟล์หน้า Login ที่เผยแพร่มีอยู่ ส่วน static server ไม่ได้เปิด API, authentication หรือ AWS resources ในเครื่อง
 
 ## Documentation
+
+- [การย้ายระบบไป Singapore และการย้อนกลับ](docs/deployment/v4-deployment.md)
 
 - [เลือกเอกสารตามงานและเวอร์ชัน](docs/README.md)
 - [คู่มือข้อมูลและแหล่งข้อมูล](docs/data/data-guide.md)

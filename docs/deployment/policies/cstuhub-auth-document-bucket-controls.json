@@ -5,7 +5,7 @@
       "Sid": "ReadPrivateDocumentBucketPublicAccessBlock",
       "Effect": "Allow",
       "Action": "s3:GetBucketPublicAccessBlock",
-      "Resource": "arn:aws:s3:::cstuhub-private-documents-781485979426-ap-southeast-2"
+      "Resource": "arn:aws:s3:::cstuhub-private-documents-781485979426-ap-southeast-1"
     }
   ]
 }

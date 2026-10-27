@@ -9,6 +9,6 @@
       "lambda:UpdateFunctionCode",
       "lambda:PublishVersion"
     ],
-    "Resource": "arn:aws:lambda:ap-southeast-2:781485979426:function:CSTUHubAuth"
+    "Resource": "arn:aws:lambda:ap-southeast-1:781485979426:function:CSTUHubAuth"
   }]
 }
