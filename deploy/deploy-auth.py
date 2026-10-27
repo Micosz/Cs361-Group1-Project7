@@ -10,7 +10,7 @@ import subprocess
 import zipfile
 
 ACCOUNT = "781485979426"
-REGION = "ap-southeast-2"
+REGION = "ap-southeast-1"
 FUNCTION = "CSTUHubAuth"
 ARN = f"arn:aws:lambda:{REGION}:{ACCOUNT}:function:{FUNCTION}"
 
