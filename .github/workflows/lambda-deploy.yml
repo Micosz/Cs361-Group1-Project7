@@ -59,7 +59,7 @@ jobs:
       contents: read
       id-token: write
     env:
-      AWS_REGION: ap-southeast-2
+      AWS_REGION: ap-southeast-1
       AWS_PAGER: ''
       AWS_CLI_AUTO_PROMPT: 'off'
     steps:
@@ -76,7 +76,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::781485979426:role/CSTUHubGitHubAuthDeployRole
-          aws-region: ap-southeast-2
+          aws-region: ap-southeast-1
           allowed-account-ids: '781485979426'
           role-duration-seconds: 900
           retry-max-attempts: 3
