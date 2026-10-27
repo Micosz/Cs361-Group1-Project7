@@ -60,7 +60,13 @@ def build_application():
     if os.environ.get('BUSINESS_TABLE'):
         from .business.dynamo_repository import DynamoBusinessRepository
         from .documents.direct_storage import DirectDocumentStorage
-        documents = DirectDocumentStorage(boto3.client('s3', config=Config(signature_version='s3v4')),
+        document_region = os.environ['AWS_REGION']
+        # Presigned requests must use the bucket's regional host. The global
+        # S3 host can validate a new bucket against us-east-1 instead.
+        document_client = boto3.client('s3', region_name=document_region,
+            endpoint_url=f'https://s3.{document_region}.amazonaws.com',
+            config=Config(signature_version='s3v4', s3={'addressing_style': 'virtual'}))
+        documents = DirectDocumentStorage(document_client,
             os.environ['DOCUMENT_BUCKET'], enabled=os.environ.get('DOCUMENT_DIRECT_UPLOAD_ENABLED') == 'true') if os.environ.get('DOCUMENT_BUCKET') else None
         repository = DynamoBusinessRepository(boto3.client('dynamodb'), os.environ['BUSINESS_TABLE'],
             sessions, os.environ['USER_TABLE'], os.environ['SESSION_TABLE'], documents,
