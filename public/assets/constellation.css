@@ -107,37 +107,86 @@ body:has(.constellation-ready) {
     .constellation-toggle { display: none; }
 }
 
-/* Frosted rail from the selected header concept, in the compact dock footprint.
-   Keep the surface on a pseudo-element so suggestions can escape its round edge. */
+/* Compact glass header. Animate the surface separately so text never stretches
+   and the search suggestions can extend outside the rounded rail. */
 .navbar {
-    position: sticky; top: 16px; width: min(1040px, 74vw); min-height: 72px;
-    margin: 16px auto 0; padding: 10px 24px; gap: 20px;
+    position: sticky; top: max(16px, env(safe-area-inset-top));
+    width: min(1040px, 74vw); min-height: 56px;
+    margin: 16px auto 0; padding: 3px 24px; gap: 20px;
     border: 0; border-radius: 999px; background: transparent;
-    box-shadow: 0 12px 34px -19px rgb(88 39 46 / 30%);
-    isolation: isolate;
+    box-shadow: none; isolation: isolate;
 }
 .navbar::before {
-    inset: 0; border: 1px solid rgb(255 255 255 / 90%); border-radius: inherit;
-    background: rgb(255 253 251 / 78%);
-    backdrop-filter: blur(18px) saturate(120%);
-    -webkit-backdrop-filter: blur(18px) saturate(120%);
-    box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(211 184 186 / 12%);
+    inset: 0 auto 0 50%; width: 100%; transform: translateX(-50%);
+    border: 1px solid rgb(255 255 255 / 90%); border-radius: inherit;
+    background: rgb(255 253 251 / 42%);
+    backdrop-filter: blur(22px) saturate(120%);
+    -webkit-backdrop-filter: blur(22px) saturate(120%);
+    box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(211 184 186 / 12%),
+        0 12px 34px -19px rgb(88 39 46 / 30%);
+    pointer-events: none;
 }
 .navbar .logo { padding-right: 20px; border-right: 1px solid #d7cbcb; }
 .navbar .search-wrapper { max-width: none; }
-.navbar .search-container { align-items: center; border-color: transparent; background: rgb(255 255 255 / 48%); }
+.navbar .search-container {
+    align-items: center; padding: 2px; border-color: #d5d2d3; background: rgb(255 255 255 / 18%);
+    outline: none; box-shadow: 0 0 0 0 transparent;
+}
 .header-search-icon { flex: 0 0 auto; margin-left: 15px; font-size: 18px; color: #312a2d; }
 .navbar .search-container input { padding-inline: 12px; font-size: .9375rem; }
-.navbar .search-btn { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 44px; width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%; font-size: 18px; }
+.navbar .search-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto; width: auto; height: 44px; min-height: 44px;
+    padding: 0 24px; border-radius: 999px; font-size: .875rem;
+}
 .navbar .auth-buttons { padding-left: 20px; border-left: 1px solid #d7cbcb; gap: 10px; }
-.navbar .login-btn { min-height: 44px; padding-inline: 22px; background: #171b20; color: #fff; border: 1px solid #171b20; }
-.navbar .search-container:focus-within { outline: 2px solid #c3002f; outline-offset: 3px; border-color: transparent; box-shadow: none; }
+.navbar .login-btn {
+    min-height: 44px; padding-inline: 22px; background: transparent;
+    color: #b5002b; border: 1px solid #b5002b;
+}
+.navbar .search-container:focus-within {
+    outline: none; border-color: rgb(195 0 47 / 35%);
+    box-shadow: 0 0 0 3px rgb(195 0 47 / 10%);
+}
 .navbar .suggestions-dropdown { border-radius: 20px; }
+/* Keep the layout footprint fixed while the glass becomes slimmer on scroll. */
+.navbar.header-scrolled::before {
+    inset-block: 2px; background: rgb(255 253 251 / 72%);
+    box-shadow: inset 0 1px 0 #fff, 0 8px 24px -14px rgb(88 39 46 / 35%);
+}
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .navbar::before { background: #fffdfb; }
 }
+@media (prefers-reduced-motion: no-preference) {
+    .navbar::before { transition: inset 300ms ease, background-color 300ms ease, box-shadow 300ms ease; }
+    .navbar:not(.header-settled)::before {
+        animation: header-capsule-open 1350ms cubic-bezier(.65, 0, .2, 1) both;
+    }
+    .navbar:not(.header-settled) > :is(.logo, .search-wrapper, .auth-buttons) {
+        animation: header-content-enter 500ms 850ms cubic-bezier(.22, 1, .36, 1) both;
+    }
+    .navbar .search-container { transition: border-color 220ms ease, box-shadow 220ms ease; }
+    .navbar :is(.search-btn, .login-btn) {
+        transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease, color 180ms ease;
+    }
+    .navbar :is(.search-btn, .login-btn):active { transform: translateY(0) scale(.97); }
+}
+@keyframes header-capsule-open {
+    0%, 12% { width: 56px; }
+    100% { width: 100%; }
+}
+@keyframes header-content-enter {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 @media (hover: hover) and (pointer: fine) {
-    .navbar .login-btn:hover { color: #fff; background: #30363e; border-color: #30363e; }
+    .navbar .login-btn:hover { color: #fff; background: #b5002b; border-color: #b5002b; }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .navbar :is(.search-btn, .login-btn):hover {
+        transform: translateY(-2px); box-shadow: 0 5px 12px -7px rgb(110 0 26 / 55%);
+    }
+    .navbar :is(.search-btn, .login-btn):active { transform: translateY(0) scale(.97); }
 }
 @media (max-width: 1100px) {
     .navbar { width: calc(100% - 40px); padding-inline: 20px; gap: 16px; }
@@ -145,11 +194,11 @@ body:has(.constellation-ready) {
     .navbar .auth-buttons { padding-left: 16px; }
 }
 @media (max-width: 767px) {
-    .navbar { top: max(8px, env(safe-area-inset-top)); width: calc(100% - 24px); margin: 8px auto 0; padding: 12px 16px; border-radius: 28px; gap: 10px 12px; }
+    .navbar { top: max(8px, env(safe-area-inset-top)); width: calc(100% - 24px); margin: 8px auto 0; padding: 6px 16px; border-radius: 28px; gap: 8px 12px; }
     .navbar .logo, .navbar .auth-buttons { padding: 0; border: 0; }
-    .navbar .search-container input { font-size: .875rem; padding-inline: 10px; }
+    .navbar .search-container input { font-size: 1rem; padding-inline: 10px; }
     .header-search-icon { margin-left: 12px; font-size: 16px; }
-    .navbar .login-btn { padding-inline: 16px; }
+    .navbar .search-btn, .navbar .login-btn { padding-inline: 16px; }
 }
 
 /* The shared heading is a decorative copy only; real headings stay in the DOM.
