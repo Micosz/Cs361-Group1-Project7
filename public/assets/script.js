@@ -704,6 +704,7 @@ function showDetailModal() {
     const modalContent = detailModal.querySelector?.('.modal-content');
     if (modalContent) modalContent.scrollTop = 0;
     detailModal.style.display = 'flex';
+    window.CstuDetailSheet?.open();
 }
 
 async function openModal(id, type, protectedPartner = null) {
@@ -845,6 +846,7 @@ async function openModal(id, type, protectedPartner = null) {
 
 function closeModal() {
     ++modalRenderVersion;
+    window.CstuDetailSheet?.close();
     document.getElementById('detailModal').style.display = 'none';
     document.getElementById('modalDetails').querySelectorAll?.('.partner-management').forEach(node => node.remove());
 }

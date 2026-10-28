@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="assets/cinematic.css?v=1">
     <link rel="stylesheet" href="assets/opening.css?v=9">
     <link rel="stylesheet" href="assets/portal.css?v=6">
-    <link rel="stylesheet" href="assets/constellation.css?v=5">
+    <link rel="stylesheet" href="assets/constellation.css?v=7">
     <script src="assets/auth-config.js" defer></script>
     <script src="assets/auth-client.js?v=auth-5" defer></script>
     <script src="assets/work-navigation.js?v=feedback-inbox-1" defer></script>
@@ -30,7 +30,8 @@
     <link rel="stylesheet" href="assets/documents.css?v=1">
     <script src="assets/selection-fields.js?v=selection-3" defer></script>
     <script src="assets/agreement.js?v=home-workspace-17" defer></script>
-    <script src="assets/script.js?v=home-workspace-17" defer></script>
+    <script src="assets/detail-sheet.js?v=1" defer></script>
+    <script src="assets/script.js?v=detail-sheet-1" defer></script>
     <link rel="stylesheet" href="assets/role-menu.css?v=account-1">
     <link rel="stylesheet" href="assets/records.css?v=document-delete-4">
     <link rel="stylesheet" href="assets/overview.css?v=2">
@@ -44,15 +45,17 @@
     <script src="assets/feedback.js?v=feedback-3" defer></script>
     <script src="assets/feedback-inbox.js?v=1" defer></script>
     <script src="assets/overview.js?v=2" defer></script>
-    <script src="assets/records.js?v=feedback-inbox-2" defer></script>
+    <script src="assets/records.js?v=detail-sheet-1" defer></script>
     <script src="assets/role-menu.js?v=account-3" defer></script>
     <script src="assets/filter-presentation.js?v=5" defer></script>
     <script src="assets/presentation.js?v=home-workspace-16" defer></script>
     <script src="assets/opening.js?v=home-workspace-22" defer></script>
     <script src="assets/constellation.js?v=3" defer></script>
+    <script src="assets/header-motion.js?v=1" defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/entry-forms.css?v=2">
     <script src="assets/entry-forms.js?v=2" defer></script>
+    <link rel="stylesheet" href="assets/detail-sheet.css?v=1">
 </head>
 <body>
     <div class="scroll-progress" aria-hidden="true"><span></span></div>
@@ -66,7 +69,7 @@
             <div class="search-container">
                 <i class="fas fa-search header-search-icon" aria-hidden="true"></i>
                 <input type="text" id="searchInput" aria-label="ค้นหาโปรเจกต์, องค์กร, หรือกิจกรรมต่างๆ" oninput="scheduleSearch()" placeholder="ค้นหาโปรเจกต์, องค์กร, หรือกิจกรรมต่างๆ...">
-                <button class="search-btn" onclick="handleSearch()" aria-label="ค้นหา" title="ค้นหา"><i class="fas fa-search" aria-hidden="true"></i></button>
+                <button class="search-btn" onclick="handleSearch()" aria-label="ค้นหา" title="ค้นหา">Search</button>
             </div>
             <div id="searchSuggestions" class="suggestions-dropdown" style="display: none;"></div>
         </div>

@@ -140,7 +140,7 @@
                 edit.disabled = !window.CstuWork.handler('partners','edit'); actions.appendChild(edit);
                 edit.onclick = async () => {
                     edit.disabled = true; message.textContent = '';
-                    const viewport = container.closest('.modal-content');
+                    const viewport = container.closest('.detail-panel') || container.closest('.modal-content');
                     const scrollTop = viewport?.scrollTop;
                     try {
                         const session = await window.CstuAuth.refresh();
@@ -201,14 +201,17 @@
         if (!['activities','exchanges'].includes(resourceKind) || !window.CstuFeedback) return;
         const container=document.createElement('section'); $('detail-fields').appendChild(container);
         window.CstuFeedback.mount(container,record,resourceKind,identity);
+        window.CstuDetailSheet?.feedback(container);
     }
     async function openPublicActivity(record, content, trigger) {
+        window.CstuDetailSheet?.resetRecord();
         const current = ++detailRevision, page = revision;
         lastTrigger = trigger;
         $('detail-title').textContent = record.title;
         $('detail-status').textContent = '';
         $('detail-fields').replaceChildren(content);
         $('detail-actions').replaceChildren();
+        window.CstuDetailSheet?.record(record, 'activities');
         showDetailDialog();
         try {
             const fresh = await window.CstuAuth.refresh();
@@ -224,6 +227,7 @@
     async function detail(row, trigger) {
         if (kind === 'partners' && typeof window.openModal === 'function') return partnerDetail(row.id,trigger);
         if (kind === 'activities' && row.publication === 'public' && typeof window.openModal === 'function') return window.openModal(row.id,'activity');
+        window.CstuDetailSheet?.resetRecord();
         const current = ++detailRevision, page = revision;
         lastTrigger = trigger; $('detail-title').textContent = 'กำลังโหลด'; $('detail-status').textContent = '';
         $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); showDetailDialog();
@@ -268,6 +272,7 @@
             } else {
                 $('detail-fields').appendChild(actions);
             }
+            window.CstuDetailSheet?.record(record, kind);
             mountFeedback(record, kind, fresh);
         } catch (error) {
             if (current !== detailRevision || page !== revision) return;

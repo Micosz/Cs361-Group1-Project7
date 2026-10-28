@@ -41,7 +41,7 @@
         html[data-embed] input, html[data-embed] select, html[data-embed] textarea { box-sizing:border-box; max-width:100%; }
     </style>
     <link rel="stylesheet" href="assets/entry-forms.css?v=1">
-    <link rel="stylesheet" href="assets/roles.css?v=2">
+    <link rel="stylesheet" href="assets/roles.css?v=3">
     <script src="assets/entry-forms.js?v=1" defer></script>
 </head>
 <body>
@@ -119,18 +119,34 @@
                 </div>
             </div>
             <p id="role-user" class="role-user-summary"></p>
-            <fieldset id="role-choices" class="role-choices" disabled><legend>บทบาทในขอบเขตนี้ (เลือกได้หนึ่งบทบาท)</legend>
-                <label><input type="radio" name="role" value=""> ไม่มีบทบาท / ถอนสิทธิ์</label>
-                <label><input type="radio" name="role" value="student"> นักศึกษา</label>
-                <label><input type="radio" name="role" value="coordinator"> ผู้ประสานงาน</label>
-                <label><input type="radio" name="role" value="staff"> เจ้าหน้าที่</label>
-                <label><input type="radio" name="role" value="executive"> ผู้บริหาร</label>
+            <fieldset id="role-choices" class="role-choices" disabled>
+                <legend>บทบาทในขอบเขตนี้ <span class="role-choice-hint">เลือกได้หนึ่งบทบาท</span></legend>
+                <label>
+                    <input type="radio" name="role" value="" aria-labelledby="role-none-title" aria-describedby="role-none-description">
+                    <span class="role-choice-copy"><strong id="role-none-title">ไม่มีบทบาท</strong><span id="role-none-description" class="role-choice-description">ดูข้อมูลสาธารณะ ไม่มีสิทธิ์เพิ่มเติมในขอบเขตนี้</span></span>
+                </label>
+                <label>
+                    <input type="radio" name="role" value="student" aria-labelledby="role-student-title" aria-describedby="role-student-description">
+                    <span class="role-choice-copy"><strong id="role-student-title">นักศึกษา</strong><span id="role-student-description" class="role-choice-description">ดูข้อมูลที่เกี่ยวข้องกับตนเองและส่ง Feedback ตามสิทธิ์</span></span>
+                </label>
+                <label>
+                    <input type="radio" name="role" value="coordinator" aria-labelledby="role-coordinator-title" aria-describedby="role-coordinator-description">
+                    <span class="role-choice-copy"><strong id="role-coordinator-title">อาจารย์ / ผู้ประสานงาน</strong><span id="role-coordinator-description" class="role-choice-description">บันทึกและติดตามข้อมูลของงานที่รับผิดชอบ</span></span>
+                </label>
+                <label>
+                    <input type="radio" name="role" value="staff" aria-labelledby="role-staff-title" aria-describedby="role-staff-description">
+                    <span class="role-choice-copy"><strong id="role-staff-title">ผู้ช่วยดูแลข้อมูล</strong><span id="role-staff-description" class="role-choice-description">ดูแลข้อมูล เอกสาร และการเผยแพร่ภายในหลักสูตร</span></span>
+                </label>
+                <label class="role-choice-wide">
+                    <input type="radio" name="role" value="executive" aria-labelledby="role-executive-title" aria-describedby="role-executive-description">
+                    <span class="role-choice-copy"><strong id="role-executive-title">ผู้ดูแลความร่วมมือ</strong><span id="role-executive-description" class="role-choice-description">ดูภาพรวมความร่วมมือและจัดการสิทธิ์ผู้ใช้ในหลักสูตร</span></span>
+                </label>
             </fieldset>
             <p class="role-confirmation"><label><input id="confirm-identity" type="checkbox" required> ตรวจหลักฐานและยืนยันการผูกตัวตนของบัญชีนี้แล้ว</label></p>
-            <p class="role-revoke-note">เลือก “ไม่มีบทบาท / ถอนสิทธิ์” เพื่อถอนบทบาทในขอบเขตที่เลือก</p>
+            <p class="role-revoke-note">เลือก “ไม่มีบทบาท” เพื่อถอนบทบาทในขอบเขตที่เลือก โดยไม่ปิดบัญชี</p>
             <p id="role-status" class="role-status" role="status" aria-live="polite"></p>
             <div class="role-actions">
-                <button id="close-roles" type="button" class="role-cancel">ปิด</button>
+                <button id="close-roles" type="button" class="role-cancel">ยกเลิก</button>
                 <button id="save-roles" type="submit" disabled>บันทึกสิทธิ์</button>
             </div>
         </form>
