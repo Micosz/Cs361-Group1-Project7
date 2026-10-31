@@ -124,3 +124,456 @@ html:has(#detailModal[style*="display: flex"]), body:has(#detailModal[style*="di
 /* Keep record editing beside upload, above the feedback section. */
 .document-form-actions, .detail-record-actions { display:flex; flex-wrap:wrap; align-items:center; gap:.75rem; margin:.75rem 0; }
 .document-form-actions .detail-record-actions { margin:0; }
+
+
+/* Modern Internal Contacts and Relationship History UI (Issue #215) */
+.partner-contacts-section,
+.partner-history-section {
+    margin-top: 1.75rem;
+    border-top: 1px solid #ebdcd7;
+    padding-top: 1.25rem;
+}
+
+.partner-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.partner-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.partner-title-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #fdf2f4;
+    color: var(--tu-red, #c3002f);
+    flex-shrink: 0;
+}
+
+.partner-title-wrap h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.partner-count-badge {
+    font-size: 0.75rem;
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-weight: 500;
+}
+
+.partner-btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.85rem;
+    background: #ffffff;
+    color: var(--tu-red, #c3002f);
+    border: 1.5px solid #fecdd3;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.825rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.partner-btn-add:hover {
+    background: #fdf2f4;
+    border-color: var(--tu-red, #c3002f);
+}
+
+.partner-status-msg {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0.5rem 0;
+}
+.partner-status-msg:empty {
+    display: none;
+}
+
+/* Contact Cards */
+.partner-contacts-list,
+.partner-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin: 0.5rem 0;
+}
+
+.partner-contact-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    background: #ffffff;
+    border: 1px solid #e7dcd6;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 1px 3px rgba(45, 30, 35, 0.04);
+    transition: all 0.15s ease;
+}
+
+.partner-contact-card:hover {
+    border-color: #d6c6be;
+    box-shadow: 0 2px 6px rgba(45, 30, 35, 0.07);
+}
+
+.contact-card-main {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.contact-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #fff1f2;
+    color: var(--tu-red, #c3002f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    border: 1px solid #fecdd3;
+}
+
+.contact-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.contact-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.contact-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1e293b;
+}
+
+.contact-pos-badge {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 500;
+}
+
+.contact-comms-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.82rem;
+    color: #64748b;
+    flex-wrap: wrap;
+}
+
+.contact-comm-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.contact-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.btn-edit-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.65rem;
+    background: #ffffff;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-edit-sm:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #1e293b;
+}
+
+.btn-del-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.65rem;
+    background: #ffffff;
+    color: #8a7b81;
+    border: 1px solid #e0d4ce;
+    border-radius: 7px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-del-sm:hover {
+    background: #fdf2f4;
+    border-color: #f7d2d9;
+    color: var(--tu-red, #c3002f);
+}
+
+/* History Cards */
+.partner-history-card {
+    background: #ffffff;
+    border: 1px solid #e7dcd6;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    box-shadow: 0 1px 3px rgba(45, 30, 35, 0.04);
+    transition: all 0.15s ease;
+}
+
+.partner-history-card:hover {
+    border-color: #d6c6be;
+    box-shadow: 0 2px 6px rgba(45, 30, 35, 0.07);
+}
+
+.history-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.history-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.history-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #334155;
+    background: #f8fafc;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.history-kind {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+}
+
+.kind-meeting {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.kind-agreement {
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.kind-activity {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+}
+
+.kind-other {
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.history-note {
+    font-size: 0.92rem;
+    color: #334155;
+    line-height: 1.5;
+    margin-bottom: 0.4rem;
+    white-space: pre-wrap;
+}
+
+.history-ref-row {
+    margin-top: 0.4rem;
+}
+
+.history-ref-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    background: #fdf2f4;
+    color: var(--tu-red, #c3002f);
+    border: 1px solid #fedfe3;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.history-ref-pill:hover {
+    background: #fce7eb;
+    text-decoration: underline;
+}
+
+/* Editor Form Card */
+.partner-editor-card {
+    background: #faf7f5;
+    border: 1.5px solid #ded2ca;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 1rem;
+    box-shadow: 0 2px 8px rgba(45, 30, 35, 0.05);
+}
+
+.partner-editor-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.85rem;
+}
+
+.partner-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+@media (max-width: 540px) {
+    .partner-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.partner-form-grid .full-width {
+    grid-column: 1 / -1;
+}
+
+.partner-form-field label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 550;
+    color: #475569;
+    margin-bottom: 0.3rem;
+}
+
+.partner-form-field input,
+.partner-form-field select,
+.partner-form-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    font: inherit;
+    font-size: 0.875rem;
+    color: #1e293b;
+}
+
+.partner-form-field input:focus,
+.partner-form-field select:focus,
+.partner-form-field textarea:focus {
+    outline: none;
+    border-color: var(--tu-red, #c3002f);
+    box-shadow: 0 0 0 3px rgba(195, 0, 47, 0.12);
+}
+
+.partner-form-status {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0.5rem 0;
+}
+.partner-form-status:empty {
+    display: none;
+}
+
+.partner-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+}
+
+.btn-save-primary {
+    background: var(--tu-red, #c3002f);
+    color: #ffffff;
+    border: none;
+    padding: 0.55rem 1.15rem;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-save-primary:hover:not(:disabled) {
+    background: var(--tu-red-hover, #9f0026);
+}
+
+.btn-save-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-cancel-ghost {
+    background: #ffffff;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-cancel-ghost:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}

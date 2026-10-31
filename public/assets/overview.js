@@ -26,6 +26,7 @@
     };
     const counter = (container, value) => {
         const row = text('p', undefined, 'overview-breakdown-row');
+        row.dataset.status = value[0];
         const sep = text('span', ' · ', 'overview-breakdown-sep'); sep.setAttribute('aria-hidden', 'true');
         row.append(text('span', labels[value[0]] || value[0], 'overview-breakdown-label'), sep, text('strong', `${value[1]} รายการ`, 'overview-breakdown-count'));
         container.appendChild(row);
@@ -72,8 +73,8 @@
         const stakeholderType = select('ประเภท Stakeholder', [['', 'ทั้งหมด'], ...['company','university','government','research_institute','internship'].map(value => [value, labels[value]])], 'stakeholderType');
         const activityType = select('ประเภทกิจกรรม', [['', 'ทั้งหมด'], ...['academic_activity','event','research'].map(value => [value, labels[value]])], 'activityType');
         const status = select('สถานะข้อตกลง / แลกเปลี่ยน', [['', 'ทั้งหมด'], ...['draft','active','expired','terminated','ongoing','completed','cancelled'].map(value => [value, labels[value]])], 'status');
-        const startLabel = text('label', 'ตั้งแต่'), start = document.createElement('input'); start.type = 'date'; start.name = 'startDate'; start.lang = 'th-TH'; startLabel.appendChild(start);
-        const endLabel = text('label', 'ถึง'), end = document.createElement('input'); end.type = 'date'; end.name = 'endDate'; end.lang = 'th-TH'; endLabel.appendChild(end);
+        const startLabel = text('label', 'ตั้งแต่วันที่'), start = document.createElement('input'); start.type = 'date'; start.name = 'startDate'; start.lang = 'th-TH'; startLabel.appendChild(start);
+        const endLabel = text('label', 'ถึงวันที่'), end = document.createElement('input'); end.type = 'date'; end.name = 'endDate'; end.lang = 'th-TH'; endLabel.appendChild(end);
         const dateHint = text('small', 'ช่วงวันที่กรองกิจกรรม ข้อตกลง การแลกเปลี่ยน และ Feedback; ยอด Stakeholder นับตามประเภทที่เลือก', 'overview-filter-hint');
         for (const field of [scope, stakeholderType, activityType, status]) filters.appendChild(field.label);
         filters.append(startLabel, endLabel, dateHint);
@@ -104,22 +105,44 @@
             if (activeTab === 'summary') {
                 const cards = text('div', undefined, 'overview-cards');
                 const items = [
-                    ['คู่ความร่วมมือ / Stakeholder', result.stakeholders?.count],
-                    ['กิจกรรม', result.activities?.count], ['ข้อตกลง', result.agreements?.count],
-                    ['การแลกเปลี่ยน', result.exchanges?.count]
+                    ['คู่ความร่วมมือ / Stakeholder', result.stakeholders?.count, 'partner', '🏢'],
+                    ['กิจกรรม', result.activities?.count, 'activity', '🎯'],
+                    ['ข้อตกลง', result.agreements?.count, 'agreement', '📜'],
+                    ['การแลกเปลี่ยน', result.exchanges?.count, 'exchange', '🔄']
                 ];
-                if (isExecutive) items.push(['Feedback', result.feedback?.count || 0]);
-                items.push(['บันทึกผลลัพธ์แล้ว', result.outcomes?.count || 0]);
-                for (const [label, value] of items) {
-                    const card = text('article', undefined, 'overview-card'); card.append(text('span', label), text('strong', value ?? 0)); cards.appendChild(card);
+                if (isExecutive) items.push(['Feedback', result.feedback?.count || 0, 'feedback', '💬']);
+                items.push(['บันทึกผลลัพธ์แล้ว', result.outcomes?.count || 0, 'outcome', '🏆']);
+                for (const [label, value, cat, icon] of items) {
+                    const card = text('article', undefined, 'overview-card');
+                    card.dataset.category = cat;
+                    const topRow = text('div', undefined, 'overview-card-top');
+                    topRow.append(text('span', label, 'overview-card-label'), text('span', icon, 'overview-card-icon'));
+                    card.append(topRow, text('strong', value ?? 0, 'overview-card-val'));
+                    cards.appendChild(card);
                 }
                 pane.appendChild(cards);
                 const grid = text('div', undefined, 'overview-breakdowns');
                 for (const [key, title] of [['agreements','สถานะข้อตกลง'], ['exchanges','สถานะการแลกเปลี่ยน']]) {
-                    const block = section(title, 'จำนวนรายการในผลการค้นหาปัจจุบัน');
+                    const block = section(title, 'แสดงสัดส่วนสถานะตามผลการค้นหาปัจจุบัน');
                     const rows = countRows(result[key]?.statuses);
-                    if (!rows.length) block.appendChild(text('p', 'ไม่มีรายการตามเงื่อนไข', 'overview-empty'));
-                    for (const row of rows) counter(block, row);
+                    if (!rows.length) {
+                        block.appendChild(text('p', 'ไม่มีรายการตามเงื่อนไข', 'overview-empty'));
+                    } else {
+                        const total = rows.reduce((sum, r) => sum + (Number(r[1]) || 0), 0);
+                        if (total > 0) {
+                            const bar = text('div', undefined, 'overview-proportion-bar');
+                            bar.setAttribute('aria-hidden', 'true');
+                            for (const [st, count] of rows) {
+                                const pct = ((count / total) * 100).toFixed(1);
+                                const seg = text('div', undefined, `overview-bar-seg seg-${st}`);
+                                seg.style.width = `${pct}%`;
+                                seg.title = `${labels[st] || st}: ${count} รายการ (${pct}%)`;
+                                bar.appendChild(seg);
+                            }
+                            block.appendChild(bar);
+                        }
+                        for (const row of rows) counter(block, row);
+                    }
                     grid.appendChild(block);
                 }
                 pane.appendChild(grid);
