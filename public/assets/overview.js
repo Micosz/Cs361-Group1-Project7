@@ -16,6 +16,27 @@
         if (value !== undefined && value !== null) item.textContent = String(value);
         return item;
     };
+    const icon = name => {
+        const item = text('i', undefined, `fa-${name}`);
+        item.classList.add(['file-lines', 'calendar-days', 'comment-dots'].includes(name) ? 'fa-regular' : 'fa-solid');
+        item.setAttribute('aria-hidden', 'true');
+        return item;
+    };
+    const statusColors = {active:'#2eb48e', draft:'#ffc43b', expired:'#fa6488', terminated:'#af8d98',
+        ongoing:'#416bff', completed:'#12aa83', cancelled:'#8990a6'};
+    const statusOrder = {agreements:['active','draft','expired','terminated'], exchanges:['ongoing','completed','draft','cancelled']};
+    let chartLibrary;
+    function loadChartLibrary() {
+        if (window.Chart) return Promise.resolve(window.Chart);
+        if (!chartLibrary) chartLibrary = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = new URL('assets/vendor/chart.umd.min.js?v=4.5.1', location.href).href;
+            script.onload = () => resolve(window.Chart);
+            script.onerror = () => { script.remove(); chartLibrary = null; reject(Error('Chart unavailable')); };
+            document.head.appendChild(script);
+        });
+        return chartLibrary;
+    }
     const select = (labelText, options, name) => {
         const label = text('label', labelText), input = document.createElement('select');
         input.name = name;
@@ -48,7 +69,6 @@
         rows.push(['ภาพรวม', 'การแลกเปลี่ยน', data.exchanges?.count || 0]);
         rows.push(['Feedback', 'ทั้งหมด', data.feedback?.count || 0]);
         rows.push(['Feedback', 'มีข้อเสนอแนะเพื่อปรับปรุง', data.feedback?.withImprovement || 0]);
-        rows.push(['ผลลัพธ์', 'รายการที่บันทึกผลลัพธ์', data.outcomes?.count || 0]);
         for (const [type, count] of countRows(data.stakeholders?.byType)) rows.push(['Stakeholder', labels[type] || type, count]);
         for (const [type, count] of countRows(data.activities?.byType)) rows.push(['กิจกรรม', labels[type] || type, count]);
         for (const [status, count] of countRows(data.agreements?.statuses)) rows.push(['สถานะข้อตกลง', labels[status] || status, count]);
@@ -60,6 +80,7 @@
         document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
     function render(container, session) {
+        container.cstuOverviewDispose?.();
         const role = window.CstuWork.roles(session).includes('executive') ? 'executive' : 'staff';
         const isExecutive = role === 'executive';
         const root = text('div', undefined, 'overview-dashboard');
@@ -86,8 +107,11 @@
         const statusText = text('p', 'กำลังโหลดข้อมูลสรุป', 'overview-status'); statusText.setAttribute('role', 'status');
         const tabs = text('nav', undefined, 'overview-tabs'); tabs.setAttribute('aria-label', 'ส่วนของภาพรวม'); tabs.setAttribute('role', 'tablist');
         const tabButtons = new Map();
-        const tabList = [['summary', 'สรุป'], ...(isExecutive ? [['stakeholders', 'Stakeholder']] : []), ['feedback', 'Feedback'], ['outcomes', 'ผลลัพธ์']];
+        const tabList = [['summary', 'สรุป'], ...(isExecutive ? [['stakeholders', 'Stakeholder']] : []), ['feedback', 'Feedback']];
         let activeTab = 'summary', result = null, requestNumber = 0;
+        let charts = [], chartGeneration = 0, observer;
+        const clearCharts = () => { chartGeneration++; charts.forEach(chart => chart.destroy()); charts = []; };
+        container.cstuOverviewDispose = () => { requestNumber++; clearCharts(); observer?.disconnect(); };
         const pane = text('div', undefined, 'overview-tab-content'); pane.setAttribute('role', 'tabpanel');
         const setTab = key => {
             activeTab = key;
@@ -101,49 +125,82 @@
             button.onclick = () => setTab(key); tabButtons.set(key, button); tabs.appendChild(button);
         }
         function drawPane() {
+            clearCharts();
             pane.replaceChildren(); if (!result) return;
             if (activeTab === 'summary') {
-                const cards = text('div', undefined, 'overview-cards');
-                const items = [
-                    ['คู่ความร่วมมือ / Stakeholder', result.stakeholders?.count, 'partner', '🏢'],
-                    ['กิจกรรม', result.activities?.count, 'activity', '🎯'],
-                    ['ข้อตกลง', result.agreements?.count, 'agreement', '📜'],
-                    ['การแลกเปลี่ยน', result.exchanges?.count, 'exchange', '🔄']
+                const summary = text('section', undefined, 'overview-summary');
+                summary.setAttribute('aria-label', 'สรุปจำนวนความร่วมมือ');
+                const art = document.createElement('img'); art.src = 'assets/overview-orbit.webp';
+                art.alt = ''; art.className = 'overview-summary-art'; art.setAttribute('aria-hidden', 'true');
+                const heading = text('div', undefined, 'overview-summary-heading');
+                heading.append(text('h3', 'ภาพรวมความร่วมมือ'), text('p', 'ในขอบเขตที่คุณมีสิทธิ์'));
+                summary.append(art, heading);
+                const groups = [
+                    [['คู่ความร่วมมือ / Stakeholder', result.stakeholders?.count, 'users'], ['กิจกรรม', result.activities?.count, 'calendar-days']],
+                    [['ข้อตกลง', result.agreements?.count, 'file-lines'], ['การแลกเปลี่ยน', result.exchanges?.count, 'arrow-right-arrow-left']]
                 ];
-                if (isExecutive) items.push(['Feedback', result.feedback?.count || 0, 'feedback', '💬']);
-                items.push(['บันทึกผลลัพธ์แล้ว', result.outcomes?.count || 0, 'outcome', '🏆']);
-                for (const [label, value, cat, icon] of items) {
-                    const card = text('article', undefined, 'overview-card');
-                    card.dataset.category = cat;
-                    const topRow = text('div', undefined, 'overview-card-top');
-                    topRow.append(text('span', label, 'overview-card-label'), text('span', icon, 'overview-card-icon'));
-                    card.append(topRow, text('strong', value ?? 0, 'overview-card-val'));
-                    cards.appendChild(card);
+                if (isExecutive) groups.push([['Feedback', result.feedback?.count, 'comment-dots']]);
+                summary.dataset.groups = groups.length;
+                for (const items of groups) {
+                    const group = text('div', undefined, 'overview-metric-group');
+                    for (const [label, value, symbol] of items) {
+                        const metric = text('div', undefined, 'overview-metric');
+                        const badge = text('span', undefined, 'overview-metric-icon'); badge.appendChild(icon(symbol));
+                        metric.append(badge, text('span', label, 'overview-metric-label'), text('strong', value ?? 0, 'overview-metric-value'));
+                        group.appendChild(metric);
+                    }
+                    summary.appendChild(group);
                 }
-                pane.appendChild(cards);
+                pane.appendChild(summary);
                 const grid = text('div', undefined, 'overview-breakdowns');
                 for (const [key, title] of [['agreements','สถานะข้อตกลง'], ['exchanges','สถานะการแลกเปลี่ยน']]) {
-                    const block = section(title, 'แสดงสัดส่วนสถานะตามผลการค้นหาปัจจุบัน');
-                    const rows = countRows(result[key]?.statuses);
-                    if (!rows.length) {
-                        block.appendChild(text('p', 'ไม่มีรายการตามเงื่อนไข', 'overview-empty'));
-                    } else {
-                        const total = rows.reduce((sum, r) => sum + (Number(r[1]) || 0), 0);
-                        if (total > 0) {
-                            const bar = text('div', undefined, 'overview-proportion-bar');
-                            bar.setAttribute('aria-hidden', 'true');
-                            for (const [st, count] of rows) {
-                                const pct = ((count / total) * 100).toFixed(1);
-                                const seg = text('div', undefined, `overview-bar-seg seg-${st}`);
-                                seg.style.width = `${pct}%`;
-                                seg.title = `${labels[st] || st}: ${count} รายการ (${pct}%)`;
-                                bar.appendChild(seg);
-                            }
-                            block.appendChild(bar);
-                        }
-                        for (const row of rows) counter(block, row);
+                    const block = text('section', undefined, 'overview-panel overview-status-panel'); block.dataset.kind = key;
+                    const values = result[key]?.statuses || {};
+                    const order = [...statusOrder[key], ...Object.keys(values).filter(st => !statusOrder[key].includes(st)).sort()];
+                    const rows = order.map(st => [st, Math.max(0, Number(values[st]) || 0)]);
+                    const total = rows.reduce((sum, row) => sum + row[1], 0);
+                    const header = text('div', undefined, 'overview-panel-heading');
+                    const badge = text('span', undefined, 'overview-panel-icon'); badge.appendChild(icon(key === 'agreements' ? 'file-lines' : 'arrow-right-arrow-left'));
+                    const copy = text('div', undefined, 'overview-panel-title');
+                    copy.append(text('h3', title), text('p', 'จำนวนรายการตามสถานะปัจจุบัน', 'overview-muted'));
+                    header.append(badge, copy, text('span', `ทั้งหมด ${total} รายการ`, 'overview-panel-total'));
+                    const body = text('div', undefined, 'overview-status-body');
+                    const donut = text('div', undefined, 'overview-donut');
+                    const canvas = document.createElement('canvas'); canvas.setAttribute('aria-hidden', 'true');
+                    const center = text('div', undefined, 'overview-donut-label');
+                    const centerLabel = text('span', undefined);
+                    centerLabel.append(text('span', key === 'agreements' ? 'ข้อตกลง' : 'การแลกเปลี่ยน'), document.createElement('br'), text('span', 'ทั้งหมด'));
+                    center.append(text('strong', total), centerLabel);
+                    donut.append(canvas, center);
+                    const legend = text('div', undefined, 'overview-status-legend');
+                    for (const [st, count] of rows) {
+                        const row = text('p', undefined, 'overview-legend-row');
+                        const dot = text('span', undefined, 'overview-legend-dot'); dot.style.backgroundColor = statusColors[st] || '#8990a6'; dot.setAttribute('aria-hidden', 'true');
+                        row.append(dot, text('span', labels[st] || st), text('strong', count)); legend.appendChild(row);
                     }
+                    body.append(donut, legend); block.append(header, body);
+                    if (!total) block.appendChild(text('p', 'ไม่มีรายการตามเงื่อนไข', 'overview-chart-note'));
                     grid.appendChild(block);
+                    const generation = chartGeneration;
+                    // Loading the chart must never prevent access to the text summary.
+                    if (typeof canvas.getContext === 'function') loadChartLibrary().then(Chart => {
+                        if (generation !== chartGeneration || !canvas.isConnected) return;
+                        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+                        charts.push(new Chart(canvas, {
+                            type: 'doughnut',
+                            data: {labels: total ? rows.map(([st]) => labels[st] || st) : ['ไม่มีรายการ'], datasets: [{
+                                data: total ? rows.map(([,count]) => count) : [1],
+                                backgroundColor: total ? rows.map(([st]) => statusColors[st] || '#8990a6') : ['#ede9e7'],
+                                borderWidth: total ? 1 : 0, borderColor: '#ffffff', hoverOffset: total ? 3 : 0
+                            }]},
+                            options: {responsive: true, maintainAspectRatio: false, cutout: '66%',
+                                animation: reduced ? false : {duration: 650},
+                                plugins: {legend: {display: false}, tooltip: {enabled: total > 0}},
+                                layout: {padding: 4}}
+                        }));
+                    }).catch(() => {
+                        if (generation === chartGeneration && canvas.isConnected) block.appendChild(text('p', 'แสดงจำนวนแต่ละสถานะด้านข้างแทนกราฟ', 'overview-chart-note'));
+                    });
                 }
                 pane.appendChild(grid);
             } else if (activeTab === 'stakeholders') {
@@ -167,18 +224,6 @@
                 if (!list.children.length) block.appendChild(text('p', 'ยังไม่มี Feedback ในข้อมูลที่ตรงกับเงื่อนไข', 'overview-empty'));
                 else block.appendChild(list);
                 pane.appendChild(block);
-            } else {
-                const block = section('ผลลัพธ์ของกิจกรรมและโครงการแลกเปลี่ยน', 'สรุปจากช่อง “ผลลัพธ์ที่เกิดขึ้น” ที่ผู้รับผิดชอบบันทึกไว้');
-                block.append(text('p', `บันทึกผลลัพธ์แล้ว ${result.outcomes?.count || 0} รายการ · กิจกรรม ${result.activities?.outcomesRecorded || 0} / ${result.activities?.count || 0} · แลกเปลี่ยน ${result.exchanges?.outcomesRecorded || 0} / ${result.exchanges?.count || 0}`, 'overview-highlight'));
-                const list = text('ol', undefined, 'overview-latest-list');
-                for (const item of result.outcomes?.records || []) {
-                    const li = document.createElement('li');
-                    li.append(text('p', `${item.date || 'ไม่ระบุวันที่'} · ${labels[item.recordType] || item.recordType}: ${item.title || 'ไม่มีชื่อ'}`, 'overview-muted'));
-                    li.append(text('p', item.summary)); list.appendChild(li);
-                }
-                if (!list.children.length) block.appendChild(text('p', 'ยังไม่มีการบันทึกผลลัพธ์ในรายการที่คุณมีสิทธิ์ดู', 'overview-empty'));
-                else block.appendChild(list);
-                pane.appendChild(block);
             }
         }
         async function load() {
@@ -189,12 +234,12 @@
                 const response = await window.CstuAuth.request('/overview' + (query.size ? '?' + query.toString() : ''));
                 if (current !== requestNumber) return;
                 result = response?.data;
-                if (!result || result.role !== role || !result.stakeholders || !result.feedback || !result.outcomes) throw Error('ข้อมูลสรุปไม่ครบ');
+                if (!result || result.role !== role || !result.stakeholders || !result.activities || !result.agreements || !result.exchanges || !result.feedback) throw Error('ข้อมูลสรุปไม่ครบ');
                 drawPane(); statusText.dataset.state = 'ready'; statusText.textContent = 'แสดงเฉพาะข้อมูลในขอบเขตที่คุณมีสิทธิ์'; download.disabled = false;
             } catch (error) {
                 if (current !== requestNumber) return;
                 if (error.status === 401) { location.replace('login.html'); return; }
-                result = null; pane.replaceChildren(text('p', error.status === 403 || error.status === 404
+                clearCharts(); result = null; pane.replaceChildren(text('p', error.status === 403 || error.status === 404
                     ? 'คุณไม่มีสิทธิ์ดูข้อมูลตามเงื่อนไขนี้' : 'โหลดข้อมูลสรุปไม่สำเร็จ กรุณาลองใหม่', 'overview-empty'));
                 statusText.dataset.state = 'error'; statusText.textContent = 'ไม่สามารถโหลดภาพรวมได้';
             }
@@ -204,6 +249,10 @@
         download.onclick = () => { if (result) exportCsv(result); };
         root.append(intro, filters, statusText, tabs, pane);
         container.replaceChildren(root);
+        if (typeof MutationObserver !== 'undefined') {
+            observer = new MutationObserver(() => { if (!root.isConnected) container.cstuOverviewDispose?.(); });
+            observer.observe(container, {childList: true});
+        }
         setTab('summary'); load();
     }
     window.CstuOverview = {render};
