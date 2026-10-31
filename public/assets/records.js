@@ -224,24 +224,24 @@
             mountFeedback(latest, 'activities', fresh);
         } catch { /* A public article stays readable when management is unavailable. */ }
     }
-    async function detail(row, trigger) {
-        if (kind === 'partners' && typeof window.openModal === 'function') return partnerDetail(row.id,trigger);
-        if (kind === 'activities' && row.publication === 'public' && typeof window.openModal === 'function') return window.openModal(row.id,'activity');
+    async function detail(row, trigger, resourceKind = resourceKind) {
+        if (resourceKind === 'partners' && typeof window.openModal === 'function') return partnerDetail(row.id,trigger);
+        if (resourceKind === 'activities' && row.publication === 'public' && typeof window.openModal === 'function') return window.openModal(row.id,'activity');
         window.CstuDetailSheet?.resetRecord();
         const current = ++detailRevision, page = revision;
         lastTrigger = trigger; $('detail-title').textContent = 'กำลังโหลด'; $('detail-status').textContent = '';
         $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); showDetailDialog();
         try {
             const fresh = await window.CstuAuth.refresh();
-            if (!fresh?.user && kind !== 'agreements') { redirectLogin(); return; }
-            const prefix = publicAgreements(kind, fresh) ? '/public/agreements' : '/'+kind;
+            if (!fresh?.user && resourceKind !== 'agreements') { redirectLogin(); return; }
+            const prefix = publicAgreements(resourceKind, fresh) ? '/public/agreements' : '/'+resourceKind;
             const result = await window.CstuAuth.request(prefix + '/' + encodeURIComponent(row.id));
             if (current !== detailRevision || page !== revision || !dialog.open) return;
             session = fresh;
             const record = result.data;
             if (!record || record.id !== row.id || typeof record !== 'object') throw Error('INVALID_DETAIL');
             $('detail-title').textContent = record.name || record.title || 'รายละเอียด';
-            if (kind === 'activities') {
+            if (resourceKind === 'activities') {
                 $('detail-fields').appendChild(window.createActivityDetailContent({...record,businessRecord:true}));
                 if (record.outcomeSummary) {
                     const outcome = document.createElement('section'), heading = document.createElement('h3'), text = document.createElement('p');
@@ -255,30 +255,36 @@
                 dt.textContent = label; dd.textContent = record[field]; $('detail-fields').append(dt,dd);
             }
             }
-            if (kind === 'partners' && window.PartnerContacts) {
+            if (resourceKind === 'partners' && window.PartnerContacts) {
                 const contacts = document.createElement('section'); $('detail-fields').appendChild(contacts);
                 window.PartnerContacts.mount(contacts,record,fresh);
             }
-            if (kind === 'partners' && window.PartnerHistory) {
+            if (resourceKind === 'partners' && window.PartnerHistory) {
                 const history = document.createElement('section'); $('detail-fields').appendChild(history);
                 window.PartnerHistory.mount(history, record, fresh);
             }
             const actions = document.createElement('div'); actions.className = 'detail-record-actions';
-            mountDetailActions(fresh, record, kind, current, page, actions);
-            if (['agreements','exchanges'].includes(kind) && window.DocumentComponent
-                    && !(kind === 'agreements' && !record.scopeId)) {
+            mountDetailActions(fresh, record, resourceKind, current, page, actions);
+            if (['agreements','exchanges'].includes(resourceKind) && window.DocumentComponent
+                    && !(resourceKind === 'agreements' && !record.scopeId)) {
                 const docs = document.createElement('section'); $('detail-fields').appendChild(docs);
-                window.DocumentComponent.mount(docs, kind === 'agreements' ? 'agreement' : 'exchange', record, {actions});
+                window.DocumentComponent.mount(docs, resourceKind === 'agreements' ? 'agreement' : 'exchange', record, {actions});
             } else {
                 $('detail-fields').appendChild(actions);
             }
-            window.CstuDetailSheet?.record(record, kind);
-            mountFeedback(record, kind, fresh);
+            window.CstuDetailSheet?.record(record, resourceKind);
+            mountFeedback(record, resourceKind, fresh);
         } catch (error) {
             if (current !== detailRevision || page !== revision) return;
             $('detail-title').textContent = 'รายละเอียด'; $('detail-status').textContent = errorMessage(error);
             if (error.status === 401) redirectLogin();
         }
+    }
+    // Read a related record in place (e.g. from the Feedback Inbox) without changing the current view.
+    async function openRelated(resourceKind, id, trigger = null) {
+        if (!['activities','exchanges'].includes(resourceKind) || typeof id !== 'string' || !id) return false;
+        await detail({id}, trigger, resourceKind);
+        return true;
     }
     // Share the public card grid while keeping protected reads and actions authorized.
     function renderPartnerCards(container = $('collaboratorGrid')) {
@@ -508,7 +514,7 @@
         roleFrame.remove(); roleFrame = null;
         dialog.close(); lastTrigger?.focus();
     });
-    window.CstuRecords = {open, filter:browseFilter, renderPartnerCards, renderEventCards, attachPartnerManagement, openPublicActivity, closeDetail};
+    window.CstuRecords = {open, openRelated, filter:browseFilter, renderPartnerCards, renderEventCards, attachPartnerManagement, openPublicActivity, closeDetail};
     $('tabExchange').addEventListener('click', () => open('exchanges'));
     function browseFilter(detail) {
         if (typeof detail?.keyword === 'string') keyword = detail.keyword;
@@ -525,7 +531,7 @@
     $('tabCollab').addEventListener('click', () => open('partners'));
     $('tabEvent').addEventListener('click', () => open(eventKind));
     document.addEventListener('click', event => {
-        const link = event.target.closest('a[href]'); if (!link || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        const link = event.target.closest('a[href]'); if (!link || event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         const url = new URL(link.href, location.href);
         if (url.origin !== location.origin || !/\/(index|records)\.html$/.test(url.pathname)) return;
         if (url.searchParams.get('view') === 'roles') {

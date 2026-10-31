@@ -69,7 +69,15 @@
                     card.appendChild(el('p',row.comment||''));
                     if(row.improvement) card.appendChild(el('p','สิ่งที่ควรปรับปรุง: '+row.improvement,'feedback-inbox-improvement'));
                     const link=el('a','เปิดงานที่เกี่ยวข้อง');
-                    link.href=`index.html?kind=${row.parentType==='activity'?'activities':'exchanges'}&id=${encodeURIComponent(row.parentId)}#board-section`;
+                    const relatedKind=row.parentType==='activity'?'activities':'exchanges';
+                    link.href=`index.html?kind=${relatedKind}&id=${encodeURIComponent(row.parentId)}#board-section`;
+                    // Read the related work in a dialog so the inbox, filters and scroll position stay in place.
+                    // Modified clicks keep the normal link behaviour (e.g. open in a new tab).
+                    link.onclick=event=>{
+                        if(event.button||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||!window.CstuRecords?.openRelated)return;
+                        event.preventDefault();
+                        window.CstuRecords.openRelated(relatedKind,row.parentId,link);
+                    };
                     card.appendChild(link); list.appendChild(card);
                 }
             };

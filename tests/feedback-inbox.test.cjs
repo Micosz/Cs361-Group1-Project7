@@ -205,6 +205,7 @@ function createPortalHarness({ reducedMotion = false } = {}) {
         }
     ];
 
+    const requestedPaths = [];
     const docListeners = {};
     const winListeners = {};
     const documentObj = {
@@ -225,15 +226,17 @@ function createPortalHarness({ reducedMotion = false } = {}) {
         },
         querySelectorAll: () => [],
         addEventListener(type, fn) { (docListeners[type] ??= []).push(fn); },
-        clickLink(linkNode) {
+        clickLink(linkNode, init = {}) {
             const event = {
                 type: 'click',
                 target: linkNode,
                 button: 0,
                 detail: 1,
                 defaultPrevented: false,
-                preventDefault() { this.defaultPrevented = true; }
+                preventDefault() { this.defaultPrevented = true; },
+                ...init
             };
+            if (typeof linkNode.onclick === 'function') linkNode.onclick(event);
             (docListeners.click || []).forEach(fn => fn(event));
             return event;
         }
@@ -285,6 +288,7 @@ function createPortalHarness({ reducedMotion = false } = {}) {
         requestAnimationFrame: fn => { fn(); return 1; },
         cancelAnimationFrame() {},
         createBrowseCard: row => makeNode('article', row.id),
+        createActivityDetailContent: record => Object.assign(makeNode('section'), { textContent: record.summary || '' }),
         closeModal() {}
     };
 
@@ -311,6 +315,10 @@ function createPortalHarness({ reducedMotion = false } = {}) {
         fetch: async url => {
             if (String(url).startsWith('/api/auth/session')) {
                 return { ok: true, status: 200, text: async () => JSON.stringify(session), headers: { get: () => 'application/json' } };
+            }
+            if (String(url).startsWith('/api/activities/ACT-A02')) {
+                requestedPaths.push(String(url));
+                return { ok: true, status: 200, text: async () => JSON.stringify({ data: { id: 'ACT-A02', entityType: 'activity', title: 'ACT-A02 — Internship', type: 'event', summary: 'ฝึกงานภาคฤดูร้อน', scopeId: 'cs-demo', publication: 'public', responsibleUserIds: [], version: 1 } }), headers: { get: () => 'application/json' } };
             }
             if (String(url).startsWith('/api/feedback')) {
                 return { ok: true, status: 200, text: async () => JSON.stringify({ data: feedbackRows, count: 1, page: { nextCursor: null } }), headers: { get: () => 'application/json' } };
@@ -342,7 +350,7 @@ function createPortalHarness({ reducedMotion = false } = {}) {
     vm.runInContext(recordsSource, context);
     vm.runInContext(roleMenuSource, context);
 
-    return { context, windowObj, documentObj, elements, getOrCreate, boardScene, boardEvents, scrollCalls };
+    return { context, windowObj, documentObj, elements, getOrCreate, boardScene, boardEvents, scrollCalls, requestedPaths };
 }
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 25));
@@ -441,3 +449,45 @@ test('Executive reopening Menu and opening Role Manager from Feedback Inbox pres
     assert.equal(h.boardEvents.length, 0, 'openRoles() must not trigger hero scroll while in Feedback Inbox');
 });
 
+test('opening related work from Feedback Inbox reads it in place without leaving the inbox', async () => {
+    const h = createPortalHarness();
+    await flush();
+    const menuTrigger = h.getOrCreate('authNavButtons').querySelector('button');
+    await menuTrigger.onclick({ detail: 1 });
+    const feedbackLink = h.getOrCreate('role-menu-links').children.find(a => a.children[0]?.textContent === 'รวม Feedback');
+    h.documentObj.clickLink(feedbackLink);
+    await flush();
+    assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true);
+
+    const list = h.getOrCreate('records-content').children[2];
+    const card = list.children[0];
+    const related = card.children.find(c => c.tagName === 'A');
+    assert.equal(related.textContent, 'เปิดงานที่เกี่ยวข้อง');
+    assert.match(related.href, /kind=activities&id=ACT-A02/, 'href stays as a fallback for open-in-new-tab');
+
+    // Plain click: read in place; the bubbling document handler must not navigate away.
+    h.boardEvents.length = 0;
+    const click = h.documentObj.clickLink(related);
+    assert.equal(click.defaultPrevented, true);
+    await flush();
+
+    assert.equal(h.getOrCreate('record-detail').open, true, 'Related work opens in the detail dialog');
+    assert.equal(h.getOrCreate('detail-title').textContent, 'ACT-A02 — Internship');
+    assert.ok(h.requestedPaths.some(path => path.startsWith('/api/activities/ACT-A02')), 'Uses the protected activity API');
+    assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true, 'Feedback Inbox view is preserved');
+    assert.equal(h.getOrCreate('records-title').textContent, 'รวม Feedback');
+    assert.equal(h.getOrCreate('records-content').children.length, 3, 'Inbox toolbar, status and list stay rendered');
+    assert.equal(h.boardEvents.length, 0, 'Must not scroll back to the home board');
+
+    // Closing returns to the same inbox with focus on the link that opened it.
+    const before = related.focused || 0;
+    h.getOrCreate('record-detail').close();
+    assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true);
+    assert.equal(h.getOrCreate('records-content').children.length, 3);
+    assert.equal(related.focused, before + 1);
+
+    // Modified clicks keep normal link behaviour (open in new tab).
+    const ctrl = { button: 0, ctrlKey: true, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } };
+    related.onclick(ctrl);
+    assert.equal(ctrl.defaultPrevented, false);
+});
