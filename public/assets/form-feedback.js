@@ -54,11 +54,11 @@
         }
     }
     async function mount(container, parent, kind, session) {
-        if (!['partners', 'activities', 'exchanges'].includes(kind) || !window.CstuWork.canEdit(session, parent)) return false;
+        if (!['partners', 'activities', 'exchanges'].includes(kind) || !window.CstuWork.roles(session, parent.scopeId).some(role => ['coordinator','staff','executive'].includes(role))) return false;
         container.className = 'form-feedback';
         const top = node('div', 'form-feedback-heading');
         const intro = node('div'); intro.append(node('h3', '', 'ผลตอบรับจากแบบฟอร์ม'), node('p', 'form-muted', 'ข้อมูลภายในของรายการนี้'));
-        const add = button('นำเข้าแบบฟอร์ม', 'form-primary', 'plus'); top.append(intro, add);
+        const add = button('นำเข้าแบบฟอร์ม', 'form-primary', 'plus'); add.hidden = true; top.append(intro, add);
         const status = node('p', 'form-status'); status.setAttribute('role', 'status');
         const editor = node('div'), list = node('div', 'form-batches');
         container.append(top, status, editor, list);
@@ -76,7 +76,7 @@
                     result.data.forEach(row => list.append(batch(row))); total += result.data.length;
                     cursor = result.page.nextCursor;
                 } while (cursor);
-                status.textContent = total ? '' : 'ยังไม่มีผลตอบรับจากแบบฟอร์ม นำเข้าไฟล์เพื่อเริ่มรวบรวมคำตอบ';
+                status.textContent = total ? '' : 'ยังไม่มีผลตอบรับจากแบบฟอร์ม';
             } catch (error) {
                 if (!alive() || current !== revision) return;
                 list.replaceChildren(); status.textContent = errorText(error);
@@ -247,5 +247,5 @@
     }
     // Remove internal response DOM immediately on logout/account switch.
     window.addEventListener('authchange', () => document.querySelectorAll('.form-feedback').forEach(el => el.replaceChildren()));
-    window.CstuFormFeedback = {mount};
+    window.CstuFormFeedback = {mount, responseList};
 })();

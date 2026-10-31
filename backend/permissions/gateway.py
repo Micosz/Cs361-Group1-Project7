@@ -55,8 +55,8 @@ def route(event):
         return 'document', parts[1], None, None, False, mine
     if len(parts) == 3 and parts[0] == 'documents' and parts[2] == 'content':
         return 'document', parts[1], None, None, True, mine
-    if parts == ['feedback']:
-        return 'feedback', None, None, None, 'inbox', False
+    if parts in (['feedback'], ['form-feedback']):
+        return ('feedback' if parts[0] == 'feedback' else 'formFeedback'), None, None, None, 'inbox', False
     if not parts or parts[0] not in COLLECTIONS:
         raise AuthError('NOT_FOUND', 404)
     kind = COLLECTIONS[parts[0]]
@@ -139,9 +139,13 @@ class PermissionGateway:
                 raise AuthError('METHOD_NOT_ALLOWED', 405)
             context = require_session(event, self.service)
             require_action(context, kind, action)
-            if special == 'inbox' and not any(g['role'] in {'staff', 'executive'}
+            if special == 'inbox' and not any(g['role'] in {'coordinator', 'staff', 'executive'}
                                              for g in context.user.permissions()[0]):
                 raise AuthError('NOT_FOUND', 404)
+            if special == 'inbox':
+                internal_grants = tuple(g for g in context.user.grants
+                                        if g.get('role') in {'coordinator', 'staff', 'executive'})
+                context = replace(context, user=replace(context.user, grants=internal_grants, capabilities=()))
             if mine:
                 student_grants = tuple(g for g in context.user.grants
                                        if g.get('role') == 'student')
@@ -153,7 +157,12 @@ class PermissionGateway:
             parent = self.repository.get(parent_kind, parent_key) if parent_kind else None
             record = self.repository.get(kind, key) if key else None
             if parent_kind:
-                require_record(context, parent_kind, 'read', parent)
+                if kind in {'feedback', 'formFeedback'} and action == 'read':
+                    candidate = record or {'entityType': kind, 'scopeId': (parent or {}).get('scopeId'),
+                                           'parentType': parent_kind, 'parentId': parent_key}
+                    require_record(context, kind, 'read', candidate, parent)
+                else:
+                    require_record(context, parent_kind, 'read', parent)
             if key:
                 if kind == 'document' and parent is None:
                     parent = self._parent(record, kind)
@@ -169,7 +178,7 @@ class PermissionGateway:
                     scoped = tuple(g for g in context.user.grants if g.get('scopeId') == scope)
                     context = replace(context, user=replace(context.user, grants=scoped, capabilities=()))
                     require_action(context, kind, 'read')
-                    if special == 'inbox' and not any(g['role'] in {'staff', 'executive'}
+                    if special == 'inbox' and not any(g['role'] in {'coordinator', 'staff', 'executive'}
                                                      for g in context.user.permissions()[0]):
                         raise AuthError('NOT_FOUND', 404)
                 if special is True:

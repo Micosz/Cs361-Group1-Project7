@@ -22,7 +22,7 @@ def page(rows, event, service, kind=None):
         supported.add('status')
     if kind in {'activity', 'agreement', 'exchange'}:
         supported.update({'startDate', 'endDate'})
-    if kind == 'feedback':
+    if kind in {'feedback', 'formFeedback'}:
         supported.add('parentType')
         if event.get('rawPath', '').startswith('/api/public/'):
             supported.add('respondentType')
@@ -70,9 +70,9 @@ def page(rows, event, service, kind=None):
     limit = int(raw_limit)
     needle = q.strip().casefold()
     def searchable(row):
-        if kind == 'feedback':
+        if kind in {'feedback', 'formFeedback'}:
             return ' '.join(str(row.get(field, '')) for field in
-                            ('comment', 'improvement', 'sourceType', 'parentTitle')).casefold()
+                            ('comment', 'improvement', 'sourceType', 'parentTitle', 'formName', 'importedByName')).casefold()
         return str(row.get('name', row.get('title', ''))).casefold()
     rows = sorted((r for r in rows if needle in searchable(r)),
                   key=lambda r: r['id'])
