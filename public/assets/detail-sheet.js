@@ -104,16 +104,16 @@
         const meta = node('p', 'detail-record-meta', [data.location, window.CstuWork?.kinds[kind]?.label].filter(Boolean).join(' · '));
         recordState.sidebar.append(meta);
     }
-    function feedback(container) {
-        if (!recordState || !container.classList.contains('feedback-section')) return;
-        recordState.comments.append(container); recordState.buttons[1].hidden = false;
-        const state = recordState;
+    function feedback(container, isPartner = false) {
+        const state = isPartner ? legacyState : recordState;
+        if (!state || !container.classList.contains('feedback-section')) return;
+        state.comments.append(container); state.buttons[1].hidden = false;
         const update = () => {
-            const count = container.querySelector('ol')?.children.length || 0;
+            const count = state.comments.querySelectorAll('ol > li').length;
             state.buttons[1].textContent = 'ความคิดเห็น' + (count ? ' (' + count + ')' : '');
         };
         state.observer?.disconnect(); state.observer = new MutationObserver(update);
-        state.observer.observe(container, {childList:true, subtree:true}); update();
+        state.observer.observe(state.comments, {childList:true, subtree:true}); update();
     }
     dialog?.addEventListener('close', resetRecord);
     window.CstuDetailSheet = {
@@ -126,6 +126,11 @@
         open() {
             if (!legacyState) return;
             returnFocus = document.activeElement;
+            legacyState.observer?.disconnect();
+            legacyState.comments.replaceChildren(); legacyState.buttons[1].hidden = true;
+            legacyState.buttons[1].textContent = 'ความคิดเห็น';
+            document.getElementById('modalDetails').querySelectorAll('.feedback-section')
+                .forEach(container => feedback(container, true));
             legacyState.forms.replaceChildren(); legacyState.buttons[2].hidden = true;
             legacyState.sidebar.querySelector('.detail-short-name')?.remove();
             const name = legacyState.title.textContent;
@@ -139,6 +144,8 @@
             legacy.focus({preventScroll:true});
         },
         close() {
+            legacyState?.observer?.disconnect();
+            legacyState?.comments.replaceChildren();
             if (returnFocus?.isConnected && legacy.contains(document.activeElement)) returnFocus.focus({preventScroll:true});
             returnFocus = null;
         }
