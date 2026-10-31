@@ -24,6 +24,9 @@ class AuthApplication:
                 return self.public_agreements(event)
             if path == '/api/public/records':
                 return self.public_catalog(event)
+            reaction = re.fullmatch(r'/api/public/(partners|activities)/([^/]+)/feedback/([^/]+)/reaction', path)
+            if reaction:
+                return self.public_reaction(event, *reaction.groups())
             public_feedback = re.fullmatch(r'/api/public/(partners|activities)/([^/]+)/feedback', path)
             if public_feedback:
                 return self.public_feedback(event, public_feedback[1], public_feedback[2])
@@ -83,12 +86,27 @@ class AuthApplication:
         method = event.get('requestContext', {}).get('http', {}).get('method')
         if method == 'GET':
             from .permissions.listing import page
-            if set(event.get('queryStringParameters') or {}) - {'limit', 'cursor'}:
+            if set(event.get('queryStringParameters') or {}) - {'limit', 'cursor', 'respondentType'}:
                 raise AuthError('INVALID_QUERY', 422)
             if not self.repository or not hasattr(self.repository, 'public_feedback'):
                 raise AuthError('PERMISSION_UNAVAILABLE', 503)
             rows = self.repository.public_feedback(kind, key)
+            query = event.get('queryStringParameters') or {}
+            # Filter before pagination so all matching comments remain reachable.
+            category = query.get('respondentType')
+            if category and category not in {'student', 'teacher', 'partner', 'participant', 'other'}:
+                raise AuthError('INVALID_QUERY', 422)
+            if category:
+                rows = [row for row in rows if row.get('respondentType') == category]
             data, count, pagination = page(rows, event, self.sessions, 'feedback')
+            token = session_cookie(event)
+            if token:
+                try:
+                    self.sessions.validate(token, require_user=False)
+                    for row in data:
+                        row['myReaction'] = self.repository.public_reaction_choice(row['id'], token_hash(token))
+                except AuthError:
+                    pass
             return response(200, {'data': data, 'count': count, 'page': pagination})
         if method != 'POST':
             raise AuthError('METHOD_NOT_ALLOWED', 405)
@@ -110,6 +128,26 @@ class AuthApplication:
         self.repository.create_public_feedback('partner' if collection == 'partners' else 'activity',
                                                key, body(event), token_hash(token), idem)
         return response(201, {'ok': True})
+
+    def public_reaction(self, event, collection, key, feedback_id):
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'PUT':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        if event.get('queryStringParameters'):
+            raise AuthError('INVALID_QUERY', 422)
+        token = session_cookie(event)
+        request_headers = headers(event)
+        self.sessions.check_csrf(token, request_headers.get('origin'), request_headers.get('x-csrf-token'))
+        self.sessions.validate(token, require_user=False)
+        payload = body(event)
+        if not isinstance(payload, dict) or set(payload) != {'reaction'} or payload['reaction'] not in ('like', 'dislike', None):
+            raise AuthError('INVALID_FIELDS', 422)
+        ip = event.get('requestContext', {}).get('http', {}).get('sourceIp')
+        if not ip or not self.limiter or not hasattr(self.limiter, 'check_reactions'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        self.limiter.check_reactions(ip)
+        self.repository.set_public_reaction('partner' if collection == 'partners' else 'activity', key,
+                                            feedback_id, token_hash(token), payload['reaction'])
+        return response(200, {'ok': True})
 
     def selection_partners(self, event):
         context = require_session(event, self.sessions)

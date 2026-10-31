@@ -25,7 +25,14 @@
         const heading=document.createElement('h3');heading.textContent=options.excludePublic?'ความคิดเห็นภายใน':'ความคิดเห็น';
         const status=document.createElement('p');status.setAttribute('role','status');
         const list=document.createElement('ol'), editor=document.createElement('div');
-        container.className='feedback-section';container.append(heading,status,list,editor);
+        const filterLabel=document.createElement('label');filterLabel.className='feedback-filter';filterLabel.textContent='กลุ่มผู้ตอบ ';
+        const filter=document.createElement('select');filter.setAttribute('aria-label','กรองตามกลุ่มผู้ตอบ');
+        for(const [value,label] of [['','ทุกกลุ่มผู้ตอบ'],['student','นักศึกษา'],['teacher','อาจารย์'],['partner','คู่ความร่วมมือ'],['participant','ผู้เข้าร่วม'],['other','อื่น ๆ']]){
+            const option=document.createElement('option');option.value=value;option.textContent=label;filter.appendChild(option);
+        }
+        filterLabel.appendChild(filter);
+        container.className='feedback-section feedback-filtered';container.append(heading,status,list,editor,filterLabel);
+        filter.onchange=()=>{for(const row of list.children)row.hidden=!!filter.value && row.feedbackRespondentType!==filter.value;};
         const base='/'+kind+'/'+encodeURIComponent(parent.id)+'/feedback';
         const sources={participant:'ผู้เข้าร่วม',partner:'คู่ความร่วมมือ',other:'อื่น ๆ'};
         const add=document.createElement('button');add.type='button';add.textContent='เพิ่ม Feedback';
@@ -59,6 +66,8 @@
                     for(const row of result.data){
                         if(options.excludePublic && row.origin==='web'){publicRows.push(row);continue;}
                         const li=document.createElement('li');
+                        li.feedbackRespondentType=row.respondentType||row.sourceType||'other';
+                        li.hidden=!!filter.value && li.feedbackRespondentType!==filter.value;
                         const categories={student:'นักศึกษา',teacher:'อาจารย์',partner:'คู่ความร่วมมือ',participant:'ผู้เข้าร่วม',other:'อื่น ๆ'};
                         const meta=document.createElement('p');meta.textContent=row.occurredOn+' · '+(categories[row.respondentType]||sources[row.sourceType]||row.sourceType);
                         const comment=document.createElement('p');comment.textContent=row.comment;

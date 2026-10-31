@@ -203,7 +203,10 @@ class DynamoBusinessRepository:
                         or row.get('scopeId') != parent['scopeId']
                         or row.get('parentType') != kind or row.get('parentId') != key):
                     continue
-                rows.append(pick(row, {'id', 'comment', 'respondentType', 'occurredOn', 'createdAt'}))
+                public = pick(row, {'id', 'comment', 'respondentType', 'occurredOn', 'createdAt'})
+                public['likes'] = max(0, int(row.get('likes', 0)))
+                public['dislikes'] = max(0, int(row.get('dislikes', 0)))
+                rows.append(public)
             cursor = result.get('LastEvaluatedKey')
             if not cursor:
                 break
@@ -211,6 +214,65 @@ class DynamoBusinessRepository:
         if current['scopeId'] != parent['scopeId'] or current['version'] != parent['version']:
             raise AuthError('NOT_FOUND', 404)
         return rows
+
+    def _reaction_key(self, feedback_id, session_hash):
+        return 'feedback-reaction-' + hashlib.sha256((feedback_id + '\0' + session_hash).encode()).hexdigest()
+
+    def public_reaction_choice(self, feedback_id, session_hash):
+        row = self._read(self._reaction_key(feedback_id, session_hash))
+        return row.get('reaction') if row and row.get('reaction') in {'like', 'dislike'} else None
+
+    def set_public_reaction(self, kind, key, feedback_id, session_hash, reaction):
+        import re
+        if not re.fullmatch(r'feedback-[A-Za-z0-9_-]{1,200}', feedback_id):
+            raise AuthError('NOT_FOUND', 404)
+        parent, partner = self._public_feedback_parent(kind, key)
+        row = self.get('feedback', feedback_id)
+        if (not row or row.get('origin') != 'web' or row.get('source_state') == 'retired'
+                or row.get('scopeId') != parent['scopeId'] or row.get('parentType') != kind
+                or row.get('parentId') != key or type(row.get('version')) is not int):
+            raise AuthError('NOT_FOUND', 404)
+        vote_id = self._reaction_key(feedback_id, session_hash)
+        previous = self._read(vote_id)
+        old = previous.get('reaction') if previous else None
+        if old not in {None, 'like', 'dislike'}:
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        if old == reaction:
+            return
+        now = int(self.clock())
+        checks = [{'ConditionCheck': {'TableName': self.sessions, 'Key': values({'tokenHash': session_hash}),
+                   'ConditionExpression': '#e > :now AND #a > :now AND attribute_not_exists(#r)',
+                   'ExpressionAttributeNames': {'#e': 'expiresAt', '#a': 'absoluteExpiresAt', '#r': 'revokedAt'},
+                   'ExpressionAttributeValues': values({':now': now})}}]
+        for item_kind, item in [(kind, parent)] + ([('partner', partner)] if partner else []):
+            checks.append({'ConditionCheck': {'TableName': self._table(item_kind), 'Key': self._key(item_kind, item),
+                'ConditionExpression': '#v = :v AND #s = :s',
+                'ExpressionAttributeNames': {'#v': 'version', '#s': 'scopeId'},
+                'ExpressionAttributeValues': values({':v': item['version'], ':s': item['scopeId']})}})
+        likes = int(reaction == 'like') - int(old == 'like')
+        dislikes = int(reaction == 'dislike') - int(old == 'dislike')
+        checks.append({'Update': {'TableName': self.table, 'Key': values({'id': feedback_id}),
+            'UpdateExpression': 'ADD #likes :likes, #dislikes :dislikes, #v :one',
+            'ConditionExpression': '#v = :version AND #origin = :web',
+            'ExpressionAttributeNames': {'#likes':'likes', '#dislikes':'dislikes', '#v':'version', '#origin':'origin'},
+            'ExpressionAttributeValues': values({':likes': likes, ':dislikes': dislikes, ':one': 1,
+                                                  ':version': row['version'], ':web': 'web'})}})
+        condition = '#reaction = :old' if previous else 'attribute_not_exists(id)'
+        args = {'TableName': self.table, 'ConditionExpression': condition}
+        if previous:
+            args.update(ExpressionAttributeNames={'#reaction':'reaction'}, ExpressionAttributeValues=values({':old':old}))
+        if reaction is None:
+            args['Key'] = values({'id': vote_id})
+            checks.append({'Delete': args})
+        else:
+            args['Item'] = values({'id':vote_id, 'entityType':'feedbackReaction', 'reaction':reaction})
+            checks.append({'Put':args})
+        try:
+            self.client.transact_write_items(TransactItems=checks)
+        except Exception as error:
+            if getattr(error, 'response', {}).get('Error', {}).get('Code') == 'TransactionCanceledException':
+                raise AuthError('VERSION_CONFLICT', 409) from None
+            raise
 
     def create_public_feedback(self, kind, key, payload, session_hash, idempotency_key):
         """Public feedback; parent visibility and session are checked atomically."""
