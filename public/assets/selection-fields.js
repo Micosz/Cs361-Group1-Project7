@@ -27,37 +27,50 @@
             select.multiple = multiple; select.required = required;
             select.style.cssText = 'display:block;width:100%;padding:.6rem;margin-top:.3rem;';
             if (multiple) select.size = 4;
-            select.onchange = () => { input.value = [...select.selectedOptions].map(o => o.value).filter(Boolean).join(', '); };
+            select.onchange = () => {
+                input.value = [...select.selectedOptions].map(o => o.value).filter(Boolean).join(', ');
+                updateReady();
+            };
             wrapper.append(title,select); box.appendChild(wrapper);
             return {input,kind,select,multiple};
         });
         const hint=document.createElement('p');hint.textContent='เลือกได้หลายชื่อด้วย Ctrl/Command หรือ Shift';box.appendChild(hint);
         const retry=document.createElement('button');retry.type='button';retry.textContent='โหลดรายชื่ออีกครั้ง';retry.hidden=true;box.appendChild(retry);
         form.insertBefore(box,submit.closest('div')?.parentElement===form ? submit.closest('div') : submit.parentElement===form ? submit : form.firstChild);
-        let revision=0,ready=false;
+        let revision=0,ready=false,loaded=false;
+        function updateReady() {
+            if (!loaded) return;
+            const missing = controls.some(c => [...c.select.selectedOptions].some(o => o.dataset.unavailable === 'true'));
+            const wasReady = ready;
+            ready = !missing;
+            submit.disabled = missing;
+            retry.hidden = !missing;
+            status.textContent = missing
+                ? 'รายการเดิมบางรายการไม่อยู่ในตัวเลือกปัจจุบัน ตรวจสอบแล้วนำเครื่องหมายออก หรือโหลดรายชื่ออีกครั้งก่อนบันทึก การเปลี่ยนแปลงมีผลเมื่อกดบันทึก'
+                : '';
+            if (ready && !wasReady) onReady?.();
+        }
         const guard = event => { if (!ready) { event.preventDefault(); event.stopImmediatePropagation(); status.textContent='กรุณารอรายชื่อโหลดสำเร็จก่อนบันทึก'; } };
         form.addEventListener('submit',guard,{capture:true});
         async function load(reset=false) {
             const run=++revision,selectedScope=typeof scope==='function'?scope():scope.value;
-            ready=false;submit.disabled=true;retry.hidden=true;status.textContent='กำลังโหลดรายชื่อที่มีสิทธิ์เลือก';
+            ready=false;loaded=false;submit.disabled=true;retry.hidden=true;status.textContent='กำลังโหลดรายชื่อที่มีสิทธิ์เลือก';
             controls.forEach(c=>{c.select.disabled=true;if(reset)c.input.value='';});
             try {
                 const all=await Promise.all(controls.map(c=>choices(c.kind,selectedScope)));
                 if(run!==revision || !box.isConnected)return;
-                let missing=false;
                 controls.forEach((c,i)=>{
                     const selected=c.input.value.split(',').map(v=>v.trim()).filter(Boolean);
                     c.select.replaceChildren();
                     if(!c.multiple){const option=document.createElement('option');option.value='';option.textContent='ไม่ระบุ';c.select.appendChild(option);}
                     for(const row of all[i]){const option=document.createElement('option');option.value=row.id;option.textContent=row.name||row.title||row.displayName;option.selected=selected.includes(row.id);c.select.appendChild(option);}
                     for(const id of selected)if(!all[i].some(row=>row.id===id)){
-                        const option=document.createElement('option');option.value=id;option.textContent='รายการเดิมที่ยังโหลดชื่อไม่ได้';option.selected=true;c.select.appendChild(option);missing=true;
+                        const option=document.createElement('option');option.value=id;option.textContent='รายการเดิมที่ไม่อยู่ในตัวเลือกปัจจุบัน';option.dataset.unavailable='true';option.selected=true;c.select.appendChild(option);
                     }
                     if(!c.multiple)c.select.value=selected[0]||'';
                     c.select.disabled=false;
                 });
-                if(missing)throw Error('รายชื่อเดิมบางรายการไม่พร้อม กรุณาโหลดใหม่เพื่อป้องกันการเปลี่ยนลิงก์เดิม');
-                ready=true;submit.disabled=false;status.textContent='';onReady?.();
+                loaded=true;updateReady();
             } catch(error) {
                 if(run!==revision||!box.isConnected)return;
                 status.textContent='โหลดรายชื่อไม่ได้: '+error.message;retry.hidden=false;
