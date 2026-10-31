@@ -224,7 +224,7 @@
             mountFeedback(latest, 'activities', fresh);
         } catch { /* A public article stays readable when management is unavailable. */ }
     }
-    async function detail(row, trigger, resourceKind = resourceKind) {
+    async function detail(row, trigger, resourceKind = kind) {
         if (resourceKind === 'partners' && typeof window.openModal === 'function') return partnerDetail(row.id,trigger);
         if (resourceKind === 'activities' && row.publication === 'public' && typeof window.openModal === 'function') return window.openModal(row.id,'activity');
         window.CstuDetailSheet?.resetRecord();
