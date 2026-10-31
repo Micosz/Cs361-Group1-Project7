@@ -125,7 +125,7 @@
                 if (running) cameraAnimation.play(); else cameraAnimation.pause();
             }
             if (running) galaxy.unpauseAnimations(); else galaxy.pauseAnimations();
-            const canopyVisible = visible && !dialog && !detailOpen && scrollY < 120;
+            const canopyVisible = visible && !dialog && !detailOpen && scrollY < 280;
             canopy.dataset.visible = String(canopyVisible);
             if (running && canopyVisible) canopyGalaxy.unpauseAnimations(); else canopyGalaxy.pauseAnimations();
             hero.dataset.constellationVisible = String(visible && !dialog && !detailOpen);
