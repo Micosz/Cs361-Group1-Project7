@@ -77,7 +77,7 @@ class PartnerRepository:
             raise AuthError('PERMISSION_UNAVAILABLE', 503)
         with self._lock:
             # 1. Preconditions & Concurrency Checks
-            if self.service is not None:
+            if self.service is not None and not (kind == 'feedback' and action == 'create'):
                 user = getattr(self.service.users, 'user', None)
                 if callable(user):
                     user = user(conditions.user_id)
@@ -187,6 +187,7 @@ class PartnerRepository:
 
             # 5. Build and Persist Record
             now_iso = datetime.now(timezone.utc).isoformat()
+            user_id_val = getattr(conditions, 'user_id', None) or 'anonymous'
             if is_create:
                 rec_id = f"{kind}-{uuid.uuid4().hex[:12]}"
                 saved = {
@@ -196,8 +197,8 @@ class PartnerRepository:
                     'scopeId': conditions.scope_id,
                     'createdAt': now_iso,
                     'updatedAt': now_iso,
-                    'createdBy': conditions.user_id,
-                    'updatedBy': conditions.user_id,
+                    'createdBy': user_id_val,
+                    'updatedBy': user_id_val,
                     'version': 1,
                 }
                 if kind in {'contact', 'history'}:
@@ -214,16 +215,16 @@ class PartnerRepository:
                     saved['responsibleUserIds'] = payload.get('responsibleUserIds', [])
                 if kind == 'activity':
                     saved['publication'] = payload.get('publication', 'internal')
-                    saved['responsibleUserIds'] = payload.get('responsibleUserIds', [conditions.user_id])
+                    saved['responsibleUserIds'] = payload.get('responsibleUserIds', [user_id_val])
                     saved['coHostPartnerIds'] = []
                     saved['agreementIds'] = []
                 if kind == 'history':
-                    saved['recordedBy'] = conditions.user_id
+                    saved['recordedBy'] = user_id_val
                 saved.update(payload)
             else:
                 saved = copy.deepcopy(record)
                 saved['updatedAt'] = now_iso
-                saved['updatedBy'] = conditions.user_id
+                saved['updatedBy'] = user_id_val
                 saved['version'] = record.get('version', 1) + 1
                 saved.update(payload)
 
@@ -254,6 +255,8 @@ class ActivityRepository(PartnerRepository):
     def __init__(self, service=None, initial_records=None, clock=None, supported_kinds=None):
         kinds = supported_kinds if supported_kinds is not None else {'partner', 'contact', 'activity', 'feedback'}
         super().__init__(service=service, initial_records=initial_records, clock=clock, supported_kinds=kinds)
+
+
 class ExchangeRepository(PartnerRepository):
     """In-memory repository for Exchanges (Issue #104 / Parent #85)."""
 
