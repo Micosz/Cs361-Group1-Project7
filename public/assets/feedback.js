@@ -2,13 +2,12 @@
 (() => {
     'use strict';
     function canCreateFeedback(session, parent) {
-        if (!session?.user) return false;
+        if (!session?.user) return true;
         if (window.CstuWork.canEdit(session, parent)) return true;
         return window.CstuWork.roles(session, parent?.scopeId).includes('student');
     }
     async function mount(container, parent, kind, session) {
-        if (!['activities','exchanges'].includes(kind) || !session?.user ||
-            !window.CstuWork.roles(session).some(role=>['student','coordinator','staff','executive'].includes(role))) return;
+        if (!['activities','exchanges'].includes(kind)) return;
         const heading=document.createElement('h3');heading.textContent='ความคิดเห็นและผลตอบรับ (Feedback)';
         const status=document.createElement('p');status.setAttribute('role','status');
         const list=document.createElement('ol'), editor=document.createElement('div');
