@@ -331,6 +331,49 @@ class PartnerContactTests(unittest.TestCase):
         unassigned_res = self.call(self.event(f'/api/partners/{pid}', 'PATCH', {'summary': 'Hacked'}, **{'if-match': '"2"'}))
         self.assertEqual(404, unassigned_res['statusCode'])
 
+    def test_coordinator_creates_partner_in_permitted_scope_and_sees_it_immediately(self):
+        self.users.user = user_context('coordinator', 'c1', 'u1').user
+        created = self.call(self.event('/api/partners', 'POST', {
+            'name': 'Coordinator Lab Partner',
+            'type': 'research_institute',
+            'summary': 'Joint AI research partner',
+            'location': 'Pathum Thani',
+            'websiteUrl': 'https://lab.example.org',
+            'scopeId': 'c1',
+        }, **{'idempotency-key': 'coord-partner-create-0001'}))
+        self.assertEqual(201, created['statusCode'])
+        partner = json.loads(created['body'])['data']
+        pid = partner['id']
+        self.assertEqual('internal', partner['publication'])
+        self.assertEqual(['u1'], partner['responsibleUserIds'])
+
+        # Coordinator immediately sees saved partner in list and detail
+        listed = json.loads(self.call(self.event('/api/partners', 'GET'))['body'])
+        self.assertEqual([pid], [row['id'] for row in listed['data']])
+        detail = self.call(self.event(f'/api/partners/{pid}', 'GET'))
+        self.assertEqual(200, detail['statusCode'])
+
+        # Coordinator cannot create outside permitted scope or inject privileged fields
+        writes_before = self.repo.writes
+        out_of_scope = self.call(self.event('/api/partners', 'POST', {
+            'name': 'Cross Scope', 'type': 'company', 'summary': 'No',
+            'location': 'Bangkok', 'scopeId': 'c2',
+        }, **{'idempotency-key': 'coord-partner-cross-scope'}))
+        self.assertEqual(404, out_of_scope['statusCode'])
+        for bad_patch, key in (({'publication': 'public'}, 'coord-pub-inject'), ({'responsibleUserIds': ['u2']}, 'coord-resp-inject')):
+            injected = self.call(self.event('/api/partners', 'POST', {
+                'name': 'Injected', 'type': 'company', 'summary': 'No',
+                'location': 'Bangkok', 'scopeId': 'c1', **bad_patch,
+            }, **{'idempotency-key': key}))
+            self.assertEqual(403, injected['statusCode'])
+        self.assertEqual(writes_before, self.repo.writes)
+
+        # Unassigned coordinator in same scope cannot see internal partner
+        self.repo.rows[('partner', pid)]['responsibleUserIds'] = ['other_coord']
+        self.issued = self.login()
+        self.assertEqual(0, json.loads(self.call(self.event('/api/partners', 'GET'))['body'])['count'])
+        self.assertEqual(404, self.call(self.event(f'/api/partners/{pid}', 'GET'))['statusCode'])
+
     # -------------------------------------------------------------
     # 4. Cross-parent Contact Access Attempts
     # -------------------------------------------------------------

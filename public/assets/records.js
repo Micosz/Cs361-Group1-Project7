@@ -103,7 +103,7 @@
         await handler({container, record, session, auth: window.CstuAuth, reload: () => {
             params.delete('action'); params.delete('id');
             window.invalidatePublicData?.();
-            if (resourceKind === 'activities') window.renderEventCards?.();
+            if (resourceKind === 'partners') window.renderCollaboratorCards?.(); if (resourceKind === 'activities') window.renderEventCards?.();
             return load();
         }});
     }
@@ -364,11 +364,11 @@
             if (!window.CstuAuth.enabled()) { status('พื้นที่ผู้ใช้ยังไม่เปิดใช้งาน'); return; }
             session = await window.CstuAuth.refresh();
             if (current !== revision) return;
-            if (!session?.user && kind !== 'agreements') { host.hidden = true; updateTabs([]); return; }
+            if (!session?.user && kind !== 'agreements') { if (params.get('action') === 'create') { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); updateTabs([]); return; } host.hidden = true; updateTabs([]); return; }
             const roles = window.CstuWork.roles(session);
             updateTabs(roles);
             if (!roles.some(role => ['coordinator','staff','executive'].includes(role)) && kind !== 'agreements' && !(kind === 'exchanges' && roles.includes('student'))) {
-                host.hidden = true; return;
+                if (params.get('action') === 'create') { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; } host.hidden = true; return;
             }
             nav();
             if (overview) {
@@ -393,7 +393,7 @@
             $('records-title').textContent = config.label;
             form.hidden = kind !== 'exchanges'; status('กำลังโหลดข้อมูล');
             if (kind === 'activities' && !['all','academic_activity','event','research'].includes($('filterEvent').value)) {
-                host.hidden = true; return;
+                if (params.get('action') === 'create') { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; } host.hidden = true; return;
             }
             const result = validateList(await window.CstuAuth.request(listPath(kind)+'?'+query()));
             if (current !== revision) return;
@@ -421,7 +421,7 @@
             }
             $('records-content').appendChild(list); nextCursor = result.page.nextCursor; placeSentinel();
             if (params.get('action') === 'create') {
-                if (!window.CstuWork.canCreate(session,kind)) { status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; }
+                if (!window.CstuWork.canCreate(session,kind)) { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; }
                 if (!window.CstuWork.handler(kind,'create')) { status('ฟอร์มเพิ่มรายการนี้ยังไม่พร้อมใช้งาน'); return; }
                 status(''); $('detail-title').textContent = config.create;
                 lastTrigger = document.querySelector('#authNavButtons button');
@@ -469,6 +469,7 @@
         form.elements.namedItem('q').value = '';
         for (const name of ['startDate','endDate']) form.elements.namedItem(name).value = '';
         if (config) setupFilters();
+        if (kind === 'partners' && action === 'create' && $('filterCollab').value !== 'all') { $('filterCollab').value = 'all'; if ($('filterCollabClear')) $('filterCollabClear').style.display = 'none'; window.renderCollaboratorCards?.(); }
         if (eventKinds.includes(kind)) {
             eventKind = kind;
             if (kind === 'activities' && (action === 'create' || $('filterEvent').value === 'mou')) { $('filterEvent').value = 'all'; window.renderEventCards?.(); }

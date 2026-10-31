@@ -36,7 +36,7 @@ class SelectionUsersTests(unittest.TestCase):
 
     def test_paginated_storage_excludes_inactive_unverified_wrong_scope_and_profiles(self):
         def row(key,**updates):
-            return dict(id=key,displayName=key,active=True,identityVerified=True,grants=[dict(scopeId='cs',role='student',active=True)],email='private',**updates)
+            return {**dict(id=key,displayName=key,active=True,identityVerified=True,grants=[dict(scopeId='cs',role='student',active=True)],email='private'),**updates}
         rows=[row('ok'),row('wrong')];rows[1]['grants'][0]['scopeId']='other'
         rows+=[row('disabled'),row('unverified'),row('revoked')];rows[2]['active']=False;rows[3]['identityVerified']=False;rows[4]['grants'][0]['active']=False
         def scan(**kwargs):

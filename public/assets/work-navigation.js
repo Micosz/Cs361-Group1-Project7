@@ -11,9 +11,9 @@
     function roles(session, scopeId) {
         return (session?.grants || []).filter(g => (!scopeId || g.scopeId === scopeId) && g.active !== false).map(g => g.role);
     }
-    function canCreate(session, kind) {
-        const grants = roles(session);
-        return Boolean(session?.user && kinds[kind] && (grants.some(r => ['staff','executive'].includes(r)) || (kind !== 'partners' && grants.includes('coordinator'))));
+    function canCreate(session, kind, scopeId) {
+        const grants = roles(session, scopeId);
+        return Boolean(session?.user && kinds[kind] && grants.some(r => ['staff','executive','coordinator'].includes(r)));
     }
     function canEdit(session, record) {
         if (!session?.user || !record?.scopeId) return false;
