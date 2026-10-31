@@ -7,7 +7,7 @@
         return window.CstuWork.roles(session, parent?.scopeId).includes('student');
     }
     async function mount(container, parent, kind, session) {
-        if (!['activities','exchanges'].includes(kind)) return;
+        if (!['partners','activities','exchanges'].includes(kind)) return;
         const heading=document.createElement('h3');heading.textContent='ความคิดเห็นและผลตอบรับ (Feedback)';
         const status=document.createElement('p');status.setAttribute('role','status');
         const list=document.createElement('ol'), editor=document.createElement('div');

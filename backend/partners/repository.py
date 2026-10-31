@@ -1,3 +1,4 @@
+
 """In-memory prototype for #94 local tests, NOT a production storage adapter.
 
 Rows, locks and idempotency are process-local and disappear on restart. They do
@@ -128,7 +129,8 @@ class PartnerRepository:
                 target_type = payload.get('targetType') or (record.get('targetType') if record else None)
                 target_id = payload.get('targetId') or (record.get('targetId') if record else None)
                 target_row = self.rows.get((target_type, target_id))
-                if not target_row or target_row.get('scopeId') != conditions.scope_id:
+                target_scope = target_row.get('scopeId') if target_row else conditions.scope_id
+                if not target_row or target_scope != conditions.scope_id:
                     raise AuthError('NOT_FOUND', 404)
             elif kind == 'activity':
                 payload = normalize_payload(kind, action, payload, record=record)
@@ -327,15 +329,8 @@ class ExchangeRepository(PartnerRepository):
                 current_status = record.get('status', 'draft')
                 to_status = payload['to']
 
-                # Rules from transition table:
-                # - draft -> ongoing: dates/partners/responsible and participant >= 1 valid, end >= today
-                # - ongoing -> completed: supportingInfo required
-                # - draft/ongoing -> cancelled: reason required
-                # - draft -> draft / ongoing -> ongoing: valid
-                # - completed / cancelled cannot transition to other statuses (INVALID_TRANSITION 409)
                 today_str = datetime.fromtimestamp(self.clock(), timezone(timedelta(hours=7))).strftime('%Y-%m-%d')
                 if current_status == 'draft' and to_status == 'ongoing':
-                    # Verify required fields for ongoing
                     if not record.get('partnerIds') or not record.get('responsibleUserIds'):
                         raise AuthError('INVALID_TRANSITION', 409)
                     participants = record.get('participantUserIds', [])
@@ -366,7 +361,6 @@ class ExchangeRepository(PartnerRepository):
                 if start is not None and end is not None and start > end:
                     raise AuthError('INVALID_FIELDS', 422)
 
-                # Verify partnerIds reference valid partners in same scope
                 partner_ids = payload.get('partnerIds') or (record.get('partnerIds') if record else [])
                 for pid in partner_ids:
                     partner_row = self.rows.get(('partner', pid))
@@ -375,14 +369,12 @@ class ExchangeRepository(PartnerRepository):
                     if partner_row.get('scopeId') != conditions.scope_id:
                         raise AuthError('NOT_FOUND', 404)
 
-                # Verify agreementId if present
                 agr_id = payload.get('agreementId')
                 if agr_id:
                     agr_row = self.rows.get(('agreement', agr_id))
                     if agr_row is None or agr_row.get('scopeId') != conditions.scope_id:
                         raise AuthError('NOT_FOUND', 404)
 
-                # Helper to get user object
                 def get_user_obj(uid):
                     if not self.service or not hasattr(self.service, 'users'):
                         return None
@@ -395,7 +387,6 @@ class ExchangeRepository(PartnerRepository):
                         return self.service.users.store.user(uid)
                     return None
 
-                # Validate responsibleUserIds against active users in scope (for staff)
                 resp_users = payload.get('responsibleUserIds')
                 if resp_users:
                     for uid in resp_users:
@@ -407,7 +398,6 @@ class ExchangeRepository(PartnerRepository):
                         except AuthError:
                             raise AuthError('INVALID_FIELDS', 422)
 
-                # Validate participantUserIds against active verified students in scope (#105)
                 part_users = payload.get('participantUserIds')
                 if part_users:
                     for uid in part_users:
@@ -438,7 +428,6 @@ class ExchangeRepository(PartnerRepository):
                     'responsibleUserIds': payload.get('responsibleUserIds', [conditions.user_id]),
                 }
                 saved.update(payload)
-                # Ensure server owned fields cannot be overwritten by client payload
                 saved['id'] = rec_id
                 saved['entityType'] = 'exchange'
                 saved['schemaVersion'] = 3
