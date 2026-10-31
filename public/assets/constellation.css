@@ -17,13 +17,14 @@ body:has(.constellation-ready) {
    This layer never participates in layout or intercepts controls. */
 .constellation-canopy {
     position: absolute; inset: 0 0 auto; height: 280px; overflow: hidden;
-    pointer-events: none; user-select: none; z-index: 0; opacity: .52;
+    pointer-events: none; user-select: none; z-index: 0; opacity: .82;
+    background: radial-gradient(ellipse 52% 90% at 16% 18%, rgb(242 196 206 / 44%) 0%, transparent 72%), radial-gradient(ellipse 46% 85% at 72% 22%, rgb(246 220 156 / 34%) 0%, transparent 70%);
     mask-image: linear-gradient(#000 0%, #000 35%, transparent 100%);
     -webkit-mask-image: linear-gradient(#000 0%, #000 35%, transparent 100%);
     transition: opacity 600ms ease;
 }
 .constellation-canopy .galaxy-scene {
-    position: absolute; top: -330px; left: 50%; width: max(100%, 1000px);
+    position: absolute; top: -415px; left: 50%; width: max(100%, 1000px);
     max-width: none; height: 600px; transform: translateX(-50%);
 }
 .constellation-canopy[data-visible="false"] { opacity: 0; }
@@ -118,18 +119,18 @@ body:has(.constellation-ready) {
 }
 .navbar::before {
     inset: 0 auto 0 50%; width: 100%; transform: translateX(-50%);
-    border: 1px solid rgb(255 255 255 / 90%); border-radius: inherit;
-    background: rgb(255 253 251 / 42%);
-    backdrop-filter: blur(22px) saturate(120%);
-    -webkit-backdrop-filter: blur(22px) saturate(120%);
-    box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(211 184 186 / 12%),
+    border: 1px solid rgb(255 255 255 / 72%); border-radius: inherit;
+    background: rgb(255 252 250 / 22%);
+    backdrop-filter: blur(10px) saturate(145%);
+    -webkit-backdrop-filter: blur(10px) saturate(145%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 75%), 0 0 0 1px rgb(211 184 186 / 16%),
         0 12px 34px -19px rgb(88 39 46 / 30%);
     pointer-events: none;
 }
-.navbar .logo { padding-right: 20px; border-right: 1px solid #d7cbcb; }
+.navbar .logo { padding-right: 20px; border-right: 1px solid rgb(96 74 78 / 16%); }
 .navbar .search-wrapper { max-width: none; }
 .navbar .search-container {
-    align-items: center; padding: 2px; border-color: #d5d2d3; background: rgb(255 255 255 / 18%);
+    align-items: center; padding: 2px; border-color: rgb(56 50 53 / 11%); background: rgb(255 255 255 / 6%);
     outline: none; box-shadow: 0 0 0 0 transparent;
 }
 .header-search-icon { flex: 0 0 auto; margin-left: 15px; font-size: 18px; color: #312a2d; }
@@ -139,9 +140,9 @@ body:has(.constellation-ready) {
     flex: 0 0 auto; width: auto; height: 44px; min-height: 44px;
     padding: 0 24px; border-radius: 999px; font-size: .875rem;
 }
-.navbar .auth-buttons { padding-left: 20px; border-left: 1px solid #d7cbcb; gap: 10px; }
+.navbar .auth-buttons { padding-left: 20px; border-left: 1px solid rgb(96 74 78 / 16%); gap: 10px; }
 .navbar .login-btn {
-    min-height: 44px; padding-inline: 22px; background: transparent;
+    min-height: 44px; padding-inline: 22px; background: rgb(255 255 255 / 72%);
     color: #b5002b; border: 1px solid #b5002b;
 }
 .navbar .search-container:focus-within {
@@ -151,11 +152,14 @@ body:has(.constellation-ready) {
 .navbar .suggestions-dropdown { border-radius: 20px; }
 /* Keep the layout footprint fixed while the glass becomes slimmer on scroll. */
 .navbar.header-scrolled::before {
-    inset-block: 2px; background: rgb(255 253 251 / 72%);
-    box-shadow: inset 0 1px 0 #fff, 0 8px 24px -14px rgb(88 39 46 / 35%);
+    inset-block: 2px; background: rgb(255 252 250 / 32%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 78%), 0 0 0 1px rgb(211 184 186 / 18%), 0 8px 24px -14px rgb(88 39 46 / 32%);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .navbar::before { background: #fffdfb; }
+    .navbar::before, .navbar.header-scrolled::before { background: #fffdfb; }
+}
+@media (prefers-reduced-transparency: reduce) {
+    .navbar::before, .navbar.header-scrolled::before { background: #fffdfb; backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
     .navbar::before { transition: inset 300ms ease, background-color 300ms ease, box-shadow 300ms ease; }
