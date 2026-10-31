@@ -1,3 +1,67 @@
+# Stakeholder doughnut and Feedback Inbox summary — design QA
+
+final result: passed
+
+Reviewed on 2026-10-31. Local frontend review with fixture data; no deployment or production API integration claim.
+
+## Visual evidence
+
+- Selected image #4, without percentages: `docs/design/stakeholder-review/selected-design.jpg` (1680 × 936 px, JPEG conversion of the selected generated PNG without resizing).
+- Desktop implementation: `docs/design/stakeholder-review/desktop.png` (1680 × 936 px, matching CSS viewport, DPR 1).
+- Mobile implementation: `docs/design/stakeholder-review/mobile.png` (390 × 1100 px, matching CSS viewport, DPR 1); width also checked at 390 × 844.
+- Feedback Inbox: `docs/design/stakeholder-review/feedback.png` (1280 × 720 px, matching actual CSS viewport, DPR 1). A requested 1224px laptop viewport resolved to 1280px in the browser; the report uses the observed size.
+- State: executive Stakeholder tab, company 9 / university 6 / government 3 / research institute 2, total 20. These are local fixtures matching the mockup. Shipped code reads the existing protected API.
+- Reference and revised desktop/mobile captures were opened together in one comparison input. The desktop panel width is 1592px in both reference and implementation. Compare panel content; tabs retain the existing product sizing rather than the oversized mockup tabs. No density scaling was needed.
+- Full-resolution views make header, count cells, icons, chart center and Thai copy readable, so a separate crop was not necessary. Mobile is an adaptation of the desktop source, not a supplied mobile mockup.
+
+## Findings and comparison history
+
+1. Initial comparison found table separators inheriting cell borders (P2); removed those borders so the intended pale row dividers govern. The temporary component-only harness also put tabs below the panel; corrected only the harness's layout to reflect their normal position above the content.
+2. Full-page capture produced corrupted narrow strips during browser viewport resizing. Rejected those captures and used stable viewport screenshots instead; this was a capture problem, not accepted as product evidence.
+3. Reopened the reference alongside final desktop/mobile screenshots after these fixes. No actionable P0/P1/P2 findings remain. Header, total, table order, category colors, counts and doughnut match the selected direction; no percentages or percentage column appear.
+
+## Required fidelity surfaces
+
+- **Typography:** existing Noto Sans Thai / Leelawadee UI / system stack; large totals, strong category names, legible secondary units. Kept current product tab text sizes. Minor glyph-weight differences from generated imagery are accepted.
+- **Spacing/layout:** crimson header above table-left/chart-right content; proportional chart and generous row spacing. At narrow widths the total moves to its own row and chart follows the table; no horizontal overflow at 1680, 1280 or 390px. Long names wrap rather than clip.
+- **Colors:** crimson, gold, purple and blue categories; count and type labels convey meaning without relying solely on color. Uses the existing crimson/gold orbit art. Solid Chart.js segment colors intentionally avoid recreating the mockup's raster lighting effects.
+- **Assets:** reuses `overview-orbit.webp` from the earlier summary; no extra production raster/dependency. Font Awesome icons match the categories; minor solid-versus-outline icon differences are P3 polish. Real Chart.js doughnut, not a rasterized chart. Header text remains editable UI.
+- **Copy/content:** only type/count table columns, counts in chart center, no percentages. Overview Feedback pane removed; the existing Summary headline metric and CSV data remain. Inbox summary reads the same permission-scoped rows as its list, with filtered wording when any inbox filter is active.
+
+## Functional checks
+
+- Stakeholder university filter: total/table/chart update to 6; reset restores 20. Summary → Stakeholder navigation works with recreated charts.
+- Empty Stakeholder result: total 0, neutral ring, explicit no-results copy.
+- Inbox fixture paginated into two pages: loaded total 8 / improvement count 4. Student filter gives 4 / 2; additional keyword gives 1 / 1. Whitespace-only improvement values do not count.
+- Inbox loading/failure: summary hidden; failed request shows the existing error message, without misleading zero totals.
+- Fresh final overview and inbox browser tabs: no console errors/warnings. Earlier syntax errors were limited to the temporary fixture harness and corrected before review.
+- Chart lifetime/cancellation and reduced-motion handling retained in shared helper. Text table/legends remain readable when a chart is unavailable. Reduced-motion behavior reviewed in code, not separately emulated in browser.
+- Existing checks: `node --test tests/overview.test.cjs tests/feedback-inbox.test.cjs` — 6 passed. Updated existing tab/child-order expectations only; no new automated test files.
+- Both changed JS files pass `node --check`. `npm run build` passes but only checks that login HTML exists. `git diff --check` passes.
+
+## Open questions and limits
+
+No blocking design questions. AWS production, all browser engines and physical mobile devices were not tested. Unknown categories use a neutral icon/color; existing permission checks and backend are unchanged. No extra summary API request or new chart library is introduced.
+
+## Implementation checklist
+
+- [x] Match selected Stakeholder composition without percentages.
+- [x] Move the Feedback summary line to the existing inbox and remove overview Feedback tab.
+- [x] Preserve latest respondent/channel filters from main.
+- [x] Inspect desktop/mobile rendering and representative interactions.
+- [x] Bump CSS/JS asset query versions.
+- [x] Keep prior QA reports below; new branch/PR awaits teammate review, without merge or deployment.
+
+## Follow-up polish
+
+Optional closer outline icons if the project later adopts a suitable icon family. No change is necessary for the selected flow.
+
+---
+
+## Historical reviews
+
+The reports below describe their earlier snapshots. Their old Feedback-tab references are superseded by this change; earlier checks were not all repeated.
+
 # Cooperation overview design QA
 
 final result: passed

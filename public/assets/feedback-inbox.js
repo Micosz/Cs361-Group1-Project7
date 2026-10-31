@@ -45,9 +45,10 @@
         const onlyFavorites = el('input'); onlyFavorites.type='checkbox'; onlyFavorites.setAttribute('aria-label','แสดงเฉพาะรายการที่กดหัวใจ');
         favoriteLabel.append(onlyFavorites,el('span','เฉพาะที่กดหัวใจไว้'));
         toolbar.append(searchLabel,kindLabel,respondentLabel,channelLabel,favoriteLabel);
+        const summary = el('p',undefined,'feedback-inbox-summary'); summary.hidden=true;
         const message = el('p','กำลังโหลด Feedback','feedback-inbox-status'); message.setAttribute('role','status');
         const list = el('div',undefined,'feedback-inbox-list');
-        container.append(toolbar,message,list);
+        container.append(toolbar,summary,message,list);
         try {
             const rows=[]; let cursor=null;
             do {
@@ -65,6 +66,10 @@
                     (!needle || [row.parentTitle,row.comment,row.improvement,sources[row.sourceType]||row.sourceType]
                         .some(value => String(value||'').toLocaleLowerCase().includes(needle))));
                 list.replaceChildren();
+                const filtered=Boolean(needle || kind.value || respondent.value || channel.value || onlyFavorites.checked);
+                const withImprovement=visible.filter(row => String(row.improvement || '').trim()).length;
+                summary.textContent=`Feedback ${filtered?'ตามตัวกรอง':'ทั้งหมด'} ${visible.length} รายการ · มีข้อเสนอแนะ ${withImprovement} รายการ`;
+                summary.hidden=false;
                 message.textContent=visible.length ? `แสดง ${visible.length} จาก ${rows.length} รายการ` :
                     onlyFavorites.checked && favorites.size===0 ? 'ยังไม่มี Feedback ที่กดหัวใจไว้' : 'ไม่พบ Feedback ตามตัวกรอง';
                 for(const row of visible){

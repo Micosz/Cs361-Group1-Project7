@@ -386,7 +386,7 @@ test('Feedback Inbox renders back button and clicking it returns cleanly to Info
     assert.equal(backLinks.length, 1, 'Feedback Inbox must render a back button');
     assert.equal(backLinks[0].className, 'feedback-inbox-back');
     assert.equal(backLinks[0].textContent, '← กลับหน้าหลัก');
-    assert.equal(h.getOrCreate('records-content').children.length, 3, 'Toolbar, status, and feedback list should be rendered');
+    assert.equal(h.getOrCreate('records-content').children.length, 4, 'Toolbar, summary, status, and feedback list should be rendered');
 
     // Click Back button -> returns to Information Board (partners)
     h.documentObj.clickLink(backLinks[0]);
@@ -414,7 +414,7 @@ test('Executive reopening Menu and opening Role Manager from Feedback Inbox pres
 
     assert.equal(roleMenu.open, false);
     assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true);
-    assert.equal(h.getOrCreate('records-content').children.length, 3);
+    assert.equal(h.getOrCreate('records-content').children.length, 4);
 
     // 2. Reopen Menu again on Feedback Inbox, close via Close button (starts 500ms animated close where roleMenu.open stays true),
     //    and immediately click Menu again within 500ms — must NOT throw InvalidStateError!
@@ -444,7 +444,7 @@ test('Executive reopening Menu and opening Role Manager from Feedback Inbox pres
     assert.equal(h.getOrCreate('detail-title').textContent, 'จัดการสิทธิ์ผู้ใช้');
     assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true, 'Must keep feedback-inbox-view so hero/tabs never bleed onto Feedback Inbox');
     assert.equal(h.getOrCreate('records-title').textContent, 'รวม Feedback');
-    assert.equal(h.getOrCreate('records-content').children.length, 3, 'Feedback Inbox toolbar and cards must NOT be cleared by openRoles()');
+    assert.equal(h.getOrCreate('records-content').children.length, 4, 'Feedback Inbox toolbar and cards must NOT be cleared by openRoles()');
     assert.equal(h.getOrCreate('record-links').children.length, 1, 'Back button must remain intact');
     assert.equal(h.boardEvents.length, 0, 'openRoles() must not trigger hero scroll while in Feedback Inbox');
 });
@@ -459,7 +459,7 @@ test('opening related work from Feedback Inbox reads it in place without leaving
     await flush();
     assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true);
 
-    const list = h.getOrCreate('records-content').children[2];
+    const list = h.getOrCreate('records-content').children.find(child => child.className === 'feedback-inbox-list');
     const card = list.children[0];
     const related = card.children.find(c => c.tagName === 'A');
     assert.equal(related.textContent, 'เปิดงานที่เกี่ยวข้อง');
@@ -476,14 +476,14 @@ test('opening related work from Feedback Inbox reads it in place without leaving
     assert.ok(h.requestedPaths.some(path => path.startsWith('/api/activities/ACT-A02')), 'Uses the protected activity API');
     assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true, 'Feedback Inbox view is preserved');
     assert.equal(h.getOrCreate('records-title').textContent, 'รวม Feedback');
-    assert.equal(h.getOrCreate('records-content').children.length, 3, 'Inbox toolbar, status and list stay rendered');
+    assert.equal(h.getOrCreate('records-content').children.length, 4, 'Inbox toolbar, status and list stay rendered');
     assert.equal(h.boardEvents.length, 0, 'Must not scroll back to the home board');
 
     // Closing returns to the same inbox with focus on the link that opened it.
     const before = related.focused || 0;
     h.getOrCreate('record-detail').close();
     assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true);
-    assert.equal(h.getOrCreate('records-content').children.length, 3);
+    assert.equal(h.getOrCreate('records-content').children.length, 4);
     assert.equal(related.focused, before + 1);
 
     // Modified clicks keep normal link behaviour (open in new tab).

@@ -25,6 +25,13 @@
     const statusColors = {active:'#2eb48e', draft:'#ffc43b', expired:'#fa6488', terminated:'#af8d98',
         ongoing:'#416bff', completed:'#12aa83', cancelled:'#8990a6'};
     const statusOrder = {agreements:['active','draft','expired','terminated'], exchanges:['ongoing','completed','draft','cancelled']};
+    const stakeholderTypes = {
+        company: {color:'#c90032', icon:'building'},
+        university: {color:'#ffc233', icon:'graduation-cap'},
+        government: {color:'#8750d6', icon:'landmark'},
+        research_institute: {color:'#347dff', icon:'flask'},
+        internship: {color:'#12aa83', icon:'briefcase'}
+    };
     let chartLibrary;
     function loadChartLibrary() {
         if (window.Chart) return Promise.resolve(window.Chart);
@@ -45,19 +52,7 @@
         }
         label.appendChild(input); return {label, input};
     };
-    const counter = (container, value) => {
-        const row = text('p', undefined, 'overview-breakdown-row');
-        row.dataset.status = value[0];
-        const sep = text('span', ' · ', 'overview-breakdown-sep'); sep.setAttribute('aria-hidden', 'true');
-        row.append(text('span', labels[value[0]] || value[0], 'overview-breakdown-label'), sep, text('strong', `${value[1]} รายการ`, 'overview-breakdown-count'));
-        container.appendChild(row);
-    };
     const countRows = values => Object.entries(values || {}).sort(([a], [b]) => a.localeCompare(b));
-    const section = (title, description) => {
-        const block = text('section', undefined, 'overview-panel');
-        block.append(text('h3', title), text('p', description, 'overview-muted'));
-        return block;
-    };
     function csvCell(value) { return '"' + String(value ?? '').replaceAll('"', '""') + '"'; }
     function exportCsv(data) {
         const rows = [['หมวด', 'รายการ', 'จำนวน']];
@@ -107,7 +102,7 @@
         const statusText = text('p', 'กำลังโหลดข้อมูลสรุป', 'overview-status'); statusText.setAttribute('role', 'status');
         const tabs = text('nav', undefined, 'overview-tabs'); tabs.setAttribute('aria-label', 'ส่วนของภาพรวม'); tabs.setAttribute('role', 'tablist');
         const tabButtons = new Map();
-        const tabList = [['summary', 'สรุป'], ...(isExecutive ? [['stakeholders', 'Stakeholder']] : []), ['feedback', 'Feedback']];
+        const tabList = [['summary', 'สรุป'], ...(isExecutive ? [['stakeholders', 'Stakeholder']] : [])];
         let activeTab = 'summary', result = null, requestNumber = 0;
         let charts = [], chartGeneration = 0, observer;
         const clearCharts = () => { chartGeneration++; charts.forEach(chart => chart.destroy()); charts = []; };
@@ -123,6 +118,30 @@
         for (const [key, caption] of tabList) {
             const button = text('button', caption); button.type = 'button'; button.setAttribute('role', 'tab');
             button.onclick = () => setTab(key); tabButtons.set(key, button); tabs.appendChild(button);
+        }
+        function drawDoughnut(canvas, rows, block, cutout = '66%') {
+            const generation = chartGeneration;
+            const total = rows.reduce((sum, row) => sum + row.count, 0);
+            // The adjacent text/table remains available even if the chart cannot load.
+            if (typeof canvas.getContext !== 'function') return;
+            loadChartLibrary().then(Chart => {
+                if (generation !== chartGeneration || !canvas.isConnected) return;
+                const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+                charts.push(new Chart(canvas, {
+                    type: 'doughnut',
+                    data: {labels: total ? rows.map(row => row.label) : ['ไม่มีรายการ'], datasets: [{
+                        data: total ? rows.map(row => row.count) : [1],
+                        backgroundColor: total ? rows.map(row => row.color) : ['#ede9e7'],
+                        borderWidth: total ? 1 : 0, borderColor: '#ffffff', hoverOffset: total ? 3 : 0
+                    }]},
+                    options: {responsive: true, maintainAspectRatio: false, cutout,
+                        animation: reduced ? false : {duration: 650},
+                        plugins: {legend: {display: false}, tooltip: {enabled: total > 0}},
+                        layout: {padding: 4}}
+                }));
+            }).catch(() => {
+                if (generation === chartGeneration && canvas.isConnected) block.appendChild(text('p', 'อ่านจำนวนได้จากรายการข้างกราฟ', 'overview-chart-note'));
+            });
         }
         function drawPane() {
             clearCharts();
@@ -181,49 +200,51 @@
                     body.append(donut, legend); block.append(header, body);
                     if (!total) block.appendChild(text('p', 'ไม่มีรายการตามเงื่อนไข', 'overview-chart-note'));
                     grid.appendChild(block);
-                    const generation = chartGeneration;
-                    // Loading the chart must never prevent access to the text summary.
-                    if (typeof canvas.getContext === 'function') loadChartLibrary().then(Chart => {
-                        if (generation !== chartGeneration || !canvas.isConnected) return;
-                        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-                        charts.push(new Chart(canvas, {
-                            type: 'doughnut',
-                            data: {labels: total ? rows.map(([st]) => labels[st] || st) : ['ไม่มีรายการ'], datasets: [{
-                                data: total ? rows.map(([,count]) => count) : [1],
-                                backgroundColor: total ? rows.map(([st]) => statusColors[st] || '#8990a6') : ['#ede9e7'],
-                                borderWidth: total ? 1 : 0, borderColor: '#ffffff', hoverOffset: total ? 3 : 0
-                            }]},
-                            options: {responsive: true, maintainAspectRatio: false, cutout: '66%',
-                                animation: reduced ? false : {duration: 650},
-                                plugins: {legend: {display: false}, tooltip: {enabled: total > 0}},
-                                layout: {padding: 4}}
-                        }));
-                    }).catch(() => {
-                        if (generation === chartGeneration && canvas.isConnected) block.appendChild(text('p', 'แสดงจำนวนแต่ละสถานะด้านข้างแทนกราฟ', 'overview-chart-note'));
-                    });
+                    drawDoughnut(canvas, rows.map(([st, count]) => ({label: labels[st] || st, count, color: statusColors[st] || '#8990a6'})), block);
                 }
                 pane.appendChild(grid);
             } else if (activeTab === 'stakeholders') {
-                const block = section('Stakeholder ตามประเภท', 'จำนวนคู่ความร่วมมือที่อ่านได้ตามสิทธิ์ของคุณ');
-                const rows = countRows(result.stakeholders?.byType);
-                if (!rows.length) block.appendChild(text('p', 'ไม่พบข้อมูล Stakeholder ตามเงื่อนไข', 'overview-empty'));
-                for (const row of rows) counter(block, row);
-                pane.appendChild(block);
-            } else if (activeTab === 'feedback') {
-                const block = section('สรุป Feedback', 'แสดงจำนวนตามแหล่งที่มาและข้อความล่าสุดที่คุณมีสิทธิ์อ่าน โดยไม่แสดงชื่อผู้ให้ Feedback');
-                block.append(text('p', `Feedback ทั้งหมด ${result.feedback?.count || 0} รายการ · มีข้อเสนอแนะ ${result.feedback?.withImprovement || 0} รายการ`, 'overview-highlight'));
-                for (const row of countRows(result.feedback?.bySource)) counter(block, row);
-                const list = text('ol', undefined, 'overview-latest-list');
-                for (const item of result.feedback?.latest || []) {
-                    const li = document.createElement('li');
-                    li.append(text('p', `${item.date || 'ไม่ระบุวันที่'} · ${labels[item.sourceType] || item.sourceType || 'Feedback'} · ${labels[item.parentType] || item.parentType}: ${item.parentTitle || ''}`, 'overview-muted'));
-                    if (item.comment) li.append(text('p', item.comment));
-                    if (item.improvement) li.append(text('p', `ข้อเสนอแนะ: ${item.improvement}`, 'overview-improvement'));
-                    list.appendChild(li);
+                const block = text('section', undefined, 'overview-panel overview-stakeholders');
+                const values = result.stakeholders?.byType || {};
+                const order = [...Object.keys(stakeholderTypes), ...Object.keys(values).filter(type => !stakeholderTypes[type]).sort()];
+                const rows = order.filter(type => Object.hasOwn(values, type)).map(type => ({
+                    type, label: labels[type] || type, count: Math.max(0, Number(values[type]) || 0),
+                    color: stakeholderTypes[type]?.color || '#8990a6', icon: stakeholderTypes[type]?.icon || 'building'
+                }));
+                const total = rows.reduce((sum, row) => sum + row.count, 0);
+                const header = text('div', undefined, 'overview-stakeholder-header');
+                const art = document.createElement('img'); art.src = 'assets/overview-orbit.webp';
+                art.alt = ''; art.className = 'overview-summary-art'; art.setAttribute('aria-hidden', 'true');
+                const badge = text('span', undefined, 'overview-stakeholder-badge'); badge.appendChild(icon('users'));
+                const heading = text('div', undefined, 'overview-stakeholder-heading');
+                heading.append(text('h3', 'Stakeholder ตามประเภท'), text('p', 'จำนวนคู่ความร่วมมือที่อ่านได้ตามสิทธิ์ของคุณ'));
+                const headline = text('div', undefined, 'overview-stakeholder-total');
+                headline.append(text('strong', total), text('span', 'คู่ความร่วมมือทั้งหมด'));
+                header.append(art, badge, heading, headline);
+                const body = text('div', undefined, 'overview-stakeholder-body');
+                const table = text('table', undefined, 'overview-stakeholder-table');
+                table.setAttribute('aria-label', 'จำนวน Stakeholder ตามประเภท');
+                const thead = document.createElement('thead'), titles = document.createElement('tr');
+                for (const title of ['ประเภท', 'จำนวน']) { const th = text('th', title); th.setAttribute('scope', 'col'); titles.appendChild(th); }
+                thead.appendChild(titles); table.appendChild(thead);
+                const tbody = document.createElement('tbody');
+                for (const row of rows) {
+                    const tr = document.createElement('tr'); tr.dataset.type = row.type;
+                    const category = text('th', undefined); category.setAttribute('scope', 'row');
+                    const categoryLabel = text('span', undefined, 'overview-stakeholder-category');
+                    const symbol = text('span', undefined, 'overview-stakeholder-icon'); symbol.appendChild(icon(row.icon));
+                    categoryLabel.append(symbol, text('span', row.label)); category.appendChild(categoryLabel);
+                    const amount = document.createElement('td'); amount.append(text('strong', row.count), text('span', ' แห่ง'));
+                    tr.append(category, amount); tbody.appendChild(tr);
                 }
-                if (!list.children.length) block.appendChild(text('p', 'ยังไม่มี Feedback ในข้อมูลที่ตรงกับเงื่อนไข', 'overview-empty'));
-                else block.appendChild(list);
+                table.appendChild(tbody);
+                const donut = text('div', undefined, 'overview-donut overview-stakeholder-donut');
+                const canvas = document.createElement('canvas'); canvas.setAttribute('aria-hidden', 'true');
+                const center = text('div', undefined, 'overview-donut-label'); center.append(text('strong', total), text('span', 'แห่ง'));
+                donut.append(canvas, center); body.append(table, donut); block.append(header, body);
+                if (!total) block.appendChild(text('p', 'ไม่พบข้อมูล Stakeholder ตามเงื่อนไข', 'overview-empty'));
                 pane.appendChild(block);
+                drawDoughnut(canvas, rows, block, '62%');
             }
         }
         async function load() {

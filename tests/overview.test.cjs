@@ -209,7 +209,7 @@ test('CstuOverview renders structured breakdown rows, tab active states, and rol
 
     const tabsNav = root.findAll(el => el.classList?.contains('overview-tabs'))[0];
     const tabButtons = tabsNav.children;
-    assert.deepEqual(tabButtons.map(b => b.textContent), ['สรุป', 'Stakeholder', 'Feedback']);
+    assert.deepEqual(tabButtons.map(b => b.textContent), ['สรุป', 'Stakeholder']);
     assert.equal(tabButtons[0].classList.contains('active'), true);
     assert.equal(tabButtons[0].getAttribute('aria-selected'), 'true');
     assert.equal(tabButtons[1].classList.contains('active'), false);
@@ -224,16 +224,17 @@ test('CstuOverview renders structured breakdown rows, tab active states, and rol
     assert.equal(activeRow.children[2].textContent, '8');
 
     // Switch through every tab and verify exclusive active state + rendered content.
-    tabButtons[2].onclick(); // Feedback
+    tabButtons[1].onclick(); // Stakeholder
     assert.equal(tabButtons[0].classList.contains('active'), false);
     assert.equal(tabButtons[0].getAttribute('aria-selected'), 'false');
-    assert.equal(tabButtons[2].classList.contains('active'), true);
-    assert.equal(tabButtons[2].getAttribute('aria-selected'), 'true');
-    const improvement = root.findAll(el => el.classList?.contains('overview-improvement'))[0];
-    assert.ok(improvement);
-    assert.equal(improvement.textContent, 'ข้อเสนอแนะ: เพิ่มเวลา Workshop');
+    assert.equal(tabButtons[1].classList.contains('active'), true);
+    assert.equal(tabButtons[1].getAttribute('aria-selected'), 'true');
+    const company = root.findAll(el => el.dataset?.type === 'company')[0];
+    assert.equal(company.textContent, 'บริษัท / ภาคเอกชน14 แห่ง');
+    assert.equal(root.findAll(el => el.classList?.contains('overview-stakeholder-total'))[0].textContent, '21คู่ความร่วมมือทั้งหมด');
+    assert.equal(root.textContent.includes('%'), false);
 
-    assert.equal(tabButtons.length, 3); // Outcomes were removed from this overview.
+    assert.equal(tabButtons.length, 2); // Feedback now belongs to the dedicated inbox.
     assert.equal(root.textContent.includes('บันทึกผลลัพธ์แล้ว'), false);
 });
 
