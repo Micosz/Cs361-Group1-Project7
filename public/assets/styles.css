@@ -152,6 +152,14 @@ main { flex: 1; }
 }
 .clear-filter-btn { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; background: #fff; color: var(--text-gray); border: 1px solid var(--control-border); border-radius: var(--radius-control); }
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+
+/* Expand the information board on large screens while keeping cards readable. */
+@media (min-width: 1280px) {
+    main.container { max-width: 1680px; padding-inline: 48px; }
+}
+@media (min-width: 1500px) {
+    main.container .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 .card { min-width: 0; height: 100%; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-card); overflow: hidden; cursor: pointer; }
 .card-thumbnail { min-height: 184px; display: flex; align-items: center; justify-content: center; padding: 20px; background-origin: content-box; border-bottom: 1px solid var(--border-color); }
 .card-bg-red { background-color: #f8f0f2; }
