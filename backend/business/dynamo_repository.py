@@ -167,25 +167,60 @@ class DynamoBusinessRepository:
                 catalog.append(projected)
         return catalog
 
-    def create_public_feedback(self, kind, key, payload, session_hash, idempotency_key):
-        """Write-only public feedback; visibility and session are checked atomically."""
+    def _public_feedback_parent(self, kind, key):
         import re
-        from uuid import uuid4
         from ..permissions.projections import public_projection
         if kind not in {'partner', 'activity'} or not re.fullmatch(r'[A-Za-z0-9_-]{1,200}', key):
             raise AuthError('NOT_FOUND', 404)
+        parent = self.get(kind, key)
+        if (not parent or parent.get('source_state') == 'retired'
+                or not isinstance(parent.get('scopeId'), str) or not parent['scopeId']
+                or type(parent.get('version')) is not int):
+            raise AuthError('NOT_FOUND', 404)
+        partner = self.get('partner', parent.get('partnerId')) if kind == 'activity' else None
+        partners = {partner['id']: partner} if partner else {}
+        if (partner and partner.get('source_state') == 'retired') or public_projection(kind, parent, partners) is None:
+            raise AuthError('NOT_FOUND', 404)
+        return parent, partner
+
+    def public_feedback(self, kind, key):
+        from ..permissions.projections import pick
+        parent, _ = self._public_feedback_parent(kind, key)
+        rows, cursor = [], None
+        while True:
+            query = dict(TableName=self.table, IndexName=self.index,
+                         KeyConditionExpression='#partition = :partition',
+                         ExpressionAttributeNames={'#partition': 'scopeEntity'},
+                         ExpressionAttributeValues=values({':partition': parent['scopeId'] + '#feedback'}),
+                         ProjectionExpression='id')
+            if cursor:
+                query['ExclusiveStartKey'] = cursor
+            result = self.client.query(**query)
+            for item in result.get('Items', []):
+                # GSI candidates cannot authorize a stale, reassigned or internal row.
+                row = self.get('feedback', decode(item)['id'])
+                if (not row or row.get('origin') != 'web' or row.get('source_state') == 'retired'
+                        or row.get('scopeId') != parent['scopeId']
+                        or row.get('parentType') != kind or row.get('parentId') != key):
+                    continue
+                rows.append(pick(row, {'id', 'comment', 'respondentType', 'occurredOn', 'createdAt'}))
+            cursor = result.get('LastEvaluatedKey')
+            if not cursor:
+                break
+        current, _ = self._public_feedback_parent(kind, key)
+        if current['scopeId'] != parent['scopeId'] or current['version'] != parent['version']:
+            raise AuthError('NOT_FOUND', 404)
+        return rows
+
+    def create_public_feedback(self, kind, key, payload, session_hash, idempotency_key):
+        """Public feedback; parent visibility and session are checked atomically."""
+        from uuid import uuid4
         if (not isinstance(payload, dict) or set(payload) != {'respondentType', 'comment'}
                 or not isinstance(payload['respondentType'], str)
                 or payload['respondentType'] not in {'student', 'teacher', 'partner', 'participant', 'other'}
                 or not isinstance(payload['comment'], str) or not 1 <= len(payload['comment'].strip()) <= 5000):
             raise AuthError('INVALID_FIELDS', 422)
-        parent = self.get(kind, key)
-        if not parent or not isinstance(parent.get('scopeId'), str) or not parent['scopeId'] or type(parent.get('version')) is not int:
-            raise AuthError('NOT_FOUND', 404)
-        partner = self.get('partner', parent.get('partnerId')) if kind == 'activity' else None
-        partners = {partner['id']: partner} if partner else {}
-        if public_projection(kind, parent, partners) is None:
-            raise AuthError('NOT_FOUND', 404)
+        parent, partner = self._public_feedback_parent(kind, key)
         now = int(self.clock())
         normalized = {'respondentType': payload['respondentType'], 'comment': payload['comment'].strip()}
         fingerprint = hashlib.sha256(json.dumps([kind, key, normalized], ensure_ascii=False, sort_keys=True).encode()).hexdigest()

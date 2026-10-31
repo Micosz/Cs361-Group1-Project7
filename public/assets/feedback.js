@@ -1,6 +1,20 @@
 /* Scoped feedback uses the parent record's permissions; no public storage fallback. */
 (() => {
     'use strict';
+    function enhanceComposer(form, fields) {
+        form.className += ' feedback-composer';
+        const resize = textarea => {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.max(36, Math.min(textarea.scrollHeight, 200)) + 'px';
+        };
+        fields.forEach(textarea => {
+            textarea.rows = 1;
+            textarea.placeholder = textarea.placeholder || 'เพิ่มความคิดเห็น…';
+            textarea.oninput = () => resize(textarea);
+            textarea.onfocus = () => resize(textarea);
+            if (textarea.value) resize(textarea);
+        });
+    }
     function canCreateFeedback(session, parent) {
         if (!session?.user) return true;
         if (window.CstuWork.canEdit(session, parent)) return true;
@@ -8,7 +22,7 @@
     }
     async function mount(container, parent, kind, session, options = {}) {
         if (!['partners','activities','exchanges'].includes(kind) || !session?.user) return;
-        const heading=document.createElement('h3');heading.textContent='ความคิดเห็นและผลตอบรับ (Feedback)';
+        const heading=document.createElement('h3');heading.textContent=options.excludePublic?'ความคิดเห็นภายใน':'ความคิดเห็น';
         const status=document.createElement('p');status.setAttribute('role','status');
         const list=document.createElement('ol'), editor=document.createElement('div');
         container.className='feedback-section';container.append(heading,status,list,editor);
@@ -22,8 +36,20 @@
             else if(!allowed && addMounted){add.remove?.();addMounted=false;}
         };
         let revision=0;
+        let publicArea=null, publicRows=[];
+        function publicActions() {
+            if(!publicArea)return;
+            publicArea.querySelectorAll('.public-comment-list > li').forEach(li=>{
+                li.querySelector('[data-feedback-edit]')?.remove();
+                const row=publicRows.find(row=>row.id===li.dataset.feedbackId && row.canEdit);
+                if(!row)return;
+                const edit=document.createElement('button');edit.type='button';edit.textContent='แก้ไข';
+                edit.dataset.feedbackEdit='';edit.onclick=()=>form(row);li.append(edit);
+            });
+        }
         async function load() {
             const current=++revision;list.replaceChildren();status.textContent='กำลังโหลด Feedback';
+            publicRows=[];publicActions();
             try {
                 let cursor=null,total=0,firstPage=true;
                 do {
@@ -31,6 +57,7 @@
                     if(current!==revision || container.isConnected===false)return;
                     if(firstPage && typeof result.canCreate==='boolean'){syncAddButton(result.canCreate);firstPage=false;}
                     for(const row of result.data){
+                        if(options.excludePublic && row.origin==='web'){publicRows.push(row);continue;}
                         const li=document.createElement('li');
                         const categories={student:'นักศึกษา',teacher:'อาจารย์',partner:'คู่ความร่วมมือ',participant:'ผู้เข้าร่วม',other:'อื่น ๆ'};
                         const meta=document.createElement('p');meta.textContent=row.occurredOn+' · '+(categories[row.respondentType]||sources[row.sourceType]||row.sourceType);
@@ -43,7 +70,12 @@
                     }
                     cursor=result.page.nextCursor;
                 }while(cursor);
-                status.textContent=total?'':'ยังไม่มี Feedback';
+                status.textContent=total?'':options.excludePublic?'ยังไม่มีความคิดเห็นภายใน':'ยังไม่มีความคิดเห็น';
+                if(options.excludePublic && !publicArea){
+                    publicArea=container.closest('.detail-comments')?.querySelector('.public-feedback');
+                    publicArea?.addEventListener('cstu:public-feedback-loaded',()=>load());
+                }
+                publicActions();
             }catch(error){
                 if(current===revision && container.isConnected!==false){
                     if(error.status===403||error.status===404)syncAddButton(false);
@@ -54,6 +86,9 @@
         function textValue(value){return String(value??'');}
         function form(row=null){
             editor.replaceChildren();const form=document.createElement('form');
+            if(row?.origin==='web'){
+                const notice=document.createElement('p');notice.textContent='ความคิดเห็นนี้แสดงต่อสาธารณะ โปรดหลีกเลี่ยงข้อมูลส่วนบุคคล';form.append(notice);
+            }
             const field=(label,node)=>{const p=document.createElement('p'),l=document.createElement('label');l.textContent=label+' ';l.appendChild(node);p.appendChild(l);form.appendChild(p);return node;};
             const today=new Date().toISOString().slice(0, 10);
             const date=field('วันที่รับ Feedback (บันทึกอัตโนมัติ)',document.createElement('input'));date.type='text';date.readOnly=true;date.required=true;date.value=row?.occurredOn||today;date.style.backgroundColor='#f7f2ee';date.style.cursor='default';
@@ -66,6 +101,7 @@
             const save=document.createElement('button');save.type='submit';save.textContent='บันทึก Feedback';
             const cancel=document.createElement('button');cancel.type='button';cancel.textContent='ยกเลิก';cancel.onclick=()=>editor.replaceChildren();
             form.append(message,save,cancel);editor.appendChild(form);
+            enhanceComposer(form, [comment, improvement]);
             let fingerprint=null,key=null;
             form.onsubmit=async event=>{
                 event.preventDefault();if(save.disabled)return;
@@ -79,6 +115,7 @@
                     else await window.CstuAuth.create(base,payload,key);
                     if(container.isConnected===false)return;
                     editor.replaceChildren();await load();
+                    if(row?.origin==='web')publicArea?.dispatchEvent(new Event('cstu:public-feedback-refresh'));
                 }catch(error){message.textContent=error.status===409?'ข้อมูลเปลี่ยนแล้ว กรุณายกเลิกและเปิด Feedback ล่าสุดเพื่อตรวจทาน':error.status===403||error.status===404?'คุณไม่มีสิทธิ์จัดการ Feedback นี้แล้ว':'บันทึกไม่ได้: '+error.message;}
                 finally{save.disabled=false;}
             };
@@ -88,5 +125,5 @@
         syncAddButton(canCreateFeedback(session,parent));
         await load();
     }
-    window.CstuFeedback={mount};
+    window.CstuFeedback={mount,enhanceComposer};
 })();

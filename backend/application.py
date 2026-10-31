@@ -78,8 +78,19 @@ class AuthApplication:
         return response(200, self.repository.public_catalog())
 
     def public_feedback(self, event, collection, key):
-        """Accept a public submission without exposing any stored feedback."""
-        if event.get('requestContext', {}).get('http', {}).get('method') != 'POST':
+        """Public web comments only; internal feedback keeps its scoped routes."""
+        kind = 'partner' if collection == 'partners' else 'activity'
+        method = event.get('requestContext', {}).get('http', {}).get('method')
+        if method == 'GET':
+            from .permissions.listing import page
+            if set(event.get('queryStringParameters') or {}) - {'limit', 'cursor'}:
+                raise AuthError('INVALID_QUERY', 422)
+            if not self.repository or not hasattr(self.repository, 'public_feedback'):
+                raise AuthError('PERMISSION_UNAVAILABLE', 503)
+            rows = self.repository.public_feedback(kind, key)
+            data, count, pagination = page(rows, event, self.sessions, 'feedback')
+            return response(200, {'data': data, 'count': count, 'page': pagination})
+        if method != 'POST':
             raise AuthError('METHOD_NOT_ALLOWED', 405)
         if event.get('queryStringParameters'):
             raise AuthError('INVALID_QUERY', 422)

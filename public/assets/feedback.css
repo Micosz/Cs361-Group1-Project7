@@ -1,0 +1,40 @@
+/* Shared compact comment composer for partner, activity and exchange details. */
+.feedback-section .feedback-hint { color: #777078; font-size: .85rem; line-height: 1.6; margin: 0 0 20px; }
+.feedback-section .feedback-composer { margin: 16px 0 24px; }
+.feedback-section .feedback-composer textarea,
+.detail-sheet .feedback-section .feedback-composer textarea,
+#record-detail .feedback-section .feedback-composer textarea {
+    display: block; box-sizing: border-box; width: 100%; min-height: 36px; max-height: 200px;
+    margin: 0; padding: 6px 0; border: 0; border-bottom: 1px solid #cec7cb; border-radius: 0;
+    background: transparent; box-shadow: none; font: inherit; font-size: .95rem; line-height: 1.5;
+    resize: vertical; transition: border-color .15s;
+}
+.feedback-section .feedback-composer textarea:focus,
+.detail-sheet .feedback-section .feedback-composer textarea:focus {
+    outline: none; border-bottom: 2px solid #302b30;
+}
+.feedback-section .feedback-composer-controls { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.feedback-section .feedback-composer-controls[hidden], .feedback-section [hidden] { display: none !important; }
+.feedback-section .feedback-composer-controls label { flex: 1 1 160px; max-width: 250px; font-size: .8rem; color: #6c6469; }
+.feedback-section .feedback-composer-controls select { font-size: .85rem; min-height: 36px; padding: 6px 8px; }
+.feedback-section .feedback-composer-actions { display: flex; gap: 8px; margin-left: auto; }
+.feedback-section .feedback-composer button,
+.detail-sheet .feedback-section .feedback-composer button,
+#record-detail .feedback-section .feedback-composer button {
+    min-height: 36px; margin: 0; padding: 6px 16px; border-radius: 999px;
+    border: 1px solid transparent; background: transparent; color: #403940; font: inherit; font-size: .85rem; cursor: pointer;
+}
+.feedback-section .feedback-composer button[type='submit'],
+.detail-sheet .feedback-section .feedback-composer button[type='submit'],
+#record-detail .feedback-section .feedback-composer button[type='submit'] { color: #fff; background: #c3002f; }
+.feedback-section .feedback-composer button:hover { filter: brightness(.92); background-color: #f3eef0; }
+.feedback-section .feedback-composer button:disabled { opacity: .55; cursor: wait; }
+.feedback-section [role='status'] { font-size: .85rem; color: #706970; }
+.feedback-section [role='status']:empty { display: none; }
+.detail-sheet .feedback-section h3 { margin: 0 0 12px; font-size: 1.1rem; }
+.feedback-section ol, .detail-sheet .feedback-section ol { list-style: none; padding: 0; margin: 0; }
+.feedback-section li, .detail-sheet .feedback-section li { padding: 16px 0; margin: 0; border-bottom: 1px solid #eee9eb; font-size: .95rem; line-height: 1.6; }
+.feedback-section li p { margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.feedback-section li p:first-child, .detail-sheet .feedback-section li p:first-child { font-size: .8rem; color: #777078; }
+.detail-comments .feedback-section + .feedback-section,
+.public-feedback > .feedback-section { margin-top: 32px; }
