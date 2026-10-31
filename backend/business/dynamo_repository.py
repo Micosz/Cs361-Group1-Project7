@@ -105,7 +105,7 @@ class DynamoBusinessRepository:
                     row = self.get(kind, candidate['id'])
                     if not row or row.get('scopeId') != scope:
                         continue
-                    if parent and kind in {'document', 'feedback'} and (row.get('parentId') != parent['id'] or row.get('parentType') != parent['entityType']):
+                    if parent and kind in {'document', 'feedback', 'formFeedback'} and (row.get('parentId') != parent['id'] or row.get('parentType') != parent['entityType']):
                         continue
                     if parent and kind in {'contact', 'history'} and row.get('partnerId') != parent['id']:
                         continue
@@ -178,6 +178,8 @@ class DynamoBusinessRepository:
         return self.documents.content(document, disposition)
 
     def mutate(self, kind, action, payload, record, parent, conditions, idempotency_key, upload=None):
+        if action == 'delete' and kind == 'formFeedback':
+            return self._delete_form_feedback(record, parent, conditions)
         if action == 'delete' and kind == 'contact':
             return self._delete_contact(record, parent, conditions)
         now = int(self.clock())
@@ -264,6 +266,11 @@ class DynamoBusinessRepository:
             normalized = normalize_payload(kind, action, payload, record=record)
             domain = ActivityRepository(local_service, seeds, clock=self.clock)
             saved = domain.mutate(kind, action, normalized, record, parent, conditions, None)
+        elif kind == 'formFeedback' and action == 'create':
+            from ..form_feedback import form_record
+            saved = form_record(context, payload, parent, now)
+            if self.get(kind, saved['id']):
+                raise AuthError('DUPLICATE_FORM_IMPORT', 409)
         elif kind == 'feedback' and action in {'create', 'update'}:
             from ..feedback import feedback_record
             saved = feedback_record(context, action, payload, record, parent, now)
@@ -348,6 +355,8 @@ class DynamoBusinessRepository:
                 self.documents.delete(saved)
             code = getattr(error, 'response', {}).get('Error', {}).get('Code')
             if code == 'TransactionCanceledException':
+                if kind == 'formFeedback' and current is not None:
+                    raise AuthError('DUPLICATE_FORM_IMPORT', 409) from None
                 raise AuthError('VERSION_CONFLICT', 409) from None
             raise
         return copy.deepcopy(saved)
@@ -387,6 +396,31 @@ class DynamoBusinessRepository:
         except Exception as error:
             code = getattr(error, 'response', {}).get('Error', {}).get('Code')
             if code == 'TransactionCanceledException':
+                raise AuthError('VERSION_CONFLICT', 409) from None
+            raise
+        return copy.deepcopy(record)
+
+    def _delete_form_feedback(self, record, parent, conditions):
+        now = int(self.clock())
+        actor = self.service.users.get(conditions.user_id)
+        if not actor or actor.authz_version != conditions.authz_version:
+            raise AuthError('SESSION_REVOKED', 401)
+        from ..permissions.policy import require_record
+        require_record(SessionContext(actor, now), 'formFeedback', 'delete', record, parent)
+        checks = transaction_checks(conditions, user_table=self.users, session_table=self.sessions,
+                                    business_table=self.table, now=now)
+        for check in checks:
+            item = check.get('ConditionCheck', {})
+            if item.get('TableName') == self.table:
+                item['TableName'] = self._table(parent['entityType'])
+                item['Key'] = self._key(parent['entityType'], parent)
+        delete = {'TableName': self.table, 'Key': self._key('formFeedback', record)}
+        delete.update(target_condition(conditions))
+        checks.append({'Delete': delete})
+        try:
+            self.client.transact_write_items(TransactItems=checks)
+        except Exception as error:
+            if getattr(error, 'response', {}).get('Error', {}).get('Code') == 'TransactionCanceledException':
                 raise AuthError('VERSION_CONFLICT', 409) from None
             raise
         return copy.deepcopy(record)

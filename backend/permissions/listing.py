@@ -74,7 +74,7 @@ def page(rows, event, service, kind=None):
         return str(row.get('name', row.get('title', ''))).casefold()
     rows = sorted((r for r in rows if needle in searchable(r)),
                   key=lambda r: r['id'])
-    if kind in {'history', 'feedback'}:
+    if kind in {'history', 'feedback', 'formFeedback'}:
         rows.sort(key=lambda r: r.get('createdAt') or '', reverse=True)
         rows.sort(key=lambda r: r.get('occurredOn') or '', reverse=True)
     # Include the authorized projection snapshot so record edits/assignment changes

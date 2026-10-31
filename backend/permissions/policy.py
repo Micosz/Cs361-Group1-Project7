@@ -3,7 +3,7 @@
 from ..auth.session_service import AuthError
 
 BUSINESS = {'partner', 'activity', 'agreement', 'exchange'}
-CHILDREN = {'contact', 'history', 'document', 'feedback'}
+CHILDREN = {'contact', 'history', 'document', 'feedback', 'formFeedback'}
 DISPLAY = {
     'partner': {'name', 'type', 'summary', 'fullDescription', 'location', 'websiteUrl', 'logoPath'},
     'activity': {'title', 'type', 'summary', 'fullDescription', 'partnerId',
@@ -17,6 +17,7 @@ WRITABLE = {
                  'startDate', 'endDate', 'supportingInfo', 'supportingInfoForParticipant', 'outcomeSummary'},
     'contact': {'name', 'position', 'email', 'phone'},
     'history': {'occurredOn', 'kind', 'note', 'referenceType', 'referenceId'},
+    'formFeedback': {'formName', 'sourceType', 'fileName', 'sheetName', 'columns', 'rows'},
     'feedback': {'occurredOn', 'sourceType', 'comment', 'improvement', 'respondentName'},
     'document': {'displayName', 'audience', 'containsPersonal'},
 }
@@ -50,6 +51,8 @@ def grants(context):
 def action_roles(kind, action):
     if kind not in BUSINESS | CHILDREN:
         return set()
+    if kind == 'formFeedback':
+        return {'coordinator', 'staff', 'executive'} if action in {'read', 'create', 'delete'} else set()
     if action == 'read':
         return ({'student', 'coordinator', 'staff', 'executive'} if kind in {'activity', 'agreement', 'exchange', 'document', 'feedback'}
                 else {'coordinator', 'staff', 'executive'})
@@ -97,6 +100,11 @@ def allowed_roles(context, kind, action, record, parent=None):
             return set()
         if kind in {'contact', 'history'}:
             if parent.get('entityType') != 'partner' or record.get('partnerId') != parent['id']:
+                return set()
+        elif kind == 'formFeedback':
+            if (parent.get('entityType') not in {'partner', 'activity', 'exchange'}
+                    or record.get('parentId') != parent['id']
+                    or record.get('parentType') != parent['entityType']):
                 return set()
         elif kind == 'feedback':
             if (parent.get('entityType') not in {'activity', 'exchange'}

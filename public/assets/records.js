@@ -131,6 +131,7 @@
             if (!container.isConnected || record?.id !== id) return;
             container.className = 'partner-management';
             const editable = window.CstuWork.canEdit(fresh,record);
+            mountFormFeedback(record, 'partners', fresh, container);
             const actions = document.createElement('div'), editor = document.createElement('div');
             const message = document.createElement('p'); message.setAttribute('role','status');
             actions.className = 'partner-detail-actions';
@@ -198,10 +199,18 @@
         }
     }
     function mountFeedback(record, resourceKind, identity) {
+        mountFormFeedback(record, resourceKind, identity, $('detail-fields'));
         if (!['activities','exchanges'].includes(resourceKind) || !window.CstuFeedback) return;
         const container=document.createElement('section'); $('detail-fields').appendChild(container);
         window.CstuFeedback.mount(container,record,resourceKind,identity);
         window.CstuDetailSheet?.feedback(container);
+    }
+    function mountFormFeedback(record, resourceKind, identity, host) {
+        if (!window.CstuFormFeedback || !window.CstuWork.canEdit(identity, record) ||
+                !['partners', 'activities', 'exchanges'].includes(resourceKind)) return;
+        const container = document.createElement('section'); host.appendChild(container);
+        window.CstuFormFeedback.mount(container, record, resourceKind, identity);
+        window.CstuDetailSheet?.forms(container, resourceKind === 'partners');
     }
     async function openPublicActivity(record, content, trigger) {
         window.CstuDetailSheet?.resetRecord();

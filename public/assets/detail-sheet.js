@@ -16,8 +16,9 @@
         const tabs = node('div', 'detail-tabs'); tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', 'ส่วนของรายละเอียด');
         const details = node('section', 'detail-panel detail-reading');
         const comments = node('section', 'detail-panel detail-comments');
-        const panels = [details, comments];
-        const buttons = ['รายละเอียด', 'ความคิดเห็น'].map((label, index) => {
+        const forms = node('section', 'detail-panel detail-forms');
+        const panels = [details, comments, forms];
+        const buttons = ['รายละเอียด', 'ความคิดเห็น', 'ผลตอบรับจากแบบฟอร์ม'].map((label, index) => {
             const button = node('button', 'detail-tab', label); button.type = 'button';
             button.id = prefix + '-tab-' + index;
             button.setAttribute('role', 'tab');
@@ -41,15 +42,18 @@
             button.onkeydown = event => {
                 if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
                 event.preventDefault();
-                const next = event.key === 'Home' ? 0 : event.key === 'End' ? 1 : 1 - index;
-                select(buttons[next].hidden ? 0 : next, true);
+                const available = buttons.map((button, i) => button.hidden ? -1 : i).filter(i => i >= 0);
+                const position = available.indexOf(index), length = available.length;
+                const next = event.key === 'Home' ? available[0] : event.key === 'End' ? available[length - 1]
+                    : available[(position + (event.key === 'ArrowRight' ? 1 : -1) + length) % length];
+                select(next, true);
             };
         });
-        buttons[1].hidden = true;
+        buttons[1].hidden = buttons[2].hidden = true;
         details.append(...content); bar.append(tabs, close); main.append(bar, ...panels);
         root.append(sidebar, main); root.classList.add('detail-sheet');
         select(0);
-        const state = {root, sidebar, details, comments, buttons, select, title, close};
+        const state = {root, sidebar, details, comments, forms, buttons, select, title, close};
         states.set(root, state); return state;
     }
     const legacy = document.querySelector('#detailModal .modal-content');
@@ -114,9 +118,15 @@
     dialog?.addEventListener('close', resetRecord);
     window.CstuDetailSheet = {
         record, resetRecord, feedback,
+        forms(container, isPartner = false) {
+            const state = isPartner ? legacyState : recordState;
+            if (!state || !container.classList.contains('form-feedback')) return;
+            state.forms.replaceChildren(container); state.buttons[2].hidden = false;
+        },
         open() {
             if (!legacyState) return;
             returnFocus = document.activeElement;
+            legacyState.forms.replaceChildren(); legacyState.buttons[2].hidden = true;
             legacyState.sidebar.querySelector('.detail-short-name')?.remove();
             const name = legacyState.title.textContent;
             const acronym = name.match(/\(([A-Z][A-Z0-9&.-]{1,14})\)\s*$/)?.[1];

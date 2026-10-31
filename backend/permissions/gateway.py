@@ -22,7 +22,7 @@ from ..relationships.activity_links import internal_links, LinkError
 
 COLLECTIONS = {'partners': 'partner', 'activities': 'activity',
                'agreements': 'agreement', 'exchanges': 'exchange'}
-NESTED = {'contacts': 'contact', 'history': 'history', 'documents': 'document', 'feedback': 'feedback'}
+NESTED = {'contacts': 'contact', 'history': 'history', 'documents': 'document', 'feedback': 'feedback', 'form-feedback': 'formFeedback'}
 
 
 @dataclass(frozen=True)
@@ -68,6 +68,7 @@ def route(event):
         child = NESTED[parts[2]]
         if (child in {'contact', 'history'} and kind != 'partner'
                 or child == 'document' and kind not in {'agreement', 'exchange'}
+                or child == 'formFeedback' and kind not in {'partner', 'activity', 'exchange'}
                 or child == 'feedback' and kind not in {'activity', 'exchange'}):
             raise AuthError('NOT_FOUND', 404)
         return child, parts[3] if len(parts) == 4 else None, kind, parts[1], False, mine
@@ -129,7 +130,7 @@ class PermissionGateway:
             action = ('status' if special == 'status' and method == 'POST' else
                       'read' if method == 'GET' and special != 'status' else
                       'update' if method == 'PATCH' and key and not special else
-                      'delete' if method == 'DELETE' and key and kind in {'document', 'contact'} and not special else
+                      'delete' if method == 'DELETE' and key and kind in {'document', 'contact', 'formFeedback'} and not special else
                       'upload' if method == 'POST' and not key and kind == 'document' else
                       'create' if method == 'POST' and not key else None)
             if special == 'inbox' and method != 'GET':
@@ -201,10 +202,18 @@ class PermissionGateway:
                     if special == 'inbox':
                         projected.pop('respondentName', None)
                         projected['parentTitle'] = row_parent.get('title', '')
+                    if kind == 'formFeedback':
+                        projected.pop('rows', None)
+                        projected.pop('columns', None)
                     rows.append(projected)
                 data, count, pagination = page(rows, event, self.service, kind)
                 result_body = {'data': data, 'count': count, 'page': pagination,
                                'requestId': event.get('requestContext', {}).get('requestId', '')}
+                if kind == 'formFeedback' and parent is not None:
+                    candidate = {'entityType': kind, 'scopeId': parent['scopeId'],
+                                 'parentType': parent['entityType'], 'parentId': parent['id']}
+                    require_record(context, kind, 'read', candidate, parent)
+                    result_body['canCreate'] = bool(allowed_roles(context, kind, 'create', candidate, parent))
                 if kind == 'feedback' and parent is not None:
                     candidate = {'entityType': 'feedback', 'scopeId': parent['scopeId'],
                                  'parentType': parent['entityType'], 'parentId': parent['id']}
@@ -223,7 +232,7 @@ class PermissionGateway:
             authorization_record = record
             if not key and parent_kind:
                 authorization_record = {'entityType': kind, 'scopeId': parent['scopeId']}
-                if kind in {'document', 'feedback'}:
+                if kind in {'document', 'feedback', 'formFeedback'}:
                     authorization_record.update(parentType=parent_kind, parentId=parent_key)
                     if kind == 'document':
                         authorization_record.update(audience=payload.get('audience'),
