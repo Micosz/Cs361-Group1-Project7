@@ -209,19 +209,19 @@ test('CstuOverview renders structured breakdown rows, tab active states, and rol
 
     const tabsNav = root.findAll(el => el.classList?.contains('overview-tabs'))[0];
     const tabButtons = tabsNav.children;
-    assert.deepEqual(tabButtons.map(b => b.textContent), ['สรุป', 'Stakeholder', 'Feedback', 'ผลลัพธ์']);
+    assert.deepEqual(tabButtons.map(b => b.textContent), ['สรุป', 'Stakeholder', 'Feedback']);
     assert.equal(tabButtons[0].classList.contains('active'), true);
     assert.equal(tabButtons[0].getAttribute('aria-selected'), 'true');
     assert.equal(tabButtons[1].classList.contains('active'), false);
 
-    // Breakdown rows have separate label and count pill children while preserving readable textContent.
-    const breakdownRows = root.findAll(el => el.classList?.contains('overview-breakdown-row'));
+    // Chart data remains readable in the separate status legend.
+    const breakdownRows = root.findAll(el => el.classList?.contains('overview-legend-row'));
     assert.ok(breakdownRows.length > 0);
     const activeRow = breakdownRows.find(r => r.textContent.includes('มีผล'));
     assert.ok(activeRow);
-    assert.equal(activeRow.textContent, 'มีผล · 8 รายการ');
-    assert.equal(activeRow.findAll(el => el.classList?.contains('overview-breakdown-label'))[0].textContent, 'มีผล');
-    assert.equal(activeRow.findAll(el => el.classList?.contains('overview-breakdown-count'))[0].textContent, '8 รายการ');
+    assert.equal(activeRow.textContent, 'มีผล8');
+    assert.equal(activeRow.children[1].textContent, 'มีผล');
+    assert.equal(activeRow.children[2].textContent, '8');
 
     // Switch through every tab and verify exclusive active state + rendered content.
     tabButtons[2].onclick(); // Feedback
@@ -233,10 +233,8 @@ test('CstuOverview renders structured breakdown rows, tab active states, and rol
     assert.ok(improvement);
     assert.equal(improvement.textContent, 'ข้อเสนอแนะ: เพิ่มเวลา Workshop');
 
-    tabButtons[3].onclick(); // Outcomes
-    assert.equal(tabButtons[2].classList.contains('active'), false);
-    assert.equal(tabButtons[3].classList.contains('active'), true);
-    assert.ok(root.findAll(el => el.classList?.contains('overview-latest-list'))[0].children.length === 1);
+    assert.equal(tabButtons.length, 3); // Outcomes were removed from this overview.
+    assert.equal(root.textContent.includes('บันทึกผลลัพธ์แล้ว'), false);
 });
 
 test('records.js clears outer #records-status after CstuOverview mounts so status text is not duplicated', () => {
