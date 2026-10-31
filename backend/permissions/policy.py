@@ -54,8 +54,7 @@ def action_roles(kind, action):
         return ({'student', 'coordinator', 'staff', 'executive'} if kind in {'activity', 'agreement', 'exchange', 'document', 'feedback'}
                 else {'coordinator', 'staff', 'executive'})
     if action == 'create':
-        return ({'staff', 'executive'} if kind == 'partner'
-                else {'student', 'coordinator', 'staff', 'executive'} if kind == 'feedback'
+        return ({'student', 'coordinator', 'staff', 'executive'} if kind == 'feedback'
                 else {'coordinator', 'staff', 'executive'})
     if action == 'update':
         return ({'student', 'coordinator', 'staff', 'executive'} if kind == 'feedback'

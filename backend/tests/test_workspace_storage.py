@@ -294,3 +294,31 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.assertEqual(200, result['statusCode'], body)
         self.assertEqual(404, anonymous('/api/public/agreements/'+public['id'])['statusCode'])
         self.assertEqual([], json.loads(anonymous('/api/public/agreements')['body'])['data'])
+
+    def test_coordinator_creates_collaborator_in_dynamo_and_sees_it_according_to_permissions(self):
+        self.actor = 'coordinator'
+        result, body = self.call('/api/partners', 'POST', dict(
+            name='บริษัท ความร่วมมือวิจัย จำกัด', type='company',
+            summary='ความร่วมมือโครงงานและสหกิจศึกษา', location='กรุงเทพมหานคร',
+            websiteUrl='https://collab.example.org', logoPath='resources/partner-logo.png',
+            scopeId='cs-demo'), key='coord-dynamo-partner-0001')
+        self.assertEqual(201, result['statusCode'], body)
+        created = body['data']
+        self.assertEqual('internal', created['publication'])
+        self.assertEqual([self.ids['coordinator']], created['responsibleUserIds'])
+        listed_status, listed_body = self.call('/api/partners')
+        self.assertEqual(200, listed_status['statusCode'], listed_body)
+        self.assertIn(created['id'], [row['id'] for row in listed_body['data']])
+        selectable_status, selectable_body = self.call('/api/selection-partners?scopeId=cs-demo')
+        self.assertEqual(200, selectable_status['statusCode'], selectable_body)
+        self.assertIn(created['id'], [row['id'] for row in selectable_body['data']])
+        self.assertEqual(404, self.call('/api/partners', 'POST', dict(
+            name='นอกขอบเขต', type='company', summary='ไม่อนุญาต',
+            location='ปทุมธานี', scopeId='other-scope'), key='coord-dynamo-partner-0002')[0]['statusCode'])
+        self.assertEqual(403, self.call('/api/partners', 'POST', dict(
+            name='แอบเผยแพร่', type='company', summary='ไม่อนุญาต',
+            location='ปทุมธานี', scopeId='cs-demo', publication='public'), key='coord-dynamo-partner-0003')[0]['statusCode'])
+        self.actor = 'student-a'
+        self.assertEqual(403, self.call('/api/partners', 'POST', dict(
+            name='นักศึกษาสร้าง', type='company', summary='ไม่อนุญาต',
+            location='ปทุมธานี', scopeId='cs-demo'), key='student-dynamo-partner-0001')[0]['statusCode'])

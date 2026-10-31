@@ -66,8 +66,13 @@ class PolicyTests(unittest.TestCase):
     def test_roles_do_not_borrow_scope(self):
         c_student = context('student', extra=({'role': 'executive', 'scopeId': 'c2', 'active': True},))
         self.deny(404, lambda: require_record(c_student, 'exchange', 'update', row()))
+        self.deny(404, lambda: validate_fields(c_student, 'partner', 'create', {'scopeId': 'c1'}))
         c_coord = context('coordinator', extra=({'role': 'executive', 'scopeId': 'c2', 'active': True},))
-        self.deny(404, lambda: validate_fields(c_coord, 'partner', 'create', {'scopeId': 'c1'}))
+        self.deny(404, lambda: validate_fields(c_coord, 'partner', 'create', {'scopeId': 'c3'}))
+        self.deny(403, lambda: validate_fields(c_coord, 'partner', 'create', {'scopeId': 'c1', 'publication': 'public'}))
+        self.deny(403, lambda: validate_fields(c_coord, 'partner', 'create', {'scopeId': 'c1', 'responsibleUserIds': ['u2']}))
+        c_coord_other = context('coordinator', scope='c2')
+        self.deny(404, lambda: validate_fields(c_coord_other, 'partner', 'create', {'scopeId': 'c1'}))
         c_exec_other = context('executive', scope='c2')
         self.deny(404, lambda: require_record(c_exec_other, 'exchange', 'update', row()))
         self.deny(404, lambda: validate_fields(c_exec_other, 'partner', 'create', {'scopeId': 'c1'}))
@@ -114,7 +119,12 @@ class PolicyTests(unittest.TestCase):
             self.assertEqual(['u1'], result['responsibleUserIds'])
             if kind != 'activity':
                 self.assertEqual('draft', result['status'])
-        self.deny(403, lambda: validate_fields(context('coordinator'), 'partner', 'create', {'scopeId': 'c1'}))
+        coord_partner = validate_fields(context('coordinator'), 'partner', 'create', {'scopeId': 'c1', 'name': 'Coord Partner'})
+        self.assertEqual(['u1'], coord_partner['responsibleUserIds'])
+        self.assertEqual('internal', coord_partner['publication'])
+        for forbidden in ({'publication': 'public'}, {'responsibleUserIds': ['u2']}):
+            self.deny(403, lambda: validate_fields(context('coordinator'), 'partner', 'create', {'scopeId': 'c1', 'name': 'Bad', **forbidden}))
+        self.deny(403, lambda: validate_fields(context('student'), 'partner', 'create', {'scopeId': 'c1', 'name': 'No'}))
         exec_partner = validate_fields(context('executive'), 'partner', 'create', {'scopeId': 'c1', 'name': 'Exec Partner', 'publication': 'public'})
         self.assertEqual('public', exec_partner['publication'])
 
