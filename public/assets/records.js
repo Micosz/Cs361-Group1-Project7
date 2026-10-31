@@ -405,7 +405,7 @@
                 status('');
                 host.hidden = !result.page.nextCursor;
             }
-            if (kind === 'partners' && action === 'create' && $('filterCollab').value !== 'all') { $('filterCollab').value = 'all'; if ($('filterCollabClear')) $('filterCollabClear').style.display = 'none'; window.renderCollaboratorCards?.(); } if (eventKinds.includes(kind)) {
+            if (eventKinds.includes(kind)) {
                 eventRows = [...new Map(result.data.map(row=>[row.id,row])).values()]; nextCursor = result.page.nextCursor;
                 renderEventCards();
                 status('');
@@ -470,7 +470,7 @@
         for (const name of ['startDate','endDate']) form.elements.namedItem(name).value = '';
         if (config) setupFilters();
         if (kind === 'partners' && action === 'create' && $('filterCollab').value !== 'all') { $('filterCollab').value = 'all'; if ($('filterCollabClear')) $('filterCollabClear').style.display = 'none'; window.renderCollaboratorCards?.(); }
-        if (kind === 'partners' && action === 'create' && $('filterCollab').value !== 'all') { $('filterCollab').value = 'all'; if ($('filterCollabClear')) $('filterCollabClear').style.display = 'none'; window.renderCollaboratorCards?.(); } if (eventKinds.includes(kind)) {
+        if (eventKinds.includes(kind)) {
             eventKind = kind;
             if (kind === 'activities' && (action === 'create' || $('filterEvent').value === 'mou')) { $('filterEvent').value = 'all'; window.renderEventCards?.(); }
             if (kind === 'agreements') { $('filterEvent').value = 'mou'; window.renderEventCards?.(); }
@@ -514,7 +514,7 @@
         if (typeof detail?.keyword === 'string') keyword = detail.keyword;
         if (detail?.selectId && detail.selectId !== (kind === 'partners' ? 'filterCollab' : 'filterEvent')) return;
         if (!['partners','activities','agreements'].includes(kind)) return;
-        if (kind === 'partners' && action === 'create' && $('filterCollab').value !== 'all') { $('filterCollab').value = 'all'; if ($('filterCollabClear')) $('filterCollabClear').style.display = 'none'; window.renderCollaboratorCards?.(); } if (eventKinds.includes(kind)) {
+        if (eventKinds.includes(kind)) {
             const internal = window.CstuWork.roles(session).some(role => ['student','staff','coordinator','executive'].includes(role));
             kind = $('filterEvent').value === 'mou' ? 'agreements' : 'activities';
             eventKind = kind; config = window.CstuWork.kinds[kind]; setupFilters();
