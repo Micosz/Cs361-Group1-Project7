@@ -89,7 +89,7 @@ async function loadExchanges() {
         exchangeListStatus.textContent = '';
         const session = await window.CstuAuth.refresh();
         const currentUserId = session?.user?.id;
-        const isStaff = (session.grants || []).some(g => g.role === 'staff' && g.active !== false);
+        const isStaff = (session.grants || []).some(g => ['staff','executive'].includes(g.role) && g.active !== false);
 
         for (const ex of exchanges) {
             const card = document.createElement('div');
@@ -124,7 +124,7 @@ async function loadExchanges() {
             }
 
             const scopedRoles = (session.grants || []).filter(g => g.active !== false && g.scopeId === ex.scopeId).map(g => g.role);
-            const canEdit = scopedRoles.includes('staff') || (scopedRoles.includes('coordinator') && (ex.responsibleUserIds || []).includes(currentUserId));
+            const canEdit = scopedRoles.some(r => ['staff','executive'].includes(r)) || (scopedRoles.includes('coordinator') && (ex.responsibleUserIds || []).includes(currentUserId));
             if (canEdit && exchangeDialog) {
                 const actions = document.createElement('div');
                 actions.style.marginTop = '0.75rem';
@@ -304,7 +304,7 @@ function mountExchangeChoices() {
         {input:exchangeAgreementId,kind:'agreements',label:'ข้อตกลงที่เกี่ยวข้อง',multiple:false},
         {input:exchangeParticipantUsers,kind:'participant',label:'นักศึกษาผู้เข้าร่วม (เลือกได้หลายคน)'}
     ];
-    const staffInScope = (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false&&g.scopeId===exchangeScope.value&&g.role==='staff');
+    const staffInScope = (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false&&g.scopeId===exchangeScope.value&&['staff','executive'].includes(g.role));
     if (staffInScope) fields.push({input:exchangeResponsibleUsers,kind:'responsible',label:'ผู้รับผิดชอบโครงการ (เลือกได้หลายคน)'});
     const setTransitions = ready => {
         const state = exchangeStatusDisplay?.textContent;
@@ -343,7 +343,7 @@ function openAddExchangeDialog(scopes) {
     }
     exchangeScope.disabled = false;
 
-    const isStaff = (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false&&g.scopeId===exchangeScope.value&&g.role==='staff');
+    const isStaff = (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false&&g.scopeId===exchangeScope.value&&['staff','executive'].includes(g.role));
     if (staffExchangeFields) staffExchangeFields.hidden = !isStaff;
     if (exchangeStatusSection) exchangeStatusSection.hidden = true;
 
@@ -376,7 +376,7 @@ function openEditExchange(ex) {
     exchangeScope.appendChild(opt);
     exchangeScope.disabled = true;
 
-    const isStaff = (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false&&g.scopeId===exchangeScope.value&&g.role==='staff');
+    const isStaff = (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false&&g.scopeId===exchangeScope.value&&['staff','executive'].includes(g.role));
     if (staffExchangeFields) staffExchangeFields.hidden = !isStaff;
 
     if (exchangeStatusSection && exchangeStatusDisplay) {
@@ -440,11 +440,11 @@ async function refreshWorkspace() {
 
         // Exchange section handling
         const readScopes = (session.grants || []).filter(g => g.active !== false).map(g => g.scopeId);
-        const activeScopes = [...new Set((session.grants || []).filter(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff'].includes(g.role)).map(g => g.scopeId))];
+        const activeScopes = [...new Set((session.grants || []).filter(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff','executive'].includes(g.role)).map(g => g.scopeId))];
         const canManageExchanges = (session.grants || []).some(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff','executive'].includes(g.role));
         if (exchangeSection && canManageExchanges && readScopes.length) {
             exchangeSection.hidden = false;
-            const canAddScopes = [...new Set((session.grants || []).filter(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff'].includes(g.role)).map(g => g.scopeId))];
+            const canAddScopes = [...new Set((session.grants || []).filter(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff','executive'].includes(g.role)).map(g => g.scopeId))];
             if (openAddExchange) {
                 openAddExchange.hidden = !canAddScopes.length;
                 openAddExchange.onclick = () => openAddExchangeDialog(canAddScopes);
@@ -467,12 +467,12 @@ async function refreshWorkspace() {
             myExchangeSection.hidden = false;
             await loadMyExchanges();
         }
-        const canAgreement = (session.grants || []).some(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff'].includes(g.role));
+        const canAgreement = (session.grants || []).some(g => g.active !== false && readScopes.includes(g.scopeId) && ['coordinator','staff','executive'].includes(g.role));
         if (openAgreements) {
             openAgreements.hidden = !canAgreement;
             openAgreements.onclick = () => {
                 if (window.AgreementComponent) {
-                    const defaultScope = session.grants.find(g => g.active !== false && readScopes.includes(g.scopeId) && ['staff','coordinator'].includes(g.role))?.scopeId;
+                    const defaultScope = session.grants.find(g => g.active !== false && readScopes.includes(g.scopeId) && ['staff','executive','coordinator'].includes(g.role))?.scopeId;
                     window.AgreementComponent.openCreate(defaultScope);
                 }
             };
@@ -621,7 +621,7 @@ if (exchangeForm) {
         payload.supportingInfoForParticipant = exchangeSupportingInfoParticipant.value.trim();
         payload.outcomeSummary = exchangeOutcomeSummary.value.trim();
 
-        if (userRoles.includes('staff')) {
+        if ((window.CstuAuth.state()?.grants || []).some(g => g.active !== false && g.scopeId === exchangeScope.value && ['staff','executive'].includes(g.role))) {
             const resp = parseCsv(exchangeResponsibleUsers.value);
             if (resp.length) {
                 payload.responsibleUserIds = resp;

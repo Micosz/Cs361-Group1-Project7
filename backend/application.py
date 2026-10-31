@@ -82,7 +82,7 @@ class AuthApplication:
         scope = query.get('scopeId')
         if set(query) != {'scopeId'} or not isinstance(scope, str) or not 1 <= len(scope) <= 100:
             raise AuthError('INVALID_QUERY', 422)
-        if not any(g['scopeId'] == scope and g['role'] in {'staff','coordinator'}
+        if not any(g['scopeId'] == scope and g['role'] in {'staff', 'coordinator', 'executive'}
                    for g in context.user.permissions()[0]):
             raise AuthError('FORBIDDEN', 403)
         from .permissions.policy import can_reference
@@ -102,7 +102,7 @@ class AuthApplication:
                 or query['kind'] not in {'participant', 'responsible'}):
             raise AuthError('INVALID_QUERY', 422)
         scope, kind = query['scopeId'], query['kind']
-        allowed = {'staff', 'coordinator'} if kind == 'participant' else {'staff'}
+        allowed = {'staff', 'coordinator', 'executive'} if kind == 'participant' else {'staff', 'executive'}
         grants = context.user.permissions()[0]
         if not any(g['scopeId'] == scope and g['role'] in allowed for g in grants):
             raise AuthError('FORBIDDEN', 403)

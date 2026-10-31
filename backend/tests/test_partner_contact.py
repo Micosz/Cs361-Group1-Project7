@@ -247,8 +247,12 @@ class PartnerContactTests(unittest.TestCase):
         self.assertEqual(428, self.call(missing_version)['statusCode'])
         self.repo.rows[('contact', cid)]['version'] = 2
         self.assertEqual(409, self.call(self.event(f'/api/partners/{pid}/contacts/{cid}', 'DELETE', {}, **{'if-match': '"1"'}))['statusCode'])
-        self.users.user = user_context('executive', 'c1', 'u1').user
+        self.users.user = user_context('student', 'c1', 'u1').user
         self.assertEqual(403, self.call(self.event(f'/api/partners/{pid}/contacts/{cid}', 'DELETE', {}, **{'if-match': '"2"'}))['statusCode'])
+        self.users.user = user_context('executive', 'c2', 'u1').user
+        self.assertEqual(404, self.call(self.event(f'/api/partners/{pid}/contacts/{cid}', 'DELETE', {}, **{'if-match': '"2"'}))['statusCode'])
+        self.users.user = user_context('executive', 'c1', 'u1').user
+        self.assertEqual(200, self.call(self.event(f'/api/partners/{pid}/contacts/{cid}', 'DELETE', {}, **{'if-match': '"2"'}))['statusCode'])
 
     def test_contact_validation_missing_name_and_invalid_email(self):
         partner_payload = {
@@ -293,10 +297,17 @@ class PartnerContactTests(unittest.TestCase):
         }))
         self.assertEqual(403, res['statusCode'])
 
-        # Executive cannot create contact
+        # Executive in c1 can create partner and contact; cross-scope Executive in c2 cannot
         self.users.user = user_context('executive', 'c1', 'u1').user
-        res = self.call(self.event(f'/api/partners/{pid}/contacts', 'POST', {'name': 'Exec Contact'}))
-        self.assertEqual(403, res['statusCode'])
+        exec_partner = self.call(self.event('/api/partners', 'POST', {
+            'name': 'Exec Partner', 'type': 'company', 'summary': 'Summary',
+            'location': 'Bangkok', 'scopeId': 'c1',
+        }, **{'idempotency-key': 'exec-partner-create-0001'}))
+        self.assertEqual(201, exec_partner['statusCode'])
+        res = self.call(self.event(f'/api/partners/{pid}/contacts', 'POST', {'name': 'Exec Contact'}, **{'idempotency-key': 'exec-contact-create-0001'}))
+        self.assertEqual(201, res['statusCode'])
+        self.users.user = user_context('executive', 'c2', 'u1').user
+        self.assertEqual(404, self.call(self.event(f'/api/partners/{pid}/contacts', 'POST', {'name': 'Exec Cross Scope'}, **{'idempotency-key': 'exec-contact-c2-0001'}))['statusCode'])
 
     def test_assigned_vs_unassigned_coordinator(self):
         # Staff creates internal partner with assigned coordinator u1

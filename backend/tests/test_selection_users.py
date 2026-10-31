@@ -44,6 +44,16 @@ class SelectionUsersTests(unittest.TestCase):
             return {'Items':[values(r) for r in rows[2:]]}
         store=DynamoAccounts(SimpleNamespace(scan=scan),'users','identities','sessions')
         self.assertEqual([{'id':'ok','displayName':'ok'}],store.selection_users('cs','participant'))
+        exec_rows=[{**row('exec-ok'),'grants':[dict(scopeId='cs',role='executive',active=True)]},
+                   {**row('staff-ok'),'grants':[dict(scopeId='cs',role='staff',active=True)]},
+                   {**row('exec-other'),'grants':[dict(scopeId='other',role='executive',active=True)]}]
+        exec_store=DynamoAccounts(SimpleNamespace(scan=lambda **kw:{'Items':[values(r) for r in exec_rows]}),'users','identities','sessions')
+        self.assertEqual([{'id':'exec-ok','displayName':'exec-ok'},{'id':'staff-ok','displayName':'staff-ok'}],exec_store.selection_users('cs','responsible'))
+        for kind in ('participant','responsible'):
+            app,context=self.app('executive')
+            with patch('backend.application.require_session',return_value=context):
+                self.assertEqual(200,app.handle(self.event(kind,'cs'))['statusCode'])
+                self.assertEqual(403,app.handle(self.event(kind,'other'))['statusCode'])
 
     def test_public_partner_can_be_linked_without_management_read_or_edit(self):
         from backend.permissions.policy import can_reference, allowed_roles

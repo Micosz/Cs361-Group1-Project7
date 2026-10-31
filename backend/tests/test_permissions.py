@@ -43,9 +43,9 @@ class PolicyTests(unittest.TestCase):
                     with self.subTest(kind=kind, role=role, action=action):
                         allowed = (action == 'read' and (role in {'staff', 'coordinator', 'executive'}
                                    or role == 'student' and kind in {'activity', 'agreement', 'exchange'})
-                                   or action == 'update' and role in {'staff', 'coordinator'}
+                                   or action == 'update' and role in {'staff', 'coordinator', 'executive'}
                                    or action == 'status' and kind in {'agreement', 'exchange'}
-                                   and role in {'staff', 'coordinator'})
+                                   and role in {'staff', 'coordinator', 'executive'})
                         if allowed:
                             require_record(context(role), kind, action, row(kind, publication='public' if kind in {'activity', 'agreement'} else 'internal'))
                         else:
@@ -64,9 +64,13 @@ class PolicyTests(unittest.TestCase):
             self.deny(404, lambda: require_record(context(role, user='u2'), 'exchange', 'read', r))
 
     def test_roles_do_not_borrow_scope(self):
-        c = context('executive', extra=({'role': 'staff', 'scopeId': 'c2', 'active': True},))
-        self.deny(404, lambda: require_record(c, 'exchange', 'update', row()))
-        self.deny(404, lambda: validate_fields(c, 'partner', 'create', {'scopeId': 'c1'}))
+        c_student = context('student', extra=({'role': 'executive', 'scopeId': 'c2', 'active': True},))
+        self.deny(404, lambda: require_record(c_student, 'exchange', 'update', row()))
+        c_coord = context('coordinator', extra=({'role': 'executive', 'scopeId': 'c2', 'active': True},))
+        self.deny(404, lambda: validate_fields(c_coord, 'partner', 'create', {'scopeId': 'c1'}))
+        c_exec_other = context('executive', scope='c2')
+        self.deny(404, lambda: require_record(c_exec_other, 'exchange', 'update', row()))
+        self.deny(404, lambda: validate_fields(c_exec_other, 'partner', 'create', {'scopeId': 'c1'}))
 
     def test_legacy_owner_missing_is_not_global_access(self):
         r = row()
@@ -102,6 +106,7 @@ class PolicyTests(unittest.TestCase):
         r['publication'] = 'public'
         self.deny(403, lambda: validate_fields(context('coordinator'), 'partner', 'update', {'name': 'changed'}, r))
         validate_fields(context(), 'partner', 'update', {'name': 'changed'}, r)
+        validate_fields(context('executive'), 'partner', 'update', {'name': 'changed', 'publication': 'public', 'responsibleUserIds': ['u1']}, r)
 
     def test_coordinator_creation_assigns_self_and_draft(self):
         for kind in ('activity', 'agreement', 'exchange'):
@@ -110,15 +115,21 @@ class PolicyTests(unittest.TestCase):
             if kind != 'activity':
                 self.assertEqual('draft', result['status'])
         self.deny(403, lambda: validate_fields(context('coordinator'), 'partner', 'create', {'scopeId': 'c1'}))
+        exec_partner = validate_fields(context('executive'), 'partner', 'create', {'scopeId': 'c1', 'name': 'Exec Partner', 'publication': 'public'})
+        self.assertEqual('public', exec_partner['publication'])
 
     def test_children_require_matching_parent_scope_and_link(self):
         p = row('partner', 'p1')
         for kind in ('contact', 'history'):
             child = row(kind, 'h1', partnerId='p1')
             require_record(context('coordinator'), kind, 'create', child, p)
+            require_record(context('executive'), kind, 'create', child, p)
             for change in ({'partnerId': 'p2'}, {'scopeId': 'c2'}, {'entityType': 'exchange'}):
                 self.deny(404, lambda: require_record(context(), kind, 'read', dict(child, **change), p))
-        self.deny(403, lambda: require_record(context('executive'), 'contact', 'read', row('contact', partnerId='p1'), p))
+        require_record(context('executive'), 'contact', 'read', row('contact', partnerId='p1'), p)
+        require_record(context('executive'), 'contact', 'delete', row('contact', partnerId='p1'), p)
+        self.deny(403, lambda: require_record(context('student'), 'contact', 'read', row('contact', partnerId='p1'), p))
+        self.deny(404, lambda: require_record(context('executive', scope='c2'), 'contact', 'read', row('contact', partnerId='p1'), p))
 
     def test_document_audience_matrix_and_object_key_not_returned(self):
         for parent_kind in ('agreement', 'exchange'):
@@ -128,9 +139,8 @@ class PolicyTests(unittest.TestCase):
                         audience=audience, containsPersonal=personal, objectKey='SECRET', hash='SECRET')
                 valid = parent_kind == 'exchange' or audience == 'internal'
                 for role in ('staff', 'coordinator', 'student', 'executive'):
-                    allowed = valid and (role in {'staff', 'coordinator'}
-                              or role == 'student' and audience == 'participants'
-                              or role == 'executive' and audience == 'internal' and not personal)
+                    allowed = valid and (role in {'staff', 'coordinator', 'executive'}
+                              or role == 'student' and audience == 'participants')
                     if allowed:
                         self.assertNotIn('SECRET', json.dumps(project(context(role), 'document', d, p)))
                     else:
@@ -140,24 +150,32 @@ class PolicyTests(unittest.TestCase):
 
     def test_student_and_executive_projection_no_personal_or_embedded_data(self):
         r = row(supportingInfo='PRIVATE', supportingInfoForParticipant='for student',
-                objectKey='PRIVATE', documents=[{'secret': 'PRIVATE'}],
-                partners=[{'email': 'PRIVATE'}], internalNote='PRIVATE')
+                objectKey='EMBEDDED_SECRET', documents=[{'secret': 'EMBEDDED_SECRET'}],
+                partners=[{'email': 'EMBEDDED_SECRET'}], internalNote='PRIVATE')
         r['participantUserIds'].append('u2')
-        for role in ('student', 'executive'):
-            data = project(context(role), 'exchange', r)
-            self.assertNotIn('PRIVATE', json.dumps(data))
-            self.assertNotIn('participantUserIds', data)
-        self.assertIn('supportingInfoForParticipant', project(context('student'), 'exchange', r))
+        student_data = project(context('student'), 'exchange', r)
+        self.assertNotIn('PRIVATE', json.dumps(student_data))
+        self.assertNotIn('EMBEDDED_SECRET', json.dumps(student_data))
+        self.assertNotIn('participantUserIds', student_data)
+        self.assertIn('supportingInfoForParticipant', student_data)
+        exec_data = project(context('executive'), 'exchange', r)
+        staff_data = project(context('staff'), 'exchange', r)
+        self.assertEqual(staff_data, exec_data)
+        self.assertNotIn('EMBEDDED_SECRET', json.dumps(exec_data))
+        self.assertEqual(['u1', 'u2'], exec_data['participantUserIds'])
         r['title'] = {'password': 'PRIVATE'}
         self.assertNotIn('title', project(context(), 'exchange', r))
 
     def test_references_and_target_users_must_be_verified_in_same_scope(self):
         require_reference(context(), row('partner'), 'c1')
+        require_reference(context('executive'), row('partner'), 'c1')
         for r in (None, row('partner', scope='c2')):
             self.deny(422, lambda: require_reference(context(), r, 'c1'))
         require_assignee(context('student').user, 'c1', participant=True)
-        for u in (None, context('executive').user, context('staff', scope='c2').user,
-                  replace(context().user, identity_verified=False)):
+        require_assignee(context('executive').user, 'c1')
+        self.deny(422, lambda: require_assignee(context('executive').user, 'c1', participant=True))
+        for u in (None, context('student').user, context('executive', scope='c2').user,
+                  context('staff', scope='c2').user, replace(context().user, identity_verified=False)):
             self.deny(422, lambda: require_assignee(u, 'c1'))
 
     def test_role_manager_has_no_business_permission_and_cannot_self_promote(self):
@@ -324,13 +342,18 @@ class GatewayTests(unittest.TestCase):
         self.assertEqual('no-store', result['headers']['cache-control'])
         self.repo.rows[('document', 'd1')]['uploadState'] = 'pending'
         self.assert_status(404, self.event('/api/documents/d1/content'))
+        self.repo.rows[('document', 'd1')]['uploadState'] = 'ready'
         self.users.user = context('executive').user
+        self.assert_status(200, self.event('/api/documents/d1'))
+        self.assertEqual(200, self.call(self.event('/api/documents/d1/content'))['statusCode'])
+        self.assertEqual(2, self.repo.streams)
+        self.users.user = context('executive', scope='c2').user
         self.assert_status(404, self.event('/api/documents/d1'))
-        self.assertEqual(1, self.repo.streams)
+        self.assertEqual(2, self.repo.streams)
         # Revoking the current authorization version blocks the next file request.
-        self.users.user = replace(self.users.user, authz_version=2)
+        self.users.user = replace(context('executive').user, authz_version=2)
         self.assert_status(401, self.event('/api/documents/d1/content'))
-        self.assertEqual(1, self.repo.streams)
+        self.assertEqual(2, self.repo.streams)
 
     def test_private_document_content_rejects_expired_session_before_stream(self):
         self.users.user = context('student').user
@@ -375,9 +398,16 @@ class GatewayTests(unittest.TestCase):
             self.assert_status(201, self.event('/api/' + collection, 'POST', dict(payload, scopeId='c1')))
             self.assert_status(200, self.event('/api/' + collection + '/r1', 'PATCH', payload))
             self.users.user = context('executive').user
+            self.assert_status(201, self.event('/api/' + collection, 'POST', dict(payload, scopeId='c1'), **{'idempotency-key': f'exec-create-{kind}-12345'}))
+            self.assert_status(200, self.event('/api/' + collection + '/r1', 'PATCH', payload, **{'if-match': '"2"'}))
+            self.users.user = context('executive', scope='c2').user
+            self.assert_status(404, self.event('/api/' + collection, 'POST', dict(payload, scopeId='c1'), **{'idempotency-key': f'exec-other-{kind}-12345'}))
+            self.users.user = context('student').user
             self.assert_status(403, self.event('/api/' + collection, 'POST', dict(payload, scopeId='c1')))
             self.users.user = context().user
-        self.assert_status(200, self.event('/api/exchanges/r1/status', 'POST', {'to': 'ongoing'}, **{'if-match': '"2"'}))
+        self.assert_status(200, self.event('/api/exchanges/r1/status', 'POST', {'to': 'ongoing'}, **{'if-match': '"3"'}))
+        self.users.user = context('executive').user
+        self.assert_status(200, self.event('/api/exchanges/r1/status', 'POST', {'to': 'completed', 'supportingInfo': 'Done'}, **{'if-match': '"4"'}))
 
     def test_nested_creates_and_upload_guard(self):
         self.repo.rows[('partner', 'p1')] = row('partner', 'p1')

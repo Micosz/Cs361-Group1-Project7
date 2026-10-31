@@ -13,12 +13,12 @@
     }
     function canCreate(session, kind) {
         const grants = roles(session);
-        return Boolean(session?.user && kinds[kind] && (grants.includes('staff') || (kind !== 'partners' && grants.includes('coordinator'))));
+        return Boolean(session?.user && kinds[kind] && (grants.some(r => ['staff','executive'].includes(r)) || (kind !== 'partners' && grants.includes('coordinator'))));
     }
     function canEdit(session, record) {
         if (!session?.user || !record?.scopeId) return false;
         const grants = roles(session, record.scopeId);
-        return grants.includes('staff') || (grants.includes('coordinator') && Array.isArray(record.responsibleUserIds) && record.responsibleUserIds.includes(session.user.id));
+        return grants.some(r => ['staff','executive'].includes(r)) || (grants.includes('coordinator') && Array.isArray(record.responsibleUserIds) && record.responsibleUserIds.includes(session.user.id));
     }
     function menu(session) {
         const items = [];
@@ -36,7 +36,7 @@
         }
         try {
             const session = await window.CstuAuth.refresh();
-            if (!session?.user || !roles(session).some(role => ['staff','coordinator'].includes(role))) return;
+            if (!session?.user || !roles(session).some(role => ['staff','coordinator','executive'].includes(role))) return;
             const record = (await window.CstuAuth.request('/'+kind+'/'+encodeURIComponent(id))).data;
             if (!container.isConnected || !canEdit(session,record)) return;
             const link = document.createElement('a');

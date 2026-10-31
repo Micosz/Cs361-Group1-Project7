@@ -219,9 +219,11 @@ class DirectDocumentTests(unittest.TestCase):
         self.assertEqual(200, self.call(path, 'POST')[0]['statusCode'])
 
     def test_roles_owner_csrf_and_input_injection(self):
-        for actor in ['student-a', 'executive', 'employee']:
+        for actor in ['student-a', 'employee']:
             self.actor = actor
             self.assertNotEqual(201, self.start()[0]['statusCode'])
+        self.actor = 'executive'
+        self.assertEqual(200, self.finish(name='exec-upload.pdf')[0]['statusCode'])
         self.actor = 'staff'
         self.assertEqual(403, self.call(self.path, 'POST', {}, extra_headers={'x-csrf-token': ''})[0]['statusCode'])
         self.assertEqual(422, self.start(objectKey='documents/another-user.pdf')[0]['statusCode'])

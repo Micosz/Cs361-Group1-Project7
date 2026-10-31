@@ -29,7 +29,7 @@
         const hint=document.createElement('p');hint.textContent='ใช้ Ctrl/Command เพื่อเลือกหลายรายการ หรือเลือกถอดทั้งหมดโดยไม่ลบข้อมูลต้นทาง';box.appendChild(hint);
         form.insertBefore(box,document.getElementById('staff-activity-fields'));
         const complete=!record || record.relationshipsComplete===true;
-        const readOnly=Boolean(record?.publication==='public' && !(window.CstuAuth.state()?.grants||[]).some(g=>g.active!==false&&g.scopeId===scope.value&&g.role==='staff'));
+        const readOnly=Boolean(record?.publication==='public' && !(window.CstuAuth.state()?.grants||[]).some(g=>g.active!==false&&g.scopeId===scope.value&&['staff','executive'].includes(g.role)));
         function values(){primary.value=partner.value;cohosts.value=[...partners.selectedOptions].map(o=>o.value).join(', ');agreements.value=[...linked.selectedOptions].map(o=>o.value).join(', ');}
         partner.onchange=values;partners.onchange=values;linked.onchange=values;
         clear.onchange=()=>{if(clear.checked){for(const item of [...partners.options,...linked.options])item.selected=false;values();}setComplete(complete||clear.checked);partners.disabled=readOnly||!complete||clear.checked;linked.disabled=readOnly||!complete||clear.checked;};
@@ -37,7 +37,7 @@
             const selectedScope=scope.value;
             save.disabled=true;message.textContent='กำลังโหลดตัวเลือกตามสิทธิ์';
             try{
-                const canAssign=(window.CstuAuth.state()?.grants||[]).some(g=>g.active!==false&&g.scopeId===selectedScope&&g.role==='staff');
+                const canAssign=(window.CstuAuth.state()?.grants||[]).some(g=>g.active!==false&&g.scopeId===selectedScope&&['staff','executive'].includes(g.role));
                 responsibleRow.hidden=!canAssign;
                 responsible.disabled=true;
                 const [pRows,aRows,userRows]=await Promise.all([choices('partners',selectedScope),choices('agreements',selectedScope),canAssign?choices('responsible',selectedScope):Promise.resolve([])]);
@@ -62,7 +62,7 @@
                 message.textContent=complete?'':'มีความสัมพันธ์ที่อ่านไม่ได้ การบันทึกจะคงลิงก์เดิมไว้ เลือกถอดทั้งหมดได้หากต้องการ';
             }catch(error){message.textContent='โหลดตัวเลือกไม่ได้: '+error.message;}
         }
-        scope.onchange=()=>{responsibleInput.value='';primary.value='';cohosts.value='';agreements.value='';const staff=(window.CstuAuth.state()?.grants||[]).some(g=>g.scopeId===scope.value&&g.role==='staff'&&g.active!==false);document.getElementById('staff-activity-fields').hidden=!staff;load();};
+        scope.onchange=()=>{responsibleInput.value='';primary.value='';cohosts.value='';agreements.value='';const staff=(window.CstuAuth.state()?.grants||[]).some(g=>g.scopeId===scope.value&&['staff','executive'].includes(g.role)&&g.active!==false);document.getElementById('staff-activity-fields').hidden=!staff;load();};
         await load();
     }
     function render(container,record){

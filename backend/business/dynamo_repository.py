@@ -221,7 +221,7 @@ class DynamoBusinessRepository:
             if patch:
                 def allowed(entity, action, row):
                     if action == 'change_public_links':
-                        return 'staff' in allowed_roles(context, 'activity', 'update', row)
+                        return bool(allowed_roles(context, 'activity', 'update', row) & {'staff', 'executive'})
                     if entity == 'partner' and action == 'read':
                         return can_reference(context, row, record['scopeId'])
                     return bool(allowed_roles(context, entity, action, row))

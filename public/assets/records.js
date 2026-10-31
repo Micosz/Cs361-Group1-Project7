@@ -177,7 +177,7 @@
     function mountDetailActions(fresh, record, resourceKind, current, page, target = $('detail-actions')) {
         const canEdit = (identity, item) => window.CstuWork.canEdit(identity,item) &&
             !(resourceKind === 'activities' && item.publication === 'public' &&
-              !window.CstuWork.roles(identity,item.scopeId).includes('staff'));
+              !window.CstuWork.roles(identity,item.scopeId).some(r => ['staff','executive'].includes(r)));
         if (!canEdit(fresh,record)) return;
         for (const [action,label] of [['edit','แก้ไข']]) {
             const button = document.createElement('button'); button.type = 'button'; button.textContent = label;

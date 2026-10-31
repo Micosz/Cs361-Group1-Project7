@@ -52,22 +52,21 @@ def action_roles(kind, action):
         return set()
     if action == 'read':
         return ({'student', 'coordinator', 'staff', 'executive'} if kind in {'activity', 'agreement', 'exchange', 'document', 'feedback'}
-                else {'coordinator', 'staff'} if kind == 'contact'
                 else {'coordinator', 'staff', 'executive'})
     if action == 'create':
-        return ({'staff'} if kind == 'partner'
-                else {'student', 'coordinator', 'staff'} if kind == 'feedback'
-                else {'coordinator', 'staff'})
+        return ({'staff', 'executive'} if kind == 'partner'
+                else {'student', 'coordinator', 'staff', 'executive'} if kind == 'feedback'
+                else {'coordinator', 'staff', 'executive'})
     if action == 'update':
-        return ({'student', 'coordinator', 'staff'} if kind == 'feedback'
-                else {'coordinator', 'staff'} if kind != 'document'
+        return ({'student', 'coordinator', 'staff', 'executive'} if kind == 'feedback'
+                else {'coordinator', 'staff', 'executive'} if kind != 'document'
                 else set())
     if action == 'status' and kind in STATUS:
-        return {'coordinator', 'staff'}
+        return {'coordinator', 'staff', 'executive'}
     if action in {'upload', 'delete'} and kind == 'document':
-        return {'coordinator', 'staff'}
+        return {'coordinator', 'staff', 'executive'}
     if action == 'delete' and kind == 'contact':
-        return {'coordinator', 'staff'}
+        return {'coordinator', 'staff', 'executive'}
     return set()
 
 
@@ -116,7 +115,7 @@ def allowed_roles(context, kind, action, record, parent=None):
         return set()
     roles = matching_roles(context, base) & action_roles(kind, action)
     if kind == 'feedback' and action == 'update' and record.get('createdBy') != user.user_id:
-        roles -= {'staff', 'coordinator', 'student'}
+        roles -= {'staff', 'coordinator', 'student', 'executive'}
     if not linked(base, 'responsibleUserIds', user.user_id):
         roles.discard('coordinator')
     from ..relationships.activity_links import published
@@ -142,8 +141,6 @@ def allowed_roles(context, kind, action, record, parent=None):
             return set()
         if audience != 'participants':
             roles.discard('student')
-        if audience != 'internal' or personal:
-            roles.discard('executive')
     return roles
 
 
@@ -172,11 +169,11 @@ def validate_fields(context, kind, action, payload, record=None, parent=None):
     fields = set() if action == 'delete' else (set(STATUS.get(kind, ())) if action == 'status' else set(WRITABLE.get(kind, ())))
     if action == 'create' and kind in BUSINESS:
         fields.add('scopeId')
-    if 'staff' in roles and action != 'status' and kind in BUSINESS:
+    if roles & {'staff', 'executive'} and action != 'status' and kind in BUSINESS:
         fields.add('responsibleUserIds')
         if kind in DISPLAY:
             fields.add('publication')
-    if kind == 'agreement' and action in {'create', 'update'} and 'staff' in roles:
+    if kind == 'agreement' and action in {'create', 'update'} and roles & {'staff', 'executive'}:
         fields.add('publication')
     unknown = set(payload) - fields
     if unknown:
@@ -185,12 +182,12 @@ def validate_fields(context, kind, action, payload, record=None, parent=None):
         if unknown & forbidden:
             denied()
         raise AuthError('INVALID_FIELDS', 422)
-    if ('staff' not in roles and kind in DISPLAY and record
+    if (not (roles & {'staff', 'executive'}) and kind in DISPLAY and record
             and record.get('publication') == 'public' and set(payload) & DISPLAY[kind]):
         denied()
     result = dict(payload)
     if action == 'create' and kind in BUSINESS:
-        if 'staff' not in roles:
+        if not (roles & {'staff', 'executive'}):
             result['responsibleUserIds'] = [user_from(context).user_id]
         if kind in DISPLAY:
             result.setdefault('publication', 'internal')
@@ -224,7 +221,7 @@ def can_reference(context, record, scope_id):
     from ..relationships.activity_links import published
     return (record.get('entityType') == 'partner'
             and record.get('source_state') != 'retired' and published(record)
-            and bool(matching_roles(context, record) & {'staff', 'coordinator'}))
+            and bool(matching_roles(context, record) & {'staff', 'coordinator', 'executive'}))
 
 
 def require_reference(context, record, scope_id):
@@ -233,7 +230,7 @@ def require_reference(context, record, scope_id):
 
 
 def require_assignee(user, scope_id, *, participant=False):
-    roles = {'student'} if participant else {'staff', 'coordinator'}
+    roles = {'student'} if participant else {'staff', 'coordinator', 'executive'}
     if (user is None or not user.active or not user.identity_verified
             or not any(g['scopeId'] == scope_id and g['role'] in roles
                        for g in user.permissions()[0])):

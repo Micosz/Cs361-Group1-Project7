@@ -9,7 +9,7 @@
         container.replaceChildren();
         const form = document.createElement('form'), fields = {};
         if (kind === 'partners') form.id = 'partner-entry-form';
-        const allowedRoles = kind === 'partners' ? ['staff'] : ['staff','coordinator'];
+        const allowedRoles = kind === 'partners' ? ['staff','executive'] : ['staff','executive','coordinator'];
         const active = session.grants.filter(g => g.active !== false && allowedRoles.includes(g.role));
         const scopeLabel = document.createElement('label'); scopeLabel.textContent = 'ขอบเขต ';
         const scope = document.createElement('select'); scope.id = `basic-${kind}-scope`; scope.disabled = Boolean(record);
@@ -34,7 +34,7 @@
             input.value = Array.isArray(record?.[name]) ? record[name].join(', ') : record?.[name] || '';
             fields[name] = input; title.appendChild(input); wrapper.appendChild(title); form.appendChild(wrapper);
         }
-        const staff = active.some(g => g.role === 'staff' && g.scopeId === scope.value);
+        const staff = active.some(g => ['staff','executive'].includes(g.role) && g.scopeId === scope.value);
         if (staff) {
             const wrapper = document.createElement('p'), label = document.createElement('label'); label.textContent = 'ผู้รับผิดชอบ (เลือกจากรายชื่อ) ';
             fields.responsibleUserIds = document.createElement('input'); fields.responsibleUserIds.value = (record?.responsibleUserIds || [session.user.id]).join(', ');
@@ -67,7 +67,7 @@
                 const value=input.value.trim();
                 payload[name]=name.endsWith('Ids') ? value.split(',').map(v=>v.trim()).filter(Boolean) : name==='periodDate' ? value || null : value;
             }
-            const canAssign = active.some(g=>g.role==='staff' && g.scopeId===scope.value);
+            const canAssign = active.some(g=>['staff','executive'].includes(g.role) && g.scopeId===scope.value);
             if(!canAssign){delete payload.responsibleUserIds;delete payload.publication;}
             if(!record)payload.scopeId=scope.value;
             const fingerprint=JSON.stringify(payload);if(previous!==fingerprint){previous=fingerprint;key=crypto.randomUUID();}

@@ -189,7 +189,7 @@
         closeBtn.onclick = close;
 
         const session = window.CstuAuth?.state?.();
-        const canEdit = (session?.grants || []).some(g => g.active !== false && g.scopeId === agreement.scopeId && (g.role === 'staff' || (g.role === 'coordinator' && agreement.responsibleUserIds?.includes(session.user?.id))));
+        const canEdit = (session?.grants || []).some(g => g.active !== false && g.scopeId === agreement.scopeId && (['staff','executive'].includes(g.role) || (g.role === 'coordinator' && agreement.responsibleUserIds?.includes(session.user?.id))));
         if (canEdit) actions.append(editBtn);
         actions.append(closeBtn);
         dlg.appendChild(actions);
@@ -306,7 +306,7 @@
         container.appendChild(badgeP);
 
         const session = window.CstuAuth?.state?.();
-        const canEdit = (session?.grants || []).some(g => g.active !== false && g.scopeId === agreement.scopeId && (g.role === 'staff' || (g.role === 'coordinator' && agreement.responsibleUserIds?.includes(session.user?.id))));
+        const canEdit = (session?.grants || []).some(g => g.active !== false && g.scopeId === agreement.scopeId && (['staff','executive'].includes(g.role) || (g.role === 'coordinator' && agreement.responsibleUserIds?.includes(session.user?.id))));
         if (!canEdit) return;
 
         if (st === 'draft') {
@@ -560,7 +560,7 @@
             scopeInput = document.createElement('select');
             scopeInput.required = true;
             const scopes = [...new Set((window.CstuAuth?.state?.()?.grants || [])
-                .filter(g=>g.active!==false&&['staff','coordinator'].includes(g.role)).map(g=>g.scopeId))];
+                .filter(g=>g.active!==false&&['staff','executive','coordinator'].includes(g.role)).map(g=>g.scopeId))];
             for (const id of scopes) { const option=document.createElement('option');option.value=id;option.textContent=id;scopeInput.appendChild(option); }
             if (initialScopeId && scopes.includes(initialScopeId)) scopeInput.value = initialScopeId;
             form.appendChild(createField('agreement-form-scope', 'ขอบเขตหลักสูตร (Scope ID) *', scopeInput));
@@ -616,7 +616,7 @@
 
         // Responsible Users (Staff can assign/reassign; Coordinator cannot)
         const authState = window.CstuAuth?.state?.();
-        const isStaff = (authState?.grants || []).some(g => g.active !== false && g.role === 'staff'
+        const isStaff = (authState?.grants || []).some(g => g.active !== false && ['staff','executive'].includes(g.role)
             && (!agreement?.scopeId || g.scopeId === agreement.scopeId));
 
         let respInput = null;
@@ -871,7 +871,7 @@
         setReload: callback => { onSaved = callback || (() => {}); },
     };
     if (window.CstuWork) window.CstuWork.register('agreements', {
-        create: ({session, reload}) => { onSaved = reload; openCreate(session.grants.find(g => g.active !== false && ['staff','coordinator'].includes(g.role))?.scopeId); },
+        create: ({session, reload}) => { onSaved = reload; openCreate(session.grants.find(g => g.active !== false && ['staff','executive','coordinator'].includes(g.role))?.scopeId); },
         edit: ({record, reload}) => { onSaved = reload; currentAgreement = record; currentVersion = record.version; renderForm(record); },
         status: ({record, reload}) => { onSaved = reload; return openDetail(record.id); },
         documents: ({record}) => openDetail(record.id)
