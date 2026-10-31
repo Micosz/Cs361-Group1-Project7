@@ -7,6 +7,8 @@
     grid-template-columns: minmax(250px, 31%) minmax(0, 1fr);
 }
 #detailModal .detail-sheet, #record-detail.detail-sheet[open] { display: grid; }
+/* The hero can hide the board wrapper while a public activity dialog is open. */
+#record-detail.detail-sheet[open] { visibility: visible; pointer-events: auto; }
 .detail-sheet [hidden] { display: none !important; }
 .detail-identity {
     min-width: 0; min-height: 0; overflow-y: auto; overflow-wrap: anywhere;

@@ -134,7 +134,9 @@
             mountFormFeedback(record, 'partners', fresh, container);
             if (window.CstuFeedback) {
                 const feedback = document.createElement('section'); container.append(feedback);
-                window.CstuFeedback.mount(feedback, record, 'partners', fresh, {hideCreate:true});
+                const isPublic = record.publication === 'public' || record.visibility === 'public' || record.access_level === 'public';
+                window.CstuFeedback.mount(feedback, record, 'partners', fresh, {hideCreate:true, excludePublic:isPublic});
+                window.CstuDetailSheet?.feedback(feedback, true);
             }
             const actions = document.createElement('div'), editor = document.createElement('div');
             const message = document.createElement('p'); message.setAttribute('role','status');
@@ -206,7 +208,13 @@
         mountFormFeedback(record, resourceKind, identity, $('detail-fields'));
         if (!['activities','exchanges'].includes(resourceKind) || !window.CstuFeedback) return;
         const container=document.createElement('section'); $('detail-fields').appendChild(container);
-        window.CstuFeedback.mount(container,record,resourceKind,identity);
+        const isPublic = resourceKind === 'activities' && record.publication === 'public';
+        if (isPublic) window.CstuPublicFeedback?.mount(container, record, resourceKind);
+        if (!isPublic || window.CstuWork.roles(identity, record.scopeId).some(role => ['staff','coordinator','executive'].includes(role))) {
+            const internal = document.createElement('section'); container.append(internal);
+            window.CstuFeedback.mount(internal,record,resourceKind,identity,{hideCreate:isPublic,excludePublic:isPublic});
+        }
+        container.classList.add('feedback-section');
         window.CstuDetailSheet?.feedback(container);
     }
     function mountFormFeedback(record, resourceKind, identity, host) {
@@ -239,7 +247,10 @@
             $('detail-fields').appendChild(actions);
             mountDetailActions(fresh,latest,'activities',current,page,actions);
             mountFormFeedback(latest, 'activities', fresh, $('detail-fields'));
-            window.CstuFeedback?.mount(feedback, latest, 'activities', fresh, {hideCreate:true});
+            if (window.CstuWork.roles(fresh, latest.scopeId).some(role => ['staff','coordinator','executive'].includes(role))) {
+                const internal = document.createElement('section'); feedback.append(internal);
+                window.CstuFeedback?.mount(internal, latest, 'activities', fresh, {hideCreate:true,excludePublic:true});
+            }
         } catch { /* A public article stays readable when management is unavailable. */ }
     }
     async function detail(row, trigger, resourceKind = kind) {
