@@ -24,6 +24,9 @@ class AuthApplication:
                 return self.public_agreements(event)
             if path == '/api/public/records':
                 return self.public_catalog(event)
+            public_feedback = re.fullmatch(r'/api/public/(partners|activities)/([^/]+)/feedback', path)
+            if public_feedback:
+                return self.public_feedback(event, public_feedback[1], public_feedback[2])
             if path == '/api/selection-partners':
                 return self.selection_partners(event)
             if path == '/api/selection-users':
@@ -73,6 +76,29 @@ class AuthApplication:
         if self.repository is None or not hasattr(self.repository, 'public_catalog'):
             raise AuthError('PERMISSION_UNAVAILABLE', 503)
         return response(200, self.repository.public_catalog())
+
+    def public_feedback(self, event, collection, key):
+        """Accept a public submission without exposing any stored feedback."""
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'POST':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        if event.get('queryStringParameters'):
+            raise AuthError('INVALID_QUERY', 422)
+        token = session_cookie(event)
+        request_headers = headers(event)
+        self.sessions.check_csrf(token, request_headers.get('origin'), request_headers.get('x-csrf-token'))
+        self.sessions.validate(token, require_user=False)
+        idem = request_headers.get('idempotency-key')
+        if not isinstance(idem, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,128}', idem):
+            raise AuthError('INVALID_IDEMPOTENCY_KEY', 422)
+        if not self.repository or not hasattr(self.repository, 'create_public_feedback'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        ip = event.get('requestContext', {}).get('http', {}).get('sourceIp')
+        if not isinstance(ip, str) or not ip or not hasattr(self.limiter, 'check_feedback'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        self.limiter.check_feedback(ip)
+        self.repository.create_public_feedback('partner' if collection == 'partners' else 'activity',
+                                               key, body(event), token_hash(token), idem)
+        return response(201, {'ok': True})
 
     def selection_partners(self, event):
         context = require_session(event, self.sessions)

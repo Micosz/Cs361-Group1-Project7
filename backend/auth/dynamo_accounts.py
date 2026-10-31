@@ -154,3 +154,17 @@ class DynamoLoginLimiter:
                 if getattr(error, 'response', {}).get('Error', {}).get('Code') == 'ConditionalCheckFailedException':
                     raise AuthError('RATE_LIMITED', 429) from None
                 raise
+
+    def check_feedback(self, ip):
+        """Limit public submissions per IP without storing the IP address."""
+        window = int(self.clock()) // 300
+        fingerprint = hmac.new(self.secret, ('feedback\0' + ip).encode(), hashlib.sha256).hexdigest()
+        try:
+            self.table.update_item(Key={'key': f'feedback:{window}:{fingerprint}'},
+                UpdateExpression='SET expiresAt = :expires ADD attempts :one',
+                ConditionExpression='attribute_not_exists(attempts) OR attempts < :limit',
+                ExpressionAttributeValues={':expires': (window + 2) * 300, ':one': 1, ':limit': 20})
+        except Exception as error:
+            if getattr(error, 'response', {}).get('Error', {}).get('Code') == 'ConditionalCheckFailedException':
+                raise AuthError('RATE_LIMITED', 429) from None
+            raise

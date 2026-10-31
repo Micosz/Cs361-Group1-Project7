@@ -107,7 +107,7 @@ def allowed_roles(context, kind, action, record, parent=None):
                     or record.get('parentType') != parent['entityType']):
                 return set()
         elif kind == 'feedback':
-            if (parent.get('entityType') not in {'activity', 'exchange'}
+            if (parent.get('entityType') not in {'partner', 'activity', 'exchange'}
                     or record.get('parentId') != parent['id']
                     or record.get('parentType') != parent['entityType']):
                 return set()

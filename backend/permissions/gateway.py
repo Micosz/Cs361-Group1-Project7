@@ -69,7 +69,7 @@ def route(event):
         if (child in {'contact', 'history'} and kind != 'partner'
                 or child == 'document' and kind not in {'agreement', 'exchange'}
                 or child == 'formFeedback' and kind not in {'partner', 'activity', 'exchange'}
-                or child == 'feedback' and kind not in {'activity', 'exchange'}):
+                or child == 'feedback' and kind not in {'partner', 'activity', 'exchange'}):
             raise AuthError('NOT_FOUND', 404)
         return child, parts[3] if len(parts) == 4 else None, kind, parts[1], False, mine
     raise AuthError('NOT_FOUND', 404)
@@ -192,7 +192,7 @@ class PermissionGateway:
                     row_parent = parent
                     if special == 'inbox':
                         row_parent = self.repository.get(row.get('parentType'), row.get('parentId'))
-                        if not row_parent or row_parent.get('entityType') not in {'activity', 'exchange'}:
+                        if not row_parent or row_parent.get('entityType') not in {'partner', 'activity', 'exchange'}:
                             continue
                     if not allowed_roles(context, kind, 'read', row, row_parent):
                         continue
@@ -201,7 +201,7 @@ class PermissionGateway:
                     projected = self._project(context, kind, row, row_parent)
                     if special == 'inbox':
                         projected.pop('respondentName', None)
-                        projected['parentTitle'] = row_parent.get('title', '')
+                        projected['parentTitle'] = row_parent.get('title') or row_parent.get('name', '')
                     if kind == 'formFeedback':
                         projected.pop('rows', None)
                         projected.pop('columns', None)

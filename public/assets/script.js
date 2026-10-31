@@ -841,6 +841,11 @@ async function openModal(id, type, protectedPartner = null) {
         modalDetails.appendChild(actions);
         window.CstuWork.attachDetailAction(actions, type === 'partner' ? 'partners' : 'activities', data.id);
     }
+    if (type === 'partner' && (data.visibility === 'public' || data.access_level === 'public') && window.CstuPublicFeedback) {
+        const feedback = document.createElement('section'); feedback.className = 'feedback-section';
+        modalDetails.appendChild(feedback);
+        window.CstuPublicFeedback.mount(feedback, data, 'partners');
+    }
     showDetailModal();
 }
 

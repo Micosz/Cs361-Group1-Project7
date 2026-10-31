@@ -29,7 +29,7 @@ def page(rows, event, service, kind=None):
     for field in ('type', 'status'):
         if field in query and (not isinstance(query[field], str) or not query[field] or len(query[field]) > 64):
             raise AuthError('INVALID_QUERY', 422)
-    if 'parentType' in query and query['parentType'] not in {'activity', 'exchange'}:
+    if 'parentType' in query and query['parentType'] not in {'partner', 'activity', 'exchange'}:
         raise AuthError('INVALID_QUERY', 422)
 
     def valid_day(value):

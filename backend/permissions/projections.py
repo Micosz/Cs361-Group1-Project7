@@ -12,7 +12,7 @@ FIELDS = {
     'agreement': {'title', 'agreementType', 'startDate', 'endDate', 'status', 'renewalDueOn', 'renewalNote', 'internalNote', 'publication'},
     'exchange': {'title', 'agreementId', 'startDate', 'endDate', 'status', 'supportingInfo', 'supportingInfoForParticipant', 'outcomeSummary'},
     'formFeedback': {'parentId', 'parentType', 'formName', 'sourceType', 'fileName', 'sheetName', 'createdBy', 'importedByName', 'responseCount', 'origin'},
-    'feedback': {'parentId', 'parentType', 'occurredOn', 'sourceType', 'comment', 'improvement'},
+    'feedback': {'parentId', 'parentType', 'occurredOn', 'sourceType', 'respondentType', 'origin', 'comment', 'improvement'},
     'contact': {'partnerId', 'name', 'position', 'email', 'phone'},
     'history': {'partnerId', 'occurredOn', 'kind', 'note'},
     'document': {'parentType', 'parentId', 'displayName', 'mime', 'size', 'audience', 'containsPersonal', 'uploadState'},

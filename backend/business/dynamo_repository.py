@@ -167,6 +167,71 @@ class DynamoBusinessRepository:
                 catalog.append(projected)
         return catalog
 
+    def create_public_feedback(self, kind, key, payload, session_hash, idempotency_key):
+        """Write-only public feedback; visibility and session are checked atomically."""
+        import re
+        from uuid import uuid4
+        from ..permissions.projections import public_projection
+        if kind not in {'partner', 'activity'} or not re.fullmatch(r'[A-Za-z0-9_-]{1,200}', key):
+            raise AuthError('NOT_FOUND', 404)
+        if (not isinstance(payload, dict) or set(payload) != {'respondentType', 'comment'}
+                or not isinstance(payload['respondentType'], str)
+                or payload['respondentType'] not in {'student', 'teacher', 'partner', 'participant', 'other'}
+                or not isinstance(payload['comment'], str) or not 1 <= len(payload['comment'].strip()) <= 5000):
+            raise AuthError('INVALID_FIELDS', 422)
+        parent = self.get(kind, key)
+        if not parent or not isinstance(parent.get('scopeId'), str) or not parent['scopeId'] or type(parent.get('version')) is not int:
+            raise AuthError('NOT_FOUND', 404)
+        partner = self.get('partner', parent.get('partnerId')) if kind == 'activity' else None
+        partners = {partner['id']: partner} if partner else {}
+        if public_projection(kind, parent, partners) is None:
+            raise AuthError('NOT_FOUND', 404)
+        now = int(self.clock())
+        normalized = {'respondentType': payload['respondentType'], 'comment': payload['comment'].strip()}
+        fingerprint = hashlib.sha256(json.dumps([kind, key, normalized], ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+        retry_id = 'public-feedback-retry-' + hashlib.sha256((session_hash + '\0' + idempotency_key).encode()).hexdigest()
+        retry = self._read(retry_id)
+        if retry and retry.get('expiresAt', 0) > now:
+            if retry.get('fingerprint') != fingerprint:
+                raise AuthError('IDEMPOTENCY_CONFLICT', 409)
+            return
+        timestamp = datetime.fromtimestamp(now, timezone.utc).isoformat()
+        saved = {'id': 'feedback-' + uuid4().hex, 'entityType': 'feedback',
+                 'scopeId': parent['scopeId'], 'scopeEntity': parent['scopeId'] + '#feedback',
+                 'parentType': kind, 'parentId': key, 'occurredOn': timestamp[:10],
+                 'sourceType': 'other', 'origin': 'web', **normalized,
+                 'createdAt': timestamp, 'updatedAt': timestamp, 'createdBy': 'anonymous',
+                 'updatedBy': 'anonymous', 'version': 1}
+        checks = [{'ConditionCheck': {'TableName': self.sessions, 'Key': values({'tokenHash': session_hash}),
+                   'ConditionExpression': '#e > :now AND #a > :now AND attribute_not_exists(#r)',
+                   'ExpressionAttributeNames': {'#e': 'expiresAt', '#a': 'absoluteExpiresAt', '#r': 'revokedAt'},
+                   'ExpressionAttributeValues': values({':now': now})}}]
+        # A version check prevents an unpublished or reassigned record from racing the write.
+        for item_kind, item in [(kind, parent)] + ([('partner', partner)] if partner else []):
+            if type(item.get('version')) is not int or not item.get('scopeId'):
+                raise AuthError('NOT_FOUND', 404)
+            checks.append({'ConditionCheck': {'TableName': self._table(item_kind), 'Key': self._key(item_kind, item),
+                'ConditionExpression': '#v = :v AND #s = :s',
+                'ExpressionAttributeNames': {'#v': 'version', '#s': 'scopeId'},
+                'ExpressionAttributeValues': values({':v': item['version'], ':s': item['scopeId']})}})
+        checks.extend([{'Put': {'TableName': self.table, 'Item': values(saved),
+                               'ConditionExpression': 'attribute_not_exists(id)'}},
+                       {'Put': {'TableName': self.table, 'Item': values({'id': retry_id, 'entityType': 'idempotency',
+                                'fingerprint': fingerprint, 'resultId': saved['id'], 'expiresAt': now + 86400, 'ttl': now + 86400}),
+                                'ConditionExpression': 'attribute_not_exists(id) OR expiresAt <= :now',
+                                'ExpressionAttributeValues': values({':now': now})}}])
+        try:
+            self.client.transact_write_items(TransactItems=checks)
+        except Exception as error:
+            retry = self._read(retry_id)
+            if retry and retry.get('expiresAt', 0) > now:
+                if retry.get('fingerprint') == fingerprint:
+                    return
+                raise AuthError('IDEMPOTENCY_CONFLICT', 409) from None
+            if getattr(error, 'response', {}).get('Error', {}).get('Code') == 'TransactionCanceledException':
+                raise AuthError('VERSION_CONFLICT', 409) from None
+            raise
+
     def parse_upload(self, event):
         if self.documents is None:
             raise AuthError('DOCUMENT_STORAGE_UNAVAILABLE', 503)

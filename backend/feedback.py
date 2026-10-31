@@ -8,7 +8,7 @@ from .permissions.policy import require_record
 
 
 def feedback_record(context, action, payload, record, parent, now):
-    if not parent or parent.get('entityType') not in {'activity', 'exchange'}:
+    if not parent or parent.get('entityType') not in {'partner', 'activity', 'exchange'}:
         raise AuthError('NOT_FOUND', 404)
     candidate = record or dict(entityType='feedback', scopeId=parent['scopeId'],
                                parentType=parent['entityType'], parentId=parent['id'])
