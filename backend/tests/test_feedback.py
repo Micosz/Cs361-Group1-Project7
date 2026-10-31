@@ -53,11 +53,14 @@ class FeedbackTests(unittest.TestCase):
             response, body = self.call(base)
             self.assertEqual(200, response['statusCode'], body)
             self.assertEqual('Updated', body['data'][0]['comment'])
-            for field in ('respondentName', 'createdBy', 'updatedBy', 'scopeId'):
+            self.assertEqual('Private test identity', body['data'][0]['respondentName'])
+            self.assertEqual('cs-demo', body['data'][0]['scopeId'])
+            self.assertFalse(body['data'][0]['canEdit'])
+            for field in ('createdBy', 'updatedBy'):
                 self.assertNotIn(field, body['data'][0])
-            self.assertNotIn('Private test identity', json.dumps(body))
-            self.assertEqual(403, self.create(base)[0]['statusCode'])
-            self.assertEqual(403, self.call(base + '/' + row['id'], 'PATCH', {'comment': 'No'}, version=2)[0]['statusCode'])
+            self.assertEqual(404, self.call(base + '/' + row['id'], 'PATCH', {'comment': 'No'}, version=2)[0]['statusCode'])
+            exec_created = self.call(base, 'POST', dict(occurredOn='2026-10-19', sourceType='partner', comment='Exec feedback'), key='exec-fb-create-' + kind)
+            self.assertEqual(201, exec_created[0]['statusCode'], exec_created[1])
 
     def test_unassigned_coordinator_and_non_participant_students_denied(self):
         parent = self.parent(assigned=False)
@@ -127,6 +130,16 @@ class FeedbackTests(unittest.TestCase):
         self.assertEqual(200, response['statusCode'], body)
         self.assertEqual({own['id'], other['id']}, {row['id'] for row in body['data']})
         self.assertTrue(all(row['canEdit'] is False and 'respondentName' not in row for row in body['data']))
+        self.assertIn(self.call(base + '/' + own['id'], 'PATCH', {'comment': 'Exec must not edit others'}, version=2)[0]['statusCode'], (403, 404))
+        exec_fb_res, exec_fb_body = self.create(base, comment='Exec own feedback', respondentName='Exec internal')
+        self.assertEqual(201, exec_fb_res['statusCode'], exec_fb_body)
+        exec_own = exec_fb_body['data']
+        self.assertTrue(exec_own['canEdit'])
+        self.assertEqual('Exec internal', exec_own['respondentName'])
+        self.assertEqual(200, self.call(base + '/' + exec_own['id'], 'PATCH', {'comment': 'Exec edited own'}, version=1)[0]['statusCode'])
+        inbox_after = {row['id']: row for row in self.call('/api/feedback?parentType=exchange&limit=100')[1]['data']}
+        self.assertTrue(inbox_after[exec_own['id']]['canEdit'])
+        self.assertNotIn('respondentName', inbox_after[exec_own['id']])
         self.assertEqual(422, self.call('/api/feedback?parentType=partner')[0]['statusCode'])
 
         self.actor = 'coordinator'
@@ -192,7 +205,7 @@ class FeedbackTests(unittest.TestCase):
                                         {'comment': 'Public activity student edited'}, version=1)[0]['statusCode'])
         self.actor = 'executive'
         exec_list = self.call(act_base)[1]
-        self.assertFalse(exec_list['canCreate'])
+        self.assertTrue(exec_list['canCreate'])
 
     def test_anonymous_and_wrong_methods_denied(self):
         base = self.base(self.parent())

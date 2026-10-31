@@ -1,7 +1,7 @@
 /* Contact records stay behind the same parent authorization as their API. */
 (() => {
     async function mount(host, partner, session) {
-        if (!window.CstuWork.roles(session,partner.scopeId).some(role => ['staff','coordinator'].includes(role))) return;
+        if (!window.CstuWork.roles(session,partner.scopeId).some(role => ['staff','coordinator','executive'].includes(role))) return;
         const title = document.createElement('h3'); title.textContent = 'ผู้ติดต่อภายใน';
         const status = document.createElement('p'); status.setAttribute('role','status');
         const list = document.createElement('div'), editor = document.createElement('div');

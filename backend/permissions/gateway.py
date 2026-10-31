@@ -278,7 +278,7 @@ class PermissionGateway:
                 data['partnerId'] = links['partner']['id']
             data['relationships'] = links
             roles = allowed_roles(context, kind, 'read', record)
-            if roles & {'staff', 'coordinator'}:
+            if roles & {'staff', 'coordinator', 'executive'}:
                 data['coHostPartnerIds'] = [item['id'] for item in links['coHosts']]
                 data['agreementIds'] = [item['id'] for item in links['agreements']]
                 data['relationshipsComplete'] = bool(links['partner'] and
@@ -301,9 +301,8 @@ class PermissionGateway:
         if not isinstance(query, dict) or set(query) - supported:
             raise AuthError('INVALID_QUERY', 422)
         context = require_session(event, self.service)
-        role_grants = tuple(g for g in context.user.grants if g.get('role') in {'staff', 'executive'})
+        role_grants = tuple(g for g in context.user.grants if g.get('active') is not False and g.get('role') in {'staff', 'executive'})
         role = 'executive' if any(g.get('role') == 'executive' for g in role_grants) else 'staff'
-        role_grants = tuple(g for g in role_grants if g.get('role') == role)
         if not role_grants:
             raise AuthError('FORBIDDEN', 403)
         scopes = sorted({g.get('scopeId') for g in role_grants if isinstance(g.get('scopeId'), str)})

@@ -127,7 +127,7 @@ class WorkspaceStorageTests(unittest.TestCase):
     def test_image_delete_requires_assigned_editor_and_rechecks_parent_at_commit(self):
         exchange, document = self.image_fixture()
         path = '/api/documents/' + document['id']
-        for actor in ['student-a', 'executive', 'employee']:
+        for actor in ['student-a', 'employee']:
             self.actor = actor
             self.assertEqual(403, self.call(path, 'DELETE', version=1)[0]['statusCode'])
         self.actor = 'coordinator'
@@ -138,7 +138,7 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.assertEqual(409, self.call(path, 'DELETE', version=1)[0]['statusCode'])
         self.assertEqual('ready', self.repository.client.rows[document['id']]['uploadState'])
         self.assertEqual(404, self.call(path, 'DELETE', version=1)[0]['statusCode'])
-        self.actor = 'staff'
+        self.actor = 'executive'
         self.assertEqual(200, self.call(path, 'DELETE', version=1)[0]['statusCode'])
 
     def test_document_delete_supports_pdf_with_same_permission_guards(self):

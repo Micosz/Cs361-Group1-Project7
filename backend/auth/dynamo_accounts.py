@@ -23,7 +23,7 @@ class DynamoAccounts:
             Key=values({'id': user_id}), ConsistentRead=True).get('Item'))
 
     def selection_users(self, scope, kind):
-        roles = {'student'} if kind == 'participant' else {'staff', 'coordinator'}
+        roles = {'student'} if kind == 'participant' else {'staff', 'coordinator', 'executive'}
         rows, cursor = [], None
         while True:
             query = dict(TableName=self.users, ConsistentRead=True,

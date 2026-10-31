@@ -3,7 +3,7 @@
 'use strict';
 let userRoles=[], currentSubmissionKey=null, submissionFingerprint=null;
 let relationshipComplete=true;
-const staffInScope = scope => (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false && g.scopeId===scope && g.role==='staff');
+const staffInScope = scope => (window.CstuAuth.state()?.grants || []).some(g=>g.active!==false && g.scopeId===scope && ['staff','executive'].includes(g.role));
 const activitySection = document.getElementById('activity-section');
 const openAddActivity = document.getElementById('open-add-activity');
 const activityListStatus = document.getElementById('activity-list-status');
@@ -278,7 +278,7 @@ async function refreshActivities() {
     if (!session?.user) return;
     userRoles=window.CstuAuth.roles(session);
     const readScopes=(session.grants || []).filter(g=>g.active!==false).map(g=>g.scopeId);
-    const createScopes=[...new Set((session.grants || []).filter(g=>g.active!==false && readScopes.includes(g.scopeId) && ['staff','coordinator'].includes(g.role)).map(g=>g.scopeId))];
+    const createScopes=[...new Set((session.grants || []).filter(g=>g.active!==false && readScopes.includes(g.scopeId) && ['staff','executive','coordinator'].includes(g.role)).map(g=>g.scopeId))];
     if (!userRoles.some(r=>['staff','coordinator','executive'].includes(r)) || !readScopes.length) return;
     activitySection.hidden=false;openAddActivity.hidden=!createScopes.length;
     openAddActivity.onclick=()=>openAddActivityDialog(createScopes);

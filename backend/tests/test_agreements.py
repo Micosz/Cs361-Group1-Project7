@@ -296,21 +296,26 @@ class AgreementTests(unittest.TestCase):
         res = self.call(self.event('/api/agreements', 'POST', payload))
         aid = json.loads(res['body'])['data']['id']
 
-        # Executive in c1 can read, but internalNote must be stripped
+        # Executive in c1 has Staff-equivalent permissions: can read full editor projection and write
         self.login_as(user_context('executive', 'c1', 'u1').user)
         exec_res = self.call(self.event(f'/api/agreements/{aid}', 'GET'))
         self.assertEqual(200, exec_res['statusCode'])
         exec_data = json.loads(exec_res['body'])['data']
         self.assertEqual('Executive Review Agreement', exec_data['title'])
-        self.assertNotIn('internalNote', exec_data)
+        self.assertEqual('Highly sensitive internal discussion', exec_data['internalNote'])
+        self.assertEqual('c1', exec_data['scopeId'])
 
-        # Executive cannot write (POST/PATCH)
-        exec_post = self.call(self.event('/api/agreements', 'POST', payload))
-        self.assertEqual(403, exec_post['statusCode'])
+        exec_post = self.call(self.event('/api/agreements', 'POST', dict(payload, title='Executive Created MoU'), **{'idempotency-key': 'exec-agreement-create-001'}))
+        self.assertEqual(201, exec_post['statusCode'])
         exec_patch = self.call(self.event(f'/api/agreements/{aid}', 'PATCH',
                                           {'title': 'Exec Edit'},
                                           **{'if-match': '"1"'}))
-        self.assertEqual(403, exec_patch['statusCode'])
+        self.assertEqual(200, exec_patch['statusCode'])
+
+        # Cross-scope Executive in c2 remains denied (404)
+        self.login_as(user_context('executive', 'c2', 'u1').user)
+        self.assertEqual(404, self.call(self.event(f'/api/agreements/{aid}', 'GET'))['statusCode'])
+        self.assertEqual(404, self.call(self.event('/api/agreements', 'POST', payload, **{'idempotency-key': 'exec-c2-agreement-001'}))['statusCode'])
 
         # Unselected student cannot read; student writes remain forbidden
         self.login_as(user_context('student', 'c1', 'u1').user)
@@ -914,10 +919,12 @@ class AgreementTests(unittest.TestCase):
         }))
         aid = json.loads(c['body'])['data']['id']
 
-        # 1. Executive denied (403)
-        self.login_as(exec_user)
-        res_exec = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}, **{'if-match': '"1"'}))
-        self.assertEqual(403, res_exec['statusCode'])
+        # 1. Out-of-scope executive denied (404)
+        scope_c2_exec = user_context('executive', 'c2', 'exec_c2').user
+        self.mock_user_dict[scope_c2_exec.user_id] = scope_c2_exec
+        self.login_as(scope_c2_exec)
+        res_exec_c2 = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}, **{'if-match': '"1"'}))
+        self.assertEqual(404, res_exec_c2['statusCode'])
 
         # 2. Student denied (403)
         self.login_as(stu_user)
@@ -959,6 +966,12 @@ class AgreementTests(unittest.TestCase):
         res_coord_ok = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'active'}, **{'if-match': '"1"'}))
         self.assertEqual(200, res_coord_ok['statusCode'])
         self.assertEqual('active', json.loads(res_coord_ok['body'])['data']['status'])
+
+        # In-scope executive can also transition status without being in responsibleUserIds
+        self.login_as(exec_user)
+        res_exec_ok = self.call(self.event(f'/api/agreements/{aid}/status', 'POST', {'to': 'terminated', 'reason': 'Executive review'}, **{'if-match': '"2"'}))
+        self.assertEqual(200, res_exec_ok['statusCode'])
+        self.assertEqual('terminated', json.loads(res_exec_ok['body'])['data']['status'])
 
 
     def test_public_agreement_student_summary_and_unpublish_after_activation(self):

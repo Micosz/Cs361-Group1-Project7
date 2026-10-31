@@ -209,7 +209,7 @@ test('student sees Feedback section, can create Feedback, and can edit only own 
     assert.equal(h.mutations[0].payload.comment, 'อัปเดตความเห็นของตนเอง');
 });
 
-test('student can add Feedback on public Activity, while executive remains read-only', async () => {
+test('student and in-scope executive can add Feedback on public Activity, while out-of-scope executive cannot', async () => {
     const h = setupHarness({
         requestImpl: async () => ({
             data: [
@@ -227,10 +227,9 @@ test('student can add Feedback on public Activity, while executive remains read-
         }),
     });
 
-    const activity = { id: 'act-1', title: 'Tech Talk 2026', publication: 'public' };
-
+    const studentActivity = { id: 'act-1', title: 'Tech Talk 2026', publication: 'public' };
     const studentContainer = createElement('section');
-    await h.window.CstuFeedback.mount(studentContainer, activity, 'activities', {
+    await h.window.CstuFeedback.mount(studentContainer, studentActivity, 'activities', {
         user: { id: 'u-student-1' },
         grants: [{ role: 'student', scopeId: 'cs-demo', active: true }],
     });
@@ -239,13 +238,24 @@ test('student can add Feedback on public Activity, while executive remains read-
         ['เพิ่ม Feedback']
     );
 
+    const scopedActivity = { id: 'act-1', title: 'Tech Talk 2026', publication: 'public', scopeId: 'cs-demo' };
     const executiveContainer = createElement('section');
-    await h.window.CstuFeedback.mount(executiveContainer, activity, 'activities', {
+    await h.window.CstuFeedback.mount(executiveContainer, scopedActivity, 'activities', {
         user: { id: 'u-exec-1' },
         grants: [{ role: 'executive', scopeId: 'cs-demo', active: true }],
     });
     assert.deepEqual(
         findAll(executiveContainer, node => node.tagName === 'BUTTON').map(b => b.textContent),
+        ['เพิ่ม Feedback']
+    );
+
+    const otherScopeExecutiveContainer = createElement('section');
+    await h.window.CstuFeedback.mount(otherScopeExecutiveContainer, scopedActivity, 'activities', {
+        user: { id: 'u-exec-2' },
+        grants: [{ role: 'executive', scopeId: 'other-scope', active: true }],
+    });
+    assert.deepEqual(
+        findAll(otherScopeExecutiveContainer, node => node.tagName === 'BUTTON').map(b => b.textContent),
         []
     );
 });

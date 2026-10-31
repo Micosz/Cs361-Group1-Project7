@@ -1079,7 +1079,7 @@ async function checkAgreementEntryVisibility() {
     try {
         const session = await window.CstuAuth.refresh();
         const roles = window.CstuAuth.roles(session);
-        const canManage = roles.some(r => ['coordinator', 'staff'].includes(r));
+        const canManage = roles.some(r => ['coordinator', 'staff', 'executive'].includes(r));
         btn.style.display = canManage ? 'inline-block' : 'none';
     } catch {
         btn.style.display = 'none';

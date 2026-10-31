@@ -18,7 +18,9 @@ class HistoryIntegrationTests(unittest.TestCase):
         self.assertEqual(200,result['statusCode'],body);self.assertEqual('แก้ไขแล้ว',body['data']['note'])
         self.assertEqual(422,call(base,'POST',dict(occurredOn='2026-02-30',kind='meeting',note='bad'),key='invalid-date-key-001')[0]['statusCode'])
         self.flow.actor='student-a';self.assertEqual(403,call(base)[0]['statusCode'])
-        self.flow.actor='executive';self.assertEqual(403,call(base,'POST',dict(occurredOn='2026-10-13',kind='meeting',note='bad'))[0]['statusCode'])
+        self.flow.actor='employee';self.assertEqual(403,call(base,'POST',dict(occurredOn='2026-10-13',kind='meeting',note='bad'))[0]['statusCode'])
+        self.flow.actor='executive';exec_res,exec_body=call(base,'POST',dict(occurredOn='2026-10-14',kind='meeting',note='บันทึกโดยผู้บริหาร'),key='history-exec-key-001')
+        self.assertEqual(201,exec_res['statusCode'],exec_body)
 
     def test_reference_scope_and_parent_race(self):
         call=self.flow.call;base='/api/partners/partner-demo/history';agreement=self.flow.create_agreement()

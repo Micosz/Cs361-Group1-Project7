@@ -40,7 +40,7 @@ def project(context, kind, record, parent=None):
     if kind == 'exchange' and roles == {'student'}:
         return pick(record, STUDENT)
     fields = COMMON | FIELDS[kind]
-    editor = bool(roles & {'staff', 'coordinator'}) and 'executive' not in roles
+    editor = bool(roles & {'staff', 'coordinator', 'executive'})
     if not editor:
         fields -= EXECUTIVE_EXCLUDED
     result = pick(record, fields)

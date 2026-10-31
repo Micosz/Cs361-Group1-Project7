@@ -73,3 +73,36 @@ test('executive grant confers scoped role management in auth-client and role-men
  const badges=nodes['role-menu-account'].children[1].children.map(span=>span.textContent);
  assert.deepEqual(badges,['Executive · cs-demo','จัดการสิทธิ์ · cs-demo']);
 });
+test('executive has all scoped staff navigation, create/edit permissions, and role-menu entries',async()=>{
+ const authSource=fs.readFileSync('public/assets/auth-client.js','utf8');
+ const workNavSource=fs.readFileSync('public/assets/work-navigation.js','utf8');
+ const menuSource=fs.readFileSync('public/assets/role-menu.js','utf8');
+ const mkNode=tag=>({tag,children:[],textContent:'',className:'',href:'',hidden:false,style:{},attributes:{},
+  append(...items){this.children.push(...items);},appendChild(item){this.children.push(item);},
+  replaceChildren(...items){this.children=items;},prepend(item){this.children.unshift(item);},
+  querySelector(){return null;},contains(){return true;},setAttribute(k,v){this.attributes[k]=v;},
+  classList:{remove(){},add(){},toggle(){}},addEventListener(){},close(){},showModal(){},getBoundingClientRect(){}});
+ const nodes={authNavButtons:mkNode('div'),'role-menu':mkNode('dialog'),'role-menu-links':mkNode('div'),
+  'role-menu-status':mkNode('p'),'role-menu-logout':mkNode('button'),'role-menu-account':mkNode('div'),'close-role-menu':mkNode('button')};
+ const execSession={user:{id:'u-exec',displayName:'ผู้บริหาร ทดสอบ',accountType:'tu'},
+  grants:[{role:'executive',scopeId:'cs-demo',active:true}],capabilities:[],csrfToken:'a'.repeat(64)};
+ const staffSession={user:{id:'u-staff',displayName:'เจ้าหน้าที่ ทดสอบ',accountType:'tu'},
+  grants:[{role:'staff',scopeId:'cs-demo',active:true}],capabilities:[],csrfToken:'a'.repeat(64)};
+ const ctx={window:null,document:{getElementById:id=>nodes[id]||mkNode('div'),createElement:mkNode,body:{style:{}}},
+  CSTU_AUTH_CONFIG:{enabled:true},fetch:async()=>({ok:true,status:200,text:async()=>JSON.stringify(execSession),headers:{get:()=>'application/json'}}),
+  AbortController,setTimeout,clearTimeout,Event,matchMedia:()=>({matches:true}),addEventListener(){}};
+ ctx.window=ctx;
+ vm.createContext(ctx);
+ vm.runInContext(authSource,ctx);
+ vm.runInContext(workNavSource,ctx);
+ for(const kind of ['partners','activities','agreements','exchanges']){
+  assert.equal(ctx.CstuWork.canCreate(execSession,kind),true,`executive should canCreate ${kind}`);
+  assert.equal(ctx.CstuWork.canCreate(execSession,kind),ctx.CstuWork.canCreate(staffSession,kind));
+ }
+ assert.equal(ctx.CstuWork.canEdit(execSession,{scopeId:'cs-demo',responsibleUserIds:[]}),true);
+ assert.equal(ctx.CstuWork.canEdit(execSession,{scopeId:'other-scope',responsibleUserIds:[]}),false);
+ vm.runInContext(menuSource,ctx);
+ await new Promise(r=>setTimeout(r,20));
+ const labels=nodes['role-menu-links'].children.map(link=>link.children[0].textContent);
+ assert.deepEqual(labels,['รวม Feedback','เพิ่มคู่ความร่วมมือ','เพิ่มกิจกรรม','เพิ่มข้อตกลง','เพิ่มการแลกเปลี่ยน','จัดการสิทธิ์ผู้ใช้']);
+});

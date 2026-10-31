@@ -67,7 +67,7 @@
             : 'สรุปข้อมูลสำหรับเจ้าหน้าที่ เฉพาะขอบเขตที่คุณได้รับสิทธิ์', 'overview-intro');
         const filters = document.createElement('form'); filters.className = 'overview-filters';
         const scopeOptions = [['', 'ทุกขอบเขตที่มีสิทธิ์'], ...[...new Set((session.grants || [])
-            .filter(g => g.active !== false && g.role === role).map(g => g.scopeId))].sort().map(scope => [scope, scope])];
+            .filter(g => g.active !== false && ['staff', 'executive'].includes(g.role)).map(g => g.scopeId))].sort().map(scope => [scope, scope])];
         const scope = select('ขอบเขต', scopeOptions, 'scopeId');
         const stakeholderType = select('ประเภท Stakeholder', [['', 'ทั้งหมด'], ...['company','university','government','research_institute','internship'].map(value => [value, labels[value]])], 'stakeholderType');
         const activityType = select('ประเภทกิจกรรม', [['', 'ทั้งหมด'], ...['academic_activity','event','research'].map(value => [value, labels[value]])], 'activityType');

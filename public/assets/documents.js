@@ -6,7 +6,7 @@
 
     function canUpload(session, record) {
         return (session?.grants || []).some(g => g.active !== false && g.scopeId === record.scopeId &&
-            (g.role === 'staff' || (g.role === 'coordinator' && record.responsibleUserIds?.includes(session.user?.id))));
+            (['staff','executive'].includes(g.role) || (g.role === 'coordinator' && record.responsibleUserIds?.includes(session.user?.id))));
     }
 
     async function mount(container, kind, record, {actions} = {}) {
