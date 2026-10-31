@@ -14,6 +14,9 @@ ACTIVITY_TYPES = {'academic_activity', 'event', 'research'}
 PUBLICATION_TYPES = {'public', 'internal'}
 HISTORY_KINDS = {'meeting', 'agreement', 'activity', 'other'}
 REFERENCE_TYPES = {'agreement', 'activity'}
+RESPONDENT_CATEGORIES = {'student', 'lecturer', 'other'}
+FEEDBACK_CHANNELS = {'web', 'excel'}
+FEEDBACK_TARGET_TYPES = {'partner', 'activity', 'exchange'}
 
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
 PHONE_REGEX = re.compile(r'^[0-9+\-()./\s]{1,50}$')
@@ -348,3 +351,33 @@ def validate_exchange_status_payload(payload: dict):
     if 'supportingInfo' in payload and payload['supportingInfo'] is not None:
         validate_string(payload['supportingInfo'], max_len=20000, min_len=0, required=False)
 
+
+def validate_feedback_payload(payload: dict, is_create: bool = True):
+    if not isinstance(payload, dict):
+        raise AuthError('INVALID_BODY', 400)
+
+    if is_create:
+        required = {'targetType', 'targetId', 'respondentCategory', 'content'}
+        if not required.issubset(set(payload)):
+            raise AuthError('INVALID_FIELDS', 422)
+
+    if 'targetType' in payload:
+        ttype = payload['targetType']
+        if not isinstance(ttype, str) or ttype not in FEEDBACK_TARGET_TYPES:
+            raise AuthError('INVALID_FIELDS', 422)
+
+    if 'targetId' in payload:
+        validate_string(payload['targetId'], max_len=200, min_len=1, required=True)
+
+    if 'respondentCategory' in payload:
+        rcat = payload['respondentCategory']
+        if not isinstance(rcat, str) or rcat not in RESPONDENT_CATEGORIES:
+            raise AuthError('INVALID_FIELDS', 422)
+
+    if 'channel' in payload:
+        ch = payload['channel']
+        if not isinstance(ch, str) or ch not in FEEDBACK_CHANNELS:
+            raise AuthError('INVALID_FIELDS', 422)
+
+    if 'content' in payload:
+        validate_string(payload['content'], max_len=20000, min_len=1, required=True)

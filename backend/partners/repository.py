@@ -23,6 +23,7 @@ from .validators import (
     validate_activity_payload,
     validate_exchange_payload,
     validate_exchange_status_payload,
+    validate_feedback_payload,
 )
 
 
@@ -37,7 +38,7 @@ class PartnerRepository:
         # (user_id, kind, parent_id, idempotency_key) -> (payload_copy, result_copy, created_at_timestamp)
         self.idempotency_cache = {}
         self.writes = 0
-        self.supported_kinds = set(supported_kinds) if supported_kinds is not None else {'partner', 'contact', 'history'}
+        self.supported_kinds = set(supported_kinds) if supported_kinds is not None else {'partner', 'contact', 'history', 'feedback'}
 
         if initial_records:
             for rec in initial_records:
@@ -63,6 +64,8 @@ class PartnerRepository:
                     if kind in {'contact', 'history'} and row.get('partnerId') != parent_id:
                         continue
                     if kind == 'document' and row.get('parentId') != parent_id:
+                        continue
+                    if kind == 'feedback' and row.get('targetId') != parent_id:
                         continue
                 results.append(copy.deepcopy(row))
         return results
@@ -120,6 +123,13 @@ class PartnerRepository:
                 validate_contact_payload(payload, is_create=is_create)
             elif kind == 'history':
                 validate_history_payload(payload, is_create=is_create)
+            elif kind == 'feedback':
+                validate_feedback_payload(payload, is_create=is_create)
+                target_type = payload.get('targetType') or (record.get('targetType') if record else None)
+                target_id = payload.get('targetId') or (record.get('targetId') if record else None)
+                target_row = self.rows.get((target_type, target_id))
+                if not target_row or target_row.get('scopeId') != conditions.scope_id:
+                    raise AuthError('NOT_FOUND', 404)
             elif kind == 'activity':
                 payload = normalize_payload(kind, action, payload, record=record)
                 validate_activity_payload(payload, is_create=is_create)
@@ -192,6 +202,13 @@ class PartnerRepository:
                 }
                 if kind in {'contact', 'history'}:
                     saved['partnerId'] = parent['id']
+                if kind == 'feedback':
+                    saved['targetType'] = payload['targetType']
+                    saved['targetId'] = payload['targetId']
+                    saved['respondentCategory'] = payload['respondentCategory']
+                    saved['channel'] = payload.get('channel', 'web')
+                    saved['content'] = payload['content']
+                    saved['submittedAt'] = now_iso
                 if kind == 'partner':
                     saved['publication'] = payload.get('publication', 'internal')
                     saved['responsibleUserIds'] = payload.get('responsibleUserIds', [])
@@ -235,7 +252,7 @@ class ActivityRepository(PartnerRepository):
     """Local prototype supporting Activity, Partner, and Contact domain operations (#96)."""
 
     def __init__(self, service=None, initial_records=None, clock=None, supported_kinds=None):
-        kinds = supported_kinds if supported_kinds is not None else {'partner', 'contact', 'activity'}
+        kinds = supported_kinds if supported_kinds is not None else {'partner', 'contact', 'activity', 'feedback'}
         super().__init__(service=service, initial_records=initial_records, clock=clock, supported_kinds=kinds)
 class ExchangeRepository(PartnerRepository):
     """In-memory repository for Exchanges (Issue #104 / Parent #85)."""
@@ -457,4 +474,3 @@ class ExchangeRepository(PartnerRepository):
                 )
 
             return copy.deepcopy(saved)
-
