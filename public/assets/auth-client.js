@@ -90,6 +90,13 @@
             'X-CSRF-Token': current.csrfToken, 'Idempotency-Key': idempotencyKey
         }, body: JSON.stringify(body) });
     }
+    async function createPublicFeedback(path, body, idempotencyKey) {
+        if (typeof idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{16,128}$/.test(idempotencyKey)) throw new Error('INVALID_IDEMPOTENCY_KEY');
+        const current = await refresh();
+        if (!current?.csrfToken) throw new Error('SESSION_UNAVAILABLE');
+        return request(path, {method:'POST', headers:{'X-CSRF-Token':current.csrfToken,
+            'Idempotency-Key':idempotencyKey}, body:JSON.stringify(body)});
+    }
     async function logout() {
         const current = await refresh();
         if (current) await request('/auth/logout', { method: 'POST',
@@ -104,7 +111,7 @@
         channel?.postMessage('changed');
     }
     channel?.addEventListener('message', () => window.dispatchEvent(new Event('authchange')));
-    window.CstuAuth = { state: () => state, enabled, refresh, login, logout, request, mutate, remove, create,
+    window.CstuAuth = { state: () => state, enabled, refresh, login, logout, request, mutate, remove, create, createPublicFeedback,
         roles: data => [...new Set((data?.grants || []).map(g => g.role))],
         managedScopes: data => [...new Set([
             ...(data?.capabilities || []).filter(c => c.active !== false && c.name === 'manageRoles').map(c => c.scopeId),

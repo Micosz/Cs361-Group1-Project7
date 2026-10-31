@@ -132,6 +132,10 @@
             container.className = 'partner-management';
             const editable = window.CstuWork.canEdit(fresh,record);
             mountFormFeedback(record, 'partners', fresh, container);
+            if (window.CstuFeedback) {
+                const feedback = document.createElement('section'); container.append(feedback);
+                window.CstuFeedback.mount(feedback, record, 'partners', fresh, {hideCreate:true});
+            }
             const actions = document.createElement('div'), editor = document.createElement('div');
             const message = document.createElement('p'); message.setAttribute('role','status');
             actions.className = 'partner-detail-actions';
@@ -222,6 +226,10 @@
         $('detail-actions').replaceChildren();
         window.CstuDetailSheet?.record(record, 'activities');
         showDetailDialog();
+        const feedback = document.createElement('section'); feedback.className = 'feedback-section';
+        $('detail-fields').appendChild(feedback);
+        window.CstuPublicFeedback?.mount(feedback, record, 'activities');
+        window.CstuDetailSheet?.feedback(feedback);
         try {
             const fresh = await window.CstuAuth.refresh();
             if (!fresh?.user || current !== detailRevision || page !== revision || !dialog.open) return;
@@ -230,7 +238,8 @@
             const actions = document.createElement('div'); actions.className = 'detail-record-actions';
             $('detail-fields').appendChild(actions);
             mountDetailActions(fresh,latest,'activities',current,page,actions);
-            mountFeedback(latest, 'activities', fresh);
+            mountFormFeedback(latest, 'activities', fresh, $('detail-fields'));
+            window.CstuFeedback?.mount(feedback, latest, 'activities', fresh, {hideCreate:true});
         } catch { /* A public article stays readable when management is unavailable. */ }
     }
     async function detail(row, trigger, resourceKind = kind) {
@@ -291,7 +300,7 @@
     }
     // Read a related record in place (e.g. from the Feedback Inbox) without changing the current view.
     async function openRelated(resourceKind, id, trigger = null) {
-        if (!['activities','exchanges'].includes(resourceKind) || typeof id !== 'string' || !id) return false;
+        if (!['partners','activities','exchanges'].includes(resourceKind) || typeof id !== 'string' || !id) return false;
         await detail({id}, trigger, resourceKind);
         return true;
     }

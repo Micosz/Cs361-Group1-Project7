@@ -2,7 +2,8 @@
 (() => {
     'use strict';
     const sources = {participant:'ผู้เข้าร่วม',partner:'คู่ความร่วมมือ',other:'อื่น ๆ'};
-    const kinds = {activity:'กิจกรรม',exchange:'การแลกเปลี่ยน'};
+    const respondents = {student:'นักศึกษา',teacher:'อาจารย์',partner:'คู่ความร่วมมือ',participant:'ผู้เข้าร่วม',other:'อื่น ๆ'};
+    const kinds = {partner:'คู่ความร่วมมือ',activity:'กิจกรรม',exchange:'การแลกเปลี่ยน'};
     const el = (tag, text, className) => {
         const node = document.createElement(tag);
         if (text !== undefined) node.textContent = text;
@@ -32,10 +33,18 @@
         const kind = el('select'); kind.setAttribute('aria-label','กรองตามประเภทงาน');
         for (const [value,label] of [['','ทุกประเภท'],...Object.entries(kinds)]) { const option=el('option',label); option.value=value; kind.appendChild(option); }
         kindLabel.appendChild(kind);
+        const respondentLabel=el('label','ประเภทผู้ตอบ');
+        const respondent=el('select'); respondent.setAttribute('aria-label','กรองตามประเภทผู้ตอบ');
+        for (const [value,label] of [['','ทุกประเภทผู้ตอบ'],...Object.entries(respondents)]) { const option=el('option',label); option.value=value; respondent.appendChild(option); }
+        respondentLabel.appendChild(respondent);
+        const channelLabel=el('label','ช่องทาง');
+        const channel=el('select'); channel.setAttribute('aria-label','กรองตามช่องทาง');
+        for (const [value,label] of [['','ทุกช่องทาง'],['web','เว็บไซต์'],['other','ช่องทางเดิม']]) { const option=el('option',label); option.value=value; channel.appendChild(option); }
+        channelLabel.appendChild(channel);
         const favoriteLabel = el('label', undefined, 'feedback-favorite-filter');
         const onlyFavorites = el('input'); onlyFavorites.type='checkbox'; onlyFavorites.setAttribute('aria-label','แสดงเฉพาะรายการที่กดหัวใจ');
         favoriteLabel.append(onlyFavorites,el('span','เฉพาะที่กดหัวใจไว้'));
-        toolbar.append(searchLabel,kindLabel,favoriteLabel);
+        toolbar.append(searchLabel,kindLabel,respondentLabel,channelLabel,favoriteLabel);
         const message = el('p','กำลังโหลด Feedback','feedback-inbox-status'); message.setAttribute('role','status');
         const list = el('div',undefined,'feedback-inbox-list');
         container.append(toolbar,message,list);
@@ -50,6 +59,8 @@
             const draw=()=>{
                 const needle=search.value.trim().toLocaleLowerCase();
                 const visible=rows.filter(row => (!kind.value || row.parentType===kind.value) &&
+                    (!respondent.value || row.respondentType===respondent.value) &&
+                    (!channel.value || (channel.value==='web' ? row.origin==='web' : row.origin!=='web')) &&
                     (!onlyFavorites.checked || favorites.has(row.id)) &&
                     (!needle || [row.parentTitle,row.comment,row.improvement,sources[row.sourceType]||row.sourceType]
                         .some(value => String(value||'').toLocaleLowerCase().includes(needle))));
@@ -59,7 +70,7 @@
                 for(const row of visible){
                     const card=el('article',undefined,'feedback-inbox-card');
                     const header=el('div',undefined,'feedback-inbox-card-header');
-                    const meta=el('p',`${row.occurredOn||'ไม่ระบุวันที่'} · ${sources[row.sourceType]||row.sourceType||'ไม่ระบุแหล่งที่มา'} · ${kinds[row.parentType]||'งาน'}`,'feedback-inbox-meta');
+                    const meta=el('p',`${row.occurredOn||'ไม่ระบุวันที่'} · ${respondents[row.respondentType]||sources[row.sourceType]||row.sourceType||'ไม่ระบุแหล่งที่มา'}${row.origin==='web'?' · เว็บไซต์':''} · ${kinds[row.parentType]||'งาน'}`,'feedback-inbox-meta');
                     const favorite=el('button',favorites.has(row.id)?'♥ บันทึกแล้ว':'♡ เก็บไว้','feedback-favorite-button');
                     favorite.type='button'; favorite.setAttribute('aria-pressed',String(favorites.has(row.id)));
                     favorite.setAttribute('aria-label',favorites.has(row.id)?'นำออกจากรายการที่กดหัวใจ':'เพิ่มในรายการที่กดหัวใจ');
@@ -69,7 +80,7 @@
                     card.appendChild(el('p',row.comment||''));
                     if(row.improvement) card.appendChild(el('p','สิ่งที่ควรปรับปรุง: '+row.improvement,'feedback-inbox-improvement'));
                     const link=el('a','เปิดงานที่เกี่ยวข้อง');
-                    const relatedKind=row.parentType==='activity'?'activities':'exchanges';
+                    const relatedKind=row.parentType==='partner'?'partners':row.parentType==='activity'?'activities':'exchanges';
                     link.href=`index.html?kind=${relatedKind}&id=${encodeURIComponent(row.parentId)}#board-section`;
                     // Read the related work in a dialog so the inbox, filters and scroll position stay in place.
                     // Modified clicks keep the normal link behaviour (e.g. open in a new tab).
@@ -81,7 +92,7 @@
                     card.appendChild(link); list.appendChild(card);
                 }
             };
-            search.addEventListener('input',draw); kind.addEventListener('change',draw); onlyFavorites.addEventListener('change',draw);
+            search.addEventListener('input',draw); kind.addEventListener('change',draw); respondent.addEventListener('change',draw); channel.addEventListener('change',draw); onlyFavorites.addEventListener('change',draw);
             draw();
         } catch(error) {
             message.textContent=error.status===401?'Session หมดอายุ กรุณาเข้าสู่ระบบใหม่':error.status===403||error.status===404?'คุณไม่มีสิทธิ์อ่าน Feedback ในขอบเขตนี้':'โหลด Feedback ไม่สำเร็จ กรุณาลองใหม่';

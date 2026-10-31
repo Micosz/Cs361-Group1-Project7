@@ -6,8 +6,8 @@
         if (window.CstuWork.canEdit(session, parent)) return true;
         return window.CstuWork.roles(session, parent?.scopeId).includes('student');
     }
-    async function mount(container, parent, kind, session) {
-        if (!['partners','activities','exchanges'].includes(kind)) return;
+    async function mount(container, parent, kind, session, options = {}) {
+        if (!['partners','activities','exchanges'].includes(kind) || !session?.user) return;
         const heading=document.createElement('h3');heading.textContent='ความคิดเห็นและผลตอบรับ (Feedback)';
         const status=document.createElement('p');status.setAttribute('role','status');
         const list=document.createElement('ol'), editor=document.createElement('div');
@@ -17,6 +17,7 @@
         const add=document.createElement('button');add.type='button';add.textContent='เพิ่ม Feedback';
         let addMounted=false;
         const syncAddButton=allowed=>{
+            if (options.hideCreate) allowed = false;
             if(allowed && !addMounted){container.appendChild(add);addMounted=true;}
             else if(!allowed && addMounted){add.remove?.();addMounted=false;}
         };
@@ -31,7 +32,8 @@
                     if(firstPage && typeof result.canCreate==='boolean'){syncAddButton(result.canCreate);firstPage=false;}
                     for(const row of result.data){
                         const li=document.createElement('li');
-                        const meta=document.createElement('p');meta.textContent=row.occurredOn+' · '+(sources[row.sourceType]||row.sourceType);
+                        const categories={student:'นักศึกษา',teacher:'อาจารย์',partner:'คู่ความร่วมมือ',participant:'ผู้เข้าร่วม',other:'อื่น ๆ'};
+                        const meta=document.createElement('p');meta.textContent=row.occurredOn+' · '+(categories[row.respondentType]||sources[row.sourceType]||row.sourceType);
                         const comment=document.createElement('p');comment.textContent=row.comment;
                         li.append(meta,comment);
                         if(row.improvement){const text=document.createElement('p');text.textContent='สิ่งที่ควรปรับปรุง: '+textValue(row.improvement);li.appendChild(text);}
