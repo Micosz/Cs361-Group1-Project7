@@ -1,5 +1,7 @@
 """Allowlisted projections; never return raw records or embedded reference objects."""
 
+import copy
+
 from .policy import allowed_roles, require_record
 from ..relationships.activity_links import public_links, LinkError
 
@@ -9,6 +11,7 @@ FIELDS = {
     'activity': {'title', 'type', 'summary', 'fullDescription', 'partnerId', 'periodText', 'periodDate', 'imagePath', 'publication', 'outcomeSummary'},
     'agreement': {'title', 'agreementType', 'startDate', 'endDate', 'status', 'renewalDueOn', 'renewalNote', 'internalNote', 'publication'},
     'exchange': {'title', 'agreementId', 'startDate', 'endDate', 'status', 'supportingInfo', 'supportingInfoForParticipant', 'outcomeSummary'},
+    'formFeedback': {'parentId', 'parentType', 'formName', 'sourceType', 'fileName', 'sheetName', 'createdBy', 'importedByName', 'responseCount', 'origin'},
     'feedback': {'parentId', 'parentType', 'occurredOn', 'sourceType', 'comment', 'improvement'},
     'contact': {'partnerId', 'name', 'position', 'email', 'phone'},
     'history': {'partnerId', 'occurredOn', 'kind', 'note'},
@@ -44,6 +47,10 @@ def project(context, kind, record, parent=None):
     if not editor:
         fields -= EXECUTIVE_EXCLUDED
     result = pick(record, fields)
+    if kind == 'formFeedback':
+        result['columns'] = copy.deepcopy(record.get('columns', []))
+        result['rows'] = copy.deepcopy(record.get('rows', []))
+        result['canDelete'] = bool(allowed_roles(context, kind, 'delete', record, parent))
     if kind == 'feedback':
         result['canEdit'] = bool(allowed_roles(context, kind, 'update', record, parent))
     if editor:
