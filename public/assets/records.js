@@ -218,7 +218,7 @@
         window.CstuDetailSheet?.feedback(container);
     }
     function mountFormFeedback(record, resourceKind, identity, host) {
-        if (!window.CstuFormFeedback || !window.CstuWork.canEdit(identity, record) ||
+        if (!window.CstuFormFeedback || !window.CstuWork.roles(identity, record.scopeId).some(role => ['coordinator','staff','executive'].includes(role)) ||
                 !['partners', 'activities', 'exchanges'].includes(resourceKind)) return;
         const container = document.createElement('section'); host.appendChild(container);
         window.CstuFormFeedback.mount(container, record, resourceKind, identity);
@@ -416,7 +416,7 @@
                 status(''); return;
             }
             if (feedbackInbox) {
-                if (!roles.some(role => ['staff','executive'].includes(role))) { status('คุณไม่มีสิทธิ์ใช้งานส่วนนี้'); return; }
+                if (!roles.some(role => ['coordinator','staff','executive'].includes(role))) { status('คุณไม่มีสิทธิ์ใช้งานส่วนนี้'); return; }
                 $('records-title').textContent = 'รวม Feedback';
                 status('กำลังโหลด Feedback');
                 if (!window.CstuFeedbackInbox) { status('ส่วนรวม Feedback ยังโหลดไม่สำเร็จ'); return; }
@@ -492,7 +492,7 @@
         $('tabExchange').hidden = !internal && !roles.includes('student');
         $('board-overview').hidden = !roles.some(role => ['staff','executive'].includes(role));
         $('board-overview').textContent = roles.includes('executive') ? 'ภาพรวมความร่วมมือ' : 'สรุปข้อมูลตามสิทธิ์';
-        if ((kind === 'exchanges' && $('tabExchange').hidden) || ((overview || feedbackInbox) && !roles.some(role => ['staff','executive'].includes(role)))) {
+        if ((kind === 'exchanges' && $('tabExchange').hidden) || (overview && !roles.some(role => ['staff','executive'].includes(role))) || (feedbackInbox && !internal)) {
             kind = 'activities'; overview = false; feedbackInbox = false; config = window.CstuWork.kinds.activities;
             params = new URLSearchParams(); setupFilters();
         }

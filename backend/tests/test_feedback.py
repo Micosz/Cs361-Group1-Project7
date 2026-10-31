@@ -62,10 +62,13 @@ class FeedbackTests(unittest.TestCase):
             exec_created = self.call(base, 'POST', dict(occurredOn='2026-10-19', sourceType='partner', comment='Exec feedback'), key='exec-fb-create-' + kind)
             self.assertEqual(201, exec_created[0]['statusCode'], exec_created[1])
 
-    def test_unassigned_coordinator_and_non_participant_students_denied(self):
+    def test_unassigned_coordinator_reads_but_cannot_write_and_non_participants_denied(self):
         parent = self.parent(assigned=False)
         base = self.base(parent)
-        for actor in ('coordinator', 'student-a', 'student-b', 'employee'):
+        self.actor = 'coordinator'
+        self.assertEqual(200, self.call(base)[0]['statusCode'])
+        self.assertIn(self.create(base)[0]['statusCode'], (403, 404))
+        for actor in ('student-a', 'student-b', 'employee'):
             self.actor = actor
             self.assertIn(self.call(base)[0]['statusCode'], (403, 404))
             self.assertIn(self.create(base)[0]['statusCode'], (403, 404))

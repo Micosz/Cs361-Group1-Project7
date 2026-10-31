@@ -123,7 +123,9 @@ def allowed_roles(context, kind, action, record, parent=None):
     roles = matching_roles(context, base) & action_roles(kind, action)
     if kind == 'feedback' and action == 'update' and record.get('createdBy') != user.user_id:
         roles -= {'staff', 'coordinator', 'student', 'executive'}
-    if not linked(base, 'responsibleUserIds', user.user_id):
+    # Shared feedback reading does not grant access to the parent or writes.
+    shared_read = kind in {'feedback', 'formFeedback'} and action == 'read'
+    if not shared_read and not linked(base, 'responsibleUserIds', user.user_id):
         roles.discard('coordinator')
     from ..relationships.activity_links import published
     student_agreement = (kind == 'agreement' and action == 'read'
