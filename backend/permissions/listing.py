@@ -24,6 +24,8 @@ def page(rows, event, service, kind=None):
         supported.update({'startDate', 'endDate'})
     if kind in {'feedback', 'formFeedback'}:
         supported.add('parentType')
+        if event.get('rawPath', '').startswith('/api/public/'):
+            supported.add('respondentType')
     if set(query) - supported:
         raise AuthError('INVALID_QUERY', 422)
     for field in ('type', 'status'):

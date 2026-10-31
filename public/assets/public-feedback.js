@@ -25,9 +25,16 @@
         actions.append(cancel,send); controls.append(label,actions);
         const status=document.createElement('p'); status.setAttribute('role','status');
         const listStatus=document.createElement('p'); listStatus.setAttribute('role','status');
+        const filterLabel=document.createElement('label'); filterLabel.className='feedback-filter';
+        filterLabel.textContent='กลุ่มผู้ตอบ ';
+        const filter=document.createElement('select'); filter.setAttribute('aria-label','กรองตามกลุ่มผู้ตอบ');
+        for(const [value,text] of [['','ทุกกลุ่มผู้ตอบ'],...Object.entries(categories)]) {
+            const option=document.createElement('option');option.value=value;option.textContent=text;filter.append(option);
+        }
+        filterLabel.append(filter);
         const list=document.createElement('ol'); list.className='public-comment-list';
         const more=document.createElement('button'); more.type='button'; more.textContent='ดูเพิ่มเติม'; more.hidden=true;
-        form.append(comment,controls,status); container.append(heading,intro,form,listStatus,list,more);
+        form.append(comment,controls,status); container.append(heading,intro,form,filterLabel,listStatus,list,more);
         window.CstuFeedback?.enhanceComposer(form, [comment]);
         let cursor=null, revision=0, key=null, fingerprint=null;
         async function load(reset=true) {
@@ -35,7 +42,8 @@
             more.disabled=true; listStatus.textContent='กำลังโหลดความคิดเห็น';
             if(reset){cursor=null;list.replaceChildren();more.hidden=true;}
             try {
-                const result=await window.CstuAuth.request(base+'?limit=20'+(cursor?'&cursor='+encodeURIComponent(cursor):''));
+                try { await window.CstuAuth.refresh(); } catch { /* Public reading remains available. */ }
+                const result=await window.CstuAuth.request(base+'?limit=20'+(filter.value?'&respondentType='+encodeURIComponent(filter.value):'')+(cursor?'&cursor='+encodeURIComponent(cursor):''));
                 if(current!==revision || !container.isConnected)return;
                 for(const row of result.data){
                     const li=document.createElement('li');
@@ -43,7 +51,27 @@
                     const meta=document.createElement('p'); meta.className='feedback-comment-meta';
                     meta.textContent=(categories[row.respondentType]||'ผู้เยี่ยมชม')+' · '+(row.occurredOn||'');
                     const text=document.createElement('p'); text.textContent=row.comment;
-                    li.append(meta,text);list.append(li);
+                    const votes=document.createElement('div'); votes.className='feedback-reactions';
+                    for (const [choice,icon,label,count] of [['like','👍','ถูกใจ',row.likes],['dislike','👎','ไม่ถูกใจ',row.dislikes]]) {
+                        const button=document.createElement('button');button.type='button';
+                        button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(row.myReaction===choice));
+                        button.textContent=icon+' '+(Number(count)||0);
+                        button.onclick=async()=>{
+                            for(const b of votes.querySelectorAll('button'))b.disabled=true;
+                            try {
+                                const session=await window.CstuAuth.refresh();
+                                await window.CstuAuth.request(base+'/'+encodeURIComponent(row.id)+'/reaction',{
+                                    method:'PUT',headers:{'X-CSRF-Token':session.csrfToken},
+                                    body:JSON.stringify({reaction:row.myReaction===choice?null:choice})});
+                                await load();
+                            } catch(error) {
+                                listStatus.textContent=error.status===429?'กดบ่อยเกินไป กรุณาลองใหม่ภายหลัง':'บันทึกไม่ได้ กรุณาลองใหม่';
+                                for(const b of votes.querySelectorAll('button'))b.disabled=false;
+                            }
+                        };
+                        votes.append(button);
+                    }
+                    li.append(meta,text,votes);list.append(li);
                 }
                 cursor=result.page.nextCursor;more.hidden=!cursor;
                 listStatus.textContent=list.children.length?'':'ยังไม่มีความคิดเห็น มาเป็นคนแรกกัน';
@@ -58,6 +86,7 @@
             }
         }
         more.onclick=()=>{more.textContent='ดูเพิ่มเติม';load(!cursor);};
+        filter.onchange=()=>load();
         container.addEventListener('cstu:public-feedback-refresh',()=>load());
         comment.addEventListener('focus',()=>{controls.hidden=false;});
         comment.addEventListener('input',()=>{controls.hidden=false;});
