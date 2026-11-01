@@ -1,0 +1,564 @@
+<mxfile host="Electron" agent="CSTUHub architecture">
+  <diagram id="cstuhub-v4" name="CSTUHub V4 — complete architecture">
+    <mxGraphModel dx="4285" dy="2679" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="5700" pageHeight="4680" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="xCGQW-8xj1ms9tB2SfDV-4" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;strokeColor=#232F3E;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#232F3E;dashed=0;" value="AWS Cloud" vertex="1">
+          <mxGeometry height="1320" width="2160" x="360" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="09bF463WDNkfytgHzfZL-1" parent="xCGQW-8xj1ms9tB2SfDV-4" style="fillColor=none;strokeColor=#5A6C86;dashed=1;verticalAlign=top;fontStyle=0;fontColor=#5A6C86;whiteSpace=wrap;html=1;strokeWidth=3;" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;Global&lt;/font&gt;" vertex="1">
+          <mxGeometry height="280" width="279" x="40" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="tuglyph" parent="xCGQW-8xj1ms9tB2SfDV-4" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#ED7100;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="1478" y="760" as="geometry" />
+        </mxCell>
+        <mxCell id="tutitle" parent="xCGQW-8xj1ms9tB2SfDV-4" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Lambda · tuAuthLogin" vertex="1">
+          <mxGeometry height="40" width="226" x="1425" y="890" as="geometry" />
+        </mxCell>
+        <mxCell id="wafglyph" parent="xCGQW-8xj1ms9tB2SfDV-4" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#DD344C;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.waf;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="117.5" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="waftitle" parent="xCGQW-8xj1ms9tB2SfDV-4" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="AWS WAF" vertex="1">
+          <mxGeometry height="48" width="115" x="117.5" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="wafsub" parent="xCGQW-8xj1ms9tB2SfDV-4" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="Firewall Enabled&lt;br&gt;Global / CloudFront scope&lt;br&gt;ชื่อ: CSTUHub-Singapore-Firewall" vertex="1">
+          <mxGeometry height="65" width="264" x="49" y="277" as="geometry" />
+        </mxCell>
+        <mxCell id="G1" edge="1" parent="xCGQW-8xj1ms9tB2SfDV-4" source="wafglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#9C4667;startArrow=none;endArrow=block;startFill=1;endFill=1;dashed=1;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#9C4667;jumpStyle=arc;jumpSize=10;" target="ampglyph" value="&lt;b&gt;G1&lt;/b&gt; · ACL">
+          <mxGeometry relative="1" x="-0.2293" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="309" y="374.9999999999998" as="sourcePoint" />
+            <mxPoint x="309" y="415" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="09bF463WDNkfytgHzfZL-4" parent="xCGQW-8xj1ms9tB2SfDV-4" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_region;strokeColor=#00A4A6;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#147EBA;dashed=1;strokeWidth=3;" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;ap-southeast-1&lt;/font&gt;" vertex="1">
+          <mxGeometry height="1240" width="1760" x="360" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ampglyph" parent="09bF463WDNkfytgHzfZL-4" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#E7157B;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.amplify;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="124" y="399" as="geometry" />
+        </mxCell>
+        <mxCell id="amptitle" parent="09bF463WDNkfytgHzfZL-4" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="AWS Amplify Hosting" vertex="1">
+          <mxGeometry height="48" width="380" x="-10" y="533" as="geometry" />
+        </mxCell>
+        <mxCell id="edgenote" parent="09bF463WDNkfytgHzfZL-4" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=18;fontColor=#26374B;fontStyle=0;" value="Amplify app/build อยู่ Singapore&lt;br&gt;Content delivery เป็น global edge&lt;br&gt;ไม่ใช่ EC2 ใน public subnet&lt;br&gt;&lt;br&gt;WAF association เป็นเส้น control&lt;br&gt;ไม่รับรองการป้องกัน execute-api&lt;br&gt;ที่ถูกเรียกข้าม Amplify โดยตรง" vertex="1">
+          <mxGeometry height="162" width="270" x="48" y="579" as="geometry" />
+        </mxCell>
+        <mxCell id="apiglyph" parent="09bF463WDNkfytgHzfZL-4" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#E7157B;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.api_gateway;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="445" y="399" as="geometry" />
+        </mxCell>
+        <mxCell id="apititle" parent="09bF463WDNkfytgHzfZL-4" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="API Gateway · HTTP API" vertex="1">
+          <mxGeometry height="48" width="350" x="330" y="531" as="geometry" />
+        </mxCell>
+        <mxCell id="apisub" parent="09bF463WDNkfytgHzfZL-4" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="CSTUHub-HTTP-API [LIVE]&lt;br&gt;gez448y9c5 · stage default&lt;br&gt;Payload 2.0 · timeout 25 s" vertex="1">
+          <mxGeometry height="65" width="350" x="330" y="571" as="geometry" />
+        </mxCell>
+        <mxCell id="A2" edge="1" parent="09bF463WDNkfytgHzfZL-4" source="ampglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" target="apiglyph" value="&lt;b&gt;A2&lt;/b&gt; · Rewrite">
+          <mxGeometry relative="1" x="-0.0256" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="139" y="515" as="sourcePoint" />
+            <mxPoint x="303.9999999999998" y="514.9999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="L1" edge="1" parent="xCGQW-8xj1ms9tB2SfDV-4" source="apisub" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;exitX=0.616;exitY=1.005;exitDx=0;exitDy=0;exitPerimeter=0;" target="tuglyph" value="&lt;b&gt;L1&lt;/b&gt; · Direct login routes">
+          <mxGeometry relative="1" x="-0.1358" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="905.6" y="840" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="doc" parent="1" style="rounded=1;arcSize=3;html=1;whiteSpace=wrap;fillColor=none;strokeColor=#557F3C;strokeWidth=1.5;dashed=0;container=0;dropTarget=1;collapsible=0;recursiveResize=0;verticalAlign=top;align=left;spacingTop=15;spacingLeft=20;fontFamily=Arial;fontSize=20;fontStyle=1;fontColor=#557F3C;" value="" vertex="1">
+          <mxGeometry height="1060" width="1995" x="80" y="1967" as="geometry" />
+        </mxCell>
+        <mxCell id="readytitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Source S3 · ready" vertex="1">
+          <mxGeometry height="40" width="190" x="1405" y="2480" as="geometry" />
+        </mxCell>
+        <mxCell id="readysub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="documents/ready/&lt;br&gt;Prefix in same source bucket&lt;br&gt;Copy of the exact validated version" vertex="1">
+          <mxGeometry height="75" width="270" x="1365" y="2509" as="geometry" />
+        </mxCell>
+        <mxCell id="backuptitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Backup S3 bucket" vertex="1">
+          <mxGeometry height="40" width="200" x="1800" y="2480" as="geometry" />
+        </mxCell>
+        <mxCell id="backupsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="cstuhub-documents-backup-&lt;br&gt;781485979426-ap-southeast-1" vertex="1">
+          <mxGeometry height="50" width="240" x="1780" y="2509" as="geometry" />
+        </mxCell>
+        <mxCell id="title" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=43;fontColor=#152C43;fontStyle=1;" value="CSTUHub  /  V4 SYSTEM ARCHITECTURE" vertex="1">
+          <mxGeometry height="65" width="2900" x="65" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="mheading" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=25;fontColor=#26374B;fontStyle=1;" value="01  /  WEBSITE, API, IDENTITY &amp; RECORDS" vertex="1">
+          <mxGeometry height="50" width="530" x="40" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="A7" edge="1" parent="1" source="tuglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" target="externalglyph" value="&lt;b&gt;A7&lt;/b&gt; · TU HTTPS">
+          <mxGeometry relative="1" x="0.7239" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="2774" y="1485" as="sourcePoint" />
+            <mxPoint x="3389" y="1485" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="U1" edge="1" parent="1" source="cuq56whP_faNey6bLfMv-4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;exitX=0.998;exitY=0.5;exitDx=0;exitDy=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;exitPerimeter=0;" target="uauthglyph" value="&lt;b&gt;U1&lt;/b&gt; · Upload / download">
+          <mxGeometry relative="1" x="-0.1198" as="geometry">
+            <mxPoint x="414" y="2192.9999999999995" as="sourcePoint" />
+            <mxPoint x="869" y="2192.9999999999995" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="U2" edge="1" parent="1" source="uauthglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" target="ticketglyph" value="&lt;b&gt;U2&lt;/b&gt; · Ticket / quota">
+          <mxGeometry relative="1" x="-0.074" as="geometry">
+            <mxPoint x="1269" y="2192.9999999999995" as="sourcePoint" />
+            <mxPoint x="1694" y="2192.9999999999995" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="U3" edge="1" parent="1" source="cuq56whP_faNey6bLfMv-3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#547C34;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;exitX=0.998;exitY=0.5;exitDx=0;exitDy=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#547C34;jumpStyle=arc;jumpSize=10;exitPerimeter=0;" target="stagingglyph" value="&lt;b&gt;U3&lt;/b&gt; · POST / result">
+          <mxGeometry relative="1" x="-0.1277" as="geometry">
+            <mxPoint x="414" y="2523" as="sourcePoint" />
+            <mxPoint x="849" y="2523" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="U4" edge="1" parent="1" source="stagingglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#547C34;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#547C34;jumpStyle=arc;jumpSize=10;" target="validatorglyph" value="&lt;b&gt;U4&lt;/b&gt; · HEAD / GET">
+          <mxGeometry relative="1" x="-0.0821" as="geometry">
+            <mxPoint x="1289" y="2523" as="sourcePoint" />
+            <mxPoint x="1679" y="2523" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="U5" edge="1" parent="1" source="validatorglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#547C34;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#547C34;jumpStyle=arc;jumpSize=10;" target="readyglyph" value="&lt;b&gt;U5&lt;/b&gt; · Copy / VersionId">
+          <mxGeometry relative="1" x="-0.0614" as="geometry">
+            <mxPoint x="2118.999999999999" y="2523" as="sourcePoint" />
+            <mxPoint x="2509" y="2523" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="U6" edge="1" parent="1" source="readyglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#547C34;startArrow=none;endArrow=block;startFill=1;endFill=1;dashed=1;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#547C34;jumpStyle=arc;jumpSize=10;" target="backupglyph" value="&lt;b&gt;U6&lt;/b&gt; · Async replication">
+          <mxGeometry relative="1" x="-0.0653" as="geometry">
+            <mxPoint x="2949" y="2523" as="sourcePoint" />
+            <mxPoint x="3304" y="2523" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="U7" edge="1" parent="1" source="validatorsub" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#547C34;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#547C34;jumpStyle=arc;jumpSize=10;" target="metadataglyph" value="&lt;b&gt;U7&lt;/b&gt; · Commit">
+          <mxGeometry relative="1" x="-0.0029" as="geometry">
+            <mxPoint x="1899" y="2663" as="sourcePoint" />
+            <mxPoint x="1910" y="2720" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="U8" edge="1" parent="1" source="cuq56whP_faNey6bLfMv-2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#547C34;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;exitX=0.998;exitY=0.5;exitDx=0;exitDy=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#547C34;jumpStyle=arc;jumpSize=10;exitPerimeter=0;" target="downloadreadyglyph" value="&lt;b&gt;U8&lt;/b&gt; · GET / bytes">
+          <mxGeometry relative="1" x="-0.1274" as="geometry">
+            <mxPoint x="414" y="2873" as="sourcePoint" />
+            <mxPoint x="864" y="2873" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ops" parent="1" style="rounded=1;arcSize=3;html=1;whiteSpace=wrap;fillColor=none;strokeColor=#8B597E;strokeWidth=1.5;dashed=0;container=0;dropTarget=1;collapsible=0;recursiveResize=0;verticalAlign=top;align=left;spacingTop=15;spacingLeft=20;fontFamily=Arial;fontSize=20;fontStyle=1;fontColor=#8B597E;" value="" vertex="1">
+          <mxGeometry height="460" width="1370" x="70" y="3120" as="geometry" />
+        </mxCell>
+        <mxCell id="M1" edge="1" parent="1" source="telemetryglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#8B597E;startArrow=none;endArrow=block;startFill=1;endFill=1;dashed=1;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#8B597E;jumpStyle=arc;jumpSize=10;" target="cwglyph" value="&lt;b&gt;M1&lt;/b&gt; · Metrics / logs">
+          <mxGeometry relative="1" x="-0.3305" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="454" y="3295" as="sourcePoint" />
+            <mxPoint x="574" y="3295" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="M2" edge="1" parent="1" source="cwglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#8B597E;startArrow=none;endArrow=block;startFill=1;endFill=1;dashed=1;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#8B597E;jumpStyle=arc;jumpSize=10;" target="snsglyph" value="&lt;b&gt;M2&lt;/b&gt; · ALARM / OK">
+          <mxGeometry relative="1" x="0.0019" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="924" y="3295" as="sourcePoint" />
+            <mxPoint x="1089" y="3295" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="M3" edge="1" parent="1" source="snsglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#8B597E;startArrow=none;endArrow=block;startFill=1;endFill=1;dashed=1;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#8B597E;jumpStyle=arc;jumpSize=10;" target="emailglyph" value="&lt;b&gt;M3&lt;/b&gt; · Email">
+          <mxGeometry relative="1" x="0.4118" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="1439" y="3295" as="sourcePoint" />
+            <mxPoint x="1604" y="3295" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="delivery" parent="1" style="rounded=1;arcSize=3;html=1;whiteSpace=wrap;fillColor=none;strokeColor=#667D94;strokeWidth=1.5;dashed=0;container=0;dropTarget=1;collapsible=0;recursiveResize=0;verticalAlign=top;align=left;spacingTop=15;spacingLeft=20;fontFamily=Arial;fontSize=20;fontStyle=1;fontColor=#667D94;" value="" vertex="1">
+          <mxGeometry height="483" width="1290" x="1470" y="3137" as="geometry" />
+        </mxCell>
+        <mxCell id="C1" edge="1" parent="1" source="gitglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#667D94;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#667D94;jumpStyle=arc;jumpSize=10;" target="deployampglyph" value="&lt;b&gt;C1&lt;/b&gt; · Commit / build">
+          <mxGeometry relative="1" x="-0.1949" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="1900" y="3322.5" as="sourcePoint" />
+            <mxPoint x="2160" y="3322.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C2" edge="1" parent="1" source="actions" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#667D94;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#667D94;jumpStyle=arc;jumpSize=10;" target="iam" value="&lt;b&gt;C2&lt;/b&gt; · OIDC / credentials">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="C3" edge="1" parent="1" source="actionsref" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#667D94;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#667D94;jumpStyle=arc;jumpSize=10;" target="authdeploy" value="&lt;b&gt;C3&lt;/b&gt; · Deploy / verify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="decisions" parent="1" style="rounded=1;arcSize=3;html=1;whiteSpace=wrap;fillColor=none;strokeColor=#687E91;strokeWidth=1.5;dashed=0;container=0;dropTarget=1;collapsible=0;recursiveResize=0;verticalAlign=top;align=left;spacingTop=15;spacingLeft=20;fontFamily=Arial;fontSize=20;fontStyle=1;fontColor=#687E91;" value="" vertex="1">
+          <mxGeometry height="390" width="2160" x="80" y="3690" as="geometry" />
+        </mxCell>
+        <mxCell id="A1" edge="1" parent="1" source="xCGQW-8xj1ms9tB2SfDV-2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;exitX=0.998;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;" target="ampglyph" value="&lt;b&gt;A1&lt;/b&gt; · HTTPS">
+          <mxGeometry relative="1" x="-0.0289" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="271" y="1114.5" as="sourcePoint" />
+            <mxPoint x="470" y="1114.4999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="routest" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="ADDITIONAL LIVE ROUTES" vertex="1">
+          <mxGeometry height="32" width="970" x="1740" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="routesb" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=17;fontColor=#26374B;fontStyle=0;" value="POST /login and ANY /tuAuthLogin&lt;br&gt;invoke tuAuthLogin directly [LIVE].&lt;br&gt;L1 bypasses CSTUHubAuth session logic.&lt;br&gt;getPublicPartners exists [AUDIT], but has no&lt;br&gt;integration in HTTP API gez448y9c5 [LIVE]." vertex="1">
+          <mxGeometry height="222" width="970" x="1740" y="718" as="geometry" />
+        </mxCell>
+        <mxCell id="A3" edge="1" parent="1" source="apiglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" target="authglyph" value="&lt;b&gt;A3&lt;/b&gt; · Invoke">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="1374" y="1114.9999999999998" as="sourcePoint" />
+            <mxPoint x="1599" y="1114.9999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A8" edge="1" parent="1" source="apisub" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;exitX=0.384;exitY=0.968;exitDx=0;exitDy=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;exitPerimeter=0;" target="catalogglyph" value="&lt;b&gt;A8&lt;/b&gt; · Catalog">
+          <mxGeometry relative="1" x="0.2444" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1184.4" y="1620" />
+            </Array>
+            <mxPoint x="1199" y="1255" as="sourcePoint" />
+            <mxPoint x="2794" y="1775" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A4" edge="1" parent="1" source="authglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" target="recordsglyph" value="&lt;b&gt;A4&lt;/b&gt; · SDK / transaction">
+          <mxGeometry relative="1" x="0.0036" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="2039" y="1114.9999999999998" as="sourcePoint" />
+            <mxPoint x="2329" y="1114.9999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A5" edge="1" parent="1" source="authglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" target="identitysub" value="&lt;b&gt;A5&lt;/b&gt; · Session / identity">
+          <mxGeometry relative="1" x="0.0103" y="-1" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="1819" y="975" as="sourcePoint" />
+            <mxPoint x="1819" y="915" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A6" edge="1" parent="1" source="authsub" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" target="tuglyph" value="&lt;b&gt;A6&lt;/b&gt; · TU invoke">
+          <mxGeometry relative="1" x="0.2748" as="geometry">
+            <Array as="points">
+              <mxPoint x="1539" y="1360" />
+            </Array>
+            <mxPoint x="1819" y="1254.9999999999998" as="sourcePoint" />
+            <mxPoint x="2384" y="1485" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A9" edge="1" parent="1" source="catalogglyph" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" target="recordsglyph" value="&lt;b&gt;A9&lt;/b&gt; · Scan Partner">
+          <mxGeometry relative="1" x="-0.1546" as="geometry">
+            <Array as="points">
+              <mxPoint x="2300" y="1060" />
+            </Array>
+            <mxPoint x="3019" y="1635" as="sourcePoint" />
+            <mxPoint x="2869" y="1114.9999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="authglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#ED7100;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="1479" y="999" as="geometry" />
+        </mxCell>
+        <mxCell id="authtitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Lambda · CSTUHubAuth" vertex="1">
+          <mxGeometry height="40" width="440" x="1319" y="1130" as="geometry" />
+        </mxCell>
+        <mxCell id="authsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="Auth + role / scope enforcement&lt;br&gt;Business API + document controls&lt;br&gt;256 MB · 90 s · /tmp 512 MB [LIVE]" vertex="1">
+          <mxGeometry height="65" width="251" x="1413.5" y="1170" as="geometry" />
+        </mxCell>
+        <mxCell id="identityglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#C925D1;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="1479" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="identitytitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="DynamoDB · Identity" vertex="1">
+          <mxGeometry height="40" width="470" x="1304" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="identitysub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;container=1;" value="CSTUHub-Users / IdentityLinks&lt;br&gt;CSTUHub-Sessions / LoginRate&lt;br&gt;On-demand · PITR 35 days [AUDIT]" vertex="1">
+          <mxGeometry height="65" width="470" x="1304" y="837" as="geometry" />
+        </mxCell>
+        <mxCell id="recordsglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#C925D1;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="1880" y="999" as="geometry" />
+        </mxCell>
+        <mxCell id="recordstitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="DynamoDB · Application data" vertex="1">
+          <mxGeometry height="40" width="301" x="1789.5" y="1131" as="geometry" />
+        </mxCell>
+        <mxCell id="recordssub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="CSTUHub-Partner · CSTUHub-Business&lt;br&gt;Partners / activities / agreements / exchanges&lt;br&gt;Feedback / history / document metadata [CODE]" vertex="1">
+          <mxGeometry height="65" width="371" x="1754.5" y="1171" as="geometry" />
+        </mxCell>
+        <mxCell id="tusub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="TU authentication adapter&lt;br&gt;Invoked by Auth [CODE]&lt;br&gt;also exposed by two API routes [LIVE]" vertex="1">
+          <mxGeometry height="65" width="291" x="1752.5" y="1483" as="geometry" />
+        </mxCell>
+        <mxCell id="catalogglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#ED7100;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="2240" y="1560" as="geometry" />
+        </mxCell>
+        <mxCell id="catalogtitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Lambda · fetchPartnersData" vertex="1">
+          <mxGeometry height="40" width="450" x="2075" y="1690" as="geometry" />
+        </mxCell>
+        <mxCell id="catalogsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="Public catalog [LIVE integration]&lt;br&gt;Partner-table scan + pagination&lt;br&gt;Public-field projection [CODE]" vertex="1">
+          <mxGeometry height="65" width="251" x="2174.5" y="1730" as="geometry" />
+        </mxCell>
+        <mxCell id="externalglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=none;fillColor=#34465D;shape=mxgraph.aws4.traditional_server;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="78" width="78" x="2680" y="1341" as="geometry" />
+        </mxCell>
+        <mxCell id="externaltitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="TU authentication API" vertex="1">
+          <mxGeometry height="32" width="181" x="2628.5" y="1430" as="geometry" />
+        </mxCell>
+        <mxCell id="externalsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="External university service&lt;br&gt;HTTPS credential verification&lt;br&gt;Returns identity/profile or auth error" vertex="1">
+          <mxGeometry height="65" width="261" x="2588.5" y="1467" as="geometry" />
+        </mxCell>
+        <mxCell id="xCGQW-8xj1ms9tB2SfDV-8" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=25;fontColor=#26374B;fontStyle=1;" value="&lt;span style=&quot;color: rgb(85, 127, 60); font-size: 20px;&quot;&gt;02 / PRIVATE DOCUMENTS — CONTROL REQUESTS, FILE BYTES &amp;amp; RECOVERY&lt;/span&gt;" vertex="1">
+          <mxGeometry height="48" width="770" x="40" y="1920" as="geometry" />
+        </mxCell>
+        <mxCell id="ubrowsertitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Browser · control" vertex="1">
+          <mxGeometry height="40" width="190" x="144" y="2150" as="geometry" />
+        </mxCell>
+        <mxCell id="ubrowsersub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="Session + CSRF + parent record&lt;br&gt;File name / MIME / size / SHA-256" vertex="1">
+          <mxGeometry height="50" width="270" x="104" y="2180" as="geometry" />
+        </mxCell>
+        <mxCell id="filebrowsertitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Browser · file bytes" vertex="1">
+          <mxGeometry height="40" width="210" x="134" y="2477" as="geometry" />
+        </mxCell>
+        <mxCell id="filebrowsersub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="Uses signed fields from U1&lt;br&gt;No app cookies sent to S3" vertex="1">
+          <mxGeometry height="50" width="220" x="129" y="2506" as="geometry" />
+        </mxCell>
+        <mxCell id="downloadbrowsertitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Browser · download" vertex="1">
+          <mxGeometry height="40" width="220" x="129" y="2830" as="geometry" />
+        </mxCell>
+        <mxCell id="downloadbrowsersub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="Uses signed URL from U1&lt;br&gt;Expires after 120 s [CODE]" vertex="1">
+          <mxGeometry height="50" width="220" x="129" y="2859" as="geometry" />
+        </mxCell>
+        <mxCell id="downloadreadyglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#7AA116;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="600" y="2721" as="geometry" />
+        </mxCell>
+        <mxCell id="downloadreadytitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Ready object [reference]" vertex="1">
+          <mxGeometry height="40" width="260" x="535" y="2840" as="geometry" />
+        </mxCell>
+        <mxCell id="downloadreadysub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="Version-specific signed GET&lt;br&gt;File bytes returned from S3" vertex="1">
+          <mxGeometry height="50" width="230" x="550" y="2870" as="geometry" />
+        </mxCell>
+        <mxCell id="stagingglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#7AA116;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="600" y="2360" as="geometry" />
+        </mxCell>
+        <mxCell id="stagingtitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Source S3 · staging" vertex="1">
+          <mxGeometry height="40" width="210" x="555" y="2480" as="geometry" />
+        </mxCell>
+        <mxCell id="stagingsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="documents/staging/&lt;br&gt;Prefix in source bucket&lt;br&gt;Upload is not yet an app attachment" vertex="1">
+          <mxGeometry height="75" width="280" x="520" y="2509" as="geometry" />
+        </mxCell>
+        <mxCell id="uauthglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#ED7100;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="600" y="2040" as="geometry" />
+        </mxCell>
+        <mxCell id="uauthtitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="CSTUHubAuth [reference]" vertex="1">
+          <mxGeometry height="40" width="270" x="530" y="2161" as="geometry" />
+        </mxCell>
+        <mxCell id="uauthsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="Checks permission before signing&lt;br&gt;Control: Browser → Amplify → API → Auth&lt;br&gt;Direct upload enabled [LIVE]" vertex="1">
+          <mxGeometry height="75" width="355" x="485" y="2190" as="geometry" />
+        </mxCell>
+        <mxCell id="ticketglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#C925D1;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="1045" y="2040" as="geometry" />
+        </mxCell>
+        <mxCell id="tickettitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Business · upload ticket" vertex="1">
+          <mxGeometry height="40" width="260" x="975" y="2161" as="geometry" />
+        </mxCell>
+        <mxCell id="ticketsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="ticket / attempt / lease / budget&lt;br&gt;state + expiry + owner + parent [CODE]" vertex="1">
+          <mxGeometry height="50" width="310" x="950" y="2190" as="geometry" />
+        </mxCell>
+        <mxCell id="validatorglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#ED7100;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="1040" y="2360" as="geometry" />
+        </mxCell>
+        <mxCell id="validatortitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Auth · validate &amp; finalize" vertex="1">
+          <mxGeometry height="40" width="260" x="967.5" y="2480" as="geometry" />
+        </mxCell>
+        <mxCell id="validatorsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="Pin exact VersionId · SHA-256&lt;br&gt;File signature / bounded DOCX checks" vertex="1">
+          <mxGeometry height="50" width="300" x="947.5" y="2509" as="geometry" />
+        </mxCell>
+        <mxCell id="metadataglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#C925D1;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="115" width="115" x="1040" y="2721" as="geometry" />
+        </mxCell>
+        <mxCell id="metadatatitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Business · document metadata" vertex="1">
+          <mxGeometry height="40" width="320" x="937.5" y="2840" as="geometry" />
+        </mxCell>
+        <mxCell id="metadatasub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="objectKey + storageVersionId&lt;br&gt;parent / audience / size / hash" vertex="1">
+          <mxGeometry height="50" width="240" x="977.5" y="2869" as="geometry" />
+        </mxCell>
+        <mxCell id="readyglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#7AA116;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="1440" y="2360" as="geometry" />
+        </mxCell>
+        <mxCell id="backupglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#7AA116;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="1840" y="2360" as="geometry" />
+        </mxCell>
+        <mxCell id="xCGQW-8xj1ms9tB2SfDV-2" parent="1" style="image;aspect=fixed;html=1;align=center;fontSize=12;image=img/lib/azure2/general/Browser.svg;points=[[0.5,0,0],[0.5,1,0],[0.003,0.498,0],[0.998,0.5,0],[0.985,0.007,0],[0.985,0.993,0],[0.015,0.993,0],[0.015,0.007,0]];" value="" vertex="1">
+          <mxGeometry height="92" width="115" x="132.5" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="browsertitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Web browser" vertex="1">
+          <mxGeometry height="48" width="300" x="40" y="1108.5" as="geometry" />
+        </mxCell>
+        <mxCell id="browsersub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="General / Student / Coordinator&lt;br&gt;Staff / Executive" vertex="1">
+          <mxGeometry height="48" width="300" x="40" y="1148.5" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-2" parent="1" style="image;aspect=fixed;html=1;align=center;fontSize=12;image=img/lib/azure2/general/Browser.svg;points=[[0.5,0,0],[0.5,1,0],[0.003,0.498,0],[0.998,0.5,0],[0.985,0.007,0],[0.985,0.993,0],[0.015,0.993,0],[0.015,0.007,0]];" value="" vertex="1">
+          <mxGeometry height="92" width="115" x="186.5" y="2735" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-3" parent="1" style="image;aspect=fixed;html=1;align=center;fontSize=12;image=img/lib/azure2/general/Browser.svg;points=[[0.5,0,0],[0.5,1,0],[0.003,0.498,0],[0.998,0.5,0],[0.985,0.007,0],[0.985,0.993,0],[0.015,0.993,0],[0.015,0.007,0]];" value="" vertex="1">
+          <mxGeometry height="92" width="115" x="186.5" y="2370" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-4" parent="1" style="image;aspect=fixed;html=1;align=center;fontSize=12;image=img/lib/azure2/general/Browser.svg;points=[[0.5,0,0],[0.5,1,0],[0.003,0.498,0],[0.998,0.5,0],[0.985,0.007,0],[0.985,0.993,0],[0.015,0.993,0],[0.015,0.007,0]];" value="" vertex="1">
+          <mxGeometry height="92" width="115" x="186.5" y="2054" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-5" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="168" width="640" x="1360" y="2060" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadlimitst" parent="cuq56whP_faNey6bLfMv-5" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="UPLOAD CONTRACT" vertex="1">
+          <mxGeometry height="40" width="430" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadlimitsb" parent="cuq56whP_faNey6bLfMv-5" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=19;fontColor=#26374B;fontStyle=0;" value="PDF / DOCX ≤ 50 MiB • PNG / JPEG ≤ 10 MiB (code defaults)&lt;br&gt;POST signing 300 s • download signing 120 s • ticket 900 s&lt;br&gt;Browser file bytes bypass API Gateway; completion still invokes Lambda.&lt;br&gt;API 25 s &lt; Lambda 90 s [LIVE]: client checks ticket state after timeout;&lt;br&gt;this is not a persistent background worker / queue." vertex="1">
+          <mxGeometry height="130" width="640" y="38" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-6" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="178" width="630" x="1355" y="2702" as="geometry" />
+        </mxCell>
+        <mxCell id="s3controlt" parent="cuq56whP_faNey6bLfMv-6" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="SOURCE / BACKUP CONTROLS" vertex="1">
+          <mxGeometry height="40" width="330" as="geometry" />
+        </mxCell>
+        <mxCell id="s3controlb" parent="cuq56whP_faNey6bLfMv-6" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=17;fontColor=#26374B;fontStyle=0;" value="Source: cstuhub-private-documents-781485979426-ap-southeast-1&lt;br&gt;Versioning + 3 lifecycle rules; staging current/old 1 day,&lt;br&gt;ready noncurrent 90 days per repo config; ready current retained.&lt;br&gt;Backup: versioning, Block Public Access, SSE-S3, owner enforced.&lt;br&gt;5 old current objects copied manually (4 PDF + 1 PNG), not all versions.&lt;br&gt;Replica COMPLETED verified; app restore / version mapping untested." vertex="1">
+          <mxGeometry height="140" width="630" y="38" as="geometry" />
+        </mxCell>
+        <mxCell id="monlimitst" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="OBSERVABILITY LIMITS" vertex="1">
+          <mxGeometry height="40" width="260" x="120" y="3430" as="geometry" />
+        </mxCell>
+        <mxCell id="monlimitsb" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=18;fontColor=#26374B;fontStyle=0;" value="API-5xx ≥ 3 / 5 min; Auth-Errors ≥ 1 / 5 min [AUDIT].&lt;br&gt;Other alarms: API SlowResponses + 4 Lambda Errors/Throttles (10 total).&lt;br&gt;OK at audit time does not prove end-to-end availability.&lt;br&gt;No Singapore Synthetics canary [AUDIT] • email delivery not tested." vertex="1">
+          <mxGeometry height="100" width="610" x="120" y="3468" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-7" parent="1" style="text;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;color: rgb(139, 89, 126); font-family: Arial; font-size: 20px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 700; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(236, 236, 236); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;&quot;&gt;03 / OBSERVABILITY — METRICS, ALARMS &amp;amp; HUMAN RESPONSE&lt;/span&gt;" vertex="1">
+          <mxGeometry height="40" width="646" x="80" y="3080" as="geometry" />
+        </mxCell>
+        <mxCell id="telemetryglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#E7157B;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.api_gateway;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="200" y="3180" as="geometry" />
+        </mxCell>
+        <mxCell id="telemetrytitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="API + Lambda [references]" vertex="1">
+          <mxGeometry height="40" width="280" x="120" y="3310" as="geometry" />
+        </mxCell>
+        <mxCell id="telemetrysub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="API: 5xx / latency&lt;br&gt;4 functions: Errors / Throttles" vertex="1">
+          <mxGeometry height="50" width="230" x="145" y="3343" as="geometry" />
+        </mxCell>
+        <mxCell id="cwglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#E7157B;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch_2;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="559" y="3180" as="geometry" />
+        </mxCell>
+        <mxCell id="cwtitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="CloudWatch" vertex="1">
+          <mxGeometry height="40" width="140" x="550" y="3310" as="geometry" />
+        </mxCell>
+        <mxCell id="cwsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="10 alarms [AUDIT]&lt;br&gt;Metrics; Lambda log groups" vertex="1">
+          <mxGeometry height="50" width="220" x="510" y="3343" as="geometry" />
+        </mxCell>
+        <mxCell id="snsglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#E7157B;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.sns;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="916" y="3180" as="geometry" />
+        </mxCell>
+        <mxCell id="snstitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Amazon SNS" vertex="1">
+          <mxGeometry height="40" width="150" x="905" y="3310" as="geometry" />
+        </mxCell>
+        <mxCell id="snssub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="CSTUHub-System-Alerts&lt;br&gt;Standard topic [AUDIT]" vertex="1">
+          <mxGeometry height="50" width="200" x="880" y="3343" as="geometry" />
+        </mxCell>
+        <mxCell id="emailglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=none;fillColor=#34465D;shape=mxgraph.aws4.email_2;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="100" width="100" x="1240" y="3190" as="geometry" />
+        </mxCell>
+        <mxCell id="emailtitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Team email" vertex="1">
+          <mxGeometry height="40" width="130" x="1225" y="3310" as="geometry" />
+        </mxCell>
+        <mxCell id="emailsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="1 subscription Confirmed [AUDIT]&lt;br&gt;Human diagnosis / recovery" vertex="1">
+          <mxGeometry height="50" width="260" x="1160" y="3343" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-9" parent="1" style="text;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;color: rgb(102, 125, 148); font-family: Arial; font-size: 20px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 700; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(236, 236, 236); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;&quot;&gt;04 / SOURCE, BUILD &amp;amp; DEPLOYMENT — ไม่ใช่ request path ของผู้ใช้&lt;/span&gt;" vertex="1">
+          <mxGeometry height="32" width="646" x="1520" y="3080" as="geometry" />
+        </mxCell>
+        <mxCell id="actions" parent="1" style="rounded=1;fillColor=#FFFFFF;strokeColor=#94A3B8;html=1;whiteSpace=wrap;fontSize=18;" value="&lt;b&gt;GitHub Actions&lt;/b&gt;&lt;br&gt;Auth package / deploy workflow [CODE]" vertex="1">
+          <mxGeometry height="95" width="330" x="1559" y="3420" as="geometry" />
+        </mxCell>
+        <mxCell id="iam" parent="1" style="rounded=1;fillColor=#FFFFFF;strokeColor=#94A3B8;html=1;whiteSpace=wrap;fontSize=18;" value="&lt;b&gt;IAM OIDC role&lt;/b&gt;&lt;br&gt;CSTUHubGitHubAuthDeployRole" vertex="1">
+          <mxGeometry height="95" width="390" x="2200" y="3420" as="geometry" />
+        </mxCell>
+        <mxCell id="actionsref" parent="1" style="rounded=1;fillColor=#FFFFFF;strokeColor=#94A3B8;html=1;whiteSpace=wrap;fontSize=18;" value="&lt;b&gt;Actions [reference]&lt;/b&gt;" vertex="1">
+          <mxGeometry height="55" width="330" x="1559" y="3540" as="geometry" />
+        </mxCell>
+        <mxCell id="authdeploy" parent="1" style="rounded=1;fillColor=#FFFFFF;strokeColor=#94A3B8;html=1;whiteSpace=wrap;fontSize=18;" value="&lt;b&gt;CSTUHubAuth [reference]&lt;/b&gt;" vertex="1">
+          <mxGeometry height="55" width="520" x="2200" y="3540" as="geometry" />
+        </mxCell>
+        <mxCell id="gitglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=none;fillColor=#34465D;shape=mxgraph.aws4.source_code;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="95" width="95" x="1651.5" y="3192.5" as="geometry" />
+        </mxCell>
+        <mxCell id="gittitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="GitHub · main" vertex="1">
+          <mxGeometry height="40" width="160" x="1619" y="3300" as="geometry" />
+        </mxCell>
+        <mxCell id="gitsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="Micosz/Cs361-Group1-Project7&lt;br&gt;Front-end source [LIVE linked repo]" vertex="1">
+          <mxGeometry height="50" width="280" x="1559" y="3333.5" as="geometry" />
+        </mxCell>
+        <mxCell id="deployampglyph" parent="1" style="sketch=0;html=1;aspect=fixed;outlineConnect=0;strokeColor=#ffffff;fillColor=#E7157B;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.amplify;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="120" width="120" x="1995" y="3183" as="geometry" />
+        </mxCell>
+        <mxCell id="deployamptitle" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="Amplify build &amp; hosting" vertex="1">
+          <mxGeometry height="40" width="250" x="1930" y="3306" as="geometry" />
+        </mxCell>
+        <mxCell id="deployampsub" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=center;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=16;fontColor=#26374B;fontStyle=0;" value="amplify.yml → npm run build&lt;br&gt;Publishes public/ [CODE]" vertex="1">
+          <mxGeometry height="50" width="230" x="1940" y="3343" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-28" parent="1" style="text;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;color: rgb(104, 126, 145); font-family: Arial; font-size: 20px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 700; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(236, 236, 236); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; display: inline !important; float: none;&quot;&gt;05 / AVAILABILITY, SECURITY &amp;amp; NETWORK DECISIONS — คำอธิบายสำหรับนำเสนอ&lt;/span&gt;" vertex="1">
+          <mxGeometry height="32" width="780" x="80" y="3640" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-24" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="338" width="490" x="120" y="3710" as="geometry" />
+        </mxCell>
+        <mxCell id="hat" parent="cuq56whP_faNey6bLfMv-24" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="AVAILABILITY" vertex="1">
+          <mxGeometry height="40" width="270" as="geometry" />
+        </mxCell>
+        <mxCell id="hab" parent="cuq56whP_faNey6bLfMv-24" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=18;fontColor=#26374B;fontStyle=0;" value="AWS-managed resilience&lt;br&gt;• Lambda รันอยู่บนหลาย AZ อยู่เเล้ว&lt;br&gt;• DynamoDB มีการทำสำเนาข้อมูลข้าม AZ โดย AWS อยู่เเล้ว.&lt;br&gt;• S3 Standard กระจายข้อมูลอย่างน้อย 3 AZ อยู่เเล้ว.&lt;br&gt;&lt;br&gt;PITR 35 วันทั้ง 6 ตาราง [AUDIT]&lt;br&gt;เปิด 29 ต.ค.; หน้าต่างย้อนหลังเพิ่มตามเวลาที่เปิด.&lt;br&gt;Restore สร้างตารางใหม่ ไม่แทนที่ตารางเดิมทันที.&lt;br&gt;ต้องปรับ environment / IAM / metadata แล้วตรวจระบบ." vertex="1">
+          <mxGeometry height="212" width="490" y="38" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-25" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="358" width="520" x="640" y="3710" as="geometry" />
+        </mxCell>
+        <mxCell id="securityt" parent="cuq56whP_faNey6bLfMv-25" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="SECURITY" vertex="1">
+          <mxGeometry height="40" width="130" as="geometry" />
+        </mxCell>
+        <mxCell id="securityb" parent="cuq56whP_faNey6bLfMv-25" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=18;fontColor=#26374B;fontStyle=0;" value="Browser → app: HTTPS + opaque session [CODE]&lt;br&gt;Secure / HttpOnly / SameSite=Lax; idle 30m / max 8h.&lt;br&gt;Backend: role / scope / parent / participant checks;&lt;br&gt;UI hiding is not authorization. Public fields filtered.&lt;br&gt;&lt;br&gt;AWS: execution role จำกัด resource/action;&lt;br&gt;DynamoDB ConditionCheck + app version checks.&lt;br&gt;S3: private bucket + TLS-only + CORS origin [CODE]&lt;br&gt;CORS is not authentication; signed URL is a temporary grant.&lt;br&gt;Replication role trusts S3, limited ready prefixes [AUDIT].&lt;br&gt;&lt;br&gt;SCP เปิด Singapore เฉพาะบัญชีเว็บ [deployment note].&lt;br&gt;SCP ไม่ให้สิทธิ์เว็บ user และไม่แทน IAM allow." vertex="1">
+          <mxGeometry height="320" width="520" y="38" as="geometry" />
+        </mxCell>
+        <mxCell id="cuq56whP_faNey6bLfMv-26" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="250" width="480" x="1200" y="3710" as="geometry" />
+        </mxCell>
+        <mxCell id="scalet" parent="cuq56whP_faNey6bLfMv-26" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="SCALE / COST / BOTTLENECKS" vertex="1">
+          <mxGeometry height="40" width="330" as="geometry" />
+        </mxCell>
+        <mxCell id="scaleb" parent="cuq56whP_faNey6bLfMv-26" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=18;fontColor=#26374B;fontStyle=0;" value="DynamoDB: On-demand&lt;br&gt;Lambda Auth: shared unreserved pool 400;&lt;br&gt;provisioned concurrency 0 [AUDIT] (ไม่ใช่ 400 users).&lt;br&gt;API account: rate 10,000/s, burst 5,000;&lt;br&gt;stage custom throttle not configured;&lt;br&gt;&lt;br&gt;Public catalog scans whole Partner table.&lt;br&gt;Data growth increases read work / latency / cost.&lt;br&gt;Direct S3 upload avoids proxying file payload via API." vertex="1">
+          <mxGeometry height="212" width="480" y="38" as="geometry" />
+        </mxCell>
+        <mxCell id="recovert" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=20;fontColor=#26374B;fontStyle=1;" value="RECOVERY" vertex="1">
+          <mxGeometry height="40" width="430" x="1720" y="3710" as="geometry" />
+        </mxCell>
+        <mxCell id="recoverb" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;align=left;verticalAlign=top;spacing=3;fontFamily=Arial;fontSize=18;fontColor=#26374B;fontStyle=0;" value="S3 versioning กู้รุ่นเดิม;&lt;br&gt;lifecycle จำกัดอายุบางรุ่น ไม่ใช่เก็บทุกอย่างตลอดไป.&lt;br&gt;Same-Region backup มีค่า storage + requests เพิ่ม;&lt;br&gt;ไม่มี lifecycle ลบ backup ใหม่ที่ยืนยัน.&lt;br&gt;Same account/Region ไม่แยกเหตุภัยระดับ Region/account." vertex="1">
+          <mxGeometry height="120" width="490" x="1720" y="3748" as="geometry" />
+        </mxCell>
+        <mxCell id="09bF463WDNkfytgHzfZL-5" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_region;strokeColor=#00A4A6;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#147EBA;dashed=1;strokeWidth=3;" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;ap-southeast-1&lt;/font&gt;" vertex="1">
+          <mxGeometry height="960" width="1560" x="480" y="2000" as="geometry" />
+        </mxCell>
+        <mxCell id="09bF463WDNkfytgHzfZL-12" edge="1" parent="09bF463WDNkfytgHzfZL-5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" target="09bF463WDNkfytgHzfZL-9" value="&lt;b&gt;A2&lt;/b&gt; · Rewrite">
+          <mxGeometry relative="1" x="-0.0256" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="244" y="459" as="sourcePoint" />
+            <mxPoint x="303.9999999999998" y="514.9999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="09bF463WDNkfytgHzfZL-13" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_region;strokeColor=#00A4A6;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#147EBA;dashed=1;strokeWidth=3;" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;ap-southeast-1&lt;/font&gt;" vertex="1">
+          <mxGeometry height="263" width="640" x="480" y="3137" as="geometry" />
+        </mxCell>
+        <mxCell id="09bF463WDNkfytgHzfZL-14" edge="1" parent="09bF463WDNkfytgHzfZL-13" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" value="&lt;b&gt;A2&lt;/b&gt; · Rewrite">
+          <mxGeometry relative="1" x="-0.0256" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="244" y="459" as="sourcePoint" />
+            <mxPoint x="303.9999999999998" y="514.9999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="09bF463WDNkfytgHzfZL-15" parent="1" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_region;strokeColor=#00A4A6;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#147EBA;dashed=1;strokeWidth=3;" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;ap-southeast-1&lt;/font&gt;" vertex="1">
+          <mxGeometry height="250" width="280" x="1920" y="3150" as="geometry" />
+        </mxCell>
+        <mxCell id="09bF463WDNkfytgHzfZL-16" edge="1" parent="09bF463WDNkfytgHzfZL-15" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2.2;strokeColor=#28638A;startArrow=block;endArrow=block;startFill=1;endFill=1;dashed=0;labelBackgroundColor=#F5F5F5;fontSize=16;fontFamily=Arial;fontColor=#28638A;jumpStyle=arc;jumpSize=10;" value="&lt;b&gt;A2&lt;/b&gt; · Rewrite">
+          <mxGeometry relative="1" x="-0.0256" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="244" y="459" as="sourcePoint" />
+            <mxPoint x="303.9999999999998" y="514.9999999999998" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
