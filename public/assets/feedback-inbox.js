@@ -31,6 +31,20 @@
         };
         return link;
     }
+    function relatedWork(row) {
+        const line = el('p', undefined, 'feedback-inbox-related');
+        line.append(el('span', 'เกี่ยวกับ '), relatedLink(row));
+        const partners = row.parentType === 'activity' && Array.isArray(row.relatedPartners)
+            ? row.relatedPartners.filter(partner => partner?.id && partner?.name) : [];
+        if (partners.length) {
+            line.append(el('span', ' · คู่ความร่วมมือ '));
+            partners.forEach((partner, index) => {
+                if (index) line.append(el('span', ', '));
+                line.append(relatedLink({parentType:'partner', parentId:partner.id, parentTitle:partner.name}));
+            });
+        }
+        return line;
+    }
     function kindFilter() {
         const label = el('label', 'ประเภทงาน');
         const input = el('select'); input.setAttribute('aria-label', 'กรองตามประเภทงาน');
@@ -68,7 +82,7 @@
             const avatar=el('span',undefined,'feedback-inbox-avatar'); avatar.append(icon('file-lines'));
             const body=el('div',undefined,'feedback-inbox-body');
             const meta=el('p',`${sources[row.sourceType]||'ผู้ตอบแบบฟอร์ม'} · ${dateLabel(row.createdAt)} · ${row.responseCount} คำตอบ`,'feedback-inbox-meta');
-            body.append(meta,el('h3',row.formName),relatedLink(row),
+            body.append(meta,el('h3',row.formName),relatedWork(row),
                 el('p',`นำเข้าโดย ${row.importedByName||'ไม่ระบุ'}`,'feedback-inbox-meta'));
             const toggle=el('button','อ่านคำตอบ','feedback-read-button'); toggle.type='button'; toggle.setAttribute('aria-expanded','false');
             const detail=el('div',undefined,'feedback-form-detail'); detail.hidden=true;
@@ -214,8 +228,7 @@
                     };
                     body.append(meta,el('p',row.comment||'','feedback-inbox-comment'));
                     if(row.improvement) body.append(el('p','ข้อเสนอแนะ: '+row.improvement,'feedback-inbox-improvement'));
-                    const related=el('p',undefined,'feedback-inbox-related');
-                    related.append(el('span','เกี่ยวกับ '),relatedLink(row)); body.append(related);
+                    body.append(relatedWork(row));
                     card.append(avatar,body,favorite); list.appendChild(card);
                 }
             };

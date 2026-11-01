@@ -116,6 +116,31 @@ class PermissionGateway:
 
     Feature adapters must not call writes/streams before these methods authorize.
     """
+    def _feedback_partners(self, context, activity, cache):
+        """Expose only readable, same-scope partner labels; never copy feedback."""
+        if not allowed_roles(context, 'activity', 'read', activity):
+            return []
+        cohosts = activity.get('coHostPartnerIds', [])
+        keys = [activity.get('partnerId'), *(cohosts if isinstance(cohosts, list) else [])]
+        labels, seen = [], set()
+        for key in keys:
+            if not isinstance(key, str) or not key or key in seen:
+                continue
+            seen.add(key)
+            cache_key = (activity.get('scopeId'), key)
+            if cache_key not in cache:
+                partner = self.repository.get('partner', key)
+                label = None
+                if (partner and partner.get('entityType') == 'partner'
+                        and partner.get('scopeId') == activity.get('scopeId')
+                        and allowed_roles(context, 'partner', 'read', partner)
+                        and isinstance(partner.get('name'), str) and partner['name'].strip()):
+                    label = {'id': key, 'name': partner['name']}
+                cache[cache_key] = label
+            if cache[cache_key] is not None:
+                labels.append(cache[cache_key])
+        return labels
+
     def __init__(self, service, repository):
         self.service, self.repository = service, repository
 
@@ -197,6 +222,7 @@ class PermissionGateway:
                     data = self._project(context, kind, record, parent)
                     return self._response(event, data)
                 rows = []
+                partner_labels = {}
                 for row in self.repository.list(kind, context, parent):
                     row_parent = parent
                     if special == 'inbox':
@@ -211,6 +237,8 @@ class PermissionGateway:
                     if special == 'inbox':
                         projected.pop('respondentName', None)
                         projected['parentTitle'] = row_parent.get('title') or row_parent.get('name', '')
+                        if row_parent.get('entityType') == 'activity':
+                            projected['relatedPartners'] = self._feedback_partners(context, row_parent, partner_labels)
                     if kind == 'formFeedback':
                         projected.pop('rows', None)
                         projected.pop('columns', None)
