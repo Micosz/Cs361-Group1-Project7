@@ -10,6 +10,36 @@
         if (className) node.className = className;
         return node;
     };
+    const icon = name => {
+        const node = el('i', undefined, 'fa-solid fa-' + name);
+        node.setAttribute('aria-hidden', 'true');
+        return node;
+    };
+    const dateLabel = value => {
+        if (!value) return 'ไม่ระบุวันที่';
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'});
+    };
+    function relatedLink(row) {
+        const link = el('a', row.parentTitle || 'เปิดงานที่เกี่ยวข้อง', 'feedback-related-link');
+        const kind = {partner:'partners',activity:'activities',exchange:'exchanges'}[row.parentType];
+        link.href = `index.html?kind=${kind}&id=${encodeURIComponent(row.parentId)}#board-section`;
+        link.onclick = event => {
+            if(event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !window.CstuRecords?.openRelated) return;
+            event.preventDefault();
+            window.CstuRecords.openRelated(kind, row.parentId, link);
+        };
+        return link;
+    }
+    function kindFilter() {
+        const label = el('label', 'ประเภทงาน');
+        const input = el('select'); input.setAttribute('aria-label', 'กรองตามประเภทงาน');
+        for (const [value, text] of [['','ทุกประเภทงาน'], ...Object.entries(kinds)]) {
+            const option = el('option', text); option.value = value; input.append(option);
+        }
+        label.append(input);
+        return {label, input};
+    }
     function favoriteStore(userId) {
         const key = 'cstuhub:feedback-favorites:' + encodeURIComponent(userId);
         try {
@@ -21,25 +51,32 @@
         catch { /* The filter still works for this page view if storage is unavailable. */ }
     }
     async function renderForms(host, alive) {
-        host.append(el('h2','ผลตอบรับจากแบบฟอร์ม (ข้อมูลภายใน)'),
+        host.append(el('h2','ผลตอบรับจากแบบฟอร์ม', 'feedback-panel-title'),
             el('p','คำตอบที่นำเข้าจาก Google Forms / Excel แยกตามแบบฟอร์มและงานที่เกี่ยวข้อง'));
         const label=el('label','ค้นหาแบบฟอร์ม');
-        const search=el('input'); search.type='search'; search.placeholder='ชื่อฟอร์ม ชื่องาน หรือผู้นำเข้า'; label.append(search);
+        const search=el('input'); search.type='search'; search.maxLength=200; search.placeholder='ชื่อฟอร์ม ชื่องาน หรือผู้นำเข้า'; label.append(search);
+        const toolbar=el('div',undefined,'feedback-inbox-toolbar feedback-form-toolbar');
+        const formKind=kindFilter(); toolbar.append(label,formKind.label);
         const status=el('p','กำลังโหลดแบบฟอร์ม'); status.setAttribute('role','status');
-        const list=el('div',undefined,'form-batches');
+        const list=el('div',undefined,'feedback-inbox-list');
         const more=el('button','โหลดแบบฟอร์มเพิ่มเติม'); more.type='button'; more.hidden=true;
-        host.append(label,status,list,more);
+        more.className='feedback-read-button';
+        host.append(toolbar,status,list,more);
         let cursor=null, request=0;
         function card(row) {
             const article=el('article',undefined,'feedback-inbox-card');
-            article.append(el('h3',row.formName),el('p',row.parentTitle||'งานที่เกี่ยวข้อง'),
-                el('p',`${kinds[row.parentType]||'งาน'} · ${row.responseCount} คำตอบ · นำเข้าโดย ${row.importedByName||'ไม่ระบุ'} · ${row.createdAt||''}`,'feedback-inbox-meta'));
-            const toggle=el('button','อ่านคำตอบ'); toggle.type='button'; toggle.setAttribute('aria-expanded','false');
-            const detail=el('div'); detail.hidden=true;
+            const avatar=el('span',undefined,'feedback-inbox-avatar'); avatar.append(icon('file-lines'));
+            const body=el('div',undefined,'feedback-inbox-body');
+            const meta=el('p',`${sources[row.sourceType]||'ผู้ตอบแบบฟอร์ม'} · ${dateLabel(row.createdAt)} · ${row.responseCount} คำตอบ`,'feedback-inbox-meta');
+            body.append(meta,el('h3',row.formName),relatedLink(row),
+                el('p',`นำเข้าโดย ${row.importedByName||'ไม่ระบุ'}`,'feedback-inbox-meta'));
+            const toggle=el('button','อ่านคำตอบ','feedback-read-button'); toggle.type='button'; toggle.setAttribute('aria-expanded','false');
+            const detail=el('div',undefined,'feedback-form-detail'); detail.hidden=true;
             let detailRequest=0;
             toggle.onclick=async()=>{
                 const run=++detailRequest;
                 detail.hidden=!detail.hidden; toggle.setAttribute('aria-expanded',String(!detail.hidden));
+                toggle.textContent=detail.hidden?'อ่านคำตอบ':'ซ่อนคำตอบ';
                 detail.replaceChildren(); if(detail.hidden) return;
                 detail.append(el('p','กำลังโหลดคำตอบ'));
                 const collection={partner:'partners',activity:'activities',exchange:'exchanges'}[row.parentType];
@@ -53,7 +90,7 @@
                     if(alive() && article.isConnected && run===detailRequest) detail.replaceChildren(el('p','อ่านคำตอบไม่ได้ กรุณาตรวจสิทธิ์หรือเปิดใหม่'));
                 }
             };
-            article.append(toggle,detail); return article;
+            body.append(toggle,detail); article.append(avatar,body); return article;
         }
         async function load(reset=false) {
             const run=++request;
@@ -61,11 +98,12 @@
             more.disabled=true; status.textContent='กำลังโหลดแบบฟอร์ม';
             const query=new URLSearchParams({limit:'20',q:search.value.trim()});
             if(cursor) query.set('cursor',cursor);
+            if(formKind.input.value) query.set('parentType',formKind.input.value);
             try {
                 const result=await window.CstuAuth.request('/form-feedback?'+query);
                 if(!alive() || run!==request) return;
                 for(const row of result.data) list.append(card(row));
-                cursor=result.page?.nextCursor||null; more.hidden=!cursor;
+                cursor=result.page?.nextCursor||null; more.hidden=!cursor; more.textContent='โหลดแบบฟอร์มเพิ่มเติม';
                 status.textContent=result.count ? `พบ ${result.count} แบบฟอร์ม` : 'ยังไม่พบแบบฟอร์มตามเงื่อนไข';
             } catch(error) {
                 if(!alive() || run!==request) return;
@@ -75,6 +113,7 @@
         }
         let timer;
         search.addEventListener('input',()=>{++request;clearTimeout(timer);timer=setTimeout(()=>{if(alive())load(true);},250);});
+        formKind.input.addEventListener('change',()=>{clearTimeout(timer);load(true);});
         more.onclick=()=>load(); await load(true);
     }
     let generation=0, activeHost=null;
@@ -90,27 +129,44 @@
         const searchLabel = el('label', 'ค้นหา Feedback');
         const search = el('input'); search.type = 'search'; search.placeholder = 'คำสำคัญ ชื่องาน หรือข้อเสนอแนะ'; search.setAttribute('aria-label','ค้นหา Feedback');
         searchLabel.appendChild(search);
-        const kindLabel = el('label', 'ประเภทงาน');
-        const kind = el('select'); kind.setAttribute('aria-label','กรองตามประเภทงาน');
-        for (const [value,label] of [['','ทุกประเภท'],...Object.entries(kinds)]) { const option=el('option',label); option.value=value; kind.appendChild(option); }
-        kindLabel.appendChild(kind);
+        const {label:kindLabel,input:kind}=kindFilter();
         const respondentLabel=el('label','ประเภทผู้ตอบ');
         const respondent=el('select'); respondent.setAttribute('aria-label','กรองตามประเภทผู้ตอบ');
         for (const [value,label] of [['','ทุกประเภทผู้ตอบ'],...Object.entries(respondents)]) { const option=el('option',label); option.value=value; respondent.appendChild(option); }
         respondentLabel.appendChild(respondent);
-        const channelLabel=el('label','ช่องทาง');
-        const channel=el('select'); channel.setAttribute('aria-label','กรองตามช่องทาง');
-        for (const [value,label] of [['','ทุกช่องทาง'],['web','เว็บไซต์'],['other','ช่องทางเดิม']]) { const option=el('option',label); option.value=value; channel.appendChild(option); }
-        channelLabel.appendChild(channel);
         const favoriteLabel = el('label', undefined, 'feedback-favorite-filter');
         const onlyFavorites = el('input'); onlyFavorites.type='checkbox'; onlyFavorites.setAttribute('aria-label','แสดงเฉพาะรายการที่กดหัวใจ');
-        favoriteLabel.append(onlyFavorites,el('span','เฉพาะที่กดหัวใจไว้'));
-        toolbar.append(searchLabel,kindLabel,respondentLabel,channelLabel,favoriteLabel);
+        favoriteLabel.append(onlyFavorites,icon('heart'),el('span','เก็บไว้'));
+        toolbar.append(searchLabel,kindLabel,respondentLabel,favoriteLabel);
         const summary = el('p',undefined,'feedback-inbox-summary'); summary.hidden=true;
         const message = el('p','กำลังโหลด Feedback','feedback-inbox-status'); message.setAttribute('role','status');
         const list = el('div',undefined,'feedback-inbox-list');
-        container.append(el('h2','ความคิดเห็นจากเว็บไซต์และรายการเดิม'),toolbar,summary,message,list);
-        const forms=el('section',undefined,'form-feedback'); container.append(forms);
+        const comments=el('section',undefined,'feedback-inbox-panel');
+        const forms=el('section',undefined,'form-feedback feedback-inbox-panel');
+        comments.id='feedback-comments-panel'; forms.id='feedback-forms-panel'; forms.hidden=true;
+        comments.append(el('h2','ความคิดเห็นจากเว็บไซต์และรายการเดิม','feedback-panel-title'),toolbar,summary,message,list);
+        const tabs=el('div',undefined,'feedback-inbox-tabs'); tabs.setAttribute('role','tablist'); tabs.setAttribute('aria-label','ประเภท Feedback');
+        const panels=[comments,forms];
+        const buttons=['Comment','Form Feedback'].map((title,index)=>{
+            const tab=el('button',title,'feedback-inbox-tab'); tab.type='button';
+            tab.id='feedback-inbox-tab-'+index; tab.setAttribute('role','tab');
+            tab.setAttribute('aria-controls',panels[index].id); tab.setAttribute('aria-selected',String(index===0)); tab.tabIndex=index===0?0:-1;
+            panels[index].setAttribute('role','tabpanel'); panels[index].setAttribute('aria-labelledby',tab.id);
+            tab.onclick=()=>select(index);
+            tab.onkeydown=event=>{
+                let target;
+                if(event.key==='ArrowRight'||event.key==='ArrowLeft') target=1-index;
+                else if(event.key==='Home') target=0;
+                else if(event.key==='End') target=1;
+                else return;
+                event.preventDefault(); select(target); buttons[target].focus();
+            };
+            tabs.append(tab); return tab;
+        });
+        function select(index) {
+            buttons.forEach((tab,i)=>{tab.setAttribute('aria-selected',String(i===index));tab.tabIndex=i===index?0:-1;panels[i].hidden=i!==index;});
+        }
+        container.append(tabs,comments,forms);
         const formsReady=renderForms(forms,alive);
         try {
             const rows=[]; let cursor=null;
@@ -125,12 +181,11 @@
                 const needle=search.value.trim().toLocaleLowerCase();
                 const visible=rows.filter(row => (!kind.value || row.parentType===kind.value) &&
                     (!respondent.value || row.respondentType===respondent.value) &&
-                    (!channel.value || (channel.value==='web' ? row.origin==='web' : row.origin!=='web')) &&
                     (!onlyFavorites.checked || favorites.has(row.id)) &&
                     (!needle || [row.parentTitle,row.comment,row.improvement,sources[row.sourceType]||row.sourceType]
                         .some(value => String(value||'').toLocaleLowerCase().includes(needle))));
                 list.replaceChildren();
-                const filtered=Boolean(needle || kind.value || respondent.value || channel.value || onlyFavorites.checked);
+                const filtered=Boolean(needle || kind.value || respondent.value || onlyFavorites.checked);
                 const withImprovement=visible.filter(row => String(row.improvement || '').trim()).length;
                 summary.textContent=`Feedback ${filtered?'ตามตัวกรอง':'ทั้งหมด'} ${visible.length} รายการ · มีข้อเสนอแนะ ${withImprovement} รายการ`;
                 summary.hidden=false;
@@ -138,30 +193,33 @@
                     onlyFavorites.checked && favorites.size===0 ? 'ยังไม่มี Feedback ที่กดหัวใจไว้' : 'ไม่พบ Feedback ตามตัวกรอง';
                 for(const row of visible){
                     const card=el('article',undefined,'feedback-inbox-card');
-                    const header=el('div',undefined,'feedback-inbox-card-header');
-                    const meta=el('p',`${row.occurredOn||'ไม่ระบุวันที่'} · ${respondents[row.respondentType]||sources[row.sourceType]||row.sourceType||'ไม่ระบุแหล่งที่มา'}${row.origin==='web'?' · เว็บไซต์':''} · ${kinds[row.parentType]||'งาน'}`,'feedback-inbox-meta');
-                    const favorite=el('button',favorites.has(row.id)?'♥ บันทึกแล้ว':'♡ เก็บไว้','feedback-favorite-button');
+                    const avatar=el('span',undefined,'feedback-inbox-avatar'); avatar.append(icon('user'));
+                    const body=el('div',undefined,'feedback-inbox-body');
+                    const meta=el('p',undefined,'feedback-inbox-meta');
+                    meta.append(el('strong',respondents[row.respondentType]||sources[row.sourceType]||'ผู้แสดงความคิดเห็น'),
+                        el('span',`${row.origin==='web'?' · เว็บไซต์':''} · ${dateLabel(row.occurredOn)}`));
+                    const favorite=el('button',undefined,'feedback-favorite-button');
+                    const heart=icon('heart'); heart.className=(favorites.has(row.id)?'fa-solid':'fa-regular')+' fa-heart'; favorite.append(heart);
                     favorite.type='button'; favorite.setAttribute('aria-pressed',String(favorites.has(row.id)));
                     favorite.setAttribute('aria-label',favorites.has(row.id)?'นำออกจากรายการที่กดหัวใจ':'เพิ่มในรายการที่กดหัวใจ');
-                    favorite.onclick=()=>{if(favorites.has(row.id))favorites.delete(row.id);else favorites.add(row.id);saveFavorites(userId,favorites);draw();};
-                    header.append(meta,favorite); card.appendChild(header);
-                    card.appendChild(el('h3',row.parentTitle||'งานที่เกี่ยวข้อง'));
-                    card.appendChild(el('p',row.comment||''));
-                    if(row.improvement) card.appendChild(el('p','สิ่งที่ควรปรับปรุง: '+row.improvement,'feedback-inbox-improvement'));
-                    const link=el('a','เปิดงานที่เกี่ยวข้อง');
-                    const relatedKind=row.parentType==='partner'?'partners':row.parentType==='activity'?'activities':'exchanges';
-                    link.href=`index.html?kind=${relatedKind}&id=${encodeURIComponent(row.parentId)}#board-section`;
-                    // Read the related work in a dialog so the inbox, filters and scroll position stay in place.
-                    // Modified clicks keep the normal link behaviour (e.g. open in a new tab).
-                    link.onclick=event=>{
-                        if(event.button||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||!window.CstuRecords?.openRelated)return;
-                        event.preventDefault();
-                        window.CstuRecords.openRelated(relatedKind,row.parentId,link);
+                    favorite.title=favorites.has(row.id)?'บันทึกแล้ว':'เก็บไว้';
+                    favorite.onclick=()=>{
+                        if(favorites.has(row.id))favorites.delete(row.id);else favorites.add(row.id);
+                        saveFavorites(userId,favorites);
+                        if(onlyFavorites.checked) {draw();onlyFavorites.focus();return;}
+                        favorite.setAttribute('aria-pressed',String(favorites.has(row.id)));
+                        favorite.setAttribute('aria-label',favorites.has(row.id)?'นำออกจากรายการที่กดหัวใจ':'เพิ่มในรายการที่กดหัวใจ');
+                        favorite.title=favorites.has(row.id)?'บันทึกแล้ว':'เก็บไว้';
+                        heart.className=(favorites.has(row.id)?'fa-solid':'fa-regular')+' fa-heart';
                     };
-                    card.appendChild(link); list.appendChild(card);
+                    body.append(meta,el('p',row.comment||'','feedback-inbox-comment'));
+                    if(row.improvement) body.append(el('p','ข้อเสนอแนะ: '+row.improvement,'feedback-inbox-improvement'));
+                    const related=el('p',undefined,'feedback-inbox-related');
+                    related.append(el('span','เกี่ยวกับ '),relatedLink(row)); body.append(related);
+                    card.append(avatar,body,favorite); list.appendChild(card);
                 }
             };
-            search.addEventListener('input',draw); kind.addEventListener('change',draw); respondent.addEventListener('change',draw); channel.addEventListener('change',draw); onlyFavorites.addEventListener('change',draw);
+            search.addEventListener('input',draw); kind.addEventListener('change',draw); respondent.addEventListener('change',draw); onlyFavorites.addEventListener('change',draw);
             draw();
         } catch(error) {
             if (!alive()) return;
