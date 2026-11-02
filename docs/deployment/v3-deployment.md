@@ -1,5 +1,7 @@
 # คู่มือ Deploy V3
 
+เอกสารนี้เก็บขั้นตอนของรุ่น V3 และปลายทาง Sydney เดิม สำหรับการปล่อยระบบ Singapore ให้ใช้ [คู่มือ Deployment V4](v4-deployment.md)
+
 เอกสารนี้สรุปจุดตรวจสำหรับ source และ environment ของ V3 ไม่ยืนยันสถานะ AWS หรือเว็บ production โดยตัวมันเอง
 
 ## สิ่งที่ repository ทำอยู่

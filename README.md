@@ -40,6 +40,7 @@ README นี้เป็นจุดเริ่มต้นของ repositor
 | **V1 · Public Collaboration Profile** | หน้าเว็บข้อมูลสาธารณะ ใช้ข้อมูลแบบ static และ S3 Static Website Hosting | [Design](docs/design/v1-design.md) · [Hosting ADR](docs/architecture/v1/ADR-001-v1-hosting.md) · [Architecture diagram](docs/architecture/v1/v1-architecture-diagram.png) · [Evidence](docs/evidence/v1-evidence.md) |
 | **V2 · Collaboration Repository** | ค้นหาและกรองข้อมูลสาธารณะ; เอกสารออกแบบเลือก Amplify, API Gateway, Lambda และ DynamoDB | [Hosting ADR](docs/architecture/v2/ADR-001-v2-hosting.md) · [Architecture diagram](docs/architecture/v2/v2-architecture-diagram.png) · [Evidence](docs/evidence/v2-evidence.md) |
 | **V3 · Secure Collaboration Workspace** | เอกสารครอบคลุม identity/session, role และ scope permissions, ข้อมูลภายใน, เอกสารส่วนตัว และ workflow ความร่วมมือ; แยก design baseline ออกจากผลที่ตรวจแล้ว | [Design](docs/design/v3-design.md) · [Hosting ADR](docs/architecture/v3/ADR-001-v3-hosting.md) · [Architecture diagram](docs/architecture/v3/v3-architecture-diagram.png) · [API routes](docs/architecture/v3/v3-api-routes.md) · [Deployment guide](docs/deployment/v3-deployment.md) · [Evidence](docs/evidence/v3-evidence.md) |
+| **V4 · Scale & Availability** | ภาพรวมความร่วมมือ กราฟสถานะ Stakeholder และสรุป Feedback ใน Inbox | [Design](docs/design/v4-design.md) · [Deployment guide](docs/deployment/v4-deployment.md) |
 
 ## Architecture
 
@@ -68,7 +69,7 @@ python3 -m http.server 8000 --directory public
 
 ## Documentation
 
-- [การย้ายระบบไป Singapore และการย้อนกลับ](docs/deployment/v4-deployment.md)
+- [คู่มือ Deployment V4 — Singapore](docs/deployment/v4-deployment.md)
 
 - [เลือกเอกสารตามงานและเวอร์ชัน](docs/README.md)
 - [คู่มือข้อมูลและแหล่งข้อมูล](docs/data/data-guide.md)

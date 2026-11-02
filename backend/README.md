@@ -203,9 +203,7 @@ checks pass. No AWS resources or real user roles were changed by this implementa
 ไม่มี business repository และตอบ 503 สำหรับ protected business requests ที่ผ่าน auth
 จนเชื่อม adapter จริง Public Lambda/backup เดิมยังไม่ได้เปลี่ยนมาใช้ projection ใหม่
 
-## Student Feedback release
+## Deployment
 
-ถ้าหน้าเว็บใหม่ขึ้น `FORBIDDEN` สำหรับ student ให้ตรวจ backend ที่ deploy จริงด้วย:
-ดู [สาเหตุและวิธี release/rollback](../docs/deployment/student-feedback-release.md).
-แพ็ก source ที่ commit แล้วด้วย `python3 scripts/package-auth-lambda.py /tmp/cstuhub-auth-feedback.zip`;
-คำสั่งนี้ไม่ deploy AWS และไม่เพิ่ม GitHub Actions.
+ขั้นตอนปล่อย frontend/backend การตรวจสิทธิ์ และการย้อนกลับอยู่ใน
+[คู่มือ Deployment V4](../docs/deployment/v4-deployment.md).

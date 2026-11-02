@@ -6,10 +6,10 @@ Reviewed on 2026-10-31. Local frontend review with fixture data; no deployment o
 
 ## Visual evidence
 
-- Selected image #4, without percentages: `docs/design/stakeholder-review/selected-design.jpg` (1680 × 936 px, JPEG conversion of the selected generated PNG without resizing).
-- Desktop implementation: `docs/design/stakeholder-review/desktop.png` (1680 × 936 px, matching CSS viewport, DPR 1).
-- Mobile implementation: `docs/design/stakeholder-review/mobile.png` (390 × 1100 px, matching CSS viewport, DPR 1); width also checked at 390 × 844.
-- Feedback Inbox: `docs/design/stakeholder-review/feedback.png` (1280 × 720 px, matching actual CSS viewport, DPR 1). A requested 1224px laptop viewport resolved to 1280px in the browser; the report uses the observed size.
+- Selected image #4, without percentages: `docs/design/v4/stakeholder/selected-design.jpg` (1680 × 936 px, JPEG conversion of the selected generated PNG without resizing).
+- Desktop implementation: `docs/design/v4/stakeholder/desktop.png` (1680 × 936 px, matching CSS viewport, DPR 1).
+- Mobile implementation: `docs/design/v4/stakeholder/mobile.png` (390 × 1100 px, matching CSS viewport, DPR 1); width also checked at 390 × 844.
+- Feedback Inbox: `docs/design/v4/stakeholder/feedback.png` (1280 × 720 px, matching actual CSS viewport, DPR 1). A requested 1224px laptop viewport resolved to 1280px in the browser; the report uses the observed size.
 - State: executive Stakeholder tab, company 9 / university 6 / government 3 / research institute 2, total 20. These are local fixtures matching the mockup. Shipped code reads the existing protected API.
 - Reference and revised desktop/mobile captures were opened together in one comparison input. The desktop panel width is 1592px in both reference and implementation. Compare panel content; tabs retain the existing product sizing rather than the oversized mockup tabs. No density scaling was needed.
 - Full-resolution views make header, count cells, icons, chart center and Thai copy readable, so a separate crop was not necessary. Mobile is an adaptation of the desktop source, not a supplied mobile mockup.
@@ -70,9 +70,9 @@ Reviewed on 2026-10-31. This is a local frontend review using fixture data, not 
 
 ## Visual evidence
 
-- Source visual truth: `docs/design/overview-review/selected-design.jpg` (2111 × 745 px), converted from the selected generated PNG without resizing.
-- Implementation: `docs/design/overview-review/desktop.jpg` (1531 × 740 px; CSS viewport 1531 × 740).
-- Mobile: `docs/design/overview-review/mobile.jpg` (390 × 1537 px full page; CSS viewport 390 × 844).
+- Source visual truth: `docs/design/v4/overview/selected-design.jpg` (2111 × 745 px), converted from the selected generated PNG without resizing.
+- Implementation: `docs/design/v4/overview/desktop.jpg` (1531 × 740 px; CSS viewport 1531 × 740).
+- Mobile: `docs/design/v4/overview/mobile.jpg` (390 × 1537 px full page; CSS viewport 390 × 844).
 - Additional laptop check: CSS viewport 1224 × 768.
 - Browser screenshots are 1 output pixel per CSS pixel. The source is a standalone component mockup; compare its component bounds with the implementation's summary/panels, excluding the existing outer container and local-fixture note. The component is approximately 1454 × 532 CSS px in the desktop capture. The source and implementation were opened together in the same comparison input; no pixel-perfect claim is made across these different sizes.
 - State: executive summary with Stakeholders 20, Activities 17, Agreements 13, Exchanges 5, Feedback 8. Agreements: 8 active, 3 draft, 1 expired, 1 terminated. Exchanges: 2 ongoing, 1 completed, 1 draft, 1 cancelled. These are local fixture counts matching the selected mockup; production continues to read the protected `/overview` API.
