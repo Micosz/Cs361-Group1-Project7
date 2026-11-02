@@ -10,6 +10,11 @@
 
 ## การทำงาน
 
+- ปุ่มหลักแสดง `? คู่มือ` ก่อน Menu / Log in ส่วนปุ่มในฟอร์มใช้ `?`
+- เปิดบทตามฟอร์มปัจจุบันสำหรับเพิ่ม/แก้ไขคู่ความร่วมมือ กิจกรรม ข้อตกลง การแลกเปลี่ยน จัดการสิทธิ์ และหน้าเข้าสู่ระบบ/Feedback Inbox/ภาพรวม รวมถึง same-origin iframe
+- เลือกเฉพาะบทที่บทบาทบัญชีรองรับ ล้างคำค้นเดิมเมื่อมีบทที่ตรงบริบท ถ้าไม่มีให้คงบทที่อ่านล่าสุด
+- การปรับปุ่มและการเลือกบทอัตโนมัติตรวจ syntax/build และตรวจ mapping กับ source ฟอร์มแล้ว รอบนี้เครื่องมือ browser เชื่อมต่อไม่ได้ จึงยังไม่ได้ตรวจ UI รอบใหม่
+
 - `public/assets/manual.js`: overlay, focus/scroll restoration, search, role filter, F1 และปุ่มใน dialog
 - `public/assets/manual.css`: desktop/mobile layout และกรอบเน้นจุดที่ต้องกด
 - `public/assets/manual-data.json`: หัวข้อ คำอธิบาย ภาพ และพิกัด highlight

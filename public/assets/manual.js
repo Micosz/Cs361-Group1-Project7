@@ -13,8 +13,29 @@
         return [...new Set(roles)];
     }
     function button(context=false) {
-        const b=node('button','?','manual-trigger'+(context?' manual-context-trigger':''));b.type='button';b.title='คู่มือการใช้งาน';b.setAttribute('aria-label','เปิดคู่มือการใช้งาน');b.setAttribute('aria-haspopup','dialog');
+        const b=node('button',context?'?':'? คู่มือ','manual-trigger'+(context?' manual-context-trigger':' manual-labelled-trigger'));b.type='button';b.title='คู่มือการใช้งาน';b.setAttribute('aria-label','เปิดคู่มือการใช้งาน');b.setAttribute('aria-haspopup','dialog');
         return b;
+    }
+    function contextGuide(source, doc=document) {
+        const visible = el => el && el.getClientRects().length && !el.closest('[hidden]');
+        const dialogs = [...doc.querySelectorAll('dialog[open], #detailModal .modal-content[role="dialog"]')].filter(el=>visible(el)&&!el.matches('.manual-dialog,.manual-image-dialog'));
+        const root = source?.closest?.('dialog[open], [role="dialog"]') || dialogs.at(-1) || doc;
+        const find = selector => [...root.querySelectorAll(selector)].find(visible);
+        for(const frame of root.querySelectorAll('iframe')) {
+            try { if(visible(frame) && frame.contentDocument) { const guide=contextGuide(null,frame.contentDocument);if(guide)return guide; } } catch { /* Cross-origin help falls back to this page. */ }
+        }
+        const editing = /แก้ไข/.test(root.querySelector('h2')?.textContent || '');
+        if(find('#role-form'))return 'roles';
+        if(find('#partner-entry-form'))return root.querySelector('#basic-partners-scope')?.disabled?'edit-partner':'create-partner';
+        if(find('#activity-form'))return doc.getElementById('activity-id')?.value?'activity-outcome':'create-activity';
+        if(find('#exchange-form'))return doc.getElementById('exchange-id')?.value?'edit-exchange':'create-exchange';
+        if(find('#agreement-edit-form'))return editing?'edit-agreement':'create-agreement';
+        if(find('#login-form'))return 'login';
+        if(find('#my-exchange-detail-container'))return 'exchange-read';
+        if(doc.body.classList.contains('feedback-inbox-view'))return 'feedback-inbox';
+        if(doc.querySelector('#board-overview[aria-pressed="true"]'))return 'overview';
+        if(doc.querySelector('#tabExchange[aria-pressed="true"]'))return 'exchange-read';
+        return null;
     }
     function rememberScroll(doc=document) {
         const positions=[...doc.querySelectorAll('*')].filter(el=>!el.closest('.manual-dialog,.manual-image-dialog') && (el.scrollTop||el.scrollLeft)).map(el=>[el,el.scrollLeft,el.scrollTop]);
@@ -65,11 +86,15 @@
     }
     async function open(source) {
         build();if(modal.open)return;
+        const suggested=contextGuide(source);
         returnFocus=source||document.activeElement;scrollPositions=rememberScroll();scroll={x:window.scrollX,y:window.scrollY};overflow=document.body.style.overflow;document.body.style.overflow='hidden';modal.showModal();
         const run=++generation,host=modal.querySelector('#manual-content');host.replaceChildren(node('p','กำลังโหลดคู่มือ…'));modal.querySelector('#manual-toc').replaceChildren();
         try {if(!data){pending ||= fetch(new URL('manual-data.json',assetBase)).then(r=>{if(!r.ok)throw Error();return r.json();}).finally(()=>pending=null);data=await pending;}
             if(run!==generation||!modal.open)return;
-            const roles=available(),select=modal.querySelector('#manual-role'),previous=select.value;select.replaceChildren();for(const key of roles){const o=node('option',labels[key]);o.value=key;select.append(o);}select.value=roles.includes(previous)?previous:['executive','staff','coordinator','student','manager','account','public'].find(r=>roles.includes(r));draw();
+            const roles=available(),select=modal.querySelector('#manual-role'),previous=select.value;select.replaceChildren();for(const key of roles){const o=node('option',labels[key]);o.value=key;select.append(o);}select.value=roles.includes(previous)?previous:['executive','staff','coordinator','student','manager','account','public'].find(r=>roles.includes(r));
+            const guide=data.guides.find(g=>g.id===suggested && g.roles.some(r=>roles.includes(r)));
+            if(guide){currentGuide=guide.id;modal.querySelector('#manual-search').value='';if(!guide.roles.includes(select.value))select.value=roles.find(r=>guide.roles.includes(r));}
+            draw();
         } catch {if(run!==generation||!modal.open)return;const retry=node('button','ลองโหลดคู่มืออีกครั้ง');retry.onclick=()=>{modal.addEventListener('close',()=>open(source),{once:true});close();};host.replaceChildren(node('p','โหลดคู่มือไม่ได้ ข้อมูลในหน้าที่ทำงานอยู่ยังคงเดิม'),retry);}
     }
     // Delegate so help also survives host dialogs rebuilding their children.
