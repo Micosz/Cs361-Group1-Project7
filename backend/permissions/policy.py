@@ -52,7 +52,7 @@ def action_roles(kind, action):
     if kind not in BUSINESS | CHILDREN:
         return set()
     if kind == 'formFeedback':
- if action in {'read', 'create', 'delete'} else set()
+        return {'coordinator', 'staff', 'executive'} if action in {'read', 'create', 'delete'} else set()
     if action == 'read':
         return ({'student', 'coordinator', 'staff', 'executive'} if kind in {'activity', 'agreement', 'exchange', 'document', 'feedback'}
                 else {'coordinator', 'staff', 'executive'})
@@ -64,12 +64,11 @@ def action_roles(kind, action):
                 else {'coordinator', 'staff', 'executive'} if kind != 'document'
                 else set())
     if action == 'status' and kind in STATUS:
-
+        return {'coordinator', 'staff', 'executive'}
     if action in {'upload', 'delete'} and kind == 'document':
-
-    if action == 'delete' and kind == 'contact': return {'coordinator', 'staff', 'executive'}
-    if action == 'delete' and kind == 'feedback': return {'student', 'coordinator', 'staff', 'executive'}
-
+        return {'coordinator', 'staff', 'executive'}
+    if action == 'delete' and kind == 'contact':
+        return {'coordinator', 'staff', 'executive'}
     if action == 'delete' and kind == 'feedback':
         return {'student', 'coordinator', 'staff', 'executive'}
     return set()

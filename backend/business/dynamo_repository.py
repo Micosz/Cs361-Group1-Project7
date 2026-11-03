@@ -613,3 +613,28 @@ class DynamoBusinessRepository:
                 raise AuthError('VERSION_CONFLICT', 409) from None
             raise
         return copy.deepcopy(record)
+
+    def _delete_feedback(self, record, parent, conditions):
+        now = int(self.clock())
+        actor = self.service.users.get(conditions.user_id)
+        if not actor or actor.authz_version != conditions.authz_version:
+            raise AuthError('SESSION_REVOKED', 401)
+        from ..permissions.policy import require_record
+        require_record(SessionContext(actor, now), 'feedback', 'delete', record, parent)
+        checks = transaction_checks(conditions, user_table=self.users, session_table=self.sessions,
+                                    business_table=self.table, now=now)
+        for check in checks:
+            item = check.get('ConditionCheck', {})
+            if item.get('TableName') == self.table and conditions.parent_id is not None:
+                item['TableName'] = self._table(parent['entityType'])
+                item['Key'] = self._key(parent['entityType'], parent)
+        delete = {'TableName': self.table, 'Key': self._key('feedback', record)}
+        delete.update(target_condition(conditions))
+        checks.append({'Delete': delete})
+        try:
+            self.client.transact_write_items(TransactItems=checks)
+        except Exception as error:
+            if getattr(error, 'response', {}).get('Error', {}).get('Code') == 'TransactionCanceledException':
+                raise AuthError('VERSION_CONFLICT', 409) from None
+            raise
+        return copy.deepcopy(record)
