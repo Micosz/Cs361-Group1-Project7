@@ -108,10 +108,18 @@
     const addContext=()=>{
         if(embedded)return;
         for(const d of document.querySelectorAll('dialog[open], #detailModal .modal-content[role="dialog"]')){
-            if(d===modal||d===viewer||d.querySelector('.manual-context-trigger'))continue;
-            const b=button(true),bar=d.querySelector('.detail-toolbar,.role-menu-account-area');
-            if(bar){b.classList.add('manual-toolbar-trigger');bar.insertBefore(b,bar.lastElementChild);}
-            else d.prepend(b);
+            if(d===modal||d===viewer)continue;
+            // A reused record dialog may acquire its toolbar after async data loads.
+            // Move existing help into it: a third direct grid child displaces both columns.
+            const b=d.querySelector('.manual-context-trigger')||button(true);
+            const bar=d.querySelector('.detail-toolbar,.role-menu-account-area');
+            if(bar){
+                b.classList.add('manual-toolbar-trigger');
+                if(b.parentElement!==bar)bar.insertBefore(b,bar.lastElementChild);
+            } else {
+                b.classList.remove('manual-toolbar-trigger');
+                if(b.parentElement!==d)d.prepend(b);
+            }
         }
     };
     const observer=new MutationObserver(addContext);observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['open','role']});addContext();
