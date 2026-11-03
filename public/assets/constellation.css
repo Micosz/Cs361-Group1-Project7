@@ -166,7 +166,7 @@ body:has(.constellation-ready) {
     .navbar:not(.header-settled)::before {
         animation: header-capsule-open 1350ms cubic-bezier(.65, 0, .2, 1) both;
     }
-    .navbar:not(.header-settled) > :is(.logo, .search-wrapper, .auth-buttons) {
+    .navbar:not(.header-settled) > :is(.logo, .search-wrapper, .manual-trigger, .auth-buttons) {
         animation: header-content-enter 500ms 850ms cubic-bezier(.22, 1, .36, 1) both;
     }
     .navbar .search-container { transition: border-color 220ms ease, box-shadow 220ms ease; }

@@ -99,7 +99,11 @@
     }
     // Delegate so help also survives host dialogs rebuilding their children.
     document.addEventListener('click',e=>{const b=e.target.closest?.('.manual-trigger');if(!b)return;e.preventDefault();e.stopPropagation();if(embedded)window.parent.postMessage({type:'cstu-manual-open'},location.origin);else open(b);},true);
-    if(!embedded){trigger=button();const auth=document.getElementById('authNavButtons');if(auth)auth.before(trigger);else {trigger.classList.add('manual-floating-trigger');document.body.append(trigger);}}
+    if(!embedded){
+        // The main header renders help in HTML so all controls enter on one timeline.
+        trigger=document.querySelector('.navbar > .manual-trigger');
+        if(!trigger){trigger=button();const auth=document.getElementById('authNavButtons');if(auth)auth.before(trigger);else {trigger.classList.add('manual-floating-trigger');document.body.append(trigger);}}
+    }
     // Keep help within the top modal; use its existing toolbar when available.
     const addContext=()=>{
         if(embedded)return;
