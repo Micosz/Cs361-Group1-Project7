@@ -22,7 +22,8 @@
     }
     async function mount(container, parent, kind, session, options = {}) {
         if (!['partners','activities','exchanges'].includes(kind) || !session?.user) return;
-        const heading=document.createElement('h3');heading.textContent=options.excludePublic?'ความคิดเห็นภายใน':'ความคิดเห็น';
+        const publicOnly=Boolean(options.excludePublic);
+        const heading=document.createElement('h3');heading.textContent='ความคิดเห็น';
         const status=document.createElement('p');status.setAttribute('role','status');
         const list=document.createElement('ol'), editor=document.createElement('div');
         const filterLabel=document.createElement('label');filterLabel.className='feedback-filter';filterLabel.textContent='กลุ่มผู้ตอบ ';
@@ -31,14 +32,19 @@
             const option=document.createElement('option');option.value=value;option.textContent=label;filter.appendChild(option);
         }
         filterLabel.appendChild(filter);
-        container.className='feedback-section feedback-filtered';container.append(heading,status,list,editor,filterLabel);
+        if(publicOnly){
+            // Keep authorized edits on public comments without rendering private feedback.
+            container.className='public-comment-editor';container.append(editor);
+        }else{
+            container.className='feedback-section feedback-filtered';container.append(heading,status,list,editor,filterLabel);
+        }
         filter.onchange=()=>{for(const row of list.children)row.hidden=!!filter.value && row.feedbackRespondentType!==filter.value;};
         const base='/'+kind+'/'+encodeURIComponent(parent.id)+'/feedback';
         const sources={participant:'ผู้เข้าร่วม',partner:'คู่ความร่วมมือ',other:'อื่น ๆ'};
         const add=document.createElement('button');add.type='button';add.textContent='เพิ่ม Feedback';
         let addMounted=false;
         const syncAddButton=allowed=>{
-            if (options.hideCreate) allowed = false;
+            if (options.hideCreate || publicOnly) allowed = false;
             if(allowed && !addMounted){container.appendChild(add);addMounted=true;}
             else if(!allowed && addMounted){add.remove?.();addMounted=false;}
         };
@@ -64,7 +70,7 @@
                     if(current!==revision || container.isConnected===false)return;
                     if(firstPage && typeof result.canCreate==='boolean'){syncAddButton(result.canCreate);firstPage=false;}
                     for(const row of result.data){
-                        if(options.excludePublic && row.origin==='web'){publicRows.push(row);continue;}
+                        if(publicOnly){if(row.origin==='web')publicRows.push(row);continue;}
                         const li=document.createElement('li');
                         li.feedbackRespondentType=row.respondentType||row.sourceType||'other';
                         li.hidden=!!filter.value && li.feedbackRespondentType!==filter.value;
@@ -79,7 +85,7 @@
                     }
                     cursor=result.page.nextCursor;
                 }while(cursor);
-                status.textContent=total?'':options.excludePublic?'ยังไม่มีความคิดเห็นภายใน':'ยังไม่มีความคิดเห็น';
+                status.textContent=total?'':'ยังไม่มีความคิดเห็น';
                 if(options.excludePublic && !publicArea){
                     publicArea=container.closest('.detail-comments')?.querySelector('.public-feedback');
                     publicArea?.addEventListener('cstu:public-feedback-loaded',()=>load());
