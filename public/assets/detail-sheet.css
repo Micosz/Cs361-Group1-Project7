@@ -49,7 +49,7 @@
 .detail-sheet .feedback-section ol { list-style: none; padding: 0; }
 .detail-sheet .feedback-section li { margin: 0; padding: 22px 0; border-bottom: 1px solid #e6dfdc; }
 .detail-sheet .feedback-section li p:first-child { color: #6c6469; font-size: 14px; }
-.detail-sheet .feedback-section button { min-height: 44px; padding: 8px 16px; margin: 12px 8px 0 0; border: 1px solid #c3002f; border-radius: 8px; color: #b5002c; background: #fff; }
+.detail-sheet .feedback-section button:not(.feedback-action-btn):not(.feedback-reactions button) { min-height: 44px; padding: 8px 16px; margin: 12px 8px 0 0; border: 1px solid #c3002f; border-radius: 8px; color: #b5002c; background: #fff; }
 .detail-sheet .feedback-section button[type='submit'] { color: #fff; background: #c3002f; }
 .detail-sheet .feedback-section input, .detail-sheet .feedback-section textarea, .detail-sheet .feedback-section select { width: 100%; padding: 10px 12px; border: 1px solid #d2c5c8; border-radius: 8px; font: inherit; }
 .detail-sheet :focus-visible { outline: 3px solid #c3002f; outline-offset: 3px; }

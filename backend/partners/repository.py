@@ -147,7 +147,7 @@ class PartnerRepository:
                         raise AuthError('NOT_FOUND', 404)
 
             if action == 'delete':
-                if kind != 'contact' or not record or not parent:
+                if kind not in {'contact', 'feedback'} or not record or not parent:
                     raise AuthError('NOT_FOUND', 404)
                 del self.rows[(kind, record['id'])]
                 self.writes += 1

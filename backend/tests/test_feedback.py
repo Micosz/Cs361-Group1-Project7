@@ -145,6 +145,16 @@ class FeedbackTests(unittest.TestCase):
         self.assertNotIn('respondentName', inbox_after[exec_own['id']])
         self.assertEqual(422, self.call('/api/feedback?parentType=partner')[0]['statusCode'])
 
+        # Delete feedback: only creator can delete with version check
+        self.actor = 'coordinator'
+        self.assertIn(self.call(base + '/' + own['id'], 'DELETE', version=2)[0]['statusCode'], (403, 404))
+        self.actor = 'staff'
+        self.assertEqual(409, self.call(base + '/' + own['id'], 'DELETE', version=1)[0]['statusCode'])
+        del_res, del_body = self.call(base + '/' + own['id'], 'DELETE', version=2)
+        self.assertEqual(200, del_res['statusCode'], del_body)
+        self.assertTrue(del_body.get('deleted'))
+        self.assertNotIn(own['id'], [r['id'] for r in self.call(base)[1]['data']])
+
         self.actor = 'coordinator'
         self.assertIn(self.call('/api/feedback')[0]['statusCode'], (403, 404))
         self.actor = 'student-a'
