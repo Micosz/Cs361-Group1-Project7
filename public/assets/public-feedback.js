@@ -121,8 +121,9 @@
                                     if(editing?.id===row.id) clear();
                                     await load();
                                 } catch(error) {
+                                    console.error('Delete feedback failed:', error);
                                     listStatus.textContent=error.status===409?'ความคิดเห็นเปลี่ยนแล้ว กรุณาโหลดรายการใหม่ก่อนลบ':
-                                        error.status===403||error.status===404?'คุณไม่มีสิทธิ์ลบความคิดเห็นนี้':'ลบความคิดเห็นไม่ได้ กรุณาลองใหม่';
+                                        error.status===403||error.status===404?'คุณไม่มีสิทธิ์ลบความคิดเห็นนี้':'ลบความคิดเห็นไม่ได้ กรุณาลองใหม่ ('+(error.status||error.message)+')';
                                     del.disabled=false;
                                 }
                             };

@@ -77,6 +77,7 @@
                             editor.replaceChildren();
                             publicArea?.dispatchEvent(new Event('cstu:public-feedback-refresh'));
                         } catch(error) {
+                            console.error('Delete feedback failed:', error);
                             del.disabled=false;
                         }
                     };
