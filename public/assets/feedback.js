@@ -41,12 +41,17 @@
         filter.onchange=()=>{for(const row of list.children)row.hidden=!!filter.value && row.feedbackRespondentType!==filter.value;};
         const base='/'+kind+'/'+encodeURIComponent(parent.id)+'/feedback';
         const sources={participant:'ผู้เข้าร่วม',partner:'คู่ความร่วมมือ',other:'อื่น ๆ'};
-        const add=document.createElement('button');add.type='button';add.textContent='เพิ่ม Feedback';
-        let addMounted=false;
-        const syncAddButton=allowed=>{
+        const add=document.createElement('button');add.type='button';add.textContent='เพิ่มความคิดเห็น';
+        let addMounted=false, composerInitialized=false;
+        const syncAddButton=(allowed, openComposer=false)=>{
             if (options.hideCreate || publicOnly) allowed = false;
             if(allowed && !addMounted){container.appendChild(add);addMounted=true;}
             else if(!allowed && addMounted){add.remove?.();addMounted=false;}
+            if(!allowed && !publicOnly) editor.replaceChildren();
+            if(allowed && openComposer && !composerInitialized){
+                composerInitialized=true;
+                form(null, false);
+            }
         };
         let revision=0;
         let publicArea=null, publicRows=[];
@@ -68,7 +73,7 @@
                 do {
                     const result=await window.CstuAuth.request(base+'?limit=100'+(cursor?'&cursor='+encodeURIComponent(cursor):''));
                     if(current!==revision || container.isConnected===false)return;
-                    if(firstPage && typeof result.canCreate==='boolean'){syncAddButton(result.canCreate);firstPage=false;}
+                    if(firstPage && typeof result.canCreate==='boolean'){syncAddButton(result.canCreate, true);firstPage=false;}
                     for(const row of result.data){
                         if(publicOnly){if(row.origin==='web')publicRows.push(row);continue;}
                         const li=document.createElement('li');
@@ -99,8 +104,8 @@
             }
         }
         function textValue(value){return String(value??'');}
-        function form(row=null){
-            editor.replaceChildren();const form=document.createElement('form');
+        function form(row=null, focus=true){
+            editor.replaceChildren();add.hidden=true;const form=document.createElement('form');
             if(row?.origin==='web'){
                 const notice=document.createElement('p');notice.textContent='ความคิดเห็นนี้แสดงต่อสาธารณะ โปรดหลีกเลี่ยงข้อมูลส่วนบุคคล';form.append(notice);
             }
@@ -113,8 +118,8 @@
             const improvement=field('สิ่งที่ควรปรับปรุง (ไม่ใส่ข้อมูลระบุตัวบุคคล)',document.createElement('textarea'));improvement.maxLength=10000;improvement.value=row?.improvement||'';
             const name=field('ชื่อผู้ให้ผลตอบรับ (ไม่บังคับ เฉพาะผู้จัดการงานเห็น)',document.createElement('input'));name.maxLength=200;name.value=row?.respondentName||'';
             const message=document.createElement('p');message.setAttribute('role','status');
-            const save=document.createElement('button');save.type='submit';save.textContent='บันทึก Feedback';
-            const cancel=document.createElement('button');cancel.type='button';cancel.textContent='ยกเลิก';cancel.onclick=()=>editor.replaceChildren();
+            const save=document.createElement('button');save.type='submit';save.textContent='บันทึกความคิดเห็น';
+            const cancel=document.createElement('button');cancel.type='button';cancel.textContent='ยกเลิก';cancel.onclick=()=>{editor.replaceChildren();add.hidden=false;};
             form.append(message,save,cancel);editor.appendChild(form);
             enhanceComposer(form, [comment, improvement]);
             let fingerprint=null,key=null;
@@ -129,12 +134,12 @@
                     if(row)await window.CstuAuth.mutate(base+'/'+encodeURIComponent(row.id),payload,row.version);
                     else await window.CstuAuth.create(base,payload,key);
                     if(container.isConnected===false)return;
-                    editor.replaceChildren();await load();
+                    editor.replaceChildren();add.hidden=false;await load();
                     if(row?.origin==='web')publicArea?.dispatchEvent(new Event('cstu:public-feedback-refresh'));
                 }catch(error){message.textContent=error.status===409?'ข้อมูลเปลี่ยนแล้ว กรุณายกเลิกและเปิด Feedback ล่าสุดเพื่อตรวจทาน':error.status===403||error.status===404?'คุณไม่มีสิทธิ์จัดการ Feedback นี้แล้ว':'บันทึกไม่ได้: '+error.message;}
                 finally{save.disabled=false;}
             };
-            comment.focus?.();
+            if(focus)comment.focus?.();
         }
         add.onclick=()=>form();
         syncAddButton(canCreateFeedback(session,parent));
