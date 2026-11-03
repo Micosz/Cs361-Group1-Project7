@@ -146,6 +146,8 @@ def normalize_payload(kind, action, payload, *, record=None):
         if primary in cohosts:
             invalid()
     if kind == 'feedback':
+        if 'respondentType' in effective and (not isinstance(effective['respondentType'], str) or effective['respondentType'] not in {'student', 'teacher', 'partner', 'participant', 'other'}):
+            invalid()
         calendar_day(effective['occurredOn'])
         if not isinstance(effective['sourceType'], str) or effective['sourceType'] not in {'participant', 'partner', 'other'}:
             invalid()

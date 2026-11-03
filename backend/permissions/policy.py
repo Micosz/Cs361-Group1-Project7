@@ -18,7 +18,7 @@ WRITABLE = {
     'contact': {'name', 'position', 'email', 'phone'},
     'history': {'occurredOn', 'kind', 'note', 'referenceType', 'referenceId'},
     'formFeedback': {'formName', 'sourceType', 'fileName', 'sheetName', 'columns', 'rows'},
-    'feedback': {'occurredOn', 'sourceType', 'comment', 'improvement', 'respondentName'},
+    'feedback': {'occurredOn', 'sourceType', 'respondentType', 'comment', 'improvement', 'respondentName'},
     'document': {'displayName', 'audience', 'containsPersonal'},
 }
 WRITABLE['activity'] = WRITABLE['activity'] | {'agreementIds'}

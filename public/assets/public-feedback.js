@@ -1,15 +1,16 @@
 /* Public web comments; internal feedback and imported forms use separate scoped routes. */
 (() => {
     'use strict';
-    function mount(container, record, kind) {
-        if (!record?.id || !['partners','activities'].includes(kind)) return;
+    function mount(container, record, kind, options = {}) {
+        const scoped = options.scoped === true;
+        if (!record?.id || !(scoped ? ['partners','activities','exchanges'] : ['partners','activities']).includes(kind)) return;
         container.classList.add('feedback-section', 'public-feedback');
         const categories={student:'นักศึกษา',teacher:'อาจารย์',partner:'คู่ความร่วมมือ',participant:'ผู้เข้าร่วม',other:'อื่น ๆ'};
-        const base='/public/'+kind+'/'+encodeURIComponent(record.id)+'/feedback';
+        const base=(scoped ? '/' : '/public/')+kind+'/'+encodeURIComponent(record.id)+'/feedback';
         const heading=document.createElement('h3'); heading.textContent='ความคิดเห็น';
         const intro=document.createElement('p'); intro.className='feedback-hint';
-        intro.textContent='ความคิดเห็นแสดงต่อสาธารณะโดยไม่ระบุชื่อ โปรดหลีกเลี่ยงข้อมูลส่วนบุคคล';
-        const form=document.createElement('form'); form.className='public-comment-composer';
+        intro.textContent=scoped ? 'ความคิดเห็นแสดงเฉพาะผู้มีสิทธิ์ในรายการนี้ โปรดหลีกเลี่ยงข้อมูลส่วนบุคคล' : 'ความคิดเห็นแสดงต่อสาธารณะโดยไม่ระบุชื่อ โปรดหลีกเลี่ยงข้อมูลส่วนบุคคล';
+        const form=document.createElement('form'); form.className='public-comment-composer'; form.hidden=scoped;
         const comment=document.createElement('textarea'); comment.required=true; comment.maxLength=5000;
         comment.setAttribute('aria-label','ความคิดเห็น'); comment.placeholder='เพิ่มความคิดเห็น…';
         const controls=document.createElement('div'); controls.className='feedback-composer-controls'; controls.hidden=true;
@@ -36,20 +37,37 @@
         const more=document.createElement('button'); more.type='button'; more.textContent='ดูเพิ่มเติม'; more.hidden=true;
         form.append(comment,controls,status); container.append(heading,intro,form,filterLabel,listStatus,list,more);
         window.CstuFeedback?.enhanceComposer(form, [comment]);
-        let cursor=null, revision=0, key=null, fingerprint=null;
+        let cursor=null, revision=0, key=null, fingerprint=null, editing=null, canCreate=!scoped;
         async function load(reset=true) {
             const current=++revision;
             more.disabled=true; listStatus.textContent='กำลังโหลดความคิดเห็น';
             if(reset){cursor=null;list.replaceChildren();more.hidden=true;}
             try {
                 try { await window.CstuAuth.refresh(); } catch { /* Public reading remains available. */ }
-                const result=await window.CstuAuth.request(base+'?limit=20'+(filter.value?'&respondentType='+encodeURIComponent(filter.value):'')+(cursor?'&cursor='+encodeURIComponent(cursor):''));
+                let result;
+                if(scoped){
+                    const rows=[];let next=null;
+                    do{
+                        const page=await window.CstuAuth.request(base+'?limit=100'+(next?'&cursor='+encodeURIComponent(next):''));
+                        if(current!==revision || !container.isConnected)return;
+                        if(next===null){
+                            canCreate=page.canCreate===true && !options.hideCreate;
+                            result=page;
+                            form.hidden=!canCreate && !editing;
+                        }
+                        rows.push(...page.data);
+                        next=page.page.nextCursor;
+                    }while(next);
+                    result={...result,data:rows.filter(row=>!filter.value || (row.respondentType||row.sourceType||'other')===filter.value),page:{nextCursor:null}};
+                }else{
+                    result=await window.CstuAuth.request(base+'?limit=20'+(filter.value?'&respondentType='+encodeURIComponent(filter.value):'')+(cursor?'&cursor='+encodeURIComponent(cursor):''));
+                }
                 if(current!==revision || !container.isConnected)return;
                 for(const row of result.data){
                     const li=document.createElement('li');
                     li.dataset.feedbackId=row.id;
                     const meta=document.createElement('p'); meta.className='feedback-comment-meta';
-                    meta.textContent=(categories[row.respondentType]||'ผู้เยี่ยมชม')+' · '+(row.occurredOn||'');
+                    meta.textContent=(categories[row.respondentType||row.sourceType]||'ผู้เยี่ยมชม')+' · '+(row.occurredOn||'');
                     const text=document.createElement('p'); text.textContent=row.comment;
                     const votes=document.createElement('div'); votes.className='feedback-reactions';
                     for (const [choice,icon,label,count] of [['like','👍','ถูกใจ',row.likes],['dislike','👎','ไม่ถูกใจ',row.dislikes]]) {
@@ -71,7 +89,18 @@
                         };
                         votes.append(button);
                     }
-                    li.append(meta,text,votes);list.append(li);
+                    li.append(meta,text);
+                    if(!scoped || result.canReact===true)li.append(votes);
+                    if(scoped && row.canEdit){
+                        const edit=document.createElement('button');edit.type='button';edit.textContent='แก้ไข';
+                        edit.onclick=()=>{
+                            editing=row;form.hidden=false;comment.value=row.comment||'';
+                            category.value=row.respondentType||row.sourceType||'other';
+                            controls.hidden=false;send.textContent='บันทึกความคิดเห็น';comment.focus();
+                        };
+                        li.append(edit);
+                    }
+                    list.append(li);
                 }
                 cursor=result.page.nextCursor;more.hidden=!cursor;
                 listStatus.textContent=list.children.length?'':'ยังไม่มีความคิดเห็น มาเป็นคนแรกกัน';
@@ -79,7 +108,8 @@
             } catch(error) {
                 if(current!==revision || !container.isConnected)return;
                 if(!reset && error.message==='INVALID_CURSOR'){await load();return;}
-                listStatus.textContent=error.status===404?'รายการนี้ไม่ได้เผยแพร่แล้ว':'โหลดความคิดเห็นไม่ได้ กรุณาลองใหม่';
+                if(scoped && [401,403,404].includes(error.status)){clear();form.hidden=true;canCreate=false;}
+                listStatus.textContent=error.status===404?(scoped?'คุณไม่มีสิทธิ์เข้าถึงความคิดเห็นของรายการนี้แล้ว':'รายการนี้ไม่ได้เผยแพร่แล้ว'):'โหลดความคิดเห็นไม่ได้ กรุณาลองใหม่';
                 more.textContent='ลองใหม่'; more.hidden=false;
             } finally {
                 if(current===revision)more.disabled=false;
@@ -92,6 +122,7 @@
         comment.addEventListener('input',()=>{controls.hidden=false;});
         function clear() {
             form.reset(); comment.style.height=''; controls.hidden=true; fingerprint=null; key=null;
+            editing=null;send.textContent='ส่งความคิดเห็น';form.hidden=!canCreate;
         }
         cancel.onclick=()=>{clear();status.textContent='';comment.focus();controls.hidden=true;};
         form.onsubmit=async event=>{
@@ -103,14 +134,20 @@
             send.disabled=true; cancel.disabled=true; comment.disabled=true; category.disabled=true;
             status.textContent='กำลังส่งความคิดเห็น';
             try {
-                await window.CstuAuth.createPublicFeedback(base,payload,key);
+                if(scoped){
+                    const data={comment:payload.comment,respondentType:payload.respondentType};
+                    if(editing)await window.CstuAuth.mutate(base+'/'+encodeURIComponent(editing.id),data,editing.version);
+                    else await window.CstuAuth.create(base,{...data,occurredOn:new Date().toISOString().slice(0,10),
+                        sourceType:payload.respondentType==='partner'?'partner':payload.respondentType==='other'?'other':'participant'},key);
+                }else await window.CstuAuth.createPublicFeedback(base,payload,key);
                 if(!container.isConnected)return;
                 clear(); status.textContent='ส่งความคิดเห็นแล้ว ขอบคุณค่ะ';
                 // Refresh from the server; the index can take a moment to show a new comment.
                 await load();
             } catch(error) {
                 status.textContent=error.status===429?'ส่งบ่อยเกินไป กรุณาลองใหม่ภายหลัง':
-                    error.status===404?'รายการนี้ไม่เปิดรับความคิดเห็นแล้ว':'ส่งความคิดเห็นไม่ได้ กรุณาลองใหม่';
+                    error.status===409?'ความคิดเห็นเปลี่ยนแล้ว กรุณาโหลดรายการใหม่ก่อนแก้ไข':
+                    error.status===403||error.status===404?'คุณไม่มีสิทธิ์ส่งความคิดเห็นในรายการนี้แล้ว':'ส่งความคิดเห็นไม่ได้ กรุณาลองใหม่';
             } finally { send.disabled=false; cancel.disabled=false; comment.disabled=false; category.disabled=false; }
         };
         load();
