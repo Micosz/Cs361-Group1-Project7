@@ -222,13 +222,25 @@ class DynamoBusinessRepository:
         row = self._read(self._reaction_key(feedback_id, session_hash))
         return row.get('reaction') if row and row.get('reaction') in {'like', 'dislike'} else None
 
+    def set_scoped_reaction(self, kind, key, feedback_id, session_hash, reaction, context):
+        return self._set_feedback_reaction(kind, key, feedback_id, session_hash, reaction, context)
+
     def set_public_reaction(self, kind, key, feedback_id, session_hash, reaction):
+        return self._set_feedback_reaction(kind, key, feedback_id, session_hash, reaction)
+
+    def _set_feedback_reaction(self, kind, key, feedback_id, session_hash, reaction, context=None):
         import re
         if not re.fullmatch(r'feedback-[A-Za-z0-9_-]{1,200}', feedback_id):
             raise AuthError('NOT_FOUND', 404)
-        parent, partner = self._public_feedback_parent(kind, key)
+        if context is None:
+            parent, partner = self._public_feedback_parent(kind, key)
+        else:
+            parent, partner = self.get(kind, key), None
         row = self.get('feedback', feedback_id)
-        if (not row or row.get('origin') != 'web' or row.get('source_state') == 'retired'
+        if context is not None:
+            from ..permissions.policy import require_record
+            require_record(context, 'feedback', 'read', row, parent)
+        if (not row or (context is None and row.get('origin') != 'web') or row.get('source_state') == 'retired'
                 or row.get('scopeId') != parent['scopeId'] or row.get('parentType') != kind
                 or row.get('parentId') != key or type(row.get('version')) is not int):
             raise AuthError('NOT_FOUND', 404)
@@ -249,6 +261,15 @@ class DynamoBusinessRepository:
                 'ConditionExpression': '#v = :v AND #s = :s',
                 'ExpressionAttributeNames': {'#v': 'version', '#s': 'scopeId'},
                 'ExpressionAttributeValues': values({':v': item['version'], ':s': item['scopeId']})}})
+        if context is not None:
+            from ..permissions.gateway import WriteConditions
+            conditions = WriteConditions(context.user.user_id, context.user.authz_version,
+                                         session_hash, feedback_id, row['version'],
+                                         parent['id'], parent['version'], parent['scopeId'])
+            checks = transaction_checks(conditions, user_table=self.users, session_table=self.sessions,
+                                        business_table=self.table, now=now)
+            checks[-1]['ConditionCheck']['TableName'] = self._table(kind)
+            checks[-1]['ConditionCheck']['Key'] = self._key(kind, parent)
         likes = int(reaction == 'like') - int(old == 'like')
         dislikes = int(reaction == 'dislike') - int(old == 'dislike')
         checks.append({'Update': {'TableName': self.table, 'Key': values({'id': feedback_id}),
@@ -257,6 +278,10 @@ class DynamoBusinessRepository:
             'ExpressionAttributeNames': {'#likes':'likes', '#dislikes':'dislikes', '#v':'version', '#origin':'origin'},
             'ExpressionAttributeValues': values({':likes': likes, ':dislikes': dislikes, ':one': 1,
                                                   ':version': row['version'], ':web': 'web'})}})
+        if context is not None:
+            checks[-1]['Update'].update(target_condition(conditions))
+            checks[-1]['Update']['ExpressionAttributeNames'].update({'#likes': 'likes', '#dislikes': 'dislikes'})
+            checks[-1]['Update']['ExpressionAttributeValues'].update(values({':likes': likes, ':dislikes': dislikes, ':one': 1}))
         condition = '#reaction = :old' if previous else 'attribute_not_exists(id)'
         args = {'TableName': self.table, 'ConditionExpression': condition}
         if previous:

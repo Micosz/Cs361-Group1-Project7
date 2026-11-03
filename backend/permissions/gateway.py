@@ -234,6 +234,8 @@ class PermissionGateway:
                     if mine and not self._participant(context, row if kind == 'exchange' else parent):
                         continue
                     projected = self._project(context, kind, row, row_parent)
+                    if kind == 'feedback' and parent is not None and hasattr(self.repository, 'public_reaction_choice'):
+                        projected['myReaction'] = self.repository.public_reaction_choice(row['id'], token_hash(session_cookie(event)))
                     if special == 'inbox':
                         projected.pop('respondentName', None)
                         projected['parentTitle'] = row_parent.get('title') or row_parent.get('name', '')
@@ -255,6 +257,7 @@ class PermissionGateway:
                     candidate = {'entityType': 'feedback', 'scopeId': parent['scopeId'],
                                  'parentType': parent['entityType'], 'parentId': parent['id']}
                     result_body['canCreate'] = bool(allowed_roles(context, 'feedback', 'create', candidate, parent))
+                    result_body['canReact'] = hasattr(self.repository, 'set_scoped_reaction')
                 return response(200, result_body)
             if query:
                 raise AuthError('INVALID_QUERY', 422)

@@ -24,6 +24,9 @@ class AuthApplication:
                 return self.public_agreements(event)
             if path == '/api/public/records':
                 return self.public_catalog(event)
+            scoped_reaction = re.fullmatch(r'/api/(partners|activities|exchanges)/([^/]+)/feedback/([^/]+)/reaction', path)
+            if scoped_reaction:
+                return self.scoped_reaction(event, *scoped_reaction.groups())
             reaction = re.fullmatch(r'/api/public/(partners|activities)/([^/]+)/feedback/([^/]+)/reaction', path)
             if reaction:
                 return self.public_reaction(event, *reaction.groups())
@@ -128,6 +131,27 @@ class AuthApplication:
         self.repository.create_public_feedback('partner' if collection == 'partners' else 'activity',
                                                key, body(event), token_hash(token), idem)
         return response(201, {'ok': True})
+
+    def scoped_reaction(self, event, collection, key, feedback_id):
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'PUT':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        if event.get('queryStringParameters'):
+            raise AuthError('INVALID_QUERY', 422)
+        context = require_session(event, self.sessions)
+        payload = body(event)
+        if (set(payload) != {'reaction'} or payload['reaction'] not in ('like', 'dislike', None)):
+            raise AuthError('INVALID_FIELDS', 422)
+        if not self.repository or not hasattr(self.repository, 'set_scoped_reaction'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        ip = event.get('requestContext', {}).get('http', {}).get('sourceIp')
+        if not ip or not self.limiter or not hasattr(self.limiter, 'check_reactions'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        self.limiter.check_reactions(ip)
+        kind = {'partners': 'partner', 'activities': 'activity', 'exchanges': 'exchange'}[collection]
+        self.repository.set_scoped_reaction(kind, key, feedback_id, token_hash(session_cookie(event)),
+                                            payload['reaction'], context)
+        require_session(event, self.sessions)
+        return response(200, {'ok': True})
 
     def public_reaction(self, event, collection, key, feedback_id):
         if event.get('requestContext', {}).get('http', {}).get('method') != 'PUT':
