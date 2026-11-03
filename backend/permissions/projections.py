@@ -53,6 +53,7 @@ def project(context, kind, record, parent=None):
         result['canDelete'] = bool(allowed_roles(context, kind, 'delete', record, parent))
     if kind == 'feedback':
         result['canEdit'] = bool(allowed_roles(context, kind, 'update', record, parent))
+        result['canDelete'] = bool(allowed_roles(context, kind, 'delete', record, parent))
     if editor:
         if kind == 'feedback':
             result.update(pick(record, {'respondentName'}))

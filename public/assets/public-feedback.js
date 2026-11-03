@@ -16,7 +16,7 @@
         const controls=document.createElement('div'); controls.className='feedback-composer-controls'; controls.hidden=true;
         const label=document.createElement('label'); label.textContent='คุณเป็น';
         const category=document.createElement('select'); category.required=true;
-        for (const [value,text] of [['','เลือกประเภทผู้ตอบ'],...Object.entries(categories)]) {
+        for (const [value,text] of [['','เลือกประเภทของผู้แสดงความคิดเห็น'],...Object.entries(categories)]) {
             const option=document.createElement('option'); option.value=value; option.textContent=text; category.append(option);
         }
         label.append(category);
@@ -90,16 +90,47 @@
                         votes.append(button);
                     }
                     li.append(meta,text);
-                    if(!scoped || result.canReact===true)li.append(votes);
-                    if(scoped && row.canEdit){
-                        const edit=document.createElement('button');edit.type='button';edit.textContent='แก้ไข';
-                        edit.onclick=()=>{
-                            editing=row;form.hidden=false;comment.value=row.comment||'';
-                            category.value=row.respondentType||row.sourceType||'other';
-                            controls.hidden=false;send.textContent='บันทึกความคิดเห็น';comment.focus();
-                        };
-                        li.append(edit);
+                    const footer=document.createElement('div'); footer.className='feedback-comment-footer';
+                    if(!scoped || result.canReact===true) footer.append(votes);
+                    const canEdit = scoped && row.canEdit;
+                    const canDelete = scoped && (row.canDelete ?? row.canEdit);
+                    if(canEdit || canDelete){
+                        const actions=document.createElement('div'); actions.className='feedback-comment-actions';
+                        if(canEdit){
+                            const edit=document.createElement('button'); edit.type='button';
+                            edit.className='feedback-action-btn feedback-edit-btn';
+                            edit.setAttribute('aria-label','แก้ไขความคิดเห็น');
+                            edit.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> แก้ไข';
+                            edit.onclick=()=>{
+                                editing=row;form.hidden=false;comment.value=row.comment||'';
+                                category.value=row.respondentType||row.sourceType||'other';
+                                controls.hidden=false;send.textContent='บันทึกความคิดเห็น';comment.focus();
+                            };
+                            actions.append(edit);
+                        }
+                        if(canDelete){
+                            const del=document.createElement('button'); del.type='button';
+                            del.className='feedback-action-btn feedback-delete-btn';
+                            del.setAttribute('aria-label','ลบความคิดเห็น');
+                            del.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> ลบ';
+                            del.onclick=async()=>{
+                                if(!window.confirm('คุณต้องการลบความคิดเห็นนี้ใช่หรือไม่?')) return;
+                                del.disabled=true;
+                                try {
+                                    await window.CstuAuth.remove(base+'/'+encodeURIComponent(row.id), row.version);
+                                    if(editing?.id===row.id) clear();
+                                    await load();
+                                } catch(error) {
+                                    listStatus.textContent=error.status===409?'ความคิดเห็นเปลี่ยนแล้ว กรุณาโหลดรายการใหม่ก่อนลบ':
+                                        error.status===403||error.status===404?'คุณไม่มีสิทธิ์ลบความคิดเห็นนี้':'ลบความคิดเห็นไม่ได้ กรุณาลองใหม่';
+                                    del.disabled=false;
+                                }
+                            };
+                            actions.append(del);
+                        }
+                        footer.append(actions);
                     }
+                    if(footer.children.length) li.append(footer);
                     list.append(li);
                 }
                 cursor=result.page.nextCursor;more.hidden=!cursor;

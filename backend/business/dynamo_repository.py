@@ -369,6 +369,8 @@ class DynamoBusinessRepository:
             return self._delete_form_feedback(record, parent, conditions)
         if action == 'delete' and kind == 'contact':
             return self._delete_contact(record, parent, conditions)
+        if action == 'delete' and kind == 'feedback':
+            return self._delete_feedback(record, parent, conditions)
         now = int(self.clock())
         actor = self.service.users.get(conditions.user_id)
         if not actor or actor.authz_version != conditions.authz_version:

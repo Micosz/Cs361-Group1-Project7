@@ -42,10 +42,45 @@
                 }
                 publicArea?.querySelectorAll('.public-comment-list > li').forEach(li=>{
                     li.querySelector('[data-feedback-edit]')?.remove();
+                    li.querySelector('[data-feedback-delete]')?.remove();
                     const row=rows.find(item=>item.id===li.dataset.feedbackId);
                     if(!row)return;
-                    const edit=document.createElement('button');edit.type='button';edit.textContent='แก้ไข';
-                    edit.dataset.feedbackEdit='';edit.onclick=()=>editComment(row);li.append(edit);
+                    let footer=li.querySelector('.feedback-comment-footer');
+                    if(!footer){
+                        footer=document.createElement('div');
+                        footer.className='feedback-comment-footer';
+                        const votes=li.querySelector('.feedback-reactions');
+                        if(votes) footer.append(votes);
+                        li.append(footer);
+                    }
+                    let actions=footer.querySelector('.feedback-comment-actions');
+                    if(!actions){
+                        actions=document.createElement('div');
+                        actions.className='feedback-comment-actions';
+                        footer.append(actions);
+                    }
+                    const edit=document.createElement('button');edit.type='button';
+                    edit.className='feedback-action-btn feedback-edit-btn';
+                    edit.dataset.feedbackEdit='';
+                    edit.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> แก้ไข';
+                    edit.onclick=()=>editComment(row);
+
+                    const del=document.createElement('button');del.type='button';
+                    del.className='feedback-action-btn feedback-delete-btn';
+                    del.dataset.feedbackDelete='';
+                    del.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> ลบ';
+                    del.onclick=async()=>{
+                        if(!window.confirm('คุณต้องการลบความคิดเห็นนี้ใช่หรือไม่?')) return;
+                        del.disabled=true;
+                        try {
+                            await window.CstuAuth.remove(base+'/'+encodeURIComponent(row.id), row.version);
+                            editor.replaceChildren();
+                            publicArea?.dispatchEvent(new Event('cstu:public-feedback-refresh'));
+                        } catch(error) {
+                            del.disabled=false;
+                        }
+                    };
+                    actions.append(edit,del);
                 });
             } catch {
                 publicArea?.querySelectorAll('[data-feedback-edit]').forEach(button=>button.remove());

@@ -52,7 +52,7 @@ def action_roles(kind, action):
     if kind not in BUSINESS | CHILDREN:
         return set()
     if kind == 'formFeedback':
-        return {'coordinator', 'staff', 'executive'} if action in {'read', 'create', 'delete'} else set()
+ if action in {'read', 'create', 'delete'} else set()
     if action == 'read':
         return ({'student', 'coordinator', 'staff', 'executive'} if kind in {'activity', 'agreement', 'exchange', 'document', 'feedback'}
                 else {'coordinator', 'staff', 'executive'})
@@ -64,11 +64,14 @@ def action_roles(kind, action):
                 else {'coordinator', 'staff', 'executive'} if kind != 'document'
                 else set())
     if action == 'status' and kind in STATUS:
-        return {'coordinator', 'staff', 'executive'}
+
     if action in {'upload', 'delete'} and kind == 'document':
-        return {'coordinator', 'staff', 'executive'}
-    if action == 'delete' and kind == 'contact':
-        return {'coordinator', 'staff', 'executive'}
+
+    if action == 'delete' and kind == 'contact': return {'coordinator', 'staff', 'executive'}
+    if action == 'delete' and kind == 'feedback': return {'student', 'coordinator', 'staff', 'executive'}
+
+    if action == 'delete' and kind == 'feedback':
+        return {'student', 'coordinator', 'staff', 'executive'}
     return set()
 
 
@@ -121,7 +124,7 @@ def allowed_roles(context, kind, action, record, parent=None):
     if base.get('entityType') not in BUSINESS or (kind in BUSINESS and base.get('entityType') != kind):
         return set()
     roles = matching_roles(context, base) & action_roles(kind, action)
-    if kind == 'feedback' and action == 'update' and record.get('createdBy') != user.user_id:
+    if kind == 'feedback' and action in {'update', 'delete'} and record.get('createdBy') != user.user_id:
         roles -= {'staff', 'coordinator', 'student', 'executive'}
     # Shared feedback reading does not grant access to the parent or writes.
     shared_read = kind in {'feedback', 'formFeedback'} and action == 'read'
@@ -132,7 +135,7 @@ def allowed_roles(context, kind, action, record, parent=None):
                       and base.get('publication') == 'public')
     student_activity = (base.get('entityType') == 'activity' and published(base)
                         and (kind == 'activity' and action == 'read'
-                             or kind == 'feedback' and action in {'read', 'create', 'update'}))
+                             or kind == 'feedback' and action in {'read', 'create', 'update', 'delete'}))
     if not (student_agreement or student_activity) and (base.get('entityType') != 'exchange'
             or not linked(base, 'participantUserIds', user.user_id)):
         roles.discard('student')
