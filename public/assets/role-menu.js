@@ -79,6 +79,34 @@
                 login.href = 'login.html'; login.className = 'login-btn'; login.textContent = 'Log in';
                 host.replaceChildren(login); return;
             }
+            if (document.body.classList.contains('work-home')) {
+                finishClose();
+                let direct = host.querySelector('.work-logout-trigger');
+                if (!direct) {
+                    direct = document.createElement('button');
+                    direct.type = 'button'; direct.className = 'login-btn work-logout-trigger';
+                    direct.textContent = 'Log out';
+                    const message = document.createElement('p');
+                    message.className = 'work-logout-status'; message.setAttribute('role', 'status');
+                    direct.onclick = async () => {
+                        if (direct.disabled) return;
+                        direct.disabled = true; direct.textContent = 'กำลังออก…'; message.textContent = '';
+                        document.body.dataset.signingOut = 'true';
+                        try {
+                            await window.CstuAuth.logout();
+                            window.location.replace('index.html');
+                        } catch {
+                            delete document.body.dataset.signingOut;
+                            message.textContent = 'ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง';
+                            direct.disabled = false; direct.textContent = 'Log out';
+                        }
+                    };
+                    host.replaceChildren(direct, message);
+                }
+                showAccount(session);
+                links.replaceChildren(); status.textContent = '';
+                return;
+            }
             let trigger = host.querySelector('button');
             if (!trigger) {
                 trigger = document.createElement('button');

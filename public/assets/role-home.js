@@ -44,7 +44,7 @@
                 }
                 return;
             }
-            if (!internal) { location.replace(session?.user ? 'index.html' : 'login.html'); return; }
+            if (!internal) { location.replace(session?.user || document.body.dataset.signingOut === 'true' ? 'index.html' : 'login.html'); return; }
             const roles = window.CstuWork.roles(session);
             const nav = document.getElementById('work-nav');
             const selected = new URLSearchParams(location.search);

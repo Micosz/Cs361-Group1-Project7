@@ -43,3 +43,5 @@ body.work-home{--work-ink:#28232b;--work-red:#bf0030;background:#f7f6f3;color:va
 @media(prefers-reduced-motion:reduce){.work-actions a{transition:none}}
 .work-home .navbar .logo{color:#222;text-decoration:none}
 .work-checking dialog{display:none!important}
+
+.work-logout-status{position:absolute;right:20px;top:100%;font-size:13px;color:#a4002a;background:#fff;border-radius:8px;margin:6px 0;padding:6px 12px}.work-logout-status:empty{display:none}
