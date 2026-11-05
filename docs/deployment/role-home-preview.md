@@ -13,3 +13,10 @@
 ## การตรวจรอบนี้
 
 ตรวจ build, syntax และการเลือกหน้าสำหรับ Guest/Student/Coordinator/Staff/Executive รวมถึง inactive grants ผ่าน ตรวจหน้าทำงานและการเปิดฟอร์มกิจกรรมด้วย session จำลองในเครื่อง ไม่ได้ใช้ผลนี้แทนผล AWS จริง
+
+## เว็บทดลองที่เชื่อมแล้ว
+
+- https://role-home.d1d0za87xu48iv.amplifyapp.com/ เชื่อม GitHub branch `role-home` พร้อม Auto-build
+- Lambda `CSTUHubAuth` เพิ่ม origin เฉพาะ URL ทดลองใน `SESSION_ADDITIONAL_ORIGINS` ตามที่เจ้าของงานอนุมัติ คง origin เดิมไว้
+- ทดสอบ Login จริงด้วยบัญชีทดลอง Student เข้าหน้า `index.html` และ Coordinator เข้าหน้า `work.html` ถูกต้อง Student เปิดหน้าทำงานแล้วกลับหน้าแรก
+- ตรวจหน้าจอ 390px ไม่มีเนื้อหาล้นแนวนอน ไม่ได้สร้างหรือแก้ข้อมูลธุรกิจในรอบตรวจนี้

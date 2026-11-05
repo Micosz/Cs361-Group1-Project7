@@ -461,6 +461,10 @@
                 status(''); $('detail-title').textContent = config.create;
                 lastTrigger = document.querySelector('#authNavButtons button');
                 params.delete('action');
+                if (document.body.classList.contains('work-home')) {
+                    const url = new URL(location.href); url.searchParams.delete('action');
+                    history.replaceState(null, '', url.pathname + url.search + url.hash);
+                }
                 if (kind === 'partners') showDetailDialog();
                 await runForm('create',null,$('detail-actions')); return;
             }
