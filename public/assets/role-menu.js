@@ -108,8 +108,9 @@
                 link.append(title, small); links.append(link);
             };
             const roles = window.CstuAuth.roles(session);
-            for (const item of window.CstuWork.menu(session)) append(item.label, item.href, item.description);
-            if (managedScopes(session).length) append('จัดการสิทธิ์ผู้ใช้', 'index.html?view=roles#board-section', 'มอบหมายและถอนบทบาทในขอบเขตที่ดูแล');
+            if (window.CstuAuth.isInternal(session)) append('หน้าทำงาน', 'work.html', 'เริ่มงานและดูข้อมูลความร่วมมือ');
+            for (const item of window.CstuWork.menu(session)) append(item.label, window.CstuAuth.isInternal(session) ? item.href.replace('index.html', 'work.html') : item.href, item.description);
+            if (managedScopes(session).length) append('จัดการสิทธิ์ผู้ใช้', 'work.html?view=roles#board-section', 'มอบหมายและถอนบทบาทในขอบเขตที่ดูแล');
             if (!roles.length) append('รอมอบหมายสิทธิ์', 'index.html#board-section', 'บัญชีของคุณยังไม่ได้รับบทบาทงานภายใน');
         } catch {
             if (current !== revision) return;

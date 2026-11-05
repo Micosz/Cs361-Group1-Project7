@@ -512,7 +512,7 @@
         }
         syncBoard();
         if (!feedbackInbox && location.search && new URLSearchParams(location.search).get('view') === 'feedback') {
-            try { window.history?.replaceState?.(null, '', 'index.html#board-section'); } catch { /* Local previews may restrict History API. */ }
+            try { window.history?.replaceState?.(null, '', (document.body.classList.contains('work-home') ? 'work.html#board-section' : 'index.html#board-section')); } catch { /* Local previews may restrict History API. */ }
         }
         if (scroll) {
             if (feedbackInbox) window.scrollTo?.({top:0,behavior:'auto'});
@@ -562,7 +562,8 @@
     document.addEventListener('click', event => {
         const link = event.target.closest('a[href]'); if (!link || event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         const url = new URL(link.href, location.href);
-        if (url.origin !== location.origin || !/\/(index|records)\.html$/.test(url.pathname)) return;
+        if (url.origin !== location.origin || !/\/(index|records|work)\.html$/.test(url.pathname)) return;
+        if (document.body.classList.contains('work-home')) return;
         if (url.searchParams.get('view') === 'roles') {
             event.preventDefault(); if ($('role-menu')?.open) $('role-menu').close();
             openRoles(); return;

@@ -20,3 +20,6 @@ __pycache__/
 *.bkp
 *.dtmp
 *.conflict*
+
+# Generated from index.html and partials/work-home.html
+/public/work.html

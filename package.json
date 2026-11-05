@@ -7,7 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').accessSync('public/login/index.html')\""
+    "build": "node scripts/build-role-home.cjs"
   },
   "repository": {
     "type": "git",

@@ -112,6 +112,8 @@
     }
     channel?.addEventListener('message', () => window.dispatchEvent(new Event('authchange')));
     window.CstuAuth = { state: () => state, enabled, refresh, login, logout, request, mutate, remove, create, createPublicFeedback,
+        isInternal: data => Boolean(data?.user && (data.grants || []).some(g => g.active !== false && ['coordinator','staff','executive'].includes(g.role))),
+        home: data => window.CstuAuth.isInternal(data) ? 'work.html' : 'index.html',
         roles: data => [...new Set((data?.grants || []).map(g => g.role))],
         managedScopes: data => [...new Set([
             ...(data?.capabilities || []).filter(c => c.active !== false && c.name === 'manageRoles').map(c => c.scopeId),
