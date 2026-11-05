@@ -109,7 +109,7 @@
             if (!introStarted && hero.classList.contains('intro-playing')) {
                 introStarted = true;
                 if (!reduced.matches && camera.animate) {
-                    const duration = parseFloat(getComputedStyle(hero).getPropertyValue('--opening-duration')) || 3800;
+                    const duration = parseFloat(getComputedStyle(hero).getPropertyValue('--opening-duration')) || 1900;
                     cameraAnimation = camera.animate([
                         { offset: 0, transform: 'scale(2.2) rotate(-7deg)', opacity: .45 },
                         { offset: .42, transform: 'scale(2.05) rotate(-4deg)', opacity: .65 },

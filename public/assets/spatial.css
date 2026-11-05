@@ -144,9 +144,9 @@ body { background: #fff; }
     .hero-animation .card-bot { animation-duration: 6.5s; animation-delay: -4.1s; }
     .hero-animation:focus-within .float-card { animation-play-state: paused; }
     /* Ambient movement ends after one gentle cycle; it never loops near reading content. */
-    .ring-body { animation: ambient-ring 4.5s ease-in-out 1; }
-    .orb-body { animation: ambient-orb 4.5s ease-in-out 1; }
-    .heading-subject::after { animation: accent-trace 700ms var(--ease-spatial) both; }
+    .ring-body { animation: ambient-ring 2.25s ease-in-out 1; }
+    .orb-body { animation: ambient-orb 2.25s ease-in-out 1; }
+    .heading-subject::after { animation: accent-trace 350ms var(--ease-spatial) both; }
     .tab-indicator { transition: transform 220ms var(--ease-spatial); }
     .grid > .card { transition: transform 220ms var(--ease-spatial), border-color 160ms ease, box-shadow 160ms ease; }
     .grid > .card.is-tilting { transition: transform 90ms linear, border-color 160ms ease, box-shadow 160ms ease; }
