@@ -41,7 +41,7 @@ body:has(.constellation-ready) {
 .galaxy-camera { position: absolute; inset: 0; transform-origin: 50% 50%; }
 .galaxy-scene { display: block; width: 100%; height: 100%; overflow: visible; }
 .constellation-ready.intro-pending .galaxy-camera { transform: scale(2.2) rotate(-7deg); opacity: .45; }
-.galaxy-near-stars { opacity: .1; transition: opacity 1200ms ease; }
+.galaxy-near-stars { opacity: .1; transition: opacity 600ms ease; }
 .constellation-ready:is(.intro-pending, .intro-playing) .galaxy-near-stars { opacity: 1; }
 .constellation-ready[data-constellation-visible="false"] .constellation-backdrop { opacity: 0; }
 .constellation-toggle {
