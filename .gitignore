@@ -10,3 +10,13 @@ __pycache__/
 
 # Local course account passwords and provisioning manifests
 .course-test/
+
+# OS / editor junk
+.DS_Store
+*.pyc
+
+# draw.io and Google Drive backup/conflict files
+.$*
+*.bkp
+*.dtmp
+*.conflict*
