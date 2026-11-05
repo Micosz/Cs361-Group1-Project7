@@ -344,7 +344,7 @@
             const box = hero.getBoundingClientRect();
             const radiusX = compact.matches ? Math.min(box.width * .31, 150) : Math.min(box.width * .23, 245);
             const radiusY = compact.matches ? Math.min(box.width * .31, 150) : Math.min(box.height * .32, 225);
-            const duration = parseFloat(getComputedStyle(hero).getPropertyValue('--opening-duration')) || (compact.matches ? 550 : 1150);
+            const duration = parseFloat(getComputedStyle(hero).getPropertyValue('--opening-duration')) || (compact.matches ? 733 : 1533);
             // Keep the compact orbit near the message rather than halfway down
             // the tall mobile card list. Touch/scroll can still settle it immediately.
             const centerY = compact.matches ? Math.min(190, box.height / 2) - box.height / 2 : 0;
@@ -365,18 +365,18 @@
                     { offset: .58, opacity: 1, transform: ring(angle - 20, .8, 1.06) },
                     { offset: .9, opacity: 1, transform: pose(end.x, end.y, end.angle, end.scale) },
                     { offset: 1, opacity: end.opacity, transform: pose(end.x, end.y, end.angle, end.scale) }
-                ], { duration, delay: index * 12.5, easing: 'cubic-bezier(.45,0,.2,1)', fill: 'both' }).finished.catch(() => {});
+                ], { duration, delay: index * (25 / 1.5), easing: 'cubic-bezier(.45,0,.2,1)', fill: 'both' }).finished.catch(() => {});
             });
             const content = hero.querySelector('.hero-content');
             const cards = hero.querySelector('.hero-animation');
             play(content, [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }], {
-                duration: compact.matches ? 200 : 310, delay: duration * .5, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'both'
+                duration: compact.matches ? 267 : 413, delay: duration * .5, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'both'
             });
             play(cards, [{ opacity: 0 }, { opacity: 1 }], {
-                duration: 190, delay: duration * .85, easing: 'ease-out', fill: 'both'
+                duration: 253, delay: duration * .85, easing: 'ease-out', fill: 'both'
             });
             Promise.all(completed).then(() => { if (!disposed) finish(); });
-            after(finish, duration + 225); // Fail open even if animation completion is interrupted.
+            after(finish, duration + 300); // Fail open even if animation completion is interrupted.
         }
         async function prepare() {
             if (preparing || disposed) return;
