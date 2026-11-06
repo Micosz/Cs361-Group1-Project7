@@ -79,6 +79,21 @@
                 login.href = 'login.html'; login.className = 'login-btn'; login.textContent = 'Log in';
                 host.replaceChildren(login); return;
             }
+            if (window.CstuAuth.isInternal(session) && !document.body.classList.contains('work-home')) {
+                finishClose();
+                let workspace = host.querySelector('.work-home-link');
+                if (!workspace) {
+                    workspace = document.createElement('a');
+                    workspace.href = 'work.html';
+                    workspace.className = 'login-btn work-home-link';
+                    workspace.textContent = 'กลับหน้าทำงาน';
+                    host.replaceChildren(workspace);
+                }
+                showAccount(session);
+                links.replaceChildren();
+                status.textContent = '';
+                return;
+            }
             if (document.body.classList.contains('work-home')) {
                 finishClose();
                 let direct = host.querySelector('.work-logout-trigger');
