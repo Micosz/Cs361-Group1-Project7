@@ -89,3 +89,13 @@ body.work-home{--work-ink:#28232b;--work-red:#bf0030;background:#f7f6f3;color:va
 #proposal-form-status{color:#a0002e}
 @media(max-width:1100px){.proposal-board{margin-left:250px}}
 @media(max-width:760px){.proposal-board{margin:12px 16px;padding:16px}.proposal-header{align-items:flex-start}}
+
+#proposal-interest-form{display:grid;gap:14px}
+#proposal-interest-form h2{font-size:22px}
+#proposal-interest-context{font-size:14px;color:#675b62;overflow-wrap:anywhere}
+#proposal-interest-form label{font-size:14px;font-weight:600}
+#proposal-interest-form label span{font-weight:400;color:#756970}
+#proposal-interest-note{width:100%;box-sizing:border-box;border:1px solid #cdbfc1;border-radius:8px;padding:10px;font:inherit;resize:vertical}
+#proposal-interest-status{color:#a0002e}
+.proposal-list .proposal-person{align-items:flex-start}
+.proposal-list .proposal-person small{white-space:pre-wrap;line-height:1.6;margin-top:4px;overflow-wrap:anywhere}

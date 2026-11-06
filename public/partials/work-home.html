@@ -29,4 +29,19 @@
       <div class="proposal-tools"><button type="button" id="proposal-cancel">ยกเลิก</button><button type="submit">โพสต์ข้อเสนอ</button></div>
     </form>
   </dialog>
+  <dialog id="proposal-interest-dialog" aria-labelledby="proposal-interest-title">
+    <form id="proposal-interest-form">
+      <h2 id="proposal-interest-title">สนใจร่วมดำเนินการ</h2>
+      <p id="proposal-interest-context"></p>
+      <label for="proposal-interest-note">อยากร่วมดำเนินการด้านไหน? <span>(ไม่บังคับ)</span></label>
+      <textarea id="proposal-interest-note" name="note" rows="3" maxlength="500"
+        placeholder="เช่น ช่วยออกแบบหัวข้ออบรม ประสานหน่วยงาน หรือดูแลนักศึกษา"></textarea>
+      <p id="proposal-interest-status" role="status"></p>
+      <div class="proposal-tools">
+        <button type="button" id="proposal-interest-withdraw" hidden>ถอนความสนใจ</button>
+        <button type="button" id="proposal-interest-cancel">ยกเลิก</button>
+        <button type="submit" id="proposal-interest-save">ยืนยันเข้าร่วม</button>
+      </div>
+    </form>
+  </dialog>
 </section>

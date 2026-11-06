@@ -31,12 +31,17 @@
         img.alt = ''; img.src = 'resources/personnel-mock/' + id + '.png';
         return img;
     }
+    const interestDialog = byId('proposal-interest-dialog');
+    const interestForm = byId('proposal-interest-form');
+    let interestTarget = null;
     let state = null;
     let generation = 0;
     function clear() {
         generation++;
         state = null;
         if (dialog.open) dialog.close();
+        if (interestDialog.open) interestDialog.close();
+        interestTarget = null;
         panel.hidden = true;
         byId('proposal-cards').replaceChildren();
         byId('proposal-status').textContent = '';
@@ -48,11 +53,52 @@
         line.append(avatar(name),label);
         return line;
     }
+    function participants(row,current) {
+        if (Array.isArray(row.participants)) return row.participants;
+        // Preserve browser samples and API rows created before notes were introduced.
+        const ownIndex = row.mine ? row.interested.lastIndexOf(current.name) : -1;
+        return row.interested.map((name,index)=>({name,note:'',mine:index===ownIndex}));
+    }
+    function openInterest(row,current) {
+        interestTarget = {row,current};
+        interestForm.reset();
+        byId('proposal-interest-title').textContent = row.mine ? 'การร่วมดำเนินการของคุณ' : 'สนใจร่วมดำเนินการ';
+        byId('proposal-interest-context').textContent = row.title;
+        byId('proposal-interest-note').value = row.myNote || participants(row,current).find(p=>p.mine)?.note || '';
+        byId('proposal-interest-status').textContent = '';
+        byId('proposal-interest-withdraw').hidden = !row.mine;
+        byId('proposal-interest-save').textContent = row.mine ? 'บันทึก' : 'ยืนยันเข้าร่วม';
+        interestDialog.showModal();
+    }
+    async function saveInterest(join) {
+        const target = interestTarget;
+        if (!target || byId('proposal-interest-save').disabled) return;
+        const {row,current} = target;
+        const buttons = [...interestForm.querySelectorAll('button')];
+        buttons.forEach(button=>{button.disabled=true;});
+        try {
+            const updated = await current.store.interest(row,join,byId('proposal-interest-note').value.trim());
+            if (state !== current || interestTarget !== target) return;
+            current.rows = current.rows.map(item=>item.id === updated.id ? updated : item);
+            render(current);
+            interestDialog.close();
+            const trigger = [...byId('proposal-cards').querySelectorAll('[data-proposal-id]')]
+                .find(button=>button.dataset.proposalId===row.id);
+            trigger?.focus();
+            byId('proposal-status').textContent = join ? (row.mine ? 'แก้ไขข้อมูลการร่วมดำเนินการแล้ว' : 'เพิ่มชื่อในรายชื่อผู้สนใจแล้ว') : 'ถอนความสนใจแล้ว';
+        } catch (err) {
+            if (state === current && interestTarget === target) byId('proposal-interest-status').textContent = 'บันทึกไม่ได้ · '+err.message;
+        } finally { buttons.forEach(button=>{button.disabled=false;}); }
+    }
+    byId('proposal-interest-cancel').onclick=()=>interestDialog.close();
+    interestDialog.addEventListener('close',()=>{interestTarget=null;});
+    interestForm.onsubmit=event=>{event.preventDefault();saveInterest(true);};
+    byId('proposal-interest-withdraw').onclick=()=>saveInterest(false);
     const isOpen = row => row.deadline >= day();
     function card(row, current) {
         const open = isOpen(row);
         const el = node('article','', 'proposal-card' + (open ? '' : ' closed'));
-        const people = row.interested;
+        const people = participants(row, current);
         el.append(personLine(row.creator, 'ผู้เสนอ · ' + dateLabel(row.createdAt)),
             node('h3',row.title), node('strong',row.partner), node('p',row.summary,'proposal-summary'),
             node('small',(open ? 'เปิดรับถึง ' : 'ปิดรับแล้ว · ') + dateLabel(row.deadline)));
@@ -61,10 +107,12 @@
         if (people.length) {
             const reveal = node('button','','proposal-stack proposal-people');
             reveal.type='button'; reveal.setAttribute('aria-expanded','false');
-            for (const name of people.slice(0,3)) reveal.append(avatar(name));
+            for (const person of people.slice(0,3)) reveal.append(avatar(person.name));
             reveal.append(node('span',(people.length > 3 ? '+'+(people.length-3)+' · ' : '')+'สนใจ '+people.length+' คน'));
-            for (const name of people) {
-                const item = node('li'); item.append(personLine(name,'')); list.append(item);
+            for (const person of people) {
+                const item = node('li');
+                item.append(personLine(person.name, person.note));
+                list.append(item);
             }
             reveal.onclick = () => { list.hidden = !list.hidden; reveal.setAttribute('aria-expanded',String(!list.hidden)); };
             footer.append(reveal);
@@ -72,19 +120,9 @@
         if (open) {
             const toggle = node('button',row.mine ? '✓ สนใจแล้ว' : '+ สนใจร่วมดำเนินการ');
             toggle.type='button'; toggle.setAttribute('aria-pressed',String(row.mine));
-            toggle.setAttribute('aria-label',row.mine ? 'ถอนความสนใจจาก '+row.title : 'สนใจร่วมดำเนินการ '+row.title);
-            toggle.onclick = async () => {
-                toggle.disabled = true;
-                try {
-                    const updated = await current.store.interest(row,!row.mine);
-                    if (state !== current) return;
-                    current.rows = current.rows.map(item=>item.id === updated.id ? updated : item);
-                    render(current);
-                    byId('proposal-status').textContent = row.mine ? 'ถอนความสนใจแล้ว' : 'เพิ่มชื่อในรายชื่อผู้สนใจแล้ว';
-                } catch (err) {
-                    if (state === current) byId('proposal-status').textContent = 'บันทึกความสนใจไม่ได้ · '+err.message;
-                } finally { toggle.disabled=false; }
-            };
+            toggle.setAttribute('aria-label',row.mine ? 'แก้ไขการร่วมดำเนินการ '+row.title : 'สนใจร่วมดำเนินการ '+row.title);
+            toggle.dataset.proposalId = row.id;
+            toggle.onclick = () => openInterest(row,current);
             footer.append(toggle);
         }
         el.append(footer,list);
@@ -105,11 +143,11 @@
         return {
             list: async () => (await auth.request('/proposals')).data,
             create: async (payload,key) => (await auth.create('/proposals',payload,key)).data,
-            interest: async (row,interested) => {
+            interest: async (row,interested,note = '') => {
                 const fresh = await auth.refresh();
                 if (!auth.isInternal(fresh)) throw Error('กรุณาเข้าสู่ระบบ');
                 return (await auth.request('/proposals/'+encodeURIComponent(row.id)+'/interest',{
-                    method:'PUT',headers:{'X-CSRF-Token':fresh.csrfToken},body:JSON.stringify({interested})
+                    method:'PUT',headers:{'X-CSRF-Token':fresh.csrfToken},body:JSON.stringify({interested,note})
                 })).data;
             }
         };
@@ -133,12 +171,11 @@
                 const row={...payload,id,creator:current.name,createdAt:new Date().toISOString(),mine:false,interested:[]};
                 save([row,...rows]); return row;
             },
-            interest:async(row,join)=>{
+            interest:async(row,join,note = '')=>{
                 if (!isOpen(row)) throw Error('ปิดรับความสนใจแล้ว');
-                const interested = [...row.interested];
-                if (join && !row.mine) interested.push(current.name);
-                if (!join && row.mine) interested.splice(interested.lastIndexOf(current.name),1);
-                const updated={...row,interested,mine:join};
+                const people = participants(row,current).filter(person=>!person.mine);
+                if (join) people.push({name:current.name,note,mine:true});
+                const updated={...row,participants:people,interested:people.map(p=>p.name),mine:join,myNote:join ? note : ''};
                 save(rows.map(item=>item.id===row.id ? updated : item));return updated;
             }
         };

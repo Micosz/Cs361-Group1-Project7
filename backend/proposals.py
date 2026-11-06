@@ -14,10 +14,19 @@ INTERNAL = {'coordinator', 'staff', 'executive'}
 
 
 def present(row, uid):
-    members = row['members']
+    people = []
+    for member_id, stored in row['members'].items():
+        # Existing members used a display-name string.
+        member = {'name':stored, 'note':''} if isinstance(stored,str) else stored
+        people.append({'name':member['name'], 'note':member.get('note',''),
+                       'mine':member_id == uid})
+    people.sort(key=lambda person: person['name'])
+    own = next((person for person in people if person['mine']), None)
     return {**{key: row[key] for key in ('id', 'scopeId', 'title', 'partner', 'summary',
                                          'deadline', 'createdAt', 'creator')},
-            'interested': sorted(members.values()), 'mine': uid in members}
+            'participants':people, 'interested':[p['name'] for p in people],
+            'mine':own is not None, 'myNote':own['note'] if own else ''}
+
 
 
 def commit(repo, actor, session_hash, scope, write, now):
@@ -86,7 +95,11 @@ def interest(event, repo, user, scopes, key, now):
     if not row or row['scopeId'] not in scopes:
         raise AuthError('NOT_FOUND', 404)
     payload = body(event)
-    if set(payload) != {'interested'} or type(payload['interested']) is not bool:
+    if ('interested' not in payload or set(payload) - {'interested','note'}
+            or type(payload['interested']) is not bool):
+        raise AuthError('INVALID_FIELDS', 422)
+    note = payload.get('note','')
+    if not isinstance(note,str) or len(note) > 500:
         raise AuthError('INVALID_FIELDS', 422)
     if row['deadline'] < now.date().isoformat():
         raise AuthError('PROPOSAL_CLOSED', 409)
@@ -96,10 +109,10 @@ def interest(event, repo, user, scopes, key, now):
     condition = '#kind = :kind AND #scope = :scope AND #until >= :today'
     update = 'REMOVE #people.#uid'
     if payload['interested']:
-        args[':name'] = user.display_name or 'ผู้ใช้งานภายใน'
+        args[':person'] = {'name':user.display_name or 'ผู้ใช้งานภายใน', 'note':note.strip()}
         args[':cap'] = 500
         condition += ' AND (attribute_exists(#people.#uid) OR size(#people) < :cap)'
-        update = 'SET #people.#uid = :name'
+        update = 'SET #people.#uid = :person'
     commit(repo, user, token_hash(session_cookie(event)), row['scopeId'],
            {'Update': {'TableName':repo.table, 'Key':values({'id':key}),
                        'UpdateExpression':update, 'ConditionExpression':condition,
