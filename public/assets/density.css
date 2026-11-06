@@ -1,0 +1,29 @@
+/* Shared sizing for public pages, the generated work shell, and embedded forms. */
+@media (min-width: 768px) {
+    html { font-size: 93.75%; }
+
+    .board-scene .sub-header { padding-top: 42px; gap: 18px; margin-bottom: 18px; }
+    .board-scene .grid { gap: 18px; }
+    .grid > .card > .card-thumbnail { height: 184px; min-height: 0; padding: 22px; }
+    .grid > .card > .card-content { padding: 18px; }
+    .grid > .card .card-footer { margin-top: 16px; }
+    .detail-identity { padding: 32px 22px; }
+    .detail-toolbar { padding: 14px 20px 0 26px; }
+    .detail-panel { padding: 22px 26px 28px; }
+
+    .login-main { max-width: 900px; gap: clamp(14px, 2.5svh, 28px); }
+    .login-heading h1 { font-size: clamp(62px, min(9vw, 11.5svh), 120px); }
+    .login-panel { padding: clamp(18px, 2.7svh, 28px); }
+    .login-field { margin-top: 12px; }
+}
+
+@media (max-width: 767px) {
+    .board-scene .sub-header { gap: 14px; margin-bottom: 14px; }
+    .grid > .card > .card-thumbnail { height: 148px; min-height: 0; padding: 16px; }
+    .grid > .card > .card-content { padding: 14px; }
+    .detail-panel { padding: 18px 16px 24px; }
+
+    .login-panel { padding: 16px 18px; }
+    .login-heading h1 { font-size: clamp(42px, min(11vw, 7.5svh), 68px); }
+    input:not([type=checkbox]):not([type=radio]), textarea, select { font-size: max(1em, 16px); }
+}

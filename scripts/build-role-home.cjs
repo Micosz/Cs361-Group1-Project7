@@ -5,7 +5,7 @@ page = page.replace('<title>CSTUHub - Information Board</title>', '<title>หน
  .replace('<body>', '<body class="work-home work-checking">')
  .replace(/    <div class="hero-scroll">[\s\S]*?(?=    <div class="board-scene">)/, '')
  .replace(/    <script src="assets\/(opening|constellation|header-motion)\.js[^>]*><\/script>\n/g, '')
- .replace('</head>', '<link rel="stylesheet" href="assets/work-home.css?v=work-logout-1">\n</head>');
+ .replace('</head>', '<link rel="stylesheet" href="assets/work-home.css?v=compact-1">\n</head>');
 const shell = fs.readFileSync('public/partials/work-home.html', 'utf8');
 page = page.replace('    <div class="board-scene">', shell + '\n    <div class="board-scene">')
  .replace('href="/"', 'href="work.html"')
