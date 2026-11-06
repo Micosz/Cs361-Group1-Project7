@@ -8,7 +8,7 @@ page = page.replace('<title>CSTUHub - Information Board</title>', '<title>หน
  .replace('</head>', '<link rel="stylesheet" href="assets/work-home.css?v=proposal-board-1">\n</head>');
 page = page.replace('    <script src="assets/role-home.js?v=work-logout-1" defer></script>', [
  '    <script src="assets/proposal-avatars.js?v=1" defer></script>',
- '    <script src="assets/proposal-board.js?v=1" defer></script>',
+ '    <script src="assets/proposal-board.js?v=2" defer></script>',
  '    <script src="assets/role-home.js?v=proposal-board-1" defer></script>'
 ].join('\n'));
 page = page.replace('assets/records.js?v=role-home-1','assets/records.js?v=proposal-board-1');

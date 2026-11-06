@@ -22,9 +22,11 @@
     // Match full names, including the surname. Never guess a person's identity by first name.
     const normalized = name => name.normalize('NFC').replace(/^(?:(?:ผศ\.|รศ\.|ศ\.|อ\.|ดร\.|คุณ|นาย|นางสาว|นาง|ว่าที่ร้อยเอก)\s*)+/u, '').replace(/\s+/g,'');
     const avatarNames = new Map(Object.entries(window.CstuProposalAvatars).map(([name,id]) => [normalized(name), id]));
-    function avatar(name, demo = false) {
-        const id = avatarNames.get(normalized(name)) || (demo ? 'demo' : '');
-        if (!id) return node('span', Array.from(name)[0] || '•', 'proposal-avatar');
+    function avatar(name) {
+        // Unmatched and demo accounts get a stable, unrelated cartoon from the original random set.
+        const seed = Array.from(name).reduce((n,ch)=>(n*31+ch.codePointAt(0))>>>0,0);
+        const fallback = ['demo','generic-2','generic-3','generic-4','generic-5','generic-6'];
+        const id = avatarNames.get(normalized(name)) || fallback[seed % fallback.length];
         const img = node('img', '', 'proposal-avatar');
         img.alt = ''; img.src = 'resources/personnel-mock/' + id + '.png';
         return img;
@@ -39,11 +41,11 @@
         byId('proposal-cards').replaceChildren();
         byId('proposal-status').textContent = '';
     }
-    function personLine(name, subtitle, demo) {
+    function personLine(name, subtitle) {
         const line = node('div','','proposal-person');
         const label = node('div'); label.append(node('strong',name));
         if (subtitle) label.append(node('small',subtitle));
-        line.append(avatar(name,demo),label);
+        line.append(avatar(name),label);
         return line;
     }
     const isOpen = row => row.deadline >= day();
@@ -51,7 +53,7 @@
         const open = isOpen(row);
         const el = node('article','', 'proposal-card' + (open ? '' : ' closed'));
         const people = row.interested;
-        el.append(personLine(row.creator, 'ผู้เสนอ · ' + dateLabel(row.createdAt), current.demo),
+        el.append(personLine(row.creator, 'ผู้เสนอ · ' + dateLabel(row.createdAt)),
             node('h3',row.title), node('strong',row.partner), node('p',row.summary,'proposal-summary'),
             node('small',(open ? 'เปิดรับถึง ' : 'ปิดรับแล้ว · ') + dateLabel(row.deadline)));
         const footer = node('div','','proposal-foot');
@@ -59,10 +61,10 @@
         if (people.length) {
             const reveal = node('button','','proposal-stack proposal-people');
             reveal.type='button'; reveal.setAttribute('aria-expanded','false');
-            for (const name of people.slice(0,3)) reveal.append(avatar(name,current.demo));
+            for (const name of people.slice(0,3)) reveal.append(avatar(name));
             reveal.append(node('span',(people.length > 3 ? '+'+(people.length-3)+' · ' : '')+'สนใจ '+people.length+' คน'));
             for (const name of people) {
-                const item = node('li'); item.append(personLine(name,'',current.demo)); list.append(item);
+                const item = node('li'); item.append(personLine(name,'')); list.append(item);
             }
             reveal.onclick = () => { list.hidden = !list.hidden; reveal.setAttribute('aria-expanded',String(!list.hidden)); };
             footer.append(reveal);
