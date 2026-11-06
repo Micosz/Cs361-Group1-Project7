@@ -1,0 +1,60 @@
+
+<div id="work-gate" class="work-gate" role="status" aria-live="polite"><p id="work-gate-message">กำลังตรวจสิทธิ์หน้าทำงาน…</p><button id="work-gate-retry" type="button" hidden>ลองอีกครั้ง</button><a href="index.html?public=1">ดูหน้าสาธารณะ</a></div>
+<aside class="work-sidebar" aria-label="เมนูทำงาน">
+ <span class="work-eyebrow">WORKSPACE</span><h2>พื้นที่ทำงาน</h2>
+ <nav id="work-nav" aria-label="งานของคุณ"></nav>
+ <a class="work-public-link" href="index.html?public=1">↗ ดูหน้าสาธารณะ</a>
+ <p class="work-sidebar-note">ข้อมูลและงานแสดงตามสิทธิ์<br>ในหลักสูตรที่คุณรับผิดชอบ</p>
+</aside>
+<section class="work-welcome" aria-labelledby="work-title">
+ <div class="work-welcome-heading"><div><p class="work-eyebrow">CSTUHub · พื้นที่ทำงาน</p><h1 id="work-title">วันนี้เริ่มจากงานไหนดี?</h1><p id="work-description">จัดการความร่วมมือ กิจกรรม และผลตอบรับในที่เดียว</p></div><span id="work-role" class="work-role"></span></div>
+ <div id="work-actions" class="work-actions" aria-label="เริ่มงาน"></div>
+</section>
+<section id="proposal-board" class="proposal-board" aria-labelledby="proposal-heading" hidden>
+  <header class="proposal-header">
+    <div><h2 id="proposal-heading">กระดานข้อเสนอความร่วมมือ</h2><p id="proposal-count" aria-live="polite"></p></div>
+    <div class="proposal-tools"><a href="work.html?view=proposals" id="proposal-see-all">ดูกระดานทั้งหมด →</a><button type="button" id="proposal-new">+ สร้างข้อเสนอ</button></div>
+  </header>
+  <p id="proposal-status" role="status"></p>
+  <div class="proposal-grid" id="proposal-cards"></div>
+  <dialog id="proposal-dialog" aria-labelledby="proposal-form-title">
+    <form id="proposal-form">
+      <h2 id="proposal-form-title">สร้างข้อเสนอความร่วมมือ</h2>
+      <label>ชื่อข้อเสนอ<input name="title" maxlength="150" required></label>
+      <label>หน่วยงานที่อยากร่วมมือ<input name="partner" maxlength="150" required></label>
+      <label>อยากชวนมาทำอะไร<textarea name="summary" rows="3" maxlength="2000" required></textarea></label>
+      <label>หลักสูตร / ขอบเขต<select name="scopeId" required></select></label>
+      <label>เปิดรับความสนใจถึงวันที่<input name="deadline" type="date" required></label>
+      <p id="proposal-author"></p><p role="status" id="proposal-form-status"></p>
+      <div class="proposal-tools"><button type="button" id="proposal-cancel">ยกเลิก</button><button type="submit" name="mode" value="draft" id="proposal-save-draft" hidden>บันทึกร่าง</button><button type="submit" name="mode" value="open">โพสต์ข้อเสนอ</button></div>
+    </form>
+  </dialog>
+  <dialog id="proposal-interest-dialog" aria-labelledby="proposal-interest-title">
+    <form id="proposal-interest-form">
+      <h2 id="proposal-interest-title">สนใจร่วมดำเนินการ</h2>
+      <p id="proposal-interest-context"></p>
+      <label for="proposal-interest-note">อยากร่วมดำเนินการด้านไหน? <span>(ไม่บังคับ)</span></label>
+      <textarea id="proposal-interest-note" name="note" rows="3" maxlength="500"
+        placeholder="เช่น ช่วยออกแบบหัวข้ออบรม ประสานหน่วยงาน หรือดูแลนักศึกษา"></textarea>
+      <p id="proposal-interest-status" role="status"></p>
+      <div class="proposal-tools">
+        <button type="button" id="proposal-interest-withdraw" hidden>ถอนความสนใจ</button>
+        <button type="button" id="proposal-interest-cancel">ยกเลิก</button>
+        <button type="submit" id="proposal-interest-save">ยืนยันเข้าร่วม</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="proposal-flow-dialog" aria-labelledby="proposal-flow-title">
+    <header class="proposal-header"><h2 id="proposal-flow-title">ขั้นตอนข้อเสนอ</h2><button type="button" id="proposal-flow-close" aria-label="ปิดขั้นตอนข้อเสนอ">×</button></header>
+    <p class="proposal-prototype-notice">Flow ต้นแบบสำหรับคุยกับอาจารย์ · ข้อมูลอยู่ในแท็บนี้</p>
+    <ol id="proposal-flow-steps" class="proposal-flow-steps"></ol>
+    <p id="proposal-flow-waiting"></p>
+    <div id="proposal-flow-people"></div>
+    <label for="proposal-flow-note">บันทึกประกอบ <span>(จำเป็นเมื่อส่งกลับแก้ไขหรือยุติข้อเสนอ)</span></label>
+    <textarea id="proposal-flow-note" rows="2" maxlength="500"></textarea>
+    <div id="proposal-flow-actions" class="proposal-tools"></div>
+    <p id="proposal-flow-status" role="status"></p>
+    <h3>ประวัติการดำเนินการ</h3>
+    <ol id="proposal-flow-history"></ol>
+  </dialog>
+</section>

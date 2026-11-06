@@ -17,6 +17,10 @@ class AuthApplication:
             if event.get('version') != '2.0':
                 raise AuthError('UNSUPPORTED_EVENT', 400)
             path = event.get('rawPath', '')
+            proposal = re.fullmatch(r'/api/proposals(?:/(proposal-[a-f0-9]{64})/interest)?', path)
+            if proposal:
+                from .proposals import handle as proposal_board
+                return proposal_board(event, self.sessions, self.repository, proposal[1])
             from .documents.direct_gateway import handles, DirectUploadGateway
             if handles(path):
                 return DirectUploadGateway(self.sessions, self.repository).handle(event)

@@ -79,6 +79,49 @@
                 login.href = 'login.html'; login.className = 'login-btn'; login.textContent = 'Log in';
                 host.replaceChildren(login); return;
             }
+            if (window.CstuAuth.isInternal(session) && !document.body.classList.contains('work-home')) {
+                finishClose();
+                let workspace = host.querySelector('.work-home-link');
+                if (!workspace) {
+                    workspace = document.createElement('a');
+                    workspace.href = 'work.html';
+                    workspace.className = 'login-btn work-home-link';
+                    workspace.textContent = 'กลับหน้าทำงาน';
+                    host.replaceChildren(workspace);
+                }
+                showAccount(session);
+                links.replaceChildren();
+                status.textContent = '';
+                return;
+            }
+            if (document.body.classList.contains('work-home')) {
+                finishClose();
+                let direct = host.querySelector('.work-logout-trigger');
+                if (!direct) {
+                    direct = document.createElement('button');
+                    direct.type = 'button'; direct.className = 'login-btn work-logout-trigger';
+                    direct.textContent = 'Log out';
+                    const message = document.createElement('p');
+                    message.className = 'work-logout-status'; message.setAttribute('role', 'status');
+                    direct.onclick = async () => {
+                        if (direct.disabled) return;
+                        direct.disabled = true; direct.textContent = 'กำลังออก…'; message.textContent = '';
+                        document.body.dataset.signingOut = 'true';
+                        try {
+                            await window.CstuAuth.logout();
+                            window.location.replace('index.html');
+                        } catch {
+                            delete document.body.dataset.signingOut;
+                            message.textContent = 'ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง';
+                            direct.disabled = false; direct.textContent = 'Log out';
+                        }
+                    };
+                    host.replaceChildren(direct, message);
+                }
+                showAccount(session);
+                links.replaceChildren(); status.textContent = '';
+                return;
+            }
             let trigger = host.querySelector('button');
             if (!trigger) {
                 trigger = document.createElement('button');
@@ -108,8 +151,9 @@
                 link.append(title, small); links.append(link);
             };
             const roles = window.CstuAuth.roles(session);
-            for (const item of window.CstuWork.menu(session)) append(item.label, item.href, item.description);
-            if (managedScopes(session).length) append('จัดการสิทธิ์ผู้ใช้', 'index.html?view=roles#board-section', 'มอบหมายและถอนบทบาทในขอบเขตที่ดูแล');
+            if (window.CstuAuth.isInternal(session)) append('หน้าทำงาน', 'work.html', 'เริ่มงานและดูข้อมูลความร่วมมือ');
+            for (const item of window.CstuWork.menu(session)) append(item.label, window.CstuAuth.isInternal(session) ? item.href.replace('index.html', 'work.html') : item.href, item.description);
+            if (managedScopes(session).length) append('จัดการสิทธิ์ผู้ใช้', 'work.html?view=roles#board-section', 'มอบหมายและถอนบทบาทในขอบเขตที่ดูแล');
             if (!roles.length) append('รอมอบหมายสิทธิ์', 'index.html#board-section', 'บัญชีของคุณยังไม่ได้รับบทบาทงานภายใน');
         } catch {
             if (current !== revision) return;
