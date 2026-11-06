@@ -1,6 +1,7 @@
 /* Protected shared list/detail. No public backup or browser-owned permissions. */
 (() => {
     'use strict';
+    if (document.body.classList.contains('work-home') && new URLSearchParams(location.search).get('view') === 'proposals') return;
     const $ = id => document.getElementById(id), form = $('records-search'), dialog = $('record-detail');
     let params = new URLSearchParams(), kind = 'partners', overview = false, feedbackInbox = false, config = window.CstuWork.kinds.partners;
     const host = $('home-records');

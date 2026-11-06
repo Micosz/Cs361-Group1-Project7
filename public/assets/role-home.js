@@ -9,6 +9,7 @@
         ['หน้าทำงาน','work.html','home'],
         ['คู่ความร่วมมือ','work.html?kind=partners#board-section','partners'],
         ['กิจกรรม','work.html?kind=activities#board-section','activities'],
+        ['ข้อเสนอความร่วมมือ','work.html?view=proposals','proposals'],
         ['ข้อตกลง MoU / MoA','work.html?kind=agreements#board-section','agreements'],
         ['โครงการแลกเปลี่ยน','work.html?kind=exchanges#board-section','exchanges'],
         ['รวม Feedback','work.html?view=feedback#board-section','feedback']
@@ -21,6 +22,7 @@
     };
     function clearWork() {
         document.body.classList.add('work-checking');
+        window.CstuProposals?.clear();
         document.getElementById('work-nav')?.replaceChildren();
         document.getElementById('work-actions')?.replaceChildren();
     }
@@ -59,6 +61,12 @@
             document.getElementById('work-title').textContent = name ? `สวัสดี ${name} วันนี้เริ่มงานอะไรดี?` : 'วันนี้เริ่มจากงานไหนดี?';
             document.getElementById('work-role').textContent = [...new Set(roles.map(r => titles[r]).filter(Boolean))].join(' · ');
             const actions = document.getElementById('work-actions');
+            if (active === 'home') {
+                const board = link('กระดานข้อเสนอความร่วมมือ','work.html?view=proposals','ดูข้อเสนอและผู้สนใจ');
+                board.id = 'proposal-shortcut';
+                const icon = document.createElement('i'); icon.className = 'fas fa-thumbtack'; icon.setAttribute('aria-hidden','true'); board.prepend(icon);
+                actions.append(board);
+            }
             const icons = {partners:'building',activities:'calendar-plus',agreements:'file-signature',exchanges:'globe'};
             for (const [kind,config] of Object.entries(window.CstuWork.kinds)) {
                 if (!window.CstuWork.canCreate(session,kind)) continue;
@@ -67,7 +75,9 @@
             }
             actions.append(link('อ่านผลตอบรับ','work.html?view=feedback#board-section','รวบรวม Comment และ Form Feedback'));
             document.body.classList.toggle('work-dashboard', !selected.has('kind') && !selected.has('view'));
+            document.body.classList.toggle('work-proposals', active === 'proposals');
             document.body.classList.remove('work-checking');
+            if (active === 'proposals' || active === 'home') window.CstuProposals?.mount(session, active);
             document.querySelector('.navbar')?.classList.add('header-settled');
             document.querySelector('.page-title h1').textContent = 'ข้อมูลความร่วมมือ';
             document.querySelector('.page-title h2').textContent = 'ค้นหาและเปิดรายการเพื่อจัดการ';

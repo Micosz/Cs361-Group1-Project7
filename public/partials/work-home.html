@@ -10,3 +10,23 @@
  <div class="work-welcome-heading"><div><p class="work-eyebrow">CSTUHub · พื้นที่ทำงาน</p><h1 id="work-title">วันนี้เริ่มจากงานไหนดี?</h1><p id="work-description">จัดการความร่วมมือ กิจกรรม และผลตอบรับในที่เดียว</p></div><span id="work-role" class="work-role"></span></div>
  <div id="work-actions" class="work-actions" aria-label="เริ่มงาน"></div>
 </section>
+<section id="proposal-board" class="proposal-board" aria-labelledby="proposal-heading" hidden>
+  <header class="proposal-header">
+    <div><h2 id="proposal-heading">กระดานข้อเสนอความร่วมมือ</h2><p id="proposal-count" aria-live="polite"></p></div>
+    <div class="proposal-tools"><a href="work.html?view=proposals" id="proposal-see-all">ดูกระดานทั้งหมด →</a><button type="button" id="proposal-new">+ สร้างข้อเสนอ</button></div>
+  </header>
+  <p id="proposal-status" role="status"></p>
+  <div class="proposal-grid" id="proposal-cards"></div>
+  <dialog id="proposal-dialog" aria-labelledby="proposal-form-title">
+    <form id="proposal-form">
+      <h2 id="proposal-form-title">สร้างข้อเสนอความร่วมมือ</h2>
+      <label>ชื่อข้อเสนอ<input name="title" maxlength="150" required></label>
+      <label>หน่วยงานที่อยากร่วมมือ<input name="partner" maxlength="150" required></label>
+      <label>อยากชวนมาทำอะไร<textarea name="summary" rows="3" maxlength="2000" required></textarea></label>
+      <label>หลักสูตร / ขอบเขต<select name="scopeId" required></select></label>
+      <label>เปิดรับความสนใจถึงวันที่<input name="deadline" type="date" required></label>
+      <p id="proposal-author"></p><p role="status" id="proposal-form-status"></p>
+      <div class="proposal-tools"><button type="button" id="proposal-cancel">ยกเลิก</button><button type="submit">โพสต์ข้อเสนอ</button></div>
+    </form>
+  </dialog>
+</section>
