@@ -33,6 +33,10 @@
     }
     const interestDialog = byId('proposal-interest-dialog');
     const interestForm = byId('proposal-interest-form');
+    const flow = window.CstuProposalFlow;
+    const flowDialog = byId('proposal-flow-dialog');
+    let flowTarget = null;
+    let editingRow = null;
     let interestTarget = null;
     let state = null;
     let generation = 0;
@@ -42,6 +46,8 @@
         if (dialog.open) dialog.close();
         if (interestDialog.open) interestDialog.close();
         interestTarget = null;
+        if (flowDialog.open) flowDialog.close();
+        flowTarget = null; editingRow = null;
         panel.hidden = true;
         byId('proposal-cards').replaceChildren();
         byId('proposal-status').textContent = '';
@@ -94,14 +100,79 @@
     interestDialog.addEventListener('close',()=>{interestTarget=null;});
     interestForm.onsubmit=event=>{event.preventDefault();saveInterest(true);};
     byId('proposal-interest-withdraw').onclick=()=>saveInterest(false);
-    const isOpen = row => row.deadline >= day();
+    function openWorkflow(row,current) {
+        flowTarget={row,current};
+        byId('proposal-flow-note').value='';
+        renderWorkflow();
+        flowDialog.showModal();
+    }
+    function renderWorkflow() {
+        const {row,current}=flowTarget;
+        byId('proposal-flow-title').textContent=row.title;
+        const active = row.status === 'changes' ? 'review' : row.status;
+        const position = flow.steps.indexOf(active);
+        byId('proposal-flow-steps').replaceChildren(...flow.steps.map((step,index)=>{
+            const item=node('li',flow.labels[step]);
+            if (step===active) item.setAttribute('aria-current','step');
+            if (position>index) item.className='complete';
+            return item;
+        }));
+        byId('proposal-flow-waiting').textContent=flow.labels[row.status]+' · '+flow.waiting(row);
+        const people=participants(row,current);
+        byId('proposal-flow-people').replaceChildren(node('p','ผู้สนใจ '+people.length+' คน'));
+        for (const person of people) byId('proposal-flow-people').append(personLine(person.name,person.note));
+        const actions=byId('proposal-flow-actions');
+        actions.replaceChildren();
+        for (const action of flow.actions(row,current)) {
+            const button=node('button',action.label);
+            button.type='button';
+            button.onclick=()=>changeStage(action.key);
+            actions.append(button);
+        }
+        if (flow.editable(row,current)) {
+            const edit=node('button','แก้ไขข้อเสนอ');
+            edit.type='button';
+            edit.onclick=()=>{flowDialog.close();openEditor(row);};
+            actions.append(edit);
+        }
+        byId('proposal-flow-history').replaceChildren(...row.history.map(entry=>{
+            const item=node('li');
+            item.append(node('strong',flow.labels[entry.status]),
+                node('small',entry.actor+' · '+new Date(entry.at).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})));
+            if (entry.note) item.append(node('p',entry.note));
+            return item;
+        }));
+        byId('proposal-flow-status').textContent='';
+    }
+    async function changeStage(key) {
+        const target=flowTarget;
+        if (!target || !state) return;
+        const {row,current}=target;
+        const buttons=[...byId('proposal-flow-actions').querySelectorAll('button')];
+        if (buttons.some(button=>button.disabled)) return;
+        buttons.forEach(button=>{button.disabled=true;});
+        try {
+            const updated=await current.store.transition(row,key,byId('proposal-flow-note').value);
+            if (state!==current || flowTarget!==target) return;
+            current.rows=current.rows.map(item=>item.id===updated.id ? updated : item);
+            flowTarget={row:updated,current};
+            render(current);renderWorkflow();
+            byId('proposal-flow-note').value='';
+        } catch(err) {
+            if (state===current && flowTarget===target) byId('proposal-flow-status').textContent=err.message;
+        } finally { buttons.forEach(button=>{button.disabled=false;}); }
+    }
+    byId('proposal-flow-close').onclick=()=>flowDialog.close();
+    flowDialog.addEventListener('close',()=>{flowTarget=null;});
+    const isOpen = row => (!row.status || row.status==='open') && row.deadline >= day();
     function card(row, current) {
         const open = isOpen(row);
         const el = node('article','', 'proposal-card' + (open ? '' : ' closed'));
         const people = participants(row, current);
+        if (current.demo) el.append(node('span',flow.labels[row.status],'proposal-stage'));
         el.append(personLine(row.creator, 'ผู้เสนอ · ' + dateLabel(row.createdAt)),
             node('h3',row.title), node('strong',row.partner), node('p',row.summary,'proposal-summary'),
-            node('small',(open ? 'เปิดรับถึง ' : 'ปิดรับแล้ว · ') + dateLabel(row.deadline)));
+            node('small',(row.status==='draft' || row.status==='changes' ? 'กำหนดปิดรับ ' : open ? 'เปิดรับถึง ' : 'ปิดรับแล้ว · ') + dateLabel(row.deadline)));
         const footer = node('div','','proposal-foot');
         const list = node('ul','','proposal-list'); list.hidden = true;
         if (people.length) {
@@ -126,6 +197,13 @@
             footer.append(toggle);
         }
         el.append(footer,list);
+        if (current.demo) {
+            const details=node('button','ดูขั้นตอน');
+            details.type='button';details.className='proposal-flow-trigger';
+            details.setAttribute('aria-label','ดูขั้นตอน '+row.title);
+            details.onclick=()=>openWorkflow(row,current);
+            el.append(details);
+        }
         return el;
     }
     function render(current) {
@@ -164,15 +242,38 @@
         const saved = sessionStorage.getItem(key);
         let rows = saved ? JSON.parse(saved) : [fixture()];
         const save = next => { sessionStorage.setItem(key,JSON.stringify(next)); rows=next; };
-        if (!saved) save(rows);
+        const reviewId='example-review-v1';
+        if (!rows.some(row=>row.id===reviewId)) rows.push({
+            ...fixture(),id:reviewId,title:'ตัวอย่างข้อเสนอที่รอพิจารณา',
+            createdBy:'sample-author',status:'review',interested:[],
+            history:[{status:'open',at:new Date().toISOString(),actor:'ผู้ประสานงานตัวอย่าง',note:'ตัวอย่างสำหรับทดลอง Flow'},
+                {status:'review',at:new Date().toISOString(),actor:'ระบบต้นแบบ',note:'ครบกำหนดและไม่มีผู้สนใจ'}]
+        });
+        rows=rows.map(row=>flow.initialize(row,current,day()));
+        save(rows);
         return {
             list:async()=>rows,
             create:async (payload,id)=>{
-                const row={...payload,id,creator:current.name,createdAt:new Date().toISOString(),mine:false,interested:[]};
+                const row=flow.event({...payload,id,createdBy:current.session.user.id,
+                    creator:current.name,createdAt:new Date().toISOString(),mine:false,interested:[]},
+                    payload.status,current.name);
                 save([row,...rows]); return row;
             },
+            update:async(row,payload)=>{
+                const latest=rows.find(item=>item.id===row.id);
+                if (!latest || !flow.editable(latest,current)) throw Error('แก้ไขได้เฉพาะร่างหรือข้อเสนอที่ส่งกลับของคุณ');
+                const updated=flow.event({...latest,...payload},payload.status,current.name,'แก้ไขข้อเสนอ');
+                save(rows.map(item=>item.id===row.id ? updated : item));return updated;
+            },
+            transition:async(row,action,note)=>{
+                const latest=rows.find(item=>item.id===row.id);
+                if (!latest || latest.status!==row.status) throw Error('สถานะเปลี่ยนแล้ว กรุณาเปิดรายละเอียดอีกครั้ง');
+                const updated=flow.transition(latest,action,current,day(),note);
+                save(rows.map(item=>item.id===row.id ? updated : item));return updated;
+            },
             interest:async(row,join,note = '')=>{
-                if (!isOpen(row)) throw Error('ปิดรับความสนใจแล้ว');
+                row=rows.find(item=>item.id===row.id);
+                if (!row || !isOpen(row)) throw Error('ปิดรับความสนใจแล้ว');
                 const people = participants(row,current).filter(person=>!person.mine);
                 if (join) people.push({name:current.name,note,mine:true});
                 const updated={...row,participants:people,interested:people.map(p=>p.name),mine:join,myNote:join ? note : ''};
@@ -209,16 +310,21 @@
         }
     }
     let postKey = '';
-    byId('proposal-new').onclick = () => {
+    function openEditor(row = null) {
         if (!state) return;
-        form.reset(); postKey=crypto.randomUUID();
+        form.reset(); postKey=crypto.randomUUID(); editingRow=row;
         form.elements.scopeId.replaceChildren(...state.scopes.map(s=>new Option(s,s)));
         form.elements.deadline.min=day();
         form.elements.deadline.value=day(new Date(Date.now()+7*86400000));
-        byId('proposal-author').textContent='ผู้เสนอ · '+state.name+(state.demo ? ' · ข้อมูลตัวอย่างเก็บในแท็บนี้' : '');
+        if (row) for (const key of ['title','partner','summary','scopeId','deadline']) form.elements[key].value=row[key];
+        form.elements.scopeId.disabled=Boolean(row);
+        byId('proposal-save-draft').hidden=!state.demo;
+        byId('proposal-form-title').textContent=row ? 'แก้ไขข้อเสนอ' : 'สร้างข้อเสนอความร่วมมือ';
+        byId('proposal-author').textContent='ผู้เสนอ · '+(row?.creator || state.name)+(state.demo ? ' · ข้อมูลตัวอย่างเก็บในแท็บนี้' : '');
         byId('proposal-form-status').textContent='';
         dialog.showModal();
-    };
+    }
+    byId('proposal-new').onclick=()=>openEditor();
     byId('proposal-cancel').onclick=()=>dialog.close();
     form.addEventListener('input',()=>{postKey=crypto.randomUUID();});
     form.onsubmit=async event=>{
@@ -226,22 +332,24 @@
         const current=state;
         if (!current) return;
         const payload=Object.fromEntries(new FormData(form));
+        payload.scopeId=form.elements.scopeId.value;
+        if (current.demo) payload.status=event.submitter?.value==='draft' ? 'draft' : 'open';
         for (const k of ['title','partner','summary']) payload[k]=payload[k].trim();
         if (!payload.title || !payload.partner || !payload.summary) {
             byId('proposal-form-status').textContent='กรุณากรอกข้อมูลให้ครบ'; return;
         }
-        const btn=form.querySelector('[type=submit]');
-        if (btn.disabled) return;
-        btn.disabled=true;
+        const buttons=[...form.querySelectorAll('[type=submit]')];
+        if (buttons.some(button=>button.disabled)) return;
+        buttons.forEach(button=>{button.disabled=true;});
         try {
-            const row=await current.store.create(payload,postKey);
+            const row=editingRow ? await current.store.update(editingRow,payload) : await current.store.create(payload,postKey);
             if (state!==current) return;
             current.rows=[row,...current.rows.filter(x=>x.id!==row.id)];
             render(current);dialog.close();
-            byId('proposal-status').textContent='โพสต์ข้อเสนอแล้ว';
+            byId('proposal-status').textContent=payload.status==='draft' ? 'บันทึกร่างแล้ว' : 'โพสต์ข้อเสนอแล้ว';
         } catch(err) {
             if (state===current) byId('proposal-form-status').textContent='โพสต์ไม่ได้ · '+err.message;
-        } finally { btn.disabled=false; }
+        } finally { buttons.forEach(button=>{button.disabled=false;}); }
     };
     window.CstuProposals={mount,clear};
 })();

@@ -26,7 +26,7 @@
       <label>หลักสูตร / ขอบเขต<select name="scopeId" required></select></label>
       <label>เปิดรับความสนใจถึงวันที่<input name="deadline" type="date" required></label>
       <p id="proposal-author"></p><p role="status" id="proposal-form-status"></p>
-      <div class="proposal-tools"><button type="button" id="proposal-cancel">ยกเลิก</button><button type="submit">โพสต์ข้อเสนอ</button></div>
+      <div class="proposal-tools"><button type="button" id="proposal-cancel">ยกเลิก</button><button type="submit" name="mode" value="draft" id="proposal-save-draft" hidden>บันทึกร่าง</button><button type="submit" name="mode" value="open">โพสต์ข้อเสนอ</button></div>
     </form>
   </dialog>
   <dialog id="proposal-interest-dialog" aria-labelledby="proposal-interest-title">
@@ -43,5 +43,18 @@
         <button type="submit" id="proposal-interest-save">ยืนยันเข้าร่วม</button>
       </div>
     </form>
+  </dialog>
+  <dialog id="proposal-flow-dialog" aria-labelledby="proposal-flow-title">
+    <header class="proposal-header"><h2 id="proposal-flow-title">ขั้นตอนข้อเสนอ</h2><button type="button" id="proposal-flow-close" aria-label="ปิดขั้นตอนข้อเสนอ">×</button></header>
+    <p class="proposal-prototype-notice">Flow ต้นแบบสำหรับคุยกับอาจารย์ · ข้อมูลอยู่ในแท็บนี้</p>
+    <ol id="proposal-flow-steps" class="proposal-flow-steps"></ol>
+    <p id="proposal-flow-waiting"></p>
+    <div id="proposal-flow-people"></div>
+    <label for="proposal-flow-note">บันทึกประกอบ <span>(จำเป็นเมื่อส่งกลับแก้ไขหรือยุติข้อเสนอ)</span></label>
+    <textarea id="proposal-flow-note" rows="2" maxlength="500"></textarea>
+    <div id="proposal-flow-actions" class="proposal-tools"></div>
+    <p id="proposal-flow-status" role="status"></p>
+    <h3>ประวัติการดำเนินการ</h3>
+    <ol id="proposal-flow-history"></ol>
   </dialog>
 </section>
