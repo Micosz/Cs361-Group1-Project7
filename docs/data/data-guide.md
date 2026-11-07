@@ -1,6 +1,6 @@
 # คู่มือข้อมูล CSTUHub
 
-ปรับปรุงวันที่ 3 พฤศจิกายน 2026 · อ้างอิงโครงสร้างจาก `main` commit `b4e8970`
+Updated 8 November 2026: legacy repository datasets and static fallback removed.
 
 เอกสารนี้อธิบายโครงสร้างข้อมูล ความสัมพันธ์ สิทธิ์การเข้าถึง และการจัดเก็บข้อมูลของ CSTUHub ครอบคลุมคู่ความร่วมมือ กิจกรรม ข้อตกลง การแลกเปลี่ยน Feedback และเอกสารแนบ ค่าการใช้งานจริงขึ้นอยู่กับ configuration ของระบบ
 
@@ -8,9 +8,6 @@
 
 | แหล่งเก็บ | ข้อมูลและหน้าที่ |
 | --- | --- |
-| `data/partners.json` | ชุดข้อมูลสาธารณะต้นทางแบบซ้อน: หน่วยงานแต่ละแห่งมี `collaborations` ของตนเอง |
-| `data/source-handoff.json` | บันทึกที่มา ข้อจำกัด และข้อมูลที่เตรียมส่งต่อ ไม่ถูกโหลดเป็นระเบียนใช้งานโดยอัตโนมัติ |
-| `public/data/partner-data-backup.json` | ชุดสาธารณะแบบแบนสำหรับ fallback ของหน้าเว็บ ไม่ใช่ backup ของข้อมูลธุรกิจทั้งหมด |
 | DynamoDB: `PARTNER_TABLE` | Partner และ Activity; เมื่อกำหนดตารางแยก ใช้ key `(id, type)` เช่น `CSTUHub-Partner` |
 | DynamoDB: `BUSINESS_TABLE` | Agreement, Exchange, Contact, History, Feedback, Form Feedback, metadata เอกสาร และระเบียนประกอบการทำงาน เช่น upload ticket และ idempotency |
 | DynamoDB: ตารางบัญชี | ผู้ใช้ การเชื่อมตัวตน Session และการจำกัดคำขอ แยกจากข้อมูลธุรกิจ |
@@ -192,7 +189,7 @@ Upload ticket ใช้สถานะ `pending`, `processing`, `ready`, `failed
 
 Direct upload รองรับ PDF/DOCX สูงสุด 50 MiB และ PNG/JPEG สูงสุด 10 MiB โดยลดเพดานได้ผ่าน environment variables ส่วนการอัปโหลดเดิมผ่าน API จำกัด 3 MiB ขนาดที่ใช้ได้จึงขึ้นอยู่กับโหมดและ configuration การตรวจไฟล์ครอบคลุมชนิด โครงสร้าง และ checksum แต่ไม่รวมการสแกนมัลแวร์
 
-Direct upload ต้องเปิด S3 Versioning ส่วน Lifecycle, replication, backup และ DynamoDB PITR ต้องกำหนดแยกใน AWS สำหรับ static fallback ใช้แสดง catalog เท่านั้น ไม่รองรับการกู้เอกสารหรือ Feedback
+Direct upload ต้องเปิด S3 Versioning ส่วน Lifecycle, replication, backup และ DynamoDB PITR ต้องกำหนดแยกใน AWS The repository no longer includes a static catalog fallback or a database backup.
 
 ## 8. สิทธิ์และข้อมูลบัญชี
 
@@ -226,7 +223,7 @@ API ภาพรวมอนุญาต `staff`/`executive` และสรุ�
 
 ## 10. ชุดข้อมูลสาธารณะเดิมและการใช้งานร่วมกับระบบปัจจุบัน
 
-`data/partners.json` มี **17 หน่วยงานและ 12 กิจกรรมแบบซ้อน** ส่วน `public/data/partner-data-backup.json` มี **29 ระเบียนแบบแบน** จำนวนนี้เป็นชุดเริ่มต้นใน repository ไม่รวมรายการที่ผู้ใช้เพิ่มใน DynamoDB ภายหลัง
+Legacy repository snapshots and their migration script were removed. Historical versions remain in Git history; current catalog data comes from AWS APIs.
 
 <a id="v1-data-public-data-model-and-validation"></a>
 
@@ -252,13 +249,13 @@ API ภาพรวมอนุญาต `staff`/`executive` และสรุ�
 
 ### การอ่านและเผยแพร่ catalog
 
-หน้าเว็บเรียก `/fetchPartnersData` ก่อน และใช้ `public/data/partner-data-backup.json` เมื่ออ่าน API ไม่สำเร็จ เมื่อเปิด auth integration จะอ่าน `/api/public/records` เพิ่มและรวมด้วย ID backend ส่งเฉพาะฟิลด์ที่อนุญาตสำหรับข้อมูลสาธารณะ ไม่ส่งระเบียนฐานข้อมูลทั้งก้อน
+The page loads `/fetchPartnersData`. If it fails, the page shows a load error and allows retry via Search or filters; no local JSON fallback is used. With auth integration enabled, `/api/public/records` is merged by ID. If this additional API fails, the page warns that the results are incomplete.
 
 `PARTNER_TABLE` แบบแยกใช้ `(id, type)` และไม่นำรายการ `source_state: retired` มาเป็น active record ถ้าพบหลาย active rows ของ ID/ชนิดระเบียนเดียวกัน ตัวอ่านจัดการจะตอบ `AMBIGUOUS_RECORD` แทนการเลือกเอง
 
-Repository ปัจจุบันมี `.github/workflows/lambda-deploy.yml` สำหรับ deploy Python backend แต่ไม่มี workflow sync catalog ต้นทางเข้า DynamoDB อัตโนมัติ การ build/deploy หน้าเว็บหรือแก้ JSON จึงไม่ได้อัปเดตฐานข้อมูลตามไปด้วย การใช้ `migrate.js` รุ่นเก่าต้องตรวจตารางปลายทางและผลกระทบก่อนดำเนินการ
+`.github/workflows/lambda-deploy.yml` deploys Python backend code. Deploying the website does not import or update DynamoDB data. The legacy migration script has been removed.
 
-หากแก้ชุดข้อมูลสาธารณะต้นทาง ต้องปรับ fallback ให้ตรงกันใน changeset เดียวกันและรักษารหัสเดิม ส่วนข้อมูลที่เพิ่มผ่านฟอร์มให้แก้ผ่าน API ที่มีสิทธิ์ ไฟล์ fallback ต้องมีเฉพาะข้อมูลสาธารณะ การใช้ fallback อาจแสดงข้อมูลเก่าจึงต้องคงข้อความแจ้งผู้ใช้ไว้
+Update business data through authorized APIs. Database and document backups must be managed separately from the source repository.
 
 <a id="v1-data-json-structure"></a>
 
@@ -297,7 +294,7 @@ Exchange: exchange-example
 | Form import | `backend/lambda/CSTUHubAuth/backend/form_feedback.py`, `public/assets/form-import-data.js`, `public/assets/form-import-worker.js` |
 | เอกสาร | `backend/lambda/CSTUHubAuth/backend/documents/direct_gateway.py`, `backend/lambda/CSTUHubAuth/backend/documents/direct_storage.py`, `backend/lambda/CSTUHubAuth/backend/documents/direct_validation.py` |
 | Inbox และ Overview | `backend/lambda/CSTUHubAuth/backend/permissions/gateway.py`, `public/assets/feedback-inbox.js`, `public/assets/overview.js` |
-| Public catalog และ fallback | `backend/lambda/fetchPartnersData/index.mjs`, `public/assets/script.js` |
+| Public catalog APIs | `backend/lambda/fetchPartnersData/index.mjs`, `public/assets/script.js` |
 
 <a id="sources"></a>
 

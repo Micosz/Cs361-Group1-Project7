@@ -102,4 +102,4 @@ URL บนเว็บเหมือนเดิม เช่น `/login/` แ�
 ส่วน `npm run build` ใช้ตรวจว่าไฟล์ route มีอยู่
 
 Amplify เรียก `npm run build` ตาม `amplify.yml` และเผยแพร่ `public/` โดยตรง ไม่สร้าง `dist/`; คำสั่ง build ตรวจว่าไฟล์หน้า Login มีอยู่ ปัจจุบันไม่มี frontend test suite ใน `tests/` หรือคำสั่ง `npm test` ใน repository
-ข้อมูลต้นฉบับ `data/partners.json` และ docs อยู่นอก `public/` และไม่ถูกส่งขึ้นเว็บไซต์; ชุดทดสอบ Backend แยกอยู่ใน `backend/tests/`
+Public catalog data is loaded from AWS APIs. Legacy JSON snapshots and the migration script have been removed; API failures show a retry message instead of static data. Backend tests are in `backend/lambda/CSTUHubAuth/backend/tests/`.

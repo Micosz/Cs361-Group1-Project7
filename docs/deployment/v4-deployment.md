@@ -78,7 +78,7 @@ Singapore ถูกเลือกให้บริการหลักอย�
 - ตรวจดัชนี `scope-entity-id` ที่ query ด้วย `scopeEntity` และ TTL attribute ของแต่ละตารางให้ตรงกับระเบียนจริง ไม่เปิด TTL ชื่อเดียวกันทุกตารางโดยอัตโนมัติ
 - ตรวจข้อมูลเดิมและ reference ก่อน migration รักษา ID, scope, version และความสัมพันธ์ระหว่างรายการ
 - การเพิ่ม index, ปรับ capacity หรือเปิด PITR เป็นงาน configuration แยก ไม่ได้เกิดขึ้นจากการปล่อย Lambda
-- ไม่ใช้ `migrate.js` รุ่นเก่าซ้ำโดยไม่ตรวจตารางปลายทางและข้อมูลที่จะถูกเขียนทับ
+- Legacy data snapshots and `migrate.js` have been removed. Deploying code does not modify DynamoDB data.
 
 ## 4. IAM และเอกสารส่วนตัว
 

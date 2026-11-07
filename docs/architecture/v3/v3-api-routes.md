@@ -20,7 +20,7 @@
 
 | การโหลดข้อมูลหน้าหลัก | พฤติกรรม |
 |---|---|
-| Catalog เดิม | เรียก `fetchPartnersData`; หากล้มเหลวใช้ `public/data/partner-data-backup.json` |
+| Catalog เดิม | เรียก `fetchPartnersData`; หากล้มเหลวแสดงข้อผิดพลาดและให้ลองใหม่ ไม่มี static fallback |
 | ข้อมูลสาธารณะเพิ่มเติม | เมื่อเปิดระบบ auth จะเรียก `/api/public/records` มารวมกับ catalog |
 | เส้นทางเรียกใช้ | Catalog เดิมเรียก API Gateway โดยตรง ส่วน `/api/*` เรียกผ่านโดเมนเดียวกับเว็บและ Amplify rewrite |
 

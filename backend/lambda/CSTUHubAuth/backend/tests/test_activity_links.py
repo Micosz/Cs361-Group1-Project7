@@ -1,7 +1,6 @@
 """Small offline #97 suite; storage and #79 policy are explicit test doubles."""
 import copy
 import json
-from pathlib import Path
 import unittest
 
 from backend.relationships.activity_links import (
@@ -105,9 +104,12 @@ class ActivityLinksTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             public_links(self.activity, get_record=unavailable)
 
-    def test_actual_v2_snapshot_preserves_primary_ids_and_unresolved_names(self):
-        path = Path(__file__).resolve().parents[5] / 'public/data/partner-data-backup.json'
-        source = json.loads(path.read_text())
+    def test_legacy_records_preserve_primary_ids_and_unresolved_names(self):
+        source = [
+            {'id': 'partner-example', 'name': 'Example Partner', 'access_level': 'public'},
+            {'id': 'activity-example', 'partnerId': 'partner-example',
+             'visibility': 'public', 'co_hosts': ['Unresolved Example Host']},
+        ]
         partners = {r['id']: r for r in source if 'name' in r}
         activities = [r for r in source if 'partnerId' in r]
         self.assertTrue(activities)
