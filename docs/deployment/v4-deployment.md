@@ -97,21 +97,21 @@ Execution role ต้องมีสิทธิ์ DynamoDB สำหรับ�
 
 | ไฟล์ | หน้าที่ |
 | --- | --- |
-| [public-access-block.json](../../private/s3/public-access-block.json) | เปิด Block Public Access ทั้งสี่ค่า |
-| [ownership-controls.json](../../private/s3/ownership-controls.json) | ใช้ Bucket owner enforced |
-| [encryption.json](../../private/s3/encryption.json) | เข้ารหัส SSE-S3 (`AES256`) |
-| [versioning.json](../../private/s3/versioning.json) | เปิด Versioning สำหรับตรวจและอ่านไฟล์รุ่นที่แน่นอน |
-| [cors.json](../../private/s3/cors.json) | อนุญาต POST/GET/HEAD จาก origin ที่ระบุ; ไฟล์มี origin Singapore และ Sydney เดิม |
-| [bucket-policy-statements.json](../../private/s3/bucket-policy-statements.json) | Statement ปฏิเสธการส่งข้อมูลผ่าน HTTP ตามเงื่อนไขในไฟล์ |
+| [public-access-block.json](../../deploy/s3/public-access-block.json) | เปิด Block Public Access ทั้งสี่ค่า |
+| [ownership-controls.json](../../deploy/s3/ownership-controls.json) | ใช้ Bucket owner enforced |
+| [encryption.json](../../deploy/s3/encryption.json) | เข้ารหัส SSE-S3 (`AES256`) |
+| [versioning.json](../../deploy/s3/versioning.json) | เปิด Versioning สำหรับตรวจและอ่านไฟล์รุ่นที่แน่นอน |
+| [cors.json](../../deploy/s3/cors.json) | อนุญาต POST/GET/HEAD จาก origin ที่ระบุ; ไฟล์มี origin Singapore และ Sydney เดิม |
+| [bucket-policy-statements.json](../../deploy/s3/bucket-policy-statements.json) | Statement ปฏิเสธการส่งข้อมูลผ่าน HTTP ตามเงื่อนไขในไฟล์ |
 | [cstuhub-auth-document-bucket-controls.json](../../deploy/policies/lambda/cstuhub-auth-document-bucket-controls.json) | ให้ execution role เรียก `s3:GetBucketPublicAccessBlock` เฉพาะ bucket เอกสาร |
-| [runtime-version-read-policy.json](../../private/s3/runtime-version-read-policy.json) | เพิ่ม `s3:GetObjectVersion` เฉพาะ `documents/staging/*` และ `documents/ready/*` |
-| [lifecycle-rules.json](../../private/s3/lifecycle-rules.json) | กฎเก็บ staging และรุ่นเก่าของไฟล์ |
+| [runtime-version-read-policy.json](../../deploy/policies/lambda/runtime-version-read-policy.json) | เพิ่ม `s3:GetObjectVersion` เฉพาะ `documents/staging/*` และ `documents/ready/*` |
+| [lifecycle-rules.json](../../deploy/s3/lifecycle-rules.json) | กฎเก็บ staging และรุ่นเก่าของไฟล์ |
 
 JSON เหล่านี้เป็นต้นฉบับ configuration ต้องนำไปตั้งค่าใน AWS แยกจากการ deploy โค้ด รวม statement/rules กับค่าที่มีอยู่ โดยรักษานโยบายอื่นของ bucket และ execution role ไว้ ไฟล์ bucket-controls ให้เฉพาะสิทธิ์ตรวจ Block Public Access ไม่ใช่สิทธิ์ทั้งหมดสำหรับเอกสาร; runtime ยังต้องมี Get/Put/DeleteObject และสิทธิ์อ่าน version ตามเส้นทางใช้งาน
 
 Lifecycle ตั้งให้ staging หมดอายุหลัง 1 วัน และลบรุ่นเก่าของ staging หลังเป็น noncurrent 1 วัน ส่วน ready ลบเฉพาะรุ่นเก่าหลังเป็น noncurrent 90 วัน ไม่ตั้งหมดอายุไฟล์ ready ปัจจุบัน การลบรุ่นเก่าเป็นการลบถาวร จึงต้องตรวจ prefix และไฟล์ที่ metadata ยังอ้างถึงก่อนใช้กฎ ดู [S3 Lifecycle expiration](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html)
 
-Direct upload ส่งไฟล์เข้า staging ด้วย presigned POST แล้วให้ backend ตรวจไฟล์ก่อนย้ายไป ready และบันทึก metadata ไฟล์จริงอยู่ S3; metadata และ `storageVersionId` อยู่ DynamoDB รายละเอียดการทำงานและข้อจำกัดอยู่ใน [Private document storage](../../private/s3/README.md)
+Direct upload ส่งไฟล์เข้า staging ด้วย presigned POST แล้วให้ backend ตรวจไฟล์ก่อนย้ายไป ready และบันทึก metadata ไฟล์จริงอยู่ S3; metadata และ `storageVersionId` อยู่ DynamoDB รายละเอียดการทำงานและข้อจำกัดอยู่ใน [Private document storage](private-document-storage.md)
 
 ## 5. ขั้นตอนปล่อยระบบ
 
@@ -259,7 +259,7 @@ Versioning, replication ไป backup bucket และ DynamoDB PITR มีห�
 | ไฟล์ / โฟลเดอร์ | การใช้งาน |
 | --- | --- |
 | [deploy/](../../deploy/README.md) | สคริปต์และ policy สำหรับ Auth CI/CD |
-| [private/s3/](../../private/s3/README.md) | Configuration และรายละเอียด direct upload |
+| [S3 configuration guide](private-document-storage.md) | Configuration และรายละเอียด direct upload |
 | [Data guide](../data/data-guide.md) | โครงสร้างข้อมูล ความสัมพันธ์ และสิทธิ์ |
 | [V3 deployment](v3-deployment.md) | เอกสาร deployment ของรุ่นก่อน; ใช้คู่มือ V4 สำหรับระบบ Singapore |
 

@@ -23,3 +23,7 @@ at the ZIP root; the AWS handler and deployment verification remain unchanged.
 - `policies/lambda/`: runtime permissions for the Lambda execution role, including [document bucket controls](policies/lambda/cstuhub-auth-document-bucket-controls.json).
 
 These JSON files are configuration references. Moving or committing them does not apply IAM changes to AWS. Runtime policies are applied separately from the code-only deployment script.
+
+## S3 configuration references
+
+[S3 settings](s3/README.md) are grouped separately from Lambda release tooling. See the [private document storage guide](../docs/deployment/private-document-storage.md) for setup and the [historical Sydney checks](../docs/evidence/s3-direct-upload-2026-10-25.md) for recorded evidence. These files are not applied automatically by the current workflow.
