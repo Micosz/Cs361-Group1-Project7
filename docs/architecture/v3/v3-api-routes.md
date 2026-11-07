@@ -92,9 +92,9 @@
 
 | ส่วน | โค้ด |
 |---|---|
-| ประกอบ Lambda และเชื่อมบริการ | [lambda_function.py](../../../backend/lambda_function.py) |
-| เซสชันและ HTTP | [http_api.py](../../../backend/http_api.py) |
-| เส้นทางบัญชี ตัวเลือก และบทบาท | [application.py](../../../backend/application.py) |
-| เส้นทางข้อมูลและสิทธิ์ | [gateway.py](../../../backend/permissions/gateway.py), [policy.py](../../../backend/permissions/policy.py) |
-| ข้อมูลที่อนุญาตให้ส่งกลับ | [projections.py](../../../backend/permissions/projections.py) |
+| ประกอบ Lambda และเชื่อมบริการ | [lambda_function.py](../../../backend/lambda/CSTUHubAuth/backend/lambda_function.py) |
+| เซสชันและ HTTP | [http_api.py](../../../backend/lambda/CSTUHubAuth/backend/http_api.py) |
+| เส้นทางบัญชี ตัวเลือก และบทบาท | [application.py](../../../backend/lambda/CSTUHubAuth/backend/application.py) |
+| เส้นทางข้อมูลและสิทธิ์ | [gateway.py](../../../backend/lambda/CSTUHubAuth/backend/permissions/gateway.py), [policy.py](../../../backend/lambda/CSTUHubAuth/backend/permissions/policy.py) |
+| ข้อมูลที่อนุญาตให้ส่งกลับ | [projections.py](../../../backend/lambda/CSTUHubAuth/backend/permissions/projections.py) |
 | Catalog และข้อมูลสำรอง | [script.js](../../../public/assets/script.js) |

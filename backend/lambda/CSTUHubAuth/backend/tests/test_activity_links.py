@@ -106,7 +106,7 @@ class ActivityLinksTests(unittest.TestCase):
             public_links(self.activity, get_record=unavailable)
 
     def test_actual_v2_snapshot_preserves_primary_ids_and_unresolved_names(self):
-        path = Path(__file__).resolve().parents[2] / 'public/data/partner-data-backup.json'
+        path = Path(__file__).resolve().parents[5] / 'public/data/partner-data-backup.json'
         source = json.loads(path.read_text())
         partners = {r['id']: r for r in source if 'name' in r}
         activities = [r for r in source if 'partnerId' in r]

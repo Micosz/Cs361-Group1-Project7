@@ -4,7 +4,7 @@
 
 มี validators, Partner/Contact create/update/read-back ผ่าน gateway ใน tests, version checks และ process-local idempotency แยก user/kind/parent/key พร้อม `CstuAuth.create` สำหรับ POST/CSRF/Idempotency-Key ในเว็บ; Contact รองรับ DELETE เมื่อส่ง CSRF และ `If-Match` โดยจำกัด staff/coordinator ตาม scope/parent
 
-ยังไม่มีฟอร์ม Partner/Contact, persistent storage, candidate options, real reference/assignee checks หรือการ inject repository ใน `backend/lambda_function.py` Routes และ field permissions ใช้ gateway เดิม ไม่ได้สร้าง API ที่ deploy ใหม่ อย่าต่อ repository นี้กับ Lambda ที่ใช้งานจริง
+ยังไม่มีฟอร์ม Partner/Contact, persistent storage, candidate options, real reference/assignee checks หรือการ inject repository ใน `backend/lambda/CSTUHubAuth/backend/lambda_function.py` Routes และ field permissions ใช้ gateway เดิม ไม่ได้สร้าง API ที่ deploy ใหม่ อย่าต่อ repository นี้กับ Lambda ที่ใช้งานจริง
 
 Activity/History validators เป็นส่วนเตรียม ไม่ใช่ฟีเจอร์ #95/#96 และ repository นี้ปฏิเสธการเขียน resource อื่นนอกจาก Partner/Contact รวม upload ที่ไม่รองรับ ช่วยป้องกันนำ placeholder ไปใช้เป็น feature จริง
 
@@ -17,7 +17,7 @@ Activity/History validators เป็นส่วนเตรียม ไม่
 - ต่อ API/storage จริงและตรวจ HTTPS/direct API allow/deny/read-back โดยไม่เผย contacts ใน Public/backup
 
 ```sh
-python3 -m unittest discover -s backend/tests -p 'test_partner_contact.py' -v
+PYTHONPATH=backend/lambda/CSTUHubAuth python3 -m unittest discover -s backend/lambda/CSTUHubAuth/backend/tests -p 'test_partner_contact.py' -v
 ```
 
 ผลเหล่านี้เป็น local/mock ไม่ใช่ DynamoDB หรือเว็บจริง Issue #94 ยังต้องเปิดจน acceptance ของฟอร์ม/storage/integration พร้อม

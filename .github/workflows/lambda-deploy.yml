@@ -3,18 +3,16 @@ name: Package and deploy Auth Lambda
 on:
   pull_request:
     paths:
-      - 'backend/**'
-      - '!backend/lambda/**'
-      - '!backend/tests/**'
+      - 'backend/lambda/CSTUHubAuth/**'
+      - '!backend/lambda/CSTUHubAuth/backend/tests/**'
       - 'scripts/package-auth-lambda.py'
       - 'deploy/**'
       - '.github/workflows/lambda-deploy.yml'
   push:
     branches: [main]
     paths:
-      - 'backend/**'
-      - '!backend/lambda/**'
-      - '!backend/tests/**'
+      - 'backend/lambda/CSTUHubAuth/**'
+      - '!backend/lambda/CSTUHubAuth/backend/tests/**'
       - 'scripts/package-auth-lambda.py'
       - 'deploy/**'
       - '.github/workflows/lambda-deploy.yml'

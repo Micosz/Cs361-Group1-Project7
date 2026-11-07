@@ -289,14 +289,14 @@ Exchange: exchange-example
 
 | เรื่อง | ไฟล์ใน repository |
 | --- | --- |
-| Runtime และตาราง | `backend/lambda_function.py`, `backend/business/dynamo_repository.py` |
-| ฟิลด์ สิทธิ์ และ public projection | `backend/permissions/policy.py`, `backend/permissions/projections.py` |
-| Validation ธุรกิจ | `backend/business/validation.py`, `backend/partners/validators.py`, `backend/agreements/validators.py` |
-| ความสัมพันธ์กิจกรรม | `backend/relationships/activity_links.py` |
-| Feedback ภายใน/สาธารณะ | `backend/feedback.py`, `backend/application.py`, `backend/business/dynamo_repository.py` |
-| Form import | `backend/form_feedback.py`, `public/assets/form-import-data.js`, `public/assets/form-import-worker.js` |
-| เอกสาร | `backend/documents/direct_gateway.py`, `backend/documents/direct_storage.py`, `backend/documents/direct_validation.py` |
-| Inbox และ Overview | `backend/permissions/gateway.py`, `public/assets/feedback-inbox.js`, `public/assets/overview.js` |
+| Runtime และตาราง | `backend/lambda/CSTUHubAuth/backend/lambda_function.py`, `backend/lambda/CSTUHubAuth/backend/business/dynamo_repository.py` |
+| ฟิลด์ สิทธิ์ และ public projection | `backend/lambda/CSTUHubAuth/backend/permissions/policy.py`, `backend/lambda/CSTUHubAuth/backend/permissions/projections.py` |
+| Validation ธุรกิจ | `backend/lambda/CSTUHubAuth/backend/business/validation.py`, `backend/lambda/CSTUHubAuth/backend/partners/validators.py`, `backend/lambda/CSTUHubAuth/backend/agreements/validators.py` |
+| ความสัมพันธ์กิจกรรม | `backend/lambda/CSTUHubAuth/backend/relationships/activity_links.py` |
+| Feedback ภายใน/สาธารณะ | `backend/lambda/CSTUHubAuth/backend/feedback.py`, `backend/lambda/CSTUHubAuth/backend/application.py`, `backend/lambda/CSTUHubAuth/backend/business/dynamo_repository.py` |
+| Form import | `backend/lambda/CSTUHubAuth/backend/form_feedback.py`, `public/assets/form-import-data.js`, `public/assets/form-import-worker.js` |
+| เอกสาร | `backend/lambda/CSTUHubAuth/backend/documents/direct_gateway.py`, `backend/lambda/CSTUHubAuth/backend/documents/direct_storage.py`, `backend/lambda/CSTUHubAuth/backend/documents/direct_validation.py` |
+| Inbox และ Overview | `backend/lambda/CSTUHubAuth/backend/permissions/gateway.py`, `public/assets/feedback-inbox.js`, `public/assets/overview.js` |
 | Public catalog และ fallback | `backend/lambda/fetchPartnersData/index.mjs`, `public/assets/script.js` |
 
 <a id="sources"></a>

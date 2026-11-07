@@ -1,6 +1,6 @@
 # โค้ดฐานร่วม #82
 
-อ่าน [Data model](../../docs/design/v3-design.md#data-model) และ [API contracts](../../docs/design/v3-design.md#api-flows) สำหรับสัญญากลาง ปัจจุบัน `dynamo_repository.py` เป็น adapter บันทึกถาวรที่ Lambda ใช้เมื่อกำหนด `BUSINESS_TABLE`; การเตรียม storage และขอบเขตผลตรวจอยู่ใน [workspace integration](../../docs/evidence/v3-evidence.md#workspace-83-86-integration)
+อ่าน [Data model](../../../../../docs/design/v3-design.md#data-model) และ [API contracts](../../../../../docs/design/v3-design.md#api-flows) สำหรับสัญญากลาง ปัจจุบัน `dynamo_repository.py` เป็น adapter บันทึกถาวรที่ Lambda ใช้เมื่อกำหนด `BUSINESS_TABLE`; การเตรียม storage และขอบเขตผลตรวจอยู่ใน [workspace integration](../../../../../docs/evidence/v3-evidence.md#workspace-83-86-integration)
 
 ## ใช้ใน adapter ของแต่ละงาน
 
@@ -41,10 +41,10 @@ changes = normalize_payload(kind, action, payload, record=record)
 
 ## Fixtures และตรวจ
 
-`backend/tests/fixtures/partners_activities.py` สร้าง fresh records/context สำหรับ tests มี public/internal Partner, Activity พร้อม protected Agreement, Contact และ History เป็นข้อมูลสมมติทั้งหมด ไม่มีบัญชี Login/seed AWS ใช้ `context('coordinator', user='u-coordinator')`, `context('staff')`, `context('executive')`, ต่าง user/scope หรือ no-role เพื่อเติม tests ของ feature
+`backend/lambda/CSTUHubAuth/backend/tests/fixtures/partners_activities.py` สร้าง fresh records/context สำหรับ tests มี public/internal Partner, Activity พร้อม protected Agreement, Contact และ History เป็นข้อมูลสมมติทั้งหมด ไม่มีบัญชี Login/seed AWS ใช้ `context('coordinator', user='u-coordinator')`, `context('staff')`, `context('executive')`, ต่าง user/scope หรือ no-role เพื่อเติม tests ของ feature
 
 ```sh
-python3 -m unittest discover -s backend/tests -p 'test_business_validation.py' -v
+PYTHONPATH=backend/lambda/CSTUHubAuth python3 -m unittest discover -s backend/lambda/CSTUHubAuth/backend/tests -p 'test_business_validation.py' -v
 ```
 
 ## เว็บสร้างรายการ

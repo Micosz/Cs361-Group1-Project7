@@ -8,6 +8,8 @@ import subprocess
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+SOURCE_ROOT = 'backend/lambda/CSTUHubAuth/'
+PACKAGE_ROOT = SOURCE_ROOT + 'backend/'
 
 
 def git(*args):
@@ -23,18 +25,18 @@ def main():
         parser.error('Keep deployment artifacts outside the repository and public directory')
     if output.exists():
         parser.error('Output already exists; choose a new filename')
-    changed = git('status', '--porcelain', '--untracked-files=all', '--', 'backend').decode().splitlines()
+    changed = git('status', '--porcelain', '--untracked-files=all', '--', PACKAGE_ROOT).decode().splitlines()
     if any(line.endswith('.py') for line in changed):
         parser.error('Commit or preserve backend changes first; packaging uses HEAD only')
     commit = git('rev-parse', 'HEAD').decode().strip()
-    paths = git('ls-tree', '-r', '--name-only', 'HEAD', '--', 'backend').decode().splitlines()
+    paths = git('ls-tree', '-r', '--name-only', 'HEAD', '--', PACKAGE_ROOT).decode().splitlines()
     sources = {}
     for path in paths:
-        if not path.endswith('.py') or path.startswith(('backend/tests/', 'backend/lambda/')):
+        if not path.endswith('.py') or path.startswith(PACKAGE_ROOT + 'tests/'):
             continue
         source = git('show', f'HEAD:{path}')
         ast.parse(source, filename=path)
-        sources[path] = source
+        sources[path.removeprefix(SOURCE_ROOT)] = source
     if 'backend/lambda_function.py' not in sources:
         parser.error('Auth handler source missing')
     output.parent.mkdir(parents=True, exist_ok=True)

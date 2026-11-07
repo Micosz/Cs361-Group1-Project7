@@ -13,3 +13,6 @@
 | [github-auth-deploy.json](policies/github-auth-deploy.json) | สิทธิ์ deploy เฉพาะ CSTUHubAuth |
 
 Artifact เก็บใน GitHub Actions 7 วัน ไม่เก็บ ZIP หรือ credentials ใน repository การแพ็กไม่รวม dependencies ภายนอก ต้องปรับวิธีแพ็กหรือ layer ก่อนเพิ่ม dependency ใหม่
+
+Auth source: `backend/lambda/CSTUHubAuth/backend/`. Packaging preserves `backend/`
+at the ZIP root; the AWS handler and deployment verification remain unchanged.

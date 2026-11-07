@@ -264,3 +264,11 @@ Versioning, replication ไป backup bucket และ DynamoDB PITR มีห�
 | [V3 deployment](v3-deployment.md) | เอกสาร deployment ของรุ่นก่อน; ใช้คู่มือ V4 สำหรับระบบ Singapore |
 
 ไฟล์ JSON policy เก็บแยกเพื่อใช้งานเป็น configuration ได้โดยตรง ส่วนขั้นตอน deploy และแก้ปัญหาทั่วไปใช้เอกสารนี้เป็นหลัก
+
+### CSTUHubAuth source layout
+
+Python source lives in `backend/lambda/CSTUHubAuth/backend/`. The packager strips
+`backend/lambda/CSTUHubAuth/` from ZIP paths, preserving the existing
+`backend.lambda_function.handler` handler. The workflow watches this function
+directory and excludes its tests; other Lambda directories remain separate.
+Run Python tests from `backend/lambda/CSTUHubAuth/`.

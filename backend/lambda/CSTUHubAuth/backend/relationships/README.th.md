@@ -80,7 +80,7 @@ plan = plan_patch(activity, relationship_patch,
 ## ตรวจแบบเล็กและแยก
 
 ```sh
-python3 -m unittest discover -s backend/tests -p 'test_activity_links.py' -v
+PYTHONPATH=backend/lambda/CSTUHubAuth python3 -m unittest discover -s backend/lambda/CSTUHubAuth/backend/tests -p 'test_activity_links.py' -v
 ```
 
 5 tests: link/read/unlink, invalid refs/duplicates/scope, policy boundaries, Public ไม่ fetch agreements + dependency failure, และตรวจ partnerId/co_hosts ของกิจกรรมทุกตัวใน snapshot V2 จริงโดยไม่แก้ source JSON
@@ -93,4 +93,4 @@ Tests ใช้ memory repository และ policy double ไม่ใช่ห�
 
 ## สถานะ integration ล่าสุด
 
-ต่อ shared gateway/projection/durable Activity adapter และฟอร์ม #96 แล้ว ดู [ผลตรวจล่าสุด](../../docs/evidence/v3-evidence.md#activity-links-issue-97) ส่วนข้อจำกัดที่ระบุว่าไม่มี runtime integration ด้านบนเป็นสถานะก่อนรอบ 13 ต.ค. 69 ยังไม่ได้ยืนยัน deployment/AWS จริง
+ต่อ shared gateway/projection/durable Activity adapter และฟอร์ม #96 แล้ว ดู [ผลตรวจล่าสุด](../../../../../docs/evidence/v3-evidence.md#activity-links-issue-97) ส่วนข้อจำกัดที่ระบุว่าไม่มี runtime integration ด้านบนเป็นสถานะก่อนรอบ 13 ต.ค. 69 ยังไม่ได้ยืนยัน deployment/AWS จริง
