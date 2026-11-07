@@ -205,3 +205,12 @@ checks pass. No AWS resources or real user roles were changed by this implementa
 
 ขั้นตอนปล่อย frontend/backend การตรวจสิทธิ์ และการย้อนกลับอยู่ใน
 [คู่มือ Deployment V4](../../../docs/deployment/v4-deployment.md).
+
+## Reorganization validation (2026-11-07)
+
+- Python 3.12: 238 tests, 236 passed; the same two Feedback assertions fail on
+  the original main baseline and after the move (expected 404/422, actual 200).
+- The packaged 42 Python files match original production source byte-for-byte.
+- The ZIP imports `backend.lambda_function.handler` successfully and excludes tests
+  and the other three Lambda functions.
+- No AWS deployment was performed for this branch.
