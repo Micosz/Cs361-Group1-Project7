@@ -11,7 +11,7 @@ from backend.permissions.gateway import WriteConditions
 from backend.partners.validators import validate_exchange_payload
 from backend.partners.repository import ExchangeRepository
 from backend.http_api import handle
-from backend.tests import test_sessions as session_helpers
+import test_sessions as session_helpers
 
 
 class DummyUsers:

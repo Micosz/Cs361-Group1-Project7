@@ -6,11 +6,11 @@ const vm = require('node:vm');
 const crypto = require('node:crypto');
 
 const workNavSource = fs.readFileSync(
-    path.join(__dirname, '..', 'public', 'assets', 'work-navigation.js'),
+    path.join(__dirname, '..', '..', 'public', 'assets', 'work-navigation.js'),
     'utf8'
 );
 const feedbackSource = fs.readFileSync(
-    path.join(__dirname, '..', 'public', 'assets', 'feedback.js'),
+    path.join(__dirname, '..', '..', 'public', 'assets', 'feedback.js'),
     'utf8'
 );
 

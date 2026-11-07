@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from backend.auth.session_service import AuthError, SessionPolicy, SessionService
 from backend.lambda_function import session_policy_from_environment
-from backend.tests.test_sessions import MemoryStore, Users
+from test_sessions import MemoryStore, Users
 
 
 MAIN = "https://main.example.com"

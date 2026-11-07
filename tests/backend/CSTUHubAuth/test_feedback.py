@@ -2,7 +2,7 @@
 import json
 import unittest
 
-from backend.tests import test_workspace_storage as storage_tests
+import test_workspace_storage as storage_tests
 from backend.business.dynamo_repository import DynamoBusinessRepository
 
 

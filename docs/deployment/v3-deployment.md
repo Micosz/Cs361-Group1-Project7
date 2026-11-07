@@ -8,7 +8,7 @@
 
 - Frontend ใช้ `amplify.yml`: รัน `npm run build` แล้วเผยแพร่ไฟล์ใน `public/`; คำสั่ง build ตรวจว่า `public/login/index.html` มีอยู่
 - GitHub Actions ใน `.github/workflows/lambda-deploy.yml` ตรวจ syntax/แพ็ก source และ deploy เฉพาะ `CSTUHubAuth` เมื่อเปลี่ยน Backend แล้ว merge เข้า `main`; ดู [คู่มือ Lambda CI/CD](../../deploy/README.md)
-- ชุดทดสอบ frontend ระดับ root ถูกนำออกแล้ว; ชุดทดสอบ Backend ยังอยู่ใน `backend/tests/` และรันเองได้ด้วยคำสั่งใน [Backend README](../../backend/lambda/CSTUHubAuth/README.md)
+- ชุดทดสอบรวมอยู่ใน `tests/frontend/` และ `tests/backend/CSTUHubAuth/`; ดูคำสั่งรันใน [Tests README](../../tests/README.md)
 - Source ของ Lambda และโครงสร้าง AWS ใน repository ไม่ได้หมายความว่า Lambda/API ถูก deploy อัตโนมัติหรือ config ตรงกับ AWS ปัจจุบัน
 
 ## ก่อน Deploy

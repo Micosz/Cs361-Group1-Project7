@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const publicFeedbackSource = fs.readFileSync(
-    path.join(__dirname, '..', 'public', 'assets', 'public-feedback.js'),
+    path.join(__dirname, '..', '..', 'public', 'assets', 'public-feedback.js'),
     'utf8'
 );
 

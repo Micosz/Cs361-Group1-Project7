@@ -1,6 +1,6 @@
 """Peer Activity domain is used by the durable shared adapter, with AWS doubles."""
 import unittest
-from backend.tests import test_workspace_storage as storage
+import test_workspace_storage as storage
 
 
 class ActivityStorageTests(unittest.TestCase):

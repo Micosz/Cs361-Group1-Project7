@@ -2,11 +2,8 @@
 import copy
 from pathlib import Path
 import secrets
-import sys
 import time
 
-ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT))
 
 from backend.application import AuthApplication
 from backend.auth.accounts import AccountService

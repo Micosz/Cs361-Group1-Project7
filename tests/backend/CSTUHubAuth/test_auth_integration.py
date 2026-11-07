@@ -14,7 +14,7 @@ from backend.auth.roles import RoleService
 from backend.auth.session_service import AuthError, SessionPolicy, SessionService, UserState, COOKIE_NAME
 from backend.auth.tu_provider import LambdaTuProvider
 from backend.auth.dynamo_accounts import DynamoAccounts, DynamoLoginLimiter
-from backend.tests.test_sessions import MemoryStore
+from test_sessions import MemoryStore
 
 
 class Accounts:

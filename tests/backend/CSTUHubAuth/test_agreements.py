@@ -24,7 +24,7 @@ from backend.agreements.validators import (
     validate_date,
 )
 from backend.permissions.projections import public_projection
-from backend.tests import test_sessions as session_helpers
+import test_sessions as session_helpers
 
 
 def user_context(role='staff', scope='c1', user='u1', extra=()):

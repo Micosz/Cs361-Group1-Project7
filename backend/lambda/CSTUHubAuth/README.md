@@ -11,10 +11,9 @@ resources, routing, or frontend authentication are provisioned by this change.
 From the repository root, using Python 3.12+:
 
 ```sh
-cd backend/lambda/CSTUHubAuth
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m unittest discover -s backend/tests -v
+.venv/bin/python -m pip install -r backend/lambda/CSTUHubAuth/requirements.txt
+.venv/bin/python tests/run-backend.py
 ```
 
 The suite uses mocks/stubs and does not call AWS/TU. The Auth workflow checks syntax

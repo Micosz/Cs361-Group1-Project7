@@ -1,6 +1,6 @@
 """History API with the shared transaction adapter and explicit AWS doubles."""
 import unittest
-from backend.tests import test_workspace_storage as storage
+import test_workspace_storage as storage
 
 
 class HistoryIntegrationTests(unittest.TestCase):

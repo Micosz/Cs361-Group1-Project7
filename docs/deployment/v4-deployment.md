@@ -136,7 +136,7 @@ Direct upload ส่งไฟล์เข้า staging ด้วย presigned P
 
 Workflow: [.github/workflows/lambda-deploy.yml](../../.github/workflows/lambda-deploy.yml)
 
-- PR และ push ที่เปลี่ยน Python backend, packager, `deploy/` หรือ workflow จะเข้า pipeline; ไม่รวม `backend/lambda/CSTUHubAuth/backend/tests/**` และโค้ดของ Node.js Lambda อีกสามตัว
+- PR และ push ที่เปลี่ยน Python backend, packager, `deploy/` หรือ workflow จะเข้า pipeline; ไม่รวม `tests/backend/CSTUHubAuth/**` และโค้ดของ Node.js Lambda อีกสามตัว
 - PR ตรวจ syntax และแพ็ก ZIP เท่านั้น ไม่ deploy AWS และไม่รัน test suite
 - Push เข้า `main` ที่ตรง path filter จะแพ็กแล้ว deploy ผ่าน OIDC หรือสั่ง `Run workflow` บน `main` ได้
 - การแก้เฉพาะ docs/frontend ไม่ทำให้ workflow Auth เริ่มอัตโนมัติ

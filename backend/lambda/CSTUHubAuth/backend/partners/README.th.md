@@ -17,7 +17,7 @@ Activity/History validators เป็นส่วนเตรียม ไม่
 - ต่อ API/storage จริงและตรวจ HTTPS/direct API allow/deny/read-back โดยไม่เผย contacts ใน Public/backup
 
 ```sh
-PYTHONPATH=backend/lambda/CSTUHubAuth python3 -m unittest discover -s backend/lambda/CSTUHubAuth/backend/tests -p 'test_partner_contact.py' -v
+python3 tests/run-backend.py -p 'test_partner_contact.py' -v
 ```
 
 ผลเหล่านี้เป็น local/mock ไม่ใช่ DynamoDB หรือเว็บจริง Issue #94 ยังต้องเปิดจน acceptance ของฟอร์ม/storage/integration พร้อม

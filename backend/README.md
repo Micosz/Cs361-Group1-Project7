@@ -16,10 +16,9 @@ directory prefix and includes `backend/` at the ZIP root, excluding tests.
 From the repository root, run Python tests with Python 3.12+:
 
 ```sh
-cd backend/lambda/CSTUHubAuth
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m unittest discover -s backend/tests -v
+.venv/bin/python -m pip install -r backend/lambda/CSTUHubAuth/requirements.txt
+.venv/bin/python tests/run-backend.py
 ```
 
 Deploy packaging is still run from the repository root:

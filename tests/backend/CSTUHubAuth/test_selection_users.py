@@ -57,7 +57,7 @@ class SelectionUsersTests(unittest.TestCase):
 
     def test_public_partner_can_be_linked_without_management_read_or_edit(self):
         from backend.permissions.policy import can_reference, allowed_roles
-        from backend.tests.test_permissions import context, row
+        from test_permissions import context, row
         actor=context('coordinator')
         original=row('partner',key='original',name='Original',publication='public',responsibleUserIds=[])
         self.assertTrue(can_reference(actor,original,'c1'))
@@ -69,7 +69,7 @@ class SelectionUsersTests(unittest.TestCase):
         self.assertFalse(can_reference(context('student'),original,'c1'))
 
     def test_partner_picker_combines_assigned_private_and_public_original_minimal_names(self):
-        from backend.tests.test_permissions import context, row
+        from test_permissions import context, row
         actor=context('coordinator')
         records=[row('partner',key='old',name='Original',publication='public',responsibleUserIds=[]),
                  row('partner',key='assigned',name='Assigned'),

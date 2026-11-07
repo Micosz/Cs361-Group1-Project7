@@ -80,7 +80,7 @@ plan = plan_patch(activity, relationship_patch,
 ## ตรวจแบบเล็กและแยก
 
 ```sh
-PYTHONPATH=backend/lambda/CSTUHubAuth python3 -m unittest discover -s backend/lambda/CSTUHubAuth/backend/tests -p 'test_activity_links.py' -v
+python3 tests/run-backend.py -p 'test_activity_links.py' -v
 ```
 
 5 tests: link/read/unlink, invalid refs/duplicates/scope, policy boundaries, Public ไม่ fetch agreements + dependency failure, และตรวจ partnerId/co_hosts ของกิจกรรมทุกตัวใน snapshot V2 จริงโดยไม่แก้ source JSON

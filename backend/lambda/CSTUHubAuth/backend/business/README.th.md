@@ -41,10 +41,10 @@ changes = normalize_payload(kind, action, payload, record=record)
 
 ## Fixtures และตรวจ
 
-`backend/lambda/CSTUHubAuth/backend/tests/fixtures/partners_activities.py` สร้าง fresh records/context สำหรับ tests มี public/internal Partner, Activity พร้อม protected Agreement, Contact และ History เป็นข้อมูลสมมติทั้งหมด ไม่มีบัญชี Login/seed AWS ใช้ `context('coordinator', user='u-coordinator')`, `context('staff')`, `context('executive')`, ต่าง user/scope หรือ no-role เพื่อเติม tests ของ feature
+`tests/backend/CSTUHubAuth/fixtures/partners_activities.py` สร้าง fresh records/context สำหรับ tests มี public/internal Partner, Activity พร้อม protected Agreement, Contact และ History เป็นข้อมูลสมมติทั้งหมด ไม่มีบัญชี Login/seed AWS ใช้ `context('coordinator', user='u-coordinator')`, `context('staff')`, `context('executive')`, ต่าง user/scope หรือ no-role เพื่อเติม tests ของ feature
 
 ```sh
-PYTHONPATH=backend/lambda/CSTUHubAuth python3 -m unittest discover -s backend/lambda/CSTUHubAuth/backend/tests -p 'test_business_validation.py' -v
+python3 tests/run-backend.py -p 'test_business_validation.py' -v
 ```
 
 ## เว็บสร้างรายการ

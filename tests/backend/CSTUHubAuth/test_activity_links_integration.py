@@ -2,7 +2,7 @@
 import copy
 import json
 import unittest
-from backend.tests import test_workspace_storage as storage
+import test_workspace_storage as storage
 
 
 class ActivityLinksIntegrationTests(unittest.TestCase):

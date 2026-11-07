@@ -4,7 +4,7 @@ from backend.auth.session_service import AuthError
 from backend.business.validation import normalize_payload
 from backend.permissions.policy import validate_fields
 from backend.permissions.projections import public_projection
-from backend.tests.fixtures.partners_activities import context, records
+from fixtures.partners_activities import context, records
 
 
 class BusinessValidationTests(unittest.TestCase):

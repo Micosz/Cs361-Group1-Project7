@@ -11,7 +11,7 @@ from backend.permissions.projections import project, public_projection
 from backend.permissions.gateway import PermissionGateway, public_records, WriteConditions
 from backend.permissions.transactions import transaction_checks, target_condition
 from backend.http_api import handle
-from backend.tests import test_sessions as session_helpers
+import test_sessions as session_helpers
 from backend.auth.session_service import token_hash
 
 
