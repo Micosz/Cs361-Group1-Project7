@@ -89,7 +89,7 @@ Singapore ถูกเลือกให้บริการหลักอย�
 | `CSTUHubGitHubAuthDeployRole` | ให้ GitHub Actions อ่าน configuration, สำรอง version และอัปเดตโค้ดเฉพาะ `CSTUHubAuth` |
 | Execution role ของ `CSTUHubAuth` เช่น `CSTUHubAuthExecutionRole` | ให้โค้ดทำงานกับตาราง, bucket, `tuAuthLogin` และ CloudWatch Logs ตามสิทธิ์ที่จำเป็น |
 
-ตั้ง GitHub OIDC ด้วย provider `token.actions.githubusercontent.com` และ audience `sts.amazonaws.com` ใช้ [trust policy](../../deploy/policies/github-auth-trust.json) และ [deploy policy](../../deploy/policies/github-auth-deploy.json) ของโครงการ ค่า subject ในไฟล์ trust ผูกกับ repository และ branch `main` ของโครงการโดยเฉพาะ ต้องตรวจ subject ที่ GitHub ออกให้ก่อนเปลี่ยนรูปแบบหรือเพิ่ม GitHub Environment
+ตั้ง GitHub OIDC ด้วย provider `token.actions.githubusercontent.com` และ audience `sts.amazonaws.com` ใช้ [trust policy](../../deploy/policies/github/github-auth-trust.json) และ [deploy policy](../../deploy/policies/github/github-auth-deploy.json) ของโครงการ ค่า subject ในไฟล์ trust ผูกกับ repository และ branch `main` ของโครงการโดยเฉพาะ ต้องตรวจ subject ที่ GitHub ออกให้ก่อนเปลี่ยนรูปแบบหรือเพิ่ม GitHub Environment
 
 Execution role ต้องมีสิทธิ์ DynamoDB สำหรับการอ่าน/เขียนและ `ConditionCheckItem` บนตารางที่ระบบใช้ รวมถึงสิทธิ์ index เมื่อ query ผ่าน GSI การเพิ่มสิทธิ์ให้ deploy role ไม่ได้แก้สิทธิ์ runtime ของ Lambda
 
@@ -103,7 +103,7 @@ Execution role ต้องมีสิทธิ์ DynamoDB สำหรับ�
 | [versioning.json](../../private/s3/versioning.json) | เปิด Versioning สำหรับตรวจและอ่านไฟล์รุ่นที่แน่นอน |
 | [cors.json](../../private/s3/cors.json) | อนุญาต POST/GET/HEAD จาก origin ที่ระบุ; ไฟล์มี origin Singapore และ Sydney เดิม |
 | [bucket-policy-statements.json](../../private/s3/bucket-policy-statements.json) | Statement ปฏิเสธการส่งข้อมูลผ่าน HTTP ตามเงื่อนไขในไฟล์ |
-| [cstuhub-auth-document-bucket-controls.json](policies/cstuhub-auth-document-bucket-controls.json) | ให้ execution role เรียก `s3:GetBucketPublicAccessBlock` เฉพาะ bucket เอกสาร |
+| [cstuhub-auth-document-bucket-controls.json](../../deploy/policies/lambda/cstuhub-auth-document-bucket-controls.json) | ให้ execution role เรียก `s3:GetBucketPublicAccessBlock` เฉพาะ bucket เอกสาร |
 | [runtime-version-read-policy.json](../../private/s3/runtime-version-read-policy.json) | เพิ่ม `s3:GetObjectVersion` เฉพาะ `documents/staging/*` และ `documents/ready/*` |
 | [lifecycle-rules.json](../../private/s3/lifecycle-rules.json) | กฎเก็บ staging และรุ่นเก่าของไฟล์ |
 

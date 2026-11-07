@@ -34,7 +34,7 @@
 `781485979426` พบว่ามีสิทธิ์อ่าน/เขียน/ลบ object ใน bucket เอกสารแล้ว แต่ขาด action ตรวจ bucket นี้
 ทำให้ Lambda ตอบ `PERMISSION_UNAVAILABLE` เมื่ออัปโหลดไฟล์แนบ
 
-เพิ่ม policy จาก [cstuhub-auth-document-bucket-controls.json](policies/cstuhub-auth-document-bucket-controls.json)
+เพิ่ม policy จาก [cstuhub-auth-document-bucket-controls.json](../../deploy/policies/lambda/cstuhub-auth-document-bucket-controls.json)
 เป็น policy แบบ additive ให้ role เดิม โดยคง inline policy `CSTUHubAuthRuntime` ไว้ เพราะมีสิทธิ์ DynamoDB
 และ action อื่นที่ระบบใช้อยู่ การ merge source ไม่เปลี่ยน IAM บน AWS; ผู้ดูแลต้องแนบ policy ใน Console
 แล้วทดสอบอัปโหลดใหม่ก่อนถือว่าแก้ปัญหาบนเว็บแล้ว
