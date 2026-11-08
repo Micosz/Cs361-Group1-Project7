@@ -6,7 +6,7 @@ page = page.replace('<title>CSTUHub - Information Board</title>', '<title>หน
  .replace(/    <div class="hero-scroll">[\s\S]*?(?=    <div class="board-scene">)/, '')
  .replace(/    <script src="assets\/(opening|constellation|header-motion)\.js[^>]*><\/script>\n/g, '')
  .replace('</head>', '<link rel="stylesheet" href="assets/work-home.css?v=workflow-1">\n</head>');
-page = page.replace('    <script src="assets/role-home.js?v=work-logout-1" defer></script>', [
+page = page.replace('    <script src="assets/role-home.js?v=student-shortcut-1" defer></script>', [
  '    <script src="assets/proposal-avatars.js?v=1" defer></script>',
  '    <script src="assets/proposal-flow.js?v=1" defer></script>',
  '    <script src="assets/proposal-board.js?v=workflow-1" defer></script>',
