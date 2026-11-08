@@ -8,7 +8,7 @@ CSTUHub ใช้ AWS Singapore (`ap-southeast-1`) สำหรับ production
 | --- | --- | --- |
 | `<trial>-frontend` | Amplify Hosting app/branch แยกจาก Git และ bucket เก็บ ZIP แบบ versioned ใช้ `TrialName` และเปิด `ConnectBackend` หลัง Backend พร้อม | `AppId`, `Origin`, `ArtifactBucket` |
 | `<trial>-data` | DynamoDB หกตารางและ S3 เอกสาร ใช้ `TrialName` และ `DocumentOrigin` จาก Amplify | ชื่อตารางหกตัวและ bucket ส่งให้ Backend ผ่าน CloudFormation exports |
-| `<trial>-backend` | Lambda สี่ตัว, execution roles สามตัว, HTTP API และ permission ของแต่ละ route ใช้ exports ของ Data, origin, version ของ ZIP ทั้งสี่ และ version ของ secret ทดลอง | `ApiEndpoint` พร้อม stage `default` ส่งให้ Amplify, `PublicFunctionName` ใช้ตรวจ Lambda ที่ไม่มี route |
+| `<trial>-backend` | Lambda สี่ตัว, execution roles สามตัว, log groups ของ trial, HTTP API และ permission ของแต่ละ route ใช้ exports ของ Data, origin, version ของ ZIP ทั้งสี่ และ version ของ secret ทดลอง | `ApiEndpoint` พร้อม stage `default` ส่งให้ Amplify, `PublicFunctionName` ใช้ตรวจ Lambda ที่ไม่มี route |
 
 ใช้ CloudFormation โดยตรงเพื่อแสดงทรัพยากรและผลใน Change Set ตามบท Module 11 และ Guided Lab ของ CS361 และใช้ ZIP ที่สคริปต์เดิมสร้างอยู่แล้ว ลำดับสร้างคือ Frontend รอบแรก → Data → seed/อัปโหลด ZIP → Backend → Frontend รอบต่อเพื่อผูก rewrite การแยก Data ทำให้ทบทวนการเปลี่ยน schema และ retention แยกจากการเปลี่ยน API หรือโค้ด
 

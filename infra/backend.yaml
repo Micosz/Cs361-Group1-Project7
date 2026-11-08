@@ -49,6 +49,16 @@ Conditions:
   UseCourseAccounts: !Equals [!Ref CourseTestEnabled, 'true']
 
 Resources:
+  TrialLogPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: [logs:CreateLogStream, logs:PutLogEvents]
+            Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${TrialName}-*:log-stream:*'
+
   AuthRole:
     Type: AWS::IAM::Role
     Properties:
@@ -60,7 +70,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Ref TrialLogPolicy
       Policies:
         - PolicyName: TrialAuthRuntime
           PolicyDocument:
@@ -113,7 +123,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Ref TrialLogPolicy
 
   CatalogRole:
     Type: AWS::IAM::Role
@@ -126,7 +136,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Ref TrialLogPolicy
       Policies:
         - PolicyName: TrialCatalogRuntime
           PolicyDocument:
@@ -135,6 +145,12 @@ Resources:
               - Effect: Allow
                 Action: dynamodb:Scan
                 Resource: !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TrialName}-partners'
+
+  AuthLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${TrialName}-CSTUHubAuth'
+      RetentionInDays: 7
 
   AuthFunction:
     Type: AWS::Lambda::Function
@@ -146,6 +162,8 @@ Resources:
       MemorySize: 256
       Timeout: 90
       Role: !GetAtt AuthRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref AuthLogs
       Code:
         S3Bucket: !Ref ArtifactBucket
         S3Key: !Sub '${ArtifactPrefix}/CSTUHubAuth.zip'
@@ -179,6 +197,12 @@ Resources:
             - !Sub '{{resolve:secretsmanager:${TrialName}/auth:SecretString:courseAccounts::${AuthSecretVersion}}}'
             - !Ref AWS::NoValue
 
+  TuLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${TrialName}-tuAuthLogin'
+      RetentionInDays: 7
+
   TuFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -188,10 +212,18 @@ Resources:
       Architectures: [arm64]
       Timeout: 15
       Role: !GetAtt TuRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref TuLogs
       Code:
         S3Bucket: !Ref ArtifactBucket
         S3Key: !Sub '${ArtifactPrefix}/tuAuthLogin.zip'
         S3ObjectVersion: !Ref TuZipVersion
+
+  FetchLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${TrialName}-fetchPartnersData'
+      RetentionInDays: 7
 
   FetchFunction:
     Type: AWS::Lambda::Function
@@ -202,6 +234,8 @@ Resources:
       Architectures: [x86_64]
       Timeout: 3
       Role: !GetAtt CatalogRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref FetchLogs
       Code:
         S3Bucket: !Ref ArtifactBucket
         S3Key: !Sub '${ArtifactPrefix}/fetchPartnersData.zip'
@@ -210,6 +244,12 @@ Resources:
         Variables:
           PARTNER_TABLE:
             Fn::ImportValue: !Sub '${TrialName}-data-PartnerTable'
+
+  PublicLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${TrialName}-getPublicPartners'
+      RetentionInDays: 7
 
   PublicFunction:
     Type: AWS::Lambda::Function
@@ -220,6 +260,8 @@ Resources:
       Architectures: [arm64]
       Timeout: 3
       Role: !GetAtt CatalogRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref PublicLogs
       Code:
         S3Bucket: !Ref ArtifactBucket
         S3Key: !Sub '${ArtifactPrefix}/getPublicPartners.zip'
