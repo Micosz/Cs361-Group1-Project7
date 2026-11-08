@@ -1,14 +1,21 @@
 {
   "Version": "2012-10-17",
-  "Statement": [{
-    "Sid": "ReleaseAuthCodeOnly",
-    "Effect": "Allow",
-    "Action": [
-      "lambda:GetFunctionConfiguration",
-      "lambda:ListVersionsByFunction",
-      "lambda:UpdateFunctionCode",
-      "lambda:PublishVersion"
-    ],
-    "Resource": "arn:aws:lambda:ap-southeast-1:781485979426:function:CSTUHubAuth"
-  }]
+  "Statement": [
+    {
+      "Sid": "ReleaseFourLambdaCodeOnly",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:GetFunctionConfiguration",
+        "lambda:ListVersionsByFunction",
+        "lambda:UpdateFunctionCode",
+        "lambda:PublishVersion"
+      ],
+      "Resource": [
+        "arn:aws:lambda:ap-southeast-1:781485979426:function:CSTUHubAuth",
+        "arn:aws:lambda:ap-southeast-1:781485979426:function:tuAuthLogin",
+        "arn:aws:lambda:ap-southeast-1:781485979426:function:fetchPartnersData",
+        "arn:aws:lambda:ap-southeast-1:781485979426:function:getPublicPartners"
+      ]
+    }
+  ]
 }
