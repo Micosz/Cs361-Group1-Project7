@@ -40,7 +40,7 @@
                     location.replace('work.html' + location.search + location.hash); return;
                 }
                 if (session?.user && window.CstuWork.roles(session).includes('student') && !internal && !document.getElementById('student-home-link')) {
-                    const shortcut = link('โครงการแลกเปลี่ยนของฉัน','index.html?kind=exchanges#board-section','ดูโครงการและเอกสารที่คุณเข้าร่วม');
+                    const shortcut = link('โครงการแลกเปลี่ยนของฉัน','index.html?kind=exchanges#board-section');
                     shortcut.id = 'student-home-link'; shortcut.className = 'hero-btn';
                     document.querySelector('.hero-content')?.append(shortcut);
                 }

@@ -231,6 +231,9 @@
             if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
             event.preventDefault();
             finish();
+            if (!document.getElementById('tabCollab')?.classList.contains('active')) {
+                window.CstuRecords?.open('partners');
+            }
             if (window.location.hash !== '#board-section') {
                 try { window.history.pushState(null, '', '#board-section'); }
                 catch { /* Some local file previews disallow History API updates. */ }

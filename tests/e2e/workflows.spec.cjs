@@ -54,6 +54,44 @@ test('successful student login returns to public home without storing credential
   await expect(page.locator('#student-home-link')).toBeVisible();
   expect(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).not.toMatch(/dummy-password|test-account/);
 });
+test('student mobile header and welcome shortcut work at narrow widths', async ({page}) => {
+  await page.setViewportSize({width:483,height:707});
+  await fixture(page, 'student');
+  await page.goto('/index.html');
+  const brand = page.locator('.navbar .logo');
+  const account = page.locator('.navbar .account-summary');
+  const menu = page.getByRole('button', {name:'Menu', exact:true});
+  const search = page.locator('.navbar .search-wrapper');
+  await expect(account).toContainText('Student');
+  await expect(menu).toBeVisible();
+  for (const width of [483, 320]) {
+    await page.setViewportSize({width,height:707});
+    const [logoBox, accountBox, menuBox, searchBox] = await Promise.all(
+      [brand, account, menu, search].map(control => control.boundingBox()));
+    expect(logoBox.y + logoBox.height / 2).toBeGreaterThan(accountBox.y);
+    expect(logoBox.y + logoBox.height / 2).toBeLessThan(accountBox.y + accountBox.height);
+    expect(accountBox.x + accountBox.width).toBeLessThan(menuBox.x);
+    expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(width);
+    expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(searchBox.y);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  }
+  await menu.click();
+  const dialog = page.getByRole('dialog', {name:'เมนูตามสิทธิ์'});
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', {name:/Close/}).click();
+  await expect(dialog).toBeHidden();
+
+  const shortcut = page.locator('#student-home-link');
+  await expect(shortcut).toHaveText('โครงการแลกเปลี่ยนของฉัน');
+  await shortcut.click();
+  await expect(page.locator('#tabExchange')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('link', {name:/เริ่มต้นเลย/}).click();
+  await expect(page).toHaveURL(/#board-section$/);
+  await expect(page.locator('#tabCollab')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#tabExchange')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#tabCollab')).toBeInViewport();
+});
+
 for (const role of ['coordinator','staff','executive']) test(`${role} gets internal navigation and create actions`, async ({page}) => {
   await fixture(page, role); await page.goto('/index.html'); await expect(page).toHaveURL(/work.html/);
   await expect(page.locator('#work-nav')).toContainText('คู่ความร่วมมือ');
