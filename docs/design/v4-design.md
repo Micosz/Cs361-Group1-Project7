@@ -87,8 +87,7 @@
 | [overview.js](../../public/assets/overview.js) / [overview.css](../../public/assets/overview.css) | หน้า Summary และ Stakeholder รวมกราฟและการจัดวาง |
 | [feedback-inbox.js](../../public/assets/feedback-inbox.js) / [feedback-inbox.css](../../public/assets/feedback-inbox.css) | รายการ Feedback ตัวกรอง และข้อความสรุป |
 | [index.html](../../public/index.html) | จุดเชื่อมหน้าเว็บและไฟล์ประกอบ |
-| [Design QA](../../design-qa.md) | รายละเอียดผลตรวจและข้อจำกัดของแต่ละรอบย้อนหลัง |
 
-ภาพทั้ง 7 ภาพเก็บใต้ `v4/overview/` และ `v4/stakeholder/` โดย `selected-design` เป็นภาพออกแบบ ส่วน `desktop`, `mobile` และ `feedback` เป็นภาพตรวจหน้าเว็บในเครื่อง รายงาน QA เดิมเก็บไว้เป็นหลักฐานย้อนหลัง; ข้อความอ้างแท็บ Feedback ในการตรวจ Overview รอบเก่าถูกแทนที่ด้วยแนวทาง Inbox ในหัวข้อ 4
+ภาพทั้ง 7 ภาพเก็บใต้ `v4/overview/` และ `v4/stakeholder/` โดย `selected-design` เป็นภาพออกแบบ ส่วน `desktop`, `mobile` และ `feedback` เป็นภาพตรวจหน้าเว็บในเครื่อง รายงาน QA เดิมถูกนำออกจากไฟล์ปัจจุบันแล้ว และยังย้อนดูได้จากประวัติ Git; แนวทาง Feedback ปัจจุบันอยู่ในหัวข้อ 4
 
 งานจัดเอกสารนี้ไม่ทดสอบระบบจริงหรือยืนยันผล QA เดิมซ้ำ โครงสร้างข้อมูลและสิทธิ์อ่านต่อได้ใน [Data guide](../data/data-guide.md) ส่วนขั้นตอนปล่อยระบบอยู่ใน [Deployment V4](../deployment/v4-deployment.md)
