@@ -5,6 +5,11 @@ Parameters:
   TrialName:
     Type: String
     AllowedPattern: 'cstuhub-iac-[a-z0-9]([a-z0-9-]{0,16}[a-z0-9])?'
+  CreateHosting:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['false', 'true']
+    Description: Create a separate Amplify app for the trial.
   ConnectBackend:
     Type: String
     Default: 'false'
@@ -12,6 +17,7 @@ Parameters:
     Description: Set true after creating the same trial's backend stack.
 
 Conditions:
+  HasHosting: !Equals [!Ref CreateHosting, 'true']
   HasBackend: !Equals [!Ref ConnectBackend, 'true']
 
 Resources:
@@ -37,6 +43,7 @@ Resources:
               SSEAlgorithm: AES256
 
   HostingApp:
+    Condition: HasHosting
     Type: AWS::Amplify::App
     Properties:
       Name: !Sub '${TrialName}-hosting'
@@ -67,6 +74,7 @@ Resources:
                 value: 'private, no-store'
 
   TrialBranch:
+    Condition: HasHosting
     Type: AWS::Amplify::Branch
     Properties:
       AppId: !GetAtt HostingApp.AppId
@@ -76,8 +84,10 @@ Resources:
 
 Outputs:
   AppId:
+    Condition: HasHosting
     Value: !GetAtt HostingApp.AppId
   Origin:
+    Condition: HasHosting
     Value: !Sub 'https://trial.${HostingApp.DefaultDomain}'
   ArtifactBucket:
     Value: !Ref ArtifactBucket

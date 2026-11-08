@@ -114,6 +114,17 @@ python infra/trial-smoke.py verify "$TRIAL" --profile "$AWS_PROFILE" \
 
 ตรวจผล catalog ผ่าน Amplify และ `getPublicPartners` แบบ invoke ตรวจว่า TU adapter คืนสถานะ configuration unavailable จากชุดทดลอง และตรวจ anonymous → login → refresh session → logout ด้วยผู้ใช้จำลอง เปิดหน้า trial และลองค้นหา `V5 Smoke Public Partner` ถ้าต้องการหลักฐาน browser เพิ่มจาก API smoke
 
+### ทดสอบผ่าน API เมื่อบัญชีสร้าง Amplify app เพิ่มไม่ได้
+
+หาก AWS ตอบ `ServiceLimitExceeded` ที่ `AWS::Amplify::App` ให้เก็บผล rollback แล้วใช้ `CreateHosting=false ConnectBackend=false` ตอนสร้าง Frontend Stack เพื่อสร้างเฉพาะ bucket สำหรับ artifact ตั้ง `DocumentOrigin` และ `SessionOrigin` เป็น `https://trial.cstuhub.invalid` ซึ่งใช้เป็นค่า Origin จำลองสำหรับตรวจ CSRF ทำขั้น seed, upload ZIP และ Backend ตามเดิม แล้วทดสอบด้วยคำสั่งนี้
+
+```bash
+python infra/trial-smoke.py verify "$TRIAL" --profile "$AWS_PROFILE" \
+  --account "$ACCOUNT" --password-file "$work_dir/synthetic-password" --direct-api
+```
+
+ใช้คำสั่งเดียวกันก่อนและหลังอัปเดต stage จากนั้นลบ stack และตรวจ retention ตามขั้นถัดไป ผลนี้ยืนยันเส้นทาง API Gateway, Lambda และข้อมูลของ trial การทดสอบ Amplify Hosting และ rewrite ต้องสร้าง app แยกและรันขั้นตอนปกติเมื่อมีโควตา
+
 ## 3. Update, verify และ cleanup
 
 1. สร้าง Backend Change Set จากพารามิเตอร์เดิม เปลี่ยน `ApiRateLimit=10` เป็น `ApiRateLimit=8` ตรวจว่าเปลี่ยนเฉพาะ stage และไม่มี replacement จึง execute และรอ `UPDATE_COMPLETE`

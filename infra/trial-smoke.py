@@ -18,6 +18,7 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
 REGION = 'ap-southeast-1'
+DIRECT_ORIGIN = 'https://trial.cstuhub.invalid'
 TRIAL_PATTERN = r'cstuhub-iac-[a-z0-9](?:[a-z0-9-]{0,16}[a-z0-9])?'
 USERNAME = 'course.v5-smoke'
 USER_ID = '4551ad71-509b-4ee0-a2b3-bf8d870811ac'
@@ -156,15 +157,24 @@ def invoke_json(lambdas, name, event):
     return response['statusCode'], json.loads(response['body'])
 
 
-def verify(session, trial, password):
-    _, _, origin = hosting(session, trial)
+def verify(session, trial, password, direct_api=False):
+    if direct_api:
+        endpoint = outputs(session, f'{trial}-backend')['ApiEndpoint']
+        if not re.fullmatch(r'https://[a-z0-9]+\.execute-api\.ap-southeast-1\.amazonaws\.com/default', endpoint):
+            raise ValueError('Unexpected trial API endpoint.')
+        origin = DIRECT_ORIGIN
+        transport = 'API Gateway'
+    else:
+        _, _, origin = hosting(session, trial)
+        endpoint = origin
+        transport = 'the Amplify rewrite'
     opener = build_opener(NoRedirect(), HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
     def request(path, data=None, csrf=None):
         headers = {'Cache-Control': 'no-cache'}
         if data is not None:
             headers.update({'Content-Type': 'application/json', 'Origin': origin, 'X-CSRF-Token': csrf})
-        req = Request(origin + path, data=None if data is None else json.dumps(data).encode(), headers=headers)
+        req = Request(endpoint + path, data=None if data is None else json.dumps(data).encode(), headers=headers)
         try:
             with opener.open(req, timeout=25) as result:
                 if result.headers.get_content_type() != 'application/json':
@@ -183,7 +193,7 @@ def verify(session, trial, password):
     if status != 200:
         raise ValueError('Direct invocation of getPublicPartners failed.')
     check_catalog(direct)
-    print('Catalog rewrite and direct Lambda returned only the public fixture.')
+    print(f'Catalog via {transport} and direct Lambda returned only the public fixture.')
 
     tu_event = dict(httpMethod='POST', body=json.dumps(dict(UserName='v5-fixture', PassWord='synthetic-only')))
     status, adapter = invoke_json(lambdas, f'{trial}-tuAuthLogin', tu_event)
@@ -199,7 +209,7 @@ def verify(session, trial, password):
     request('/api/auth/logout', {}, current['csrfToken'])
     if request('/api/auth/session').get('user') is not None:
         raise ValueError('Trial logout left an authenticated session.')
-    print('Synthetic login, session and logout passed through the Amplify rewrite.')
+    print(f'Synthetic login, session and logout passed through {transport}.')
 
 
 def main():
@@ -209,10 +219,13 @@ def main():
     parser.add_argument('--profile', required=True)
     parser.add_argument('--account', required=True, help='Expected 12-digit AWS account ID')
     parser.add_argument('--password-file', type=Path, help='Optional local file outside the checkout')
+    parser.add_argument('--direct-api', action='store_true', help='Verify an API-only trial without Amplify')
     parser.add_argument('--archive', type=Path, help='Static frontend ZIP for publish')
     args = parser.parse_args()
     if not re.fullmatch(TRIAL_PATTERN, args.trial) or not re.fullmatch(r'[0-9]{12}', args.account):
         parser.error('Expected a cstuhub-iac- trial name and a 12-digit account.')
+    if args.direct_api and args.action != 'verify':
+        parser.error('--direct-api is available only for verify.')
     if args.action == 'publish' and args.archive is None:
         parser.error('publish requires --archive.')
 
@@ -230,7 +243,7 @@ def main():
         if args.action == 'seed':
             seed(session, args.trial, password, args.account)
         else:
-            verify(session, args.trial, password)
+            verify(session, args.trial, password, args.direct_api)
     except ClientError as error:
         parser.exit(1, f'AWS operation failed: {error.response["Error"]["Code"]}\n')
     except BotoCoreError as error:
