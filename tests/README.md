@@ -74,3 +74,5 @@ ZIP checks use a temporary Git repository, package committed Python source, impo
 CI runs on every PR and pushes to `main`/`SetupTest`. Both code and browser jobs must pass before packaging; production Auth deployment additionally requires main and a non-PR event. Test jobs have no AWS credentials. Amplify preBuild runs frontend and Node Lambda tests before building. Full merge enforcement still requires repository branch protection to mark CI checks required; this change does not modify repository rules or enable deployment of the other three Lambdas.
 
 Updated old UI assertions follow separate public/work pages and the shared public Feedback component. API assertions reflect partner Feedback and scoped coordinator Inbox support while retaining cross-scope/author restrictions. A real regression found by the new tests was fixed: getPublicPartners now reads every DynamoDB scan page, handles absent Items, and excludes retired records.
+
+Browser fixtures use the supported reduced-motion preference to keep functional checks independent of decorative scroll animation timing. Animation appearance is not covered by these checks.

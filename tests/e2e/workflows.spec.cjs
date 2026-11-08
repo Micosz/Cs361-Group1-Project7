@@ -27,6 +27,7 @@ async function fixture(page, role, failLogin = false) {
 }
 test('public catalog renders, searches, and opens detail in a real browser', async ({page}) => {
   await fixture(page); await page.goto('/index.html');
+  await page.locator('.hero-btn[href="#board-section"]').click();
   const grid=page.locator('#collaboratorGrid');
   await expect(grid).toContainText('Alpha University'); await expect(grid).toContainText('Beta Company');
   await page.locator('#filterCollab').selectOption('university');
@@ -84,7 +85,9 @@ test('public feedback validates category, retries with the same key and renders 
     return route.fulfill({status:201,json:{data:rows[0]}});
   });
   await page.goto('/index.html');
+  await page.locator('.hero-btn[href="#board-section"]').click();
   await page.locator('#collaboratorGrid').getByRole('button', {name:'Alpha University', exact:true}).click();
+  await page.locator('#detailModal').getByRole('tab', {name:'ความคิดเห็น', exact:true}).click();
   const form=page.locator('#detailModal .public-comment-composer');
   await form.getByRole('textbox').fill('<img src=x onerror=alert(1)> Useful feedback');
   await form.getByRole('button',{name:'ส่งความคิดเห็น'}).click();

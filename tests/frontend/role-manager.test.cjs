@@ -70,7 +70,7 @@ test('executive grant confers scoped role management in auth-client and role-men
  await new Promise(r=>setTimeout(r,20));
  const labels=nodes['role-menu-links'].children.map(link=>link.children[0].textContent);
  assert.deepEqual(labels,[]);
- assert.ok(nodes.authNavButtons.children.some(node=>node.href==='work.html')); 
+ assert.ok(nodes.authNavButtons.children.some(node=>node.href==='work.html'));
  const badges=nodes['role-menu-account'].children[1].children.map(span=>span.textContent);
  assert.deepEqual(badges,['Executive · cs-demo','จัดการสิทธิ์ · cs-demo']);
 });
