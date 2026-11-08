@@ -89,10 +89,8 @@ class ReleaseTests(unittest.TestCase):
             if action in ('update-function-code','wait'):return {}
             raise AssertionError((service,args))
         self.calls=calls
-        with patch.object(self.module,'aws',side_effect=aws),patch.object(self.module.subprocess,'check_output',return_value=((remote or self.sha)+' refs/heads/main\n').encode()),patch.object(sys,'argv',['deploy',str(self.zip),self.sha]),patch.object(self.module,'summary'):
-            # subprocess text=True must return str, as the real CLI does.
-            with patch.object(self.module.subprocess,'check_output',return_value=(remote or self.sha)+' refs/heads/main\n'):
-                self.module.main()
+        with patch.object(self.module,'aws',side_effect=aws),patch.object(self.module.subprocess,'check_output',return_value=(remote or self.sha)+' refs/heads/main\n'),patch.object(sys,'argv',['deploy',str(self.zip),self.sha]),patch.object(self.module,'summary'):
+            self.module.main()
         return calls
     def test_success_backs_up_before_revision_guarded_update(self):
         calls=self.run_release();actions=[x[1] for x in calls]
