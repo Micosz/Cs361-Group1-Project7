@@ -57,7 +57,7 @@ test('executive grant confers scoped role management in auth-client and role-men
   'role-menu-status':mkNode('p'),'role-menu-logout':mkNode('button'),'role-menu-account':mkNode('div'),'close-role-menu':mkNode('button')};
  const session={user:{id:'u-exec',displayName:'สุทธิพจน์ ทดสอบ',accountType:'tu'},
   grants:[{role:'executive',scopeId:'cs-demo'}],capabilities:[],csrfToken:'a'.repeat(64)};
- const ctx={window:null,document:{getElementById:id=>nodes[id]||mkNode('div'),createElement:mkNode,body:{style:{}}},
+ const ctx={window:null,document:{getElementById:id=>nodes[id]||mkNode('div'),createElement:mkNode,body:{style:{},classList:{contains:()=>false}}},
   CSTU_AUTH_CONFIG:{enabled:true},fetch:async()=>({ok:true,status:200,text:async()=>JSON.stringify(session),headers:{get:()=>'application/json'}}),
   AbortController,setTimeout,clearTimeout,Event,matchMedia:()=>({matches:true}),addEventListener(){}};
  ctx.window=ctx;
@@ -69,7 +69,8 @@ test('executive grant confers scoped role management in auth-client and role-men
  vm.runInContext(menuSource,ctx);
  await new Promise(r=>setTimeout(r,20));
  const labels=nodes['role-menu-links'].children.map(link=>link.children[0].textContent);
- assert.deepEqual(labels,['รวม Feedback','จัดการสิทธิ์ผู้ใช้']);
+ assert.deepEqual(labels,[]);
+ assert.ok(nodes.authNavButtons.children.some(node=>node.href==='work.html')); 
  const badges=nodes['role-menu-account'].children[1].children.map(span=>span.textContent);
  assert.deepEqual(badges,['Executive · cs-demo','จัดการสิทธิ์ · cs-demo']);
 });
@@ -88,7 +89,7 @@ test('executive has all scoped staff navigation, create/edit permissions, and ro
   grants:[{role:'executive',scopeId:'cs-demo',active:true}],capabilities:[],csrfToken:'a'.repeat(64)};
  const staffSession={user:{id:'u-staff',displayName:'เจ้าหน้าที่ ทดสอบ',accountType:'tu'},
   grants:[{role:'staff',scopeId:'cs-demo',active:true}],capabilities:[],csrfToken:'a'.repeat(64)};
- const ctx={window:null,document:{getElementById:id=>nodes[id]||mkNode('div'),createElement:mkNode,body:{style:{}}},
+ const ctx={window:null,document:{getElementById:id=>nodes[id]||mkNode('div'),createElement:mkNode,body:{style:{},classList:{contains:()=>false}}},
   CSTU_AUTH_CONFIG:{enabled:true},fetch:async()=>({ok:true,status:200,text:async()=>JSON.stringify(execSession),headers:{get:()=>'application/json'}}),
   AbortController,setTimeout,clearTimeout,Event,matchMedia:()=>({matches:true}),addEventListener(){}};
  ctx.window=ctx;
@@ -104,5 +105,7 @@ test('executive has all scoped staff navigation, create/edit permissions, and ro
  vm.runInContext(menuSource,ctx);
  await new Promise(r=>setTimeout(r,20));
  const labels=nodes['role-menu-links'].children.map(link=>link.children[0].textContent);
- assert.deepEqual(labels,['รวม Feedback','เพิ่มคู่ความร่วมมือ','เพิ่มกิจกรรม','เพิ่มข้อตกลง','เพิ่มการแลกเปลี่ยน','จัดการสิทธิ์ผู้ใช้']);
+ assert.deepEqual(labels,[]);
+ assert.ok(nodes.authNavButtons.children.some(node=>node.href==='work.html'));
+ assert.deepEqual(Array.from(ctx.CstuWork.menu(execSession), item=>item.label),['รวม Feedback','เพิ่มคู่ความร่วมมือ','เพิ่มกิจกรรม','เพิ่มข้อตกลง','เพิ่มการแลกเปลี่ยน']);
 });

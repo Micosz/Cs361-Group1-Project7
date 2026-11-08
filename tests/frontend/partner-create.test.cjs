@@ -281,13 +281,9 @@ test('coordinator gets partner create permission and menu item; unauthorized rol
     assert.equal(h.ctx.CstuWork.canCreate(rolelessSession, 'partners'), false);
     assert.equal(h.ctx.CstuWork.canCreate({ user: null, grants: [] }, 'partners'), false);
 
-    vm.runInContext(roleMenuSource, h.ctx);
-    await new Promise(r => setTimeout(r, 20));
-    const links = h.doc.byId['role-menu-links'].children.map(a => ({
-        label: a.children[0].textContent,
-        href: a.href
-    }));
+    const links = Array.from(h.ctx.CstuWork.menu(coordSession), item => ({ label: item.label, href: item.href }));
     assert.deepEqual(links, [
+        { label: 'รวม Feedback', href: 'index.html?view=feedback#board-section' },
         { label: 'เพิ่มคู่ความร่วมมือ', href: 'index.html?kind=partners&action=create#board-section' },
         { label: 'เพิ่มกิจกรรม', href: 'index.html?kind=activities&action=create#board-section' },
         { label: 'เพิ่มข้อตกลง', href: 'index.html?kind=agreements&action=create#board-section' },

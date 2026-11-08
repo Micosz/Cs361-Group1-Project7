@@ -51,3 +51,26 @@ Tests อยู่นอก `public/` และนอก source root ที่ p
 แก้เคสแรกใน `frontend/feedback-inbox.test.cjs` ให้ตรงกับการแยกหน้าตามบทบาท: Executive บนหน้าสาธารณะเห็นลิงก์ `work.html` แทน Menu เดิม ตรวจว่าลิงก์นี้ถูกต้องและไม่แสดงปุ่ม Menu เก่า พร้อมคงการตรวจลิงก์ Feedback เดิม การแสดง Inbox และปุ่มกลับ Information Board ครบ ไม่แก้ production code
 
 ผลตรวจ 8 พฤศจิกายน 2026: เคสนี้ผ่าน; frontend รวม 35 เคส ผ่าน 28 ไม่ผ่าน 7 (เคสอื่นเดิม) ส่วน backend ไม่เปลี่ยนและไม่ได้รันซ้ำในรอบนี้ ผล baseline ด้านบนยังเป็นประวัติก่อนแก้
+
+## SetupTest — full test pipeline
+
+The historical baseline above is retained for comparison. Current commands:
+
+| Command | Scope |
+| --- | --- |
+| `npm test` | Frontend (35), Auth Python (238), three Node Lambdas (9), deployment (8) |
+| `npm run test:backend` | All four Lambda suites |
+| `npm run test:lambda` | Three Node Lambda handlers |
+| `npm run test:deployment` | Real isolated Git/ZIP packaging and mocked AWS release guards |
+| `npm run test:e2e` | Chromium browser workflows against local production HTML/JS |
+| `npm run test:ci` | All code suites followed by browser workflows |
+
+First install `npm ci`, the Python requirements above, and `npx playwright install chromium` (Linux CI uses `--with-deps`). `PYTHON` can select your virtual environment. Playwright builds `work.html` and starts its own loopback-only server. Browser API responses are deterministic fixtures; all external browser requests are blocked. These tests do not log in to TU, write AWS data or establish that live infrastructure is configured correctly.
+
+Browser checks cover catalog search/detail, invalid and successful login, CSRF submission, credential storage, internal navigation for coordinator/staff/executive, anonymous/student redirects and session-failure recovery. Python suites cover business CRUD, scope/role enforcement, documents and storage with fakes. Node suites execute production handlers with fake DynamoDB/TU boundaries, including pagination, private/retired record exclusion, provider failures and timeout.
+
+ZIP checks use a temporary Git repository, package committed Python source, import `backend.lambda_function.handler` from the ZIP, compare deterministic output, and reject dirty/invalid source or unsafe output paths. Release tests cover commit/handler identity, account/runtime/state, current main, backup-before-update, revision races, no-op and deployed hash mismatch. Only CSTUHubAuth currently has a deployment packager; the other three handlers are tested from source, not deployed ZIPs.
+
+CI runs on every PR and pushes to `main`/`SetupTest`. Both code and browser jobs must pass before packaging; production Auth deployment additionally requires main and a non-PR event. Test jobs have no AWS credentials. Amplify preBuild runs frontend and Node Lambda tests before building. Full merge enforcement still requires repository branch protection to mark CI checks required; this change does not modify repository rules or enable deployment of the other three Lambdas.
+
+Updated old UI assertions follow separate public/work pages and the shared public Feedback component. API assertions reflect partner Feedback and scoped coordinator Inbox support while retaining cross-scope/author restrictions. A real regression found by the new tests was fixed: getPublicPartners now reads every DynamoDB scan page, handles absent Items, and excludes retired records.

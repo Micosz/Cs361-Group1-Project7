@@ -18,11 +18,19 @@ exports.handler = async (event) => {
             TableName: partnerTable,
         });
 
-        const response = await docClient.send(command);
+        let response = await docClient.send(command);
+        const items = [...(response.Items || [])];
+        while (response.LastEvaluatedKey) {
+            response = await docClient.send(new ScanCommand({
+                TableName: partnerTable, ExclusiveStartKey: response.LastEvaluatedKey
+            }));
+            items.push(...(response.Items || []));
+        }
 
         // คัดกรองข้อมูลก่อนส่งให้ Browser
         // (กรองเฉพาะฟิลด์ที่ปลอดภัย เผื่อในฐานข้อมูลมีข้อมูลภายใน)
-        const publicData = response.Items.filter(item => {
+        const publicData = items.filter(item => {
+          if (!item || item.source_state === 'retired') return false;
           const flags = ['publication','access_level','visibility'].filter(key => key in item).map(key => item[key]);
           return flags.length > 0 && flags.every(value => value === 'public');
         }).map(item => ({
