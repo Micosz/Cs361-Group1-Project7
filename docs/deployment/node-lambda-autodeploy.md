@@ -1,12 +1,23 @@
 # Four-Lambda automatic deployment
 
-The `AutoDeploymentLambda` branch extends the existing Auth release pipeline to `tuAuthLogin`, `fetchPartnersData`, and `getPublicPartners`. It does not create infrastructure or change Lambda environment variables, execution roles, API routes, aliases, tables or buckets.
+PR #245 extended the Auth release pipeline to `tuAuthLogin`, `fetchPartnersData`, and `getPublicPartners`. The workflow owns code updates for the four existing production Lambda functions. Infrastructure for the separate trial is documented in the [V5 guide](v5-trial.md).
 
-## One-time AWS setup before merging
+## Singapore policy review for #247
 
-The existing GitHub role is intentionally still named `CSTUHubGitHubAuthDeployRole`. Its trust policy remains restricted to main. Apply the updated [code-only IAM policy](../../deploy/policies/github/github-auth-deploy.json) to that role with an authorized AWS administrator. Committing JSON does not apply it. If using an inline policy, replace the existing code-deployment policy, using its actual policy name; do not remove unrelated permissions. The new resource list contains only the four named function ARNs in account `781485979426`, Singapore (`ap-southeast-1`). No wildcard, IAM administration, secret-reading or configuration-write permission is added.
+On 2026-11-08, the Singapore console showed all four named Lambda targets with the expected runtime and handler. The live role `CSTUHubGitHubAuthDeployRole` had no permissions boundary and contained two inline policies:
 
-Verify each Node target exists with `Runtime=nodejs24.x`, `Handler=index.handler`, `PackageType=Zip`, `State=Active`, and `LastUpdateStatus=Successful`. Node 24 is a release contract based on the repository baseline, **not a live AWS observation**. If a target differs, inspect it and update the reviewed release contract/build/tests together; this workflow never changes the runtime to force deployment through.
+| Inline policy | Scope observed |
+| --- | --- |
+| `CSTUHubSingaporeAuthDeploy` | `CSTUHubAuth` in `ap-southeast-1` only |
+| `CSTUHubAuthCodeDeployment` | `CSTUHubAuth` in `ap-southeast-2` only |
+
+[The failed run](https://github.com/Micosz/Cs361-Group1-Project7/actions/runs/42460341980) reached AWS through OIDC, read `CSTUHubAuth`, and stopped at `GetFunctionConfiguration` for `tuAuthLogin` before the first write. The raw AWS error was suppressed in that run. The live policy has no allow for that operation on the three Node functions, which explains the failure with the observed targets. Before the change, production's public rewrite returned 37 records, search and detail for KBTG worked, and the login form loaded. Actual login remains a separate authorized-user check.
+
+**Change for review.** Replace the live Singapore inline policy `CSTUHubSingaporeAuthDeploy` with [the existing repository policy](../../deploy/policies/github/github-auth-deploy.json). The resource list adds exactly three Singapore ARNs for `tuAuthLogin`, `fetchPartnersData`, and `getPublicPartners`. The actions are the existing four code-release permissions, `GetFunctionConfiguration`, `ListVersionsByFunction`, `UpdateFunctionCode`, and `PublishVersion`. Save the previous Singapore policy for rollback. Obtain review before applying this production IAM change.
+
+After approval, verify effective permissions against all four exact ARNs using IAM Policy Simulator, then dispatch the release workflow on the current `main` only when ready to release. Verify all four preflight summaries and each updated or already-current code hash, then repeat the public smoke check and have an authorized tester verify a real login. Record the Actions run and results in [#247](https://github.com/Micosz/Cs361-Group1-Project7/issues/247).
+
+Verify each Node target exists with `Runtime=nodejs24.x`, `Handler=index.handler`, `PackageType=Zip`, `State=Active`, and `LastUpdateStatus=Successful`. Node 24 and the handler above were observed on 2026-11-08. If a target differs, inspect it and update the reviewed release contract/build/tests together; this workflow never changes the runtime to force deployment through.
 
 Read only the needed metadata (do not export secret environment values):
 
@@ -17,8 +28,6 @@ aws lambda get-function-configuration --function-name tuAuthLogin --region ap-so
 ```
 
 Repeat the second command for both catalog Lambdas. Also confirm the API integrations and the Auth-to-TU invocation use the intended unqualified function. This code-only workflow updates `$LATEST` and publishes a version; an API pinned to a version/alias will not automatically follow it.
-
-Local AWS credentials were unavailable when implementing this branch. IAM application, target configuration and live deployment remain unverified. The prior Auth main release succeeded; that does not establish access to the other three functions.
 
 ## Pipeline and artifacts
 
@@ -39,6 +48,7 @@ From a clean committed checkout, with Node 24 and Python 3.12:
 python scripts/package-node-lambda.py tuAuthLogin /tmp/tuAuthLogin.zip
 python scripts/package-node-lambda.py fetchPartnersData /tmp/fetchPartnersData.zip
 python scripts/package-node-lambda.py getPublicPartners /tmp/getPublicPartners.zip
+# The preflight command below is for a checkout at the current remote main commit.
 python deploy/deploy-auth.py /tmp/tuAuthLogin.zip "$(git rev-parse HEAD)" --function tuAuthLogin --preflight
 ```
 

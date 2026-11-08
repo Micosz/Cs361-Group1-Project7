@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CSTUHub V5 trial Amplify Hosting and Lambda artifact bucket
+
+Parameters:
+  TrialName:
+    Type: String
+    AllowedPattern: 'cstuhub-iac-[a-z0-9]([a-z0-9-]{0,16}[a-z0-9])?'
+  ConnectBackend:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['false', 'true']
+    Description: Set true after creating the same trial's backend stack.
+
+Conditions:
+  HasBackend: !Equals [!Ref ConnectBackend, 'true']
+
+Resources:
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: RetainExceptOnCreate
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub '${TrialName}-artifacts-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  HostingApp:
+    Type: AWS::Amplify::App
+    Properties:
+      Name: !Sub '${TrialName}-hosting'
+      Platform: WEB
+      CustomRules: !If
+        - HasBackend
+        - - Source: '/api/<*>'
+            Status: '200'
+            Target: !Sub
+              - '${Api}/api/<*>'
+              - Api:
+                  Fn::ImportValue: !Sub '${TrialName}-backend-ApiEndpoint'
+          - Source: /fetchPartnersData
+            Status: '200'
+            Target: !Sub
+              - '${Api}/fetchPartnersData'
+              - Api:
+                  Fn::ImportValue: !Sub '${TrialName}-backend-ApiEndpoint'
+          - Source: '/<*>'
+            Status: '404'
+            Target: /index.html
+        - []
+      CustomHeaders: |
+        customHeaders:
+          - pattern: '/api/**'
+            headers:
+              - key: Cache-Control
+                value: 'private, no-store'
+
+  TrialBranch:
+    Type: AWS::Amplify::Branch
+    Properties:
+      AppId: !GetAtt HostingApp.AppId
+      BranchName: trial
+      Stage: DEVELOPMENT
+      EnableAutoBuild: false
+
+Outputs:
+  AppId:
+    Value: !GetAtt HostingApp.AppId
+  Origin:
+    Value: !Sub 'https://trial.${HostingApp.DefaultDomain}'
+  ArtifactBucket:
+    Value: !Ref ArtifactBucket

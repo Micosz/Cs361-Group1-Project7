@@ -27,8 +27,16 @@ def aws(service, *args):
         capture_output=True, text=True, check=False, timeout=330,
     )
     if result.returncode:
-        # AWS errors may contain configuration values; inspect AWS separately.
-        raise RuntimeError(f"AWS {service} {args[0]} failed; exit {result.returncode}")
+        # Only log recognized AWS error codes, never the response body or message.
+        match = re.search(
+            r"(?m)^(?:aws: \[ERROR\]: )?An error occurred \("
+            r"(AccessDeniedException|AccessDenied|ResourceNotFoundException|"
+            r"TooManyRequestsException|ResourceConflictException|ExpiredTokenException)"
+            r"\) when calling the ",
+            result.stderr,
+        )
+        code = f"{match[1]}; " if match else ""
+        raise RuntimeError(f"AWS {service} {args[0]} failed; {code}exit {result.returncode}")
     return json.loads(result.stdout) if result.stdout.strip() else {}
 
 
@@ -75,6 +83,7 @@ def main():
         raise RuntimeError("Main moved; release the current main commit instead")
     if aws("sts", "get-caller-identity")["Account"] != ACCOUNT:
         raise RuntimeError("Unexpected AWS account")
+    print(f"Checking Lambda target {function} in {REGION}.", flush=True)
     before = configuration(function)
     if (before["FunctionArn"] != arn or before["Runtime"] != runtime
             or before["Handler"] != handler

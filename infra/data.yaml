@@ -1,0 +1,222 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CSTUHub V5 isolated data resources for a Singapore trial
+
+Parameters:
+  TrialName:
+    Type: String
+    AllowedPattern: 'cstuhub-iac-[a-z0-9]([a-z0-9-]{0,16}[a-z0-9])?'
+    ConstraintDescription: Start with cstuhub-iac- followed by a 1 to 18 character lowercase trial identifier.
+  DocumentOrigin:
+    Type: String
+    AllowedPattern: 'https://[A-Za-z0-9.-]+'
+    Description: HTTPS origin dedicated to this trial, without a trailing slash.
+
+Resources:
+  Users:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: RetainExceptOnCreate
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub '${TrialName}-users'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  IdentityLinks:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: RetainExceptOnCreate
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub '${TrialName}-identity-links'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: subjectKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: subjectKey
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  Sessions:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TrialName}-sessions'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: tokenHash
+          AttributeType: S
+      KeySchema:
+        - AttributeName: tokenHash
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  LoginRate:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TrialName}-login-rate'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: key
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  Partners:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: RetainExceptOnCreate
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub '${TrialName}-partners'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: type
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: type
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  Business:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: RetainExceptOnCreate
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub '${TrialName}-business'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: scopeEntity
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: scope-entity-id
+          KeySchema:
+            - AttributeName: scopeEntity
+              KeyType: HASH
+            - AttributeName: id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: KEYS_ONLY
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  Documents:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: RetainExceptOnCreate
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub '${TrialName}-docs-${AWS::AccountId}-${AWS::Region}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: [!Ref DocumentOrigin]
+            AllowedMethods: [POST, GET, HEAD]
+            AllowedHeaders: [content-type, 'x-amz-*']
+            ExposedHeaders: [ETag, x-amz-version-id, x-amz-checksum-sha256]
+            MaxAge: 300
+      LifecycleConfiguration:
+        Rules:
+          - Id: CSTUHubExpireUploadStaging
+            Status: Enabled
+            Prefix: documents/staging/
+            ExpirationInDays: 1
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+          - Id: CSTUHubPrivateReadyVersionRetention
+            Status: Enabled
+            Prefix: documents/ready/
+            ExpiredObjectDeleteMarker: true
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 90
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+
+  DocumentsPolicy:
+    Type: AWS::S3::BucketPolicy
+    DeletionPolicy: RetainExceptOnCreate
+    UpdateReplacePolicy: Retain
+    Properties:
+      Bucket: !Ref Documents
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: CSTUHubDenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt Documents.Arn
+              - !Sub '${Documents.Arn}/*'
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+                aws:PrincipalIsAWSService: 'false'
+
+Outputs:
+  UserTable:
+    Value: !Ref Users
+    Export:
+      Name: !Sub '${AWS::StackName}-UserTable'
+  IdentityTable:
+    Value: !Ref IdentityLinks
+    Export:
+      Name: !Sub '${AWS::StackName}-IdentityTable'
+  SessionTable:
+    Value: !Ref Sessions
+    Export:
+      Name: !Sub '${AWS::StackName}-SessionTable'
+  LoginRateTable:
+    Value: !Ref LoginRate
+    Export:
+      Name: !Sub '${AWS::StackName}-LoginRateTable'
+  PartnerTable:
+    Value: !Ref Partners
+    Export:
+      Name: !Sub '${AWS::StackName}-PartnerTable'
+  BusinessTable:
+    Value: !Ref Business
+    Export:
+      Name: !Sub '${AWS::StackName}-BusinessTable'
+  DocumentsBucket:
+    Value: !Ref Documents
+    Export:
+      Name: !Sub '${AWS::StackName}-DocumentsBucket'

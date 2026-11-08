@@ -10,6 +10,7 @@
 | **V2 · Collaboration Repository** | [Hosting ADR](architecture/v2/ADR-001-v2-hosting.md) | [Architecture diagram](architecture/v2/v2-architecture-diagram.png), [Evidence](evidence/v2-evidence.md) |
 | **V3 · Secure Collaboration Workspace** | [Design baseline](design/v3-design.md#design-baseline) | [Hosting ADR](architecture/v3/ADR-001-v3-hosting.md), [Architecture diagram](architecture/v3/v3-architecture-diagram.png), [API routes](architecture/v3/v3-api-routes.md), [Deployment guide](deployment/v3-deployment.md), [Evidence](evidence/v3-evidence.md) |
 | **V4 · Scale & Availability** | [Design](design/v4-design.md) | [Deployment guide](deployment/v4-deployment.md), [Data guide](data/data-guide.md), [Architecture index](architecture/README.md)  [Form feedback import](design/v4/form-feedback-import.md), [In-app manual](design/v4/in-app-manual.md) |
+| **V5 · Infrastructure as Code** | [Design](design/v5-design.md) | [คู่มือสร้างชุดทดลอง](deployment/v5-trial.md), [Auto Deploy](deployment/node-lambda-autodeploy.md), [Architecture](architecture/v5/v5-iac.drawio) |
 
 ## เอกสารข้ามเวอร์ชันและการทำงานกับ source ปัจจุบัน
 
