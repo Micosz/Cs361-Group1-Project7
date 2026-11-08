@@ -1,6 +1,8 @@
 # คู่มือ Deployment V4 — CSTUHub
 
-ปรับปรุงวันที่ 3 พฤศจิกายน 2026
+ปรับปรุง deployment automation วันที่ 8 พฤศจิกายน 2026
+
+รายละเอียด auto deploy ทั้งสี่ Lambda และขั้นตั้ง IAM ก่อนเปิดใช้: [Four-Lambda deployment](node-lambda-autodeploy.md)
 
 ระบบหลักใช้บัญชี AWS `781485979426` และ Region Singapore (`ap-southeast-1`) คู่มือนี้ครอบคลุมการเตรียม configuration การปล่อย frontend/backend การตรวจระบบ และการย้อนกลับ โดยอิง workflow และสคริปต์ใน repository ส่วนสถานะทรัพยากรและผลการปล่อยแต่ละรอบบันทึกแยกใน release record
 
@@ -27,7 +29,7 @@ Singapore ถูกเลือกให้บริการหลักอย�
 | --- | --- | --- |
 | Frontend | Amplify build จาก branch ที่เชื่อมไว้ | ใช้ `amplify.yml`, รัน `npm run build`, เผยแพร่ `public/` |
 | `CSTUHubAuth` | GitHub Actions: `Package and deploy Auth Lambda` | แพ็ก Python และอัปเดตเฉพาะโค้ด Lambda |
-| Node.js Lambda อีกสามตัว | แพ็กและอัปเดตแยกตาม function | ไม่รวมอยู่ใน workflow ของ Auth |
+| Node.js Lambda อีกสามตัว | GitHub Actions แพ็ก ZIP แยกและปล่อยจาก main | ต้องตั้ง IAM/ตรวจ runtime ตามคู่มือ auto deploy ก่อนใช้งาน |
 | HTTP API / Amplify rewrites | AWS Console หรือกระบวนการตั้งค่าของผู้ดูแล | ไม่เปลี่ยนตามการ deploy Python |
 | Environment, IAM, S3, DynamoDB, WAF, monitoring | ตั้งค่าแยก | ต้องมี configuration และแผนย้อนกลับของงานนั้น |
 | ข้อมูล catalog / migration | ดำเนินการแยกจาก code deployment | การแก้ JSON หรือ deploy หน้าเว็บไม่ sync DynamoDB อัตโนมัติ |

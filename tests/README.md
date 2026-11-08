@@ -58,7 +58,7 @@ The historical baseline above is retained for comparison. Current commands:
 
 | Command | Scope |
 | --- | --- |
-| `npm test` | Frontend (35), Auth Python (238), three Node Lambdas (9), deployment (8) |
+| `npm test` | Frontend (35), Auth Python (238), three Node Lambdas (9), deployment (19) |
 | `npm run test:backend` | All four Lambda suites |
 | `npm run test:lambda` | Three Node Lambda handlers |
 | `npm run test:deployment` | Real isolated Git/ZIP packaging and mocked AWS release guards |
@@ -69,10 +69,12 @@ First install `npm ci`, the Python requirements above, and `npx playwright insta
 
 Browser checks cover catalog filters/search/detail, Feedback submission with safe text rendering and idempotent retries, invalid and successful login, CSRF submission, credential storage, internal navigation for coordinator/staff/executive, anonymous/student redirects and session-failure recovery. Python suites cover business CRUD, scope/role enforcement, documents and storage with fakes. Node suites execute production handlers with fake DynamoDB/TU boundaries, including pagination, private/retired record exclusion, provider failures and timeout.
 
-ZIP checks use a temporary Git repository, package committed Python source, import `backend.lambda_function.handler` from the ZIP, compare deterministic output, and reject dirty/invalid source or unsafe output paths. Release tests cover commit/handler identity, account/runtime/state, current main, backup-before-update, revision races, no-op and deployed hash mismatch. Only CSTUHubAuth currently has a deployment packager; the other three handlers are tested from source, not deployed ZIPs.
+ZIP checks use a temporary Git repository, package committed Python source, import `backend.lambda_function.handler` from the ZIP, compare deterministic output, and reject dirty/invalid source or unsafe output paths. Release tests cover commit/handler identity, account/runtime/state, current main, backup-before-update, revision races, no-op and deployed hash mismatch. All four functions now have packaging checks; CI builds the real three Node ZIPs and verifies their handler imports with bundled production dependencies.
 
-CI runs on every PR and pushes to `main`/`SetupTest`. Both code and browser jobs must pass before packaging; production Auth deployment additionally requires main and a non-PR event. Test jobs have no AWS credentials. Amplify preBuild runs frontend and Node Lambda tests before building. Full merge enforcement still requires repository branch protection to mark CI checks required; this change does not modify repository rules or enable deployment of the other three Lambdas.
+CI runs on every PR and pushes to `main`/`SetupTest`/`AutoDeploymentLambda`. Both code and browser jobs must pass before packaging; production deployment additionally requires main and a non-PR event. Test jobs have no AWS credentials. Amplify preBuild runs frontend and Node Lambda tests before building. Full merge enforcement still requires repository branch protection to mark CI checks required; this change does not modify repository rules. The AutoDeploymentLambda update adds code deployment for the other three functions; see the deployment guide for mandatory one-time IAM/target setup.
 
 Updated old UI assertions follow separate public/work pages and the shared public Feedback component. API assertions reflect partner Feedback and scoped coordinator Inbox support while retaining cross-scope/author restrictions. A real regression found by the new tests was fixed: getPublicPartners now reads every DynamoDB scan page, handles absent Items, and excludes retired records.
 
 Browser fixtures use the supported reduced-motion preference to keep functional checks independent of decorative scroll animation timing. Animation appearance is not covered by these checks.
+
+Node release setup and limitations: [four-Lambda auto deployment](../docs/deployment/node-lambda-autodeploy.md). Deployment tests now include 11 additional Node packaging/release checks (19 total).

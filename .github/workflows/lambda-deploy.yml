@@ -3,7 +3,7 @@ name: Test, package and deploy
 on:
   pull_request:
   push:
-    branches: [main, SetupTest]
+    branches: [main, SetupTest, AutoDeploymentLambda]
   workflow_dispatch:
 
 permissions:
@@ -55,7 +55,7 @@ jobs:
     needs: [unit, browser]
     name: Check syntax and package source
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -63,6 +63,9 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
       - name: Package committed Python source (no test suite)
         run: |
           python -c "import ast; from pathlib import Path; ast.parse(Path('deploy/deploy-auth.py').read_text())"
@@ -73,9 +76,20 @@ jobs:
           path: ${{ runner.temp }}/auth.zip
           if-no-files-found: error
           retention-days: 7
+      - name: Package and import-check the three Node handlers
+        run: |
+          for function in tuAuthLogin fetchPartnersData getPublicPartners; do
+            python scripts/package-node-lambda.py "$function" "$RUNNER_TEMP/node-packages/$function.zip"
+          done
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: node-lambdas-${{ github.sha }}
+          path: ${{ runner.temp }}/node-packages/*.zip
+          if-no-files-found: error
+          retention-days: 7
 
   deploy:
-    name: Deploy CSTUHubAuth
+    name: Deploy four Lambdas
     needs: package
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -101,6 +115,10 @@ jobs:
         with:
           name: auth-${{ github.sha }}
           path: ${{ runner.temp }}/auth-package
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: node-lambdas-${{ github.sha }}
+          path: ${{ runner.temp }}/node-packages
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::781485979426:role/CSTUHubGitHubAuthDeployRole
@@ -109,7 +127,19 @@ jobs:
           role-duration-seconds: 900
           retry-max-attempts: 3
           role-session-name: github-${{ github.run_id }}
+      - name: Validate all targets before the first code update
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          python deploy/deploy-auth.py "$RUNNER_TEMP/auth-package/auth.zip" "$RELEASE_COMMIT" --preflight
+          for function in tuAuthLogin fetchPartnersData getPublicPartners; do
+            python deploy/deploy-auth.py "$RUNNER_TEMP/node-packages/$function.zip" "$RELEASE_COMMIT" --function "$function" --preflight
+          done
       - name: Back up, deploy and verify code identity
         env:
           RELEASE_COMMIT: ${{ github.sha }}
-        run: python deploy/deploy-auth.py "$RUNNER_TEMP/auth-package/auth.zip" "$RELEASE_COMMIT"
+        run: |
+          for function in tuAuthLogin fetchPartnersData getPublicPartners; do
+            python deploy/deploy-auth.py "$RUNNER_TEMP/node-packages/$function.zip" "$RELEASE_COMMIT" --function "$function"
+          done
+          python deploy/deploy-auth.py "$RUNNER_TEMP/auth-package/auth.zip" "$RELEASE_COMMIT"
