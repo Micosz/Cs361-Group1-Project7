@@ -52,7 +52,8 @@ def build_application():
     # No SDK retry of a password invocation. The Node adapter has its own 8s deadline.
     client = boto3.client('lambda', region_name=os.environ['AWS_REGION'],
                           config=Config(connect_timeout=3, read_timeout=12, retries={'total_max_attempts': 1}))
-    provider = CourseProvider(LambdaTuProvider(client, 'tuAuthLogin'),
+    provider = CourseProvider(
+        LambdaTuProvider(client, os.environ.get('TU_AUTH_FUNCTION_NAME', 'tuAuthLogin')),
         enabled=os.environ.get('COURSE_TEST_ENABLED') == 'true',
         configuration=os.environ.get('COURSE_TEST_ACCOUNTS', '[]'))
     accounts = CourseAccounts(AccountService(store, secret, os.environ['STUDENT_SCOPE_ID']), store)

@@ -59,9 +59,11 @@ class ProviderClient:
     def __init__(self):
         self.kind, self.calls, self.status = 'student', 0, 200
         self.extra = {}
+        self.function = None
 
     def invoke(self, **kwargs):
         self.calls += 1
+        self.function = kwargs['FunctionName']
         event = json.loads(kwargs['Payload'])
         request = json.loads(event['body'])
         user = {'username': request['UserName'], 'type': self.kind, 'displayname_th': 'Demo'}
@@ -93,6 +95,14 @@ class IntegrationTests(unittest.TestCase):
         result = self.app.handle(self.event('/api/auth/login', issued=prior,
             payload={'username': username, 'password': 'synthetic-password'}))
         return prior, result
+
+    def test_trial_tu_adapter_does_not_use_production_name(self):
+        function = 'cstuhub-iac-v5-test-tuAuthLogin'
+        provider = LambdaTuProvider(self.provider, function)
+        self.assertEqual(provider.authenticate('fixture', 'synthetic-password')['username'], 'fixture')
+        self.assertEqual(self.provider.function, function)
+        with self.assertRaises(ValueError):
+            LambdaTuProvider(self.provider, 'unrelated-tuAuthLogin')
 
     def test_student_login_account_session_logout_flow(self):
         prior, result = self.login()

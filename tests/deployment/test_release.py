@@ -92,6 +92,17 @@ class ReleaseTests(unittest.TestCase):
         with patch.object(self.module,'aws',side_effect=aws),patch.object(self.module.subprocess,'check_output',return_value=(remote or self.sha)+' refs/heads/main\n'),patch.object(sys,'argv',['deploy',str(self.zip),self.sha]),patch.object(self.module,'summary'):
             self.module.main()
         return calls
+    def test_aws_failure_reports_only_allowlisted_error_code(self):
+        for prefix in ("", "aws: [ERROR]: "):
+            stderr = (f"{prefix}An error occurred (AccessDeniedException) when calling the "
+                      "GetFunctionConfiguration operation: private-message")
+            result = subprocess.CompletedProcess([], 254, stdout="private-output", stderr=stderr)
+            with self.subTest(prefix=prefix), patch.object(self.module.subprocess, 'run', return_value=result):
+                with self.assertRaises(RuntimeError) as error:
+                    self.module.configuration()
+                self.assertEqual(str(error.exception),
+                                 "AWS lambda get-function-configuration failed; AccessDeniedException; exit 254")
+
     def test_success_backs_up_before_revision_guarded_update(self):
         calls=self.run_release();actions=[x[1] for x in calls]
         self.assertLess(actions.index('publish-version'),actions.index('update-function-code'))

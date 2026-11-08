@@ -1,0 +1,373 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CSTUHub V5 isolated Lambda and HTTP API resources for a Singapore trial
+
+Parameters:
+  TrialName:
+    Type: String
+    AllowedPattern: 'cstuhub-iac-[a-z0-9]([a-z0-9-]{0,16}[a-z0-9])?'
+  SessionOrigin:
+    Type: String
+    AllowedPattern: 'https://trial\.([a-z0-9]+\.amplifyapp\.com|cstuhub\.invalid)'
+  ArtifactBucket:
+    Type: String
+    AllowedPattern: 'cstuhub-iac-[a-z0-9-]{1,51}'
+    Description: Private versioned trial artifact bucket in the same Region.
+  ArtifactPrefix:
+    Type: String
+    AllowedPattern: 'releases/[a-f0-9]{40}'
+  AuthZipVersion:
+    Type: String
+    MinLength: 1
+    AllowedPattern: '.+'
+  TuZipVersion:
+    Type: String
+    MinLength: 1
+    AllowedPattern: '.+'
+  FetchZipVersion:
+    Type: String
+    MinLength: 1
+    AllowedPattern: '.+'
+  PublicZipVersion:
+    Type: String
+    MinLength: 1
+    AllowedPattern: '.+'
+  AuthSecretVersion:
+    Type: String
+    AllowedPattern: '[A-Za-z0-9-]{32,64}'
+    Description: VersionId of the Secrets Manager JSON secret at TrialName/auth.
+  CourseTestEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['false', 'true']
+  ApiRateLimit:
+    Type: Number
+    Default: 10
+    MinValue: 1
+    MaxValue: 20
+
+Conditions:
+  UseCourseAccounts: !Equals [!Ref CourseTestEnabled, 'true']
+
+Resources:
+  TrialLogPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: [logs:CreateLogStream, logs:PutLogEvents]
+            Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${TrialName}-*:log-stream:*'
+
+  AuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref TrialLogPolicy
+      Policies:
+        - PolicyName: TrialAuthRuntime
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:ConditionCheckItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TrialName}-users'
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TrialName}-identity-links'
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TrialName}-sessions'
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TrialName}-login-rate'
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TrialName}-partners'
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TrialName}-business'
+              - Effect: Allow
+                Action: dynamodb:Query
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TrialName}-partners'
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TrialName}-business/index/scope-entity-id'
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt TuFunction.Arn
+              - Effect: Allow
+                Action: s3:GetBucketPublicAccessBlock
+                Resource: !Sub
+                  - 'arn:${AWS::Partition}:s3:::${Bucket}'
+                  - Bucket:
+                      Fn::ImportValue: !Sub '${TrialName}-data-DocumentsBucket'
+              - Effect: Allow
+                Action: [s3:GetObject, s3:GetObjectVersion, s3:PutObject, s3:DeleteObject]
+                Resource: !Sub
+                  - 'arn:${AWS::Partition}:s3:::${Bucket}/documents/*'
+                  - Bucket:
+                      Fn::ImportValue: !Sub '${TrialName}-data-DocumentsBucket'
+
+  TuRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref TrialLogPolicy
+
+  CatalogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref TrialLogPolicy
+      Policies:
+        - PolicyName: TrialCatalogRuntime
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: dynamodb:Scan
+                Resource: !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TrialName}-partners'
+
+  AuthLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${TrialName}-CSTUHubAuth'
+      RetentionInDays: 7
+
+  AuthFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${TrialName}-CSTUHubAuth'
+      Runtime: python3.12
+      Handler: backend.lambda_function.handler
+      Architectures: [x86_64]
+      MemorySize: 256
+      Timeout: 90
+      Role: !GetAtt AuthRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref AuthLogs
+      Code:
+        S3Bucket: !Ref ArtifactBucket
+        S3Key: !Sub '${ArtifactPrefix}/CSTUHubAuth.zip'
+        S3ObjectVersion: !Ref AuthZipVersion
+      Environment:
+        Variables:
+          AUTH_V3_ENABLED: 'true'
+          SESSION_ORIGIN: !Ref SessionOrigin
+          SESSION_CSRF_SECRET: !Sub '{{resolve:secretsmanager:${TrialName}/auth:SecretString:sessionCsrf::${AuthSecretVersion}}}'
+          IDENTITY_HMAC_SECRET: !Sub '{{resolve:secretsmanager:${TrialName}/auth:SecretString:identityHmac::${AuthSecretVersion}}}'
+          STUDENT_SCOPE_ID: 'v5-trial'
+          USER_TABLE:
+            Fn::ImportValue: !Sub '${TrialName}-data-UserTable'
+          IDENTITY_TABLE:
+            Fn::ImportValue: !Sub '${TrialName}-data-IdentityTable'
+          SESSION_TABLE:
+            Fn::ImportValue: !Sub '${TrialName}-data-SessionTable'
+          LOGIN_RATE_TABLE:
+            Fn::ImportValue: !Sub '${TrialName}-data-LoginRateTable'
+          PARTNER_TABLE:
+            Fn::ImportValue: !Sub '${TrialName}-data-PartnerTable'
+          BUSINESS_TABLE:
+            Fn::ImportValue: !Sub '${TrialName}-data-BusinessTable'
+          DOCUMENT_BUCKET:
+            Fn::ImportValue: !Sub '${TrialName}-data-DocumentsBucket'
+          DOCUMENT_DIRECT_UPLOAD_ENABLED: 'true'
+          TU_AUTH_FUNCTION_NAME: !Ref TuFunction
+          COURSE_TEST_ENABLED: !Ref CourseTestEnabled
+          COURSE_TEST_ACCOUNTS: !If
+            - UseCourseAccounts
+            - !Sub '{{resolve:secretsmanager:${TrialName}/auth:SecretString:courseAccounts::${AuthSecretVersion}}}'
+            - !Ref AWS::NoValue
+
+  TuLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${TrialName}-tuAuthLogin'
+      RetentionInDays: 7
+
+  TuFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${TrialName}-tuAuthLogin'
+      Runtime: nodejs24.x
+      Handler: index.handler
+      Architectures: [arm64]
+      Timeout: 15
+      Role: !GetAtt TuRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref TuLogs
+      Code:
+        S3Bucket: !Ref ArtifactBucket
+        S3Key: !Sub '${ArtifactPrefix}/tuAuthLogin.zip'
+        S3ObjectVersion: !Ref TuZipVersion
+
+  FetchLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${TrialName}-fetchPartnersData'
+      RetentionInDays: 7
+
+  FetchFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${TrialName}-fetchPartnersData'
+      Runtime: nodejs24.x
+      Handler: index.handler
+      Architectures: [x86_64]
+      Timeout: 3
+      Role: !GetAtt CatalogRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref FetchLogs
+      Code:
+        S3Bucket: !Ref ArtifactBucket
+        S3Key: !Sub '${ArtifactPrefix}/fetchPartnersData.zip'
+        S3ObjectVersion: !Ref FetchZipVersion
+      Environment:
+        Variables:
+          PARTNER_TABLE:
+            Fn::ImportValue: !Sub '${TrialName}-data-PartnerTable'
+
+  PublicLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${TrialName}-getPublicPartners'
+      RetentionInDays: 7
+
+  PublicFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${TrialName}-getPublicPartners'
+      Runtime: nodejs24.x
+      Handler: index.handler
+      Architectures: [arm64]
+      Timeout: 3
+      Role: !GetAtt CatalogRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref PublicLogs
+      Code:
+        S3Bucket: !Ref ArtifactBucket
+        S3Key: !Sub '${ArtifactPrefix}/getPublicPartners.zip'
+        S3ObjectVersion: !Ref PublicZipVersion
+      Environment:
+        Variables:
+          PARTNER_TABLE:
+            Fn::ImportValue: !Sub '${TrialName}-data-PartnerTable'
+
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub '${TrialName}-http'
+      ProtocolType: HTTP
+  DefaultStage:
+    Type: AWS::ApiGatewayV2::Stage
+    DependsOn: [AuthRoute, FetchRoute, LegacyLoginRoute, TuRoute]
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: default
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 20
+        ThrottlingRateLimit: !Ref ApiRateLimit
+
+  AuthIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt AuthFunction.Arn
+      PayloadFormatVersion: '2.0'
+      TimeoutInMillis: 25000
+  AuthRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'ANY /api/{proxy+}'
+      Target: !Sub 'integrations/${AuthIntegration}'
+  AuthInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/api/*'
+
+  FetchIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt FetchFunction.Arn
+      PayloadFormatVersion: '2.0'
+  FetchRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'ANY /fetchPartnersData'
+      Target: !Sub 'integrations/${FetchIntegration}'
+  FetchInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref FetchFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/fetchPartnersData'
+
+  TuIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt TuFunction.Arn
+      PayloadFormatVersion: '2.0'
+  LegacyLoginRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /login'
+      Target: !Sub 'integrations/${TuIntegration}'
+  TuRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'ANY /tuAuthLogin'
+      Target: !Sub 'integrations/${TuIntegration}'
+  LegacyLoginInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref TuFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/POST/login'
+  TuInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref TuFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/tuAuthLogin'
+
+Outputs:
+  ApiEndpoint:
+    Value: !Sub '${HttpApi.ApiEndpoint}/${DefaultStage}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiEndpoint'
+  PublicFunctionName:
+    Value: !Ref PublicFunction

@@ -4,12 +4,15 @@ Only backend credentials can invoke Lambda. Browser profiles never enter linking
 The Node function owns the TU endpoint/key/HTTP/status/type/timeout validation.
 """
 import json
+import re
 from .session_service import AuthError
 
 
 class LambdaTuProvider:
     def __init__(self, client, function_name):
-        if function_name != 'tuAuthLogin':
+        if function_name != 'tuAuthLogin' and not re.fullmatch(
+                r'cstuhub-iac-[a-z0-9](?:[a-z0-9-]{0,16}[a-z0-9])?-tuAuthLogin',
+                function_name):
             raise ValueError('Unexpected TU adapter function')
         self.client, self.function_name = client, function_name
 
