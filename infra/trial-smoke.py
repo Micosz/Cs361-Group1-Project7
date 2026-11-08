@@ -177,7 +177,9 @@ def verify(session, trial, password, direct_api=False):
         req = Request(endpoint + path, data=None if data is None else json.dumps(data).encode(), headers=headers)
         try:
             with opener.open(req, timeout=25) as result:
-                if result.headers.get_content_type() != 'application/json':
+                media_type = result.headers.get_content_type()
+                # The legacy catalog route returns JSON with a text/plain header.
+                if media_type != 'application/json' and (path, media_type) != ('/fetchPartnersData', 'text/plain'):
                     raise ValueError(f'{path} returned a non-JSON response.')
                 return json.load(result)
         except HTTPError as error:

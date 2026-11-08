@@ -14,7 +14,7 @@ test "$(aws sts get-caller-identity --query Account --output text)" = "$ACCOUNT"
 git status --short --branch
 git rev-parse HEAD
 npm ci
-python -m pip install -r backend/lambda/CSTUHubAuth/requirements.txt cfn-lint==1.60.0
+python -m pip install -r backend/lambda/CSTUHubAuth/requirements.txt cfn-lint==1.60.0 'botocore[crt]'
 npm test
 cfn-lint --regions "$AWS_REGION" --template infra/*.yaml
 ```
@@ -139,3 +139,17 @@ python infra/trial-smoke.py verify "$TRIAL" --profile "$AWS_PROFILE" \
 หาก update ล้มเหลว ตรวจ stack events และสถานะ rollback ก่อนรันซ้ำ หาก update สำเร็จแต่แอปผิดปกติ สร้าง Change Set จาก template และพารามิเตอร์ก่อนหน้า ใช้ ZIP และ secret version เดิม สำหรับหน้าเว็บให้ปล่อย static ZIP รุ่นก่อนใน Amplify app ทดลอง หากข้อมูลหาย ให้ประเมิน PITR/backup และ S3 versioning แยกจากการย้อน template และตรวจ ID, references, สิทธิ์ และ object version ก่อนสลับระบบ
 
 บันทึก commit, Actions run, Region, stack IDs, Change Set IDs, สถานะ Create/Update/Delete, ผล smoke ก่อนและหลัง update, และรายการที่ retain หลัง cleanup ตาม [Issue #246](https://github.com/Micosz/Cs361-Group1-Project7/issues/246) สำหรับ production ให้ใช้ขั้น release และ rollback ของ [V4 Deployment](v4-deployment.md) กับ [Auto Deploy](node-lambda-autodeploy.md) และตรวจการเปลี่ยน IAM/CloudFormation กับทีมก่อน apply
+
+## 5. ผลทดสอบจริงวันที่ 8 พฤศจิกายน 2026
+
+ชุดทดลอง `cstuhub-iac-246nov08` ใช้ AWS Singapore และแพ็ก Lambda ทั้งสี่จาก commit `1ee195a` ด้วยข้อมูลจำลองทั้งหมด
+
+| ขั้น | ผลที่ตรวจจาก AWS |
+| --- | --- |
+| Amplify Hosting | การสร้าง app แยกตอบ `ServiceLimitExceeded` และ Frontend Stack รอบแรก rollback จึงยังไม่มีผลทดสอบ Hosting หรือ rewrite |
+| Create | Frontend แบบ bucket-only, Data และ Backend ได้ `CREATE_COMPLETE` จาก Change Set ที่ตรวจแล้ว |
+| Verify | API Gateway และการ invoke catalog Lambda คืนเฉพาะ partner สาธารณะ TU adapter คืน error ตาม configuration ของ trial และการล็อกอิน ตรวจ session และออกจากระบบด้วยผู้ใช้จำลองผ่าน |
+| Update | Change Set เปลี่ยนเฉพาะ `DefaultStage` และ AWS แสดง rate limit จาก 10 เป็น 8 คำขอต่อวินาที ผล smoke test หลังอัปเดตผ่านอีกครั้ง |
+| Delete และ retention | ทั้งสาม stack ได้ `DELETE_COMPLETE` ตาราง Sessions และ LoginRate หายไป ส่วน Users, IdentityLinks, Partners และ Business ยังอยู่ S3 ทั้งสอง bucket ยังอยู่ และตรวจพบ HTTPS policy, ไฟล์จำลอง และข้อมูล partner ตามแผน |
+
+Secrets Manager ของ trial ถูกสร้างแยกจาก CloudFormation และอยู่ในรายการ cleanup หลังทดสอบร่วมกับทรัพยากรที่ retain ตามข้อ 3
