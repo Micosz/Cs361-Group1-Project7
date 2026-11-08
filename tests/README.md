@@ -45,3 +45,9 @@ Python runner จัด path ให้ production package `backend` ชี้ไ
 เพิ่ม frontend เป็น `frontend/*.test.cjs` และ Auth backend เป็น `backend/CSTUHubAuth/test_*.py` ได้เลย runner จะค้นหาให้ ส่วน Lambda ตัวอื่น, deployment และ browser E2E ค่อยเพิ่มหมวดและคำสั่งเมื่อมีชุดจริง ไม่สร้างโฟลเดอร์ว่างหรือกล่าวอ้างว่าครอบคลุมแล้ว
 
 Tests อยู่นอก `public/` และนอก source root ที่ packager ใช้ จึงไม่ถูกส่งเป็นเว็บหรือโค้ด Lambda หลักฐานคำสั่งเก่าใน `docs/evidence/` คงไว้เป็นประวัติ; ใช้คำสั่งในหน้านี้สำหรับโครงสร้างปัจจุบัน
+
+## SetupTest — รอบที่ 1: การนำทาง Feedback จากหน้าสาธารณะ
+
+แก้เคสแรกใน `frontend/feedback-inbox.test.cjs` ให้ตรงกับการแยกหน้าตามบทบาท: Executive บนหน้าสาธารณะเห็นลิงก์ `work.html` แทน Menu เดิม ตรวจว่าลิงก์นี้ถูกต้องและไม่แสดงปุ่ม Menu เก่า พร้อมคงการตรวจลิงก์ Feedback เดิม การแสดง Inbox และปุ่มกลับ Information Board ครบ ไม่แก้ production code
+
+ผลตรวจ 8 พฤศจิกายน 2026: เคสนี้ผ่าน; frontend รวม 35 เคส ผ่าน 28 ไม่ผ่าน 7 (เคสอื่นเดิม) ส่วน backend ไม่เปลี่ยนและไม่ได้รันซ้ำในรอบนี้ ผล baseline ด้านบนยังเป็นประวัติก่อนแก้

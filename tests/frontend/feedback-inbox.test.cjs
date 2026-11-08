@@ -355,7 +355,7 @@ function createPortalHarness({ reducedMotion = false } = {}) {
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 25));
 
-test('Feedback Inbox renders back button and clicking it returns cleanly to Information Board', async () => {
+test('Executive public page links to workspace; legacy Feedback link still returns cleanly to Information Board', async () => {
     const h = createPortalHarness();
     await flush();
 
@@ -363,13 +363,20 @@ test('Feedback Inbox renders back button and clicking it returns cleanly to Info
     assert.equal(h.documentObj.body.classList.contains('scene-ready'), true);
     assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), false);
 
-    // Executive opens Menu and clicks "รวม Feedback"
-    const menuTrigger = h.getOrCreate('authNavButtons').querySelector('button');
-    assert.ok(menuTrigger, 'Menu button should render for Executive');
-    await menuTrigger.onclick({ detail: 1 });
+    // Internal users now get a workspace link on the public page, not the old Menu.
+    const nav = h.getOrCreate('authNavButtons');
+    const workspaceLink = nav.children.find(node => node.className === 'login-btn work-home-link');
+    assert.ok(workspaceLink, 'Executive should get the workspace entry link');
+    assert.equal(workspaceLink.href, 'work.html');
+    assert.equal(workspaceLink.textContent, 'กลับหน้าทำงาน');
+    assert.equal(nav.querySelector('button'), null, 'The obsolete public Menu must not return');
 
-    const feedbackLink = h.getOrCreate('role-menu-links').children.find(a => a.children[0]?.textContent === 'รวม Feedback');
-    assert.ok(feedbackLink, 'Menu should include รวม Feedback link');
+    // Existing Feedback URLs still support in-page navigation and a return to the board.
+    const session = await h.windowObj.CstuAuth.refresh();
+    const feedbackItem = h.windowObj.CstuWork.menu(session).find(item => item.label === 'รวม Feedback');
+    assert.ok(feedbackItem, 'Executive should retain the Feedback route');
+    const feedbackLink = h.documentObj.createElement('a');
+    feedbackLink.href = feedbackItem.href;
 
     h.boardEvents.length = 0;
     h.documentObj.clickLink(feedbackLink);
