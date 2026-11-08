@@ -84,7 +84,9 @@ class FeedbackTests(unittest.TestCase):
         self.assertEqual(404, self.call(self.base(other) + '/' + row['id'])[0]['statusCode'])
         self.repository.client.rows[first['id']]['scopeId'] = 'other-scope'
         self.assertEqual(404, self.call(base)[0]['statusCode'])
-        self.assertEqual(404, self.call('/api/partners/partner-demo/feedback')[0]['statusCode'])
+        # Partner feedback is supported; using an exchange ID as a partner still fails closed.
+        self.assertEqual(200, self.call('/api/partners/partner-demo/feedback')[0]['statusCode'])
+        self.assertEqual(404, self.call('/api/partners/' + first['id'] + '/feedback')[0]['statusCode'])
 
     def test_validation_and_server_field_injection(self):
         base = self.base(self.parent())
@@ -143,7 +145,10 @@ class FeedbackTests(unittest.TestCase):
         inbox_after = {row['id']: row for row in self.call('/api/feedback?parentType=exchange&limit=100')[1]['data']}
         self.assertTrue(inbox_after[exec_own['id']]['canEdit'])
         self.assertNotIn('respondentName', inbox_after[exec_own['id']])
-        self.assertEqual(422, self.call('/api/feedback?parentType=partner')[0]['statusCode'])
+        partner_response, partner_body = self.call('/api/feedback?parentType=partner')
+        self.assertEqual(200, partner_response['statusCode'])
+        self.assertEqual([], partner_body['data'])
+        self.assertEqual(422, self.call('/api/feedback?parentType=unsupported')[0]['statusCode'])
 
         # Delete feedback: only creator can delete with version check
         self.actor = 'coordinator'
@@ -152,11 +157,13 @@ class FeedbackTests(unittest.TestCase):
         self.assertEqual(409, self.call(base + '/' + own['id'], 'DELETE', version=1)[0]['statusCode'])
         del_res, del_body = self.call(base + '/' + own['id'], 'DELETE', version=2)
         self.assertEqual(200, del_res['statusCode'], del_body)
-        self.assertTrue(del_body.get('deleted'))
+        self.assertTrue(del_body['data']['deleted'])
         self.assertNotIn(own['id'], [r['id'] for r in self.call(base)[1]['data']])
 
         self.actor = 'coordinator'
-        self.assertIn(self.call('/api/feedback')[0]['statusCode'], (403, 404))
+        response, body = self.call('/api/feedback')
+        self.assertEqual(200, response['statusCode'])
+        self.assertTrue(all(row['scopeId'] == 'cs-demo' for row in body['data']))
         self.actor = 'student-a'
         self.assertIn(self.call('/api/feedback')[0]['statusCode'], (403, 404))
 

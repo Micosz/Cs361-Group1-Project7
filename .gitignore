@@ -26,3 +26,7 @@ __pycache__/
 
 # Local Python test environment
 .venv/
+
+# Browser test artifacts
+playwright-report/
+test-results/

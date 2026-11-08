@@ -1,26 +1,58 @@
-name: Package and deploy Auth Lambda
+name: Test, package and deploy
 
 on:
   pull_request:
-    paths:
-      - 'backend/lambda/CSTUHubAuth/**'
-      - 'scripts/package-auth-lambda.py'
-      - 'deploy/**'
-      - '.github/workflows/lambda-deploy.yml'
   push:
-    branches: [main]
-    paths:
-      - 'backend/lambda/CSTUHubAuth/**'
-      - 'scripts/package-auth-lambda.py'
-      - 'deploy/**'
-      - '.github/workflows/lambda-deploy.yml'
+    branches: [main, SetupTest]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  unit:
+    name: Frontend, four Lambdas and release guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: pip install -r backend/lambda/CSTUHubAuth/requirements.txt
+      - run: npm test
+  browser:
+    name: Browser workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: failure()
+        with:
+          name: browser-failure
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
   package:
+    needs: [unit, browser]
     name: Check syntax and package source
     runs-on: ubuntu-latest
     timeout-minutes: 5

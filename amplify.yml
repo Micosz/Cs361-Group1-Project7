@@ -1,6 +1,11 @@
 version: 1
 frontend:
   phases:
+    preBuild:
+      commands:
+        - npm ci
+        - npm run test:frontend
+        - npm run test:lambda
     build:
       commands:
         - npm run build

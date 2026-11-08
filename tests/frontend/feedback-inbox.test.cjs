@@ -355,7 +355,7 @@ function createPortalHarness({ reducedMotion = false } = {}) {
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 25));
 
-test('Feedback Inbox renders back button and clicking it returns cleanly to Information Board', async () => {
+test('Executive public page links to workspace; legacy Feedback link still returns cleanly to Information Board', async () => {
     const h = createPortalHarness();
     await flush();
 
@@ -363,13 +363,20 @@ test('Feedback Inbox renders back button and clicking it returns cleanly to Info
     assert.equal(h.documentObj.body.classList.contains('scene-ready'), true);
     assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), false);
 
-    // Executive opens Menu and clicks "รวม Feedback"
-    const menuTrigger = h.getOrCreate('authNavButtons').querySelector('button');
-    assert.ok(menuTrigger, 'Menu button should render for Executive');
-    await menuTrigger.onclick({ detail: 1 });
+    // Internal users now get a workspace link on the public page, not the old Menu.
+    const nav = h.getOrCreate('authNavButtons');
+    const workspaceLink = nav.children.find(node => node.className === 'login-btn work-home-link');
+    assert.ok(workspaceLink, 'Executive should get the workspace entry link');
+    assert.equal(workspaceLink.href, 'work.html');
+    assert.equal(workspaceLink.textContent, 'กลับหน้าทำงาน');
+    assert.equal(nav.querySelector('button'), null, 'The obsolete public Menu must not return');
 
-    const feedbackLink = h.getOrCreate('role-menu-links').children.find(a => a.children[0]?.textContent === 'รวม Feedback');
-    assert.ok(feedbackLink, 'Menu should include รวม Feedback link');
+    // Existing Feedback URLs still support in-page navigation and a return to the board.
+    const session = await h.windowObj.CstuAuth.refresh();
+    const feedbackItem = h.windowObj.CstuWork.menu(session).find(item => item.label === 'รวม Feedback');
+    assert.ok(feedbackItem, 'Executive should retain the Feedback route');
+    const feedbackLink = h.documentObj.createElement('a');
+    feedbackLink.href = feedbackItem.href;
 
     h.boardEvents.length = 0;
     h.documentObj.clickLink(feedbackLink);
@@ -399,62 +406,32 @@ test('Feedback Inbox renders back button and clicking it returns cleanly to Info
     assert.ok(h.boardEvents.length >= 1, 'Returning to board should scroll to #board-section');
 });
 
-test('Executive reopening Menu and opening Role Manager from Feedback Inbox preserves Feedback Inbox view and content', async () => {
-    const h = createPortalHarness({ reducedMotion: false });
+test('opening Role Manager from Feedback Inbox preserves its content', async () => {
+    const h = createPortalHarness();
     await flush();
-
-    const menuTrigger = h.getOrCreate('authNavButtons').querySelector('button');
-    const roleMenu = h.getOrCreate('role-menu');
-
-    // 1. Open Menu -> navigate to "รวม Feedback"
-    await menuTrigger.onclick({ detail: 1 });
-    const feedbackLink = h.getOrCreate('role-menu-links').children.find(a => a.children[0]?.textContent === 'รวม Feedback');
+    const feedbackLink = h.documentObj.createElement('a');
+    feedbackLink.href = 'index.html?view=feedback#board-section';
     h.documentObj.clickLink(feedbackLink);
     await flush();
-
-    assert.equal(roleMenu.open, false);
     assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true);
-    assert.equal(h.getOrCreate('records-content').children.length, 3);
-
-    // 2. Reopen Menu again on Feedback Inbox, close via Close button (starts 500ms animated close where roleMenu.open stays true),
-    //    and immediately click Menu again within 500ms — must NOT throw InvalidStateError!
-    await menuTrigger.onclick({ detail: 1 });
-    assert.equal(roleMenu.open, true);
-    assert.equal(roleMenu.classList.contains('is-open'), true);
-    assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true);
-
-    h.getOrCreate('close-role-menu').onclick({ detail: 1 });
-    assert.equal(roleMenu.open, true, 'Dialog remains open during 500ms slide-up transition');
-    assert.equal(roleMenu.classList.contains('is-open'), false);
-
-    await assert.doesNotReject(() => menuTrigger.onclick({ detail: 1 }));
-    assert.equal(roleMenu.open, true);
-    assert.equal(roleMenu.classList.contains('is-open'), true);
-
-    // 3. Click "จัดการสิทธิ์ผู้ใช้" from Menu while still on "รวม Feedback"
     h.boardEvents.length = 0;
-    const rolesLink = h.getOrCreate('role-menu-links').children.find(a => a.children[0]?.textContent === 'จัดการสิทธิ์ผู้ใช้');
-    assert.ok(rolesLink, 'Executive menu should include จัดการสิทธิ์ผู้ใช้');
+    const rolesLink = h.documentObj.createElement('a');
+    rolesLink.href = 'work.html?view=roles#board-section';
     h.documentObj.clickLink(rolesLink);
     await flush();
-
-    // Role Manager modal opens cleanly WITHOUT corrupting Feedback Inbox layout or wiping its cards!
-    assert.equal(roleMenu.open, false);
     assert.equal(h.getOrCreate('record-detail').open, true);
     assert.equal(h.getOrCreate('detail-title').textContent, 'จัดการสิทธิ์ผู้ใช้');
-    assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true, 'Must keep feedback-inbox-view so hero/tabs never bleed onto Feedback Inbox');
-    assert.equal(h.getOrCreate('records-title').textContent, 'รวม Feedback');
-    assert.equal(h.getOrCreate('records-content').children.length, 3, 'Feedback Inbox toolbar and cards must NOT be cleared by openRoles()');
-    assert.equal(h.getOrCreate('record-links').children.length, 1, 'Back button must remain intact');
-    assert.equal(h.boardEvents.length, 0, 'openRoles() must not trigger hero scroll while in Feedback Inbox');
+    assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true);
+    assert.equal(h.getOrCreate('records-content').children.length, 3);
+    assert.equal(h.getOrCreate('record-links').children.length, 1);
+    assert.equal(h.boardEvents.length, 0);
 });
 
 test('opening related work from Feedback Inbox reads it in place without leaving the inbox', async () => {
     const h = createPortalHarness();
     await flush();
-    const menuTrigger = h.getOrCreate('authNavButtons').querySelector('button');
-    await menuTrigger.onclick({ detail: 1 });
-    const feedbackLink = h.getOrCreate('role-menu-links').children.find(a => a.children[0]?.textContent === 'รวม Feedback');
+    const feedbackLink = h.documentObj.createElement('a');
+    feedbackLink.href = 'index.html?view=feedback#board-section';
     h.documentObj.clickLink(feedbackLink);
     await flush();
     assert.equal(h.documentObj.body.classList.contains('feedback-inbox-view'), true);

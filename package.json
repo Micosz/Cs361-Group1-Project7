@@ -10,7 +10,11 @@
     "build": "node scripts/build-role-home.cjs",
     "test": "node scripts/run-tests.cjs",
     "test:frontend": "node scripts/run-tests.cjs frontend",
-    "test:backend": "node scripts/run-tests.cjs backend"
+    "test:backend": "node scripts/run-tests.cjs backend",
+    "test:lambda": "node scripts/run-tests.cjs lambda",
+    "test:deployment": "node scripts/run-tests.cjs deployment",
+    "test:e2e": "playwright test",
+    "test:ci": "npm test && npm run test:e2e"
   },
   "repository": {
     "type": "git",
@@ -27,5 +31,8 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1129.0",
     "@aws-sdk/lib-dynamodb": "^3.1129.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
   }
 }
