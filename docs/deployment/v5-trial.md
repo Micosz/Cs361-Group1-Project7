@@ -142,14 +142,29 @@ python infra/trial-smoke.py verify "$TRIAL" --profile "$AWS_PROFILE" \
 
 ## 5. ผลทดสอบจริงวันที่ 8 พฤศจิกายน 2026
 
+### รอบแรก: API Gateway โดยตรง (#246)
+
 ชุดทดลอง `cstuhub-iac-246nov08` ใช้ AWS Singapore และแพ็ก Lambda ทั้งสี่จาก commit `1ee195a` ด้วยข้อมูลจำลองทั้งหมด
 
 | ขั้น | ผลที่ตรวจจาก AWS |
 | --- | --- |
-| Amplify Hosting | การสร้าง app แยกตอบ `ServiceLimitExceeded` และ Frontend Stack รอบแรก rollback จึงยังไม่มีผลทดสอบ Hosting หรือ rewrite |
+| Amplify Hosting | การสร้าง app แยกตอบ `ServiceLimitExceeded` และ Frontend Stack รอบแรก rollback รอบนี้จึงทดสอบผ่าน API Gateway โดยตรง |
 | Create | Frontend แบบ bucket-only, Data และ Backend ได้ `CREATE_COMPLETE` จาก Change Set ที่ตรวจแล้ว |
 | Verify | API Gateway และการ invoke catalog Lambda คืนเฉพาะ partner สาธารณะ TU adapter คืน error ตาม configuration ของ trial และการล็อกอิน ตรวจ session และออกจากระบบด้วยผู้ใช้จำลองผ่าน |
 | Update | Change Set เปลี่ยนเฉพาะ `DefaultStage` และ AWS แสดง rate limit จาก 10 เป็น 8 คำขอต่อวินาที ผล smoke test หลังอัปเดตผ่านอีกครั้ง |
 | Delete และ retention | ทั้งสาม stack ได้ `DELETE_COMPLETE` ตาราง Sessions และ LoginRate หายไป ส่วน Users, IdentityLinks, Partners และ Business ยังอยู่ S3 ทั้งสอง bucket ยังอยู่ และตรวจพบ HTTPS policy, ไฟล์จำลอง และข้อมูล partner ตามแผน |
 
-Secrets Manager ของ trial ถูกสร้างแยกจาก CloudFormation และอยู่ในรายการ cleanup หลังทดสอบร่วมกับทรัพยากรที่ retain ตามข้อ 3
+Secret ของชุดทดลองถูกสร้างแยกจาก CloudFormation จึงต้องเก็บกวาดร่วมกับทรัพยากรที่ retain ตามข้อ 3 หลังบันทึกหลักฐาน
+
+### รอบทดสอบ Amplify Hosting และ rewrite (#253)
+
+หลัง AWS อนุมัติโควตา Amplify Apps เป็น 26 ทดสอบชุด `cstuhub-iac-253nov08` ใน Singapore จาก commit `801e94d` ด้วยข้อมูลจำลอง
+
+| ขั้น | ผลที่ตรวจจาก AWS |
+| --- | --- |
+| Create และ update | CloudFormation สร้าง app และ branch แยกสำเร็จ อัปเดต `CustomRules` ให้ชี้ API Gateway ของชุดทดลองโดยใช้ App ID เดิม |
+| Deploy | Amplify job #1 ขึ้น `SUCCEED` หน้า `index.html` ตอบ HTTP 200 และเนื้อหาตรงกับไฟล์ใน ZIP เส้นทางที่ไม่มีอยู่ redirect ไปหน้าแรก |
+| Verify | `/api/*` และ `/fetchPartnersData` ผ่าน rewrite ไปยัง backend ทดลอง แสดงเฉพาะรายการสาธารณะ และล็อกอิน ตรวจ session และออกจากระบบด้วยบัญชีจำลองได้ |
+| Cleanup | ทั้งสาม stack ขึ้น `DELETE_COMPLETE` ลบ app และทรัพยากร S3/DynamoDB ที่ retain ของรอบนี้แล้ว ตั้งลบ secret ทดลองโดยมีระยะกู้คืน 7 วัน |
+
+[ผลทดสอบและสถานะ #253](https://github.com/Micosz/Cs361-Group1-Project7/issues/253)
