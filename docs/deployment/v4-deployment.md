@@ -78,7 +78,7 @@ Singapore ถูกเลือกให้บริการหลักอย�
 - ตรวจดัชนี `scope-entity-id` ที่ query ด้วย `scopeEntity` และ TTL attribute ของแต่ละตารางให้ตรงกับระเบียนจริง ไม่เปิด TTL ชื่อเดียวกันทุกตารางโดยอัตโนมัติ
 - ตรวจข้อมูลเดิมและ reference ก่อน migration รักษา ID, scope, version และความสัมพันธ์ระหว่างรายการ
 - การเพิ่ม index, ปรับ capacity หรือเปิด PITR เป็นงาน configuration แยก ไม่ได้เกิดขึ้นจากการปล่อย Lambda
-- ไม่ใช้ `migrate.js` รุ่นเก่าซ้ำโดยไม่ตรวจตารางปลายทางและข้อมูลที่จะถูกเขียนทับ
+- Legacy data snapshots and `migrate.js` have been removed. Deploying code does not modify DynamoDB data.
 
 ## 4. IAM และเอกสารส่วนตัว
 
@@ -89,7 +89,7 @@ Singapore ถูกเลือกให้บริการหลักอย�
 | `CSTUHubGitHubAuthDeployRole` | ให้ GitHub Actions อ่าน configuration, สำรอง version และอัปเดตโค้ดเฉพาะ `CSTUHubAuth` |
 | Execution role ของ `CSTUHubAuth` เช่น `CSTUHubAuthExecutionRole` | ให้โค้ดทำงานกับตาราง, bucket, `tuAuthLogin` และ CloudWatch Logs ตามสิทธิ์ที่จำเป็น |
 
-ตั้ง GitHub OIDC ด้วย provider `token.actions.githubusercontent.com` และ audience `sts.amazonaws.com` ใช้ [trust policy](../../deploy/policies/github-auth-trust.json) และ [deploy policy](../../deploy/policies/github-auth-deploy.json) ของโครงการ ค่า subject ในไฟล์ trust ผูกกับ repository และ branch `main` ของโครงการโดยเฉพาะ ต้องตรวจ subject ที่ GitHub ออกให้ก่อนเปลี่ยนรูปแบบหรือเพิ่ม GitHub Environment
+ตั้ง GitHub OIDC ด้วย provider `token.actions.githubusercontent.com` และ audience `sts.amazonaws.com` ใช้ [trust policy](../../deploy/policies/github/github-auth-trust.json) และ [deploy policy](../../deploy/policies/github/github-auth-deploy.json) ของโครงการ ค่า subject ในไฟล์ trust ผูกกับ repository และ branch `main` ของโครงการโดยเฉพาะ ต้องตรวจ subject ที่ GitHub ออกให้ก่อนเปลี่ยนรูปแบบหรือเพิ่ม GitHub Environment
 
 Execution role ต้องมีสิทธิ์ DynamoDB สำหรับการอ่าน/เขียนและ `ConditionCheckItem` บนตารางที่ระบบใช้ รวมถึงสิทธิ์ index เมื่อ query ผ่าน GSI การเพิ่มสิทธิ์ให้ deploy role ไม่ได้แก้สิทธิ์ runtime ของ Lambda
 
@@ -97,21 +97,21 @@ Execution role ต้องมีสิทธิ์ DynamoDB สำหรับ�
 
 | ไฟล์ | หน้าที่ |
 | --- | --- |
-| [public-access-block.json](../../private/s3/public-access-block.json) | เปิด Block Public Access ทั้งสี่ค่า |
-| [ownership-controls.json](../../private/s3/ownership-controls.json) | ใช้ Bucket owner enforced |
-| [encryption.json](../../private/s3/encryption.json) | เข้ารหัส SSE-S3 (`AES256`) |
-| [versioning.json](../../private/s3/versioning.json) | เปิด Versioning สำหรับตรวจและอ่านไฟล์รุ่นที่แน่นอน |
-| [cors.json](../../private/s3/cors.json) | อนุญาต POST/GET/HEAD จาก origin ที่ระบุ; ไฟล์มี origin Singapore และ Sydney เดิม |
-| [bucket-policy-statements.json](../../private/s3/bucket-policy-statements.json) | Statement ปฏิเสธการส่งข้อมูลผ่าน HTTP ตามเงื่อนไขในไฟล์ |
-| [cstuhub-auth-document-bucket-controls.json](policies/cstuhub-auth-document-bucket-controls.json) | ให้ execution role เรียก `s3:GetBucketPublicAccessBlock` เฉพาะ bucket เอกสาร |
-| [runtime-version-read-policy.json](../../private/s3/runtime-version-read-policy.json) | เพิ่ม `s3:GetObjectVersion` เฉพาะ `documents/staging/*` และ `documents/ready/*` |
-| [lifecycle-rules.json](../../private/s3/lifecycle-rules.json) | กฎเก็บ staging และรุ่นเก่าของไฟล์ |
+| [public-access-block.json](../../deploy/s3/public-access-block.json) | เปิด Block Public Access ทั้งสี่ค่า |
+| [ownership-controls.json](../../deploy/s3/ownership-controls.json) | ใช้ Bucket owner enforced |
+| [encryption.json](../../deploy/s3/encryption.json) | เข้ารหัส SSE-S3 (`AES256`) |
+| [versioning.json](../../deploy/s3/versioning.json) | เปิด Versioning สำหรับตรวจและอ่านไฟล์รุ่นที่แน่นอน |
+| [cors.json](../../deploy/s3/cors.json) | อนุญาต POST/GET/HEAD จาก origin ที่ระบุ; ไฟล์มี origin Singapore และ Sydney เดิม |
+| [bucket-policy-statements.json](../../deploy/s3/bucket-policy-statements.json) | Statement ปฏิเสธการส่งข้อมูลผ่าน HTTP ตามเงื่อนไขในไฟล์ |
+| [cstuhub-auth-document-bucket-controls.json](../../deploy/policies/lambda/cstuhub-auth-document-bucket-controls.json) | ให้ execution role เรียก `s3:GetBucketPublicAccessBlock` เฉพาะ bucket เอกสาร |
+| [runtime-version-read-policy.json](../../deploy/policies/lambda/runtime-version-read-policy.json) | เพิ่ม `s3:GetObjectVersion` เฉพาะ `documents/staging/*` และ `documents/ready/*` |
+| [lifecycle-rules.json](../../deploy/s3/lifecycle-rules.json) | กฎเก็บ staging และรุ่นเก่าของไฟล์ |
 
 JSON เหล่านี้เป็นต้นฉบับ configuration ต้องนำไปตั้งค่าใน AWS แยกจากการ deploy โค้ด รวม statement/rules กับค่าที่มีอยู่ โดยรักษานโยบายอื่นของ bucket และ execution role ไว้ ไฟล์ bucket-controls ให้เฉพาะสิทธิ์ตรวจ Block Public Access ไม่ใช่สิทธิ์ทั้งหมดสำหรับเอกสาร; runtime ยังต้องมี Get/Put/DeleteObject และสิทธิ์อ่าน version ตามเส้นทางใช้งาน
 
 Lifecycle ตั้งให้ staging หมดอายุหลัง 1 วัน และลบรุ่นเก่าของ staging หลังเป็น noncurrent 1 วัน ส่วน ready ลบเฉพาะรุ่นเก่าหลังเป็น noncurrent 90 วัน ไม่ตั้งหมดอายุไฟล์ ready ปัจจุบัน การลบรุ่นเก่าเป็นการลบถาวร จึงต้องตรวจ prefix และไฟล์ที่ metadata ยังอ้างถึงก่อนใช้กฎ ดู [S3 Lifecycle expiration](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html)
 
-Direct upload ส่งไฟล์เข้า staging ด้วย presigned POST แล้วให้ backend ตรวจไฟล์ก่อนย้ายไป ready และบันทึก metadata ไฟล์จริงอยู่ S3; metadata และ `storageVersionId` อยู่ DynamoDB รายละเอียดการทำงานและข้อจำกัดอยู่ใน [Private document storage](../../private/s3/README.md)
+Direct upload ส่งไฟล์เข้า staging ด้วย presigned POST แล้วให้ backend ตรวจไฟล์ก่อนย้ายไป ready และบันทึก metadata ไฟล์จริงอยู่ S3; metadata และ `storageVersionId` อยู่ DynamoDB รายละเอียดการทำงานและข้อจำกัดอยู่ใน [Private document storage](private-document-storage.md)
 
 ## 5. ขั้นตอนปล่อยระบบ
 
@@ -136,7 +136,7 @@ Direct upload ส่งไฟล์เข้า staging ด้วย presigned P
 
 Workflow: [.github/workflows/lambda-deploy.yml](../../.github/workflows/lambda-deploy.yml)
 
-- PR และ push ที่เปลี่ยน Python backend, packager, `deploy/` หรือ workflow จะเข้า pipeline; ไม่รวม `backend/tests/**` และ `backend/lambda/**`
+- PR และ push ที่เปลี่ยน Python backend, packager, `deploy/` หรือ workflow จะเข้า pipeline; ไม่รวม `tests/backend/CSTUHubAuth/**` และโค้ดของ Node.js Lambda อีกสามตัว
 - PR ตรวจ syntax และแพ็ก ZIP เท่านั้น ไม่ deploy AWS และไม่รัน test suite
 - Push เข้า `main` ที่ตรง path filter จะแพ็กแล้ว deploy ผ่าน OIDC หรือสั่ง `Run workflow` บน `main` ได้
 - การแก้เฉพาะ docs/frontend ไม่ทำให้ workflow Auth เริ่มอัตโนมัติ
@@ -259,8 +259,16 @@ Versioning, replication ไป backup bucket และ DynamoDB PITR มีห�
 | ไฟล์ / โฟลเดอร์ | การใช้งาน |
 | --- | --- |
 | [deploy/](../../deploy/README.md) | สคริปต์และ policy สำหรับ Auth CI/CD |
-| [private/s3/](../../private/s3/README.md) | Configuration และรายละเอียด direct upload |
+| [S3 configuration guide](private-document-storage.md) | Configuration และรายละเอียด direct upload |
 | [Data guide](../data/data-guide.md) | โครงสร้างข้อมูล ความสัมพันธ์ และสิทธิ์ |
 | [V3 deployment](v3-deployment.md) | เอกสาร deployment ของรุ่นก่อน; ใช้คู่มือ V4 สำหรับระบบ Singapore |
 
 ไฟล์ JSON policy เก็บแยกเพื่อใช้งานเป็น configuration ได้โดยตรง ส่วนขั้นตอน deploy และแก้ปัญหาทั่วไปใช้เอกสารนี้เป็นหลัก
+
+### CSTUHubAuth source layout
+
+Python source lives in `backend/lambda/CSTUHubAuth/backend/`. The packager strips
+`backend/lambda/CSTUHubAuth/` from ZIP paths, preserving the existing
+`backend.lambda_function.handler` handler. The workflow watches this function
+directory and excludes its tests; other Lambda directories remain separate.
+Run Python tests from `backend/lambda/CSTUHubAuth/`.

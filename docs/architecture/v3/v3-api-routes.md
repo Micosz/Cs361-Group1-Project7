@@ -20,7 +20,7 @@
 
 | การโหลดข้อมูลหน้าหลัก | พฤติกรรม |
 |---|---|
-| Catalog เดิม | เรียก `fetchPartnersData`; หากล้มเหลวใช้ `public/data/partner-data-backup.json` |
+| Catalog เดิม | เรียก `fetchPartnersData`; หากล้มเหลวแสดงข้อผิดพลาดและให้ลองใหม่ ไม่มี static fallback |
 | ข้อมูลสาธารณะเพิ่มเติม | เมื่อเปิดระบบ auth จะเรียก `/api/public/records` มารวมกับ catalog |
 | เส้นทางเรียกใช้ | Catalog เดิมเรียก API Gateway โดยตรง ส่วน `/api/*` เรียกผ่านโดเมนเดียวกับเว็บและ Amplify rewrite |
 
@@ -92,9 +92,9 @@
 
 | ส่วน | โค้ด |
 |---|---|
-| ประกอบ Lambda และเชื่อมบริการ | [lambda_function.py](../../../backend/lambda_function.py) |
-| เซสชันและ HTTP | [http_api.py](../../../backend/http_api.py) |
-| เส้นทางบัญชี ตัวเลือก และบทบาท | [application.py](../../../backend/application.py) |
-| เส้นทางข้อมูลและสิทธิ์ | [gateway.py](../../../backend/permissions/gateway.py), [policy.py](../../../backend/permissions/policy.py) |
-| ข้อมูลที่อนุญาตให้ส่งกลับ | [projections.py](../../../backend/permissions/projections.py) |
+| ประกอบ Lambda และเชื่อมบริการ | [lambda_function.py](../../../backend/lambda/CSTUHubAuth/backend/lambda_function.py) |
+| เซสชันและ HTTP | [http_api.py](../../../backend/lambda/CSTUHubAuth/backend/http_api.py) |
+| เส้นทางบัญชี ตัวเลือก และบทบาท | [application.py](../../../backend/lambda/CSTUHubAuth/backend/application.py) |
+| เส้นทางข้อมูลและสิทธิ์ | [gateway.py](../../../backend/lambda/CSTUHubAuth/backend/permissions/gateway.py), [policy.py](../../../backend/lambda/CSTUHubAuth/backend/permissions/policy.py) |
+| ข้อมูลที่อนุญาตให้ส่งกลับ | [projections.py](../../../backend/lambda/CSTUHubAuth/backend/permissions/projections.py) |
 | Catalog และข้อมูลสำรอง | [script.js](../../../public/assets/script.js) |

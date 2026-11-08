@@ -49,21 +49,8 @@ function fetchPartnersData() {
     }
 
     partnersDataRequest = (async () => {
-        let rawData;
-        let usingBackup = false;
-
-        try {
-            rawData = await loadJson(API_URL, 8000);
-        } catch (apiError) {
-            console.warn('API unavailable; loading backup:', apiError);
-
-            rawData = await loadJson(
-                './data/partner-data-backup.json',
-                8000
-            );
-
-            usingBackup = true;
-        }
+        let rawData = await loadJson(API_URL, 8000);
+        let partialData = false;
 
         // Merge published business records into the same browse/detail source.
         // The backend returns only its explicit public projection, without a session.
@@ -75,7 +62,7 @@ function fetchPartnersData() {
                 rawData = Array.from(combined.values());
             } catch (error) {
                 console.warn('Published records unavailable:', error);
-                usingBackup = true;
+                partialData = true;
             }
         }
 
@@ -91,7 +78,7 @@ function fetchPartnersData() {
 
         const events = publicRecords.filter(item => item.partnerId);
 
-        // ประกอบข้อมูลแบบเดียวกันทั้ง API และไฟล์สำรอง
+        // Reconstruct partner relationships from API records.
         partners.forEach(partner => {
             partner.collaborations = events.filter(event => {
                 if (event.partnerId === partner.id) return true;
@@ -108,12 +95,12 @@ function fetchPartnersData() {
             });
         });
 
-        // แจ้งผู้ใช้เมื่อกำลังแสดงข้อมูลสำรอง
-        let notice = document.getElementById('backupDataNotice');
+        // Warn when the additional published-record API is unavailable.
+        let notice = document.getElementById('partialDataNotice');
 
-        if (usingBackup && !notice) {
+        if (partialData && !notice) {
             notice = document.createElement('div');
-            notice.id = 'backupDataNotice';
+            notice.id = 'partialDataNotice';
             notice.setAttribute('role', 'status');
             notice.style.cssText =
                 'padding:12px 16px;background:#fff4d6;' +
@@ -124,8 +111,8 @@ function fetchPartnersData() {
 
         if (notice) {
             notice.textContent =
-                'กำลังแสดงข้อมูลสำรอง ข้อมูลอาจไม่ใช่ข้อมูลล่าสุด';
-            notice.hidden = !usingBackup;
+                'โหลดข้อมูลได้ไม่ครบ กรุณาโหลดหน้าเว็บใหม่เพื่อลองอีกครั้ง';
+            notice.hidden = !partialData;
         }
 
         partnersDataCache = partners;

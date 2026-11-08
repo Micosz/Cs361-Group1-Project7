@@ -8,7 +8,7 @@
 
 - Frontend ใช้ `amplify.yml`: รัน `npm run build` แล้วเผยแพร่ไฟล์ใน `public/`; คำสั่ง build ตรวจว่า `public/login/index.html` มีอยู่
 - GitHub Actions ใน `.github/workflows/lambda-deploy.yml` ตรวจ syntax/แพ็ก source และ deploy เฉพาะ `CSTUHubAuth` เมื่อเปลี่ยน Backend แล้ว merge เข้า `main`; ดู [คู่มือ Lambda CI/CD](../../deploy/README.md)
-- ชุดทดสอบ frontend ระดับ root ถูกนำออกแล้ว; ชุดทดสอบ Backend ยังอยู่ใน `backend/tests/` และรันเองได้ด้วยคำสั่งใน [Backend README](../../backend/README.md)
+- ชุดทดสอบรวมอยู่ใน `tests/frontend/` และ `tests/backend/CSTUHubAuth/`; ดูคำสั่งรันใน [Tests README](../../tests/README.md)
 - Source ของ Lambda และโครงสร้าง AWS ใน repository ไม่ได้หมายความว่า Lambda/API ถูก deploy อัตโนมัติหรือ config ตรงกับ AWS ปัจจุบัน
 
 ## ก่อน Deploy
@@ -34,7 +34,7 @@
 `781485979426` พบว่ามีสิทธิ์อ่าน/เขียน/ลบ object ใน bucket เอกสารแล้ว แต่ขาด action ตรวจ bucket นี้
 ทำให้ Lambda ตอบ `PERMISSION_UNAVAILABLE` เมื่ออัปโหลดไฟล์แนบ
 
-เพิ่ม policy จาก [cstuhub-auth-document-bucket-controls.json](policies/cstuhub-auth-document-bucket-controls.json)
+เพิ่ม policy จาก [cstuhub-auth-document-bucket-controls.json](../../deploy/policies/lambda/cstuhub-auth-document-bucket-controls.json)
 เป็น policy แบบ additive ให้ role เดิม โดยคง inline policy `CSTUHubAuthRuntime` ไว้ เพราะมีสิทธิ์ DynamoDB
 และ action อื่นที่ระบบใช้อยู่ การ merge source ไม่เปลี่ยน IAM บน AWS; ผู้ดูแลต้องแนบ policy ใน Console
 แล้วทดสอบอัปโหลดใหม่ก่อนถือว่าแก้ปัญหาบนเว็บแล้ว

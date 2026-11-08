@@ -7,7 +7,10 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "node scripts/build-role-home.cjs"
+    "build": "node scripts/build-role-home.cjs",
+    "test": "node scripts/run-tests.cjs",
+    "test:frontend": "node scripts/run-tests.cjs frontend",
+    "test:backend": "node scripts/run-tests.cjs backend"
   },
   "repository": {
     "type": "git",

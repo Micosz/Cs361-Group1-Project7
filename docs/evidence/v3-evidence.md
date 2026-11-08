@@ -175,7 +175,7 @@ PR CI ใช้ mocks และไม่รับ AWS Secrets; credential expira
 
 Test-only repository อยู่ใน `backend/tests/test_permissions.py` เท่านั้น เพื่อทดสอบขอบเขต HTTP และจำลอง transaction races ไม่ใช่ implementation storage จริง ไม่ยืนยัน atomic guarantees ของ DynamoDB ที่ deploy อยู่ และไม่ได้ทดสอบ validation/transition/idempotency replay/file bytes ที่เป็นหน้าที่ feature adapters
 
-Public projection ถูกทดสอบเป็นฟังก์ชัน ยังไม่ได้เชื่อม public Lambda/backup workflow เดิม API ธุรกิจที่ deploy อยู่จึงยังไม่ได้รับการรับรองจากงานนี้ ต้องทำ integration ตาม [คู่มือ #79](../../backend/permissions/README.th.md) และตรวจ HTTPS/Production ก่อนปิด issue
+Public projection ถูกทดสอบเป็นฟังก์ชัน ยังไม่ได้เชื่อม public Lambda/backup workflow เดิม API ธุรกิจที่ deploy อยู่จึงยังไม่ได้รับการรับรองจากงานนี้ ต้องทำ integration ตาม [คู่มือ #79](../../backend/lambda/CSTUHubAuth/backend/permissions/README.th.md) และตรวจ HTTPS/Production ก่อนปิด issue
 
 
 <a id="shared-navigation-108-111"></a>
@@ -414,7 +414,7 @@ Branch: `97-Activity-Links` จาก main `2fc1d29`
 4. Public ไม่มี agreement IDs/ชื่อ/count และไม่เรียกอ่าน agreement เลย; primary ไม่เผยแพร่ถูกตัดออก; dependency failure ไม่กลายเป็น empty success
 5. ตรวจ partnerId และ co_hosts ของกิจกรรมใน public/data/partner-data-backup.json ทุกตัว: คง primary ID เก็บชื่อเป็น legacyCoHostNames ไม่เดา ID และไม่เปลี่ยน snapshot
 
-ตัวอย่างก่อน/หลังและการเชื่อมต่ออยู่ใน [คู่มือ](../../backend/relationships/README.th.md)
+ตัวอย่างก่อน/หลังและการเชื่อมต่ออยู่ใน [คู่มือ](../../backend/lambda/CSTUHubAuth/backend/relationships/README.th.md)
 
 `git diff --check` ผ่าน; ไม่มี dependencies หรือ credentials ใหม่
 

@@ -23,3 +23,6 @@ __pycache__/
 
 # Generated from index.html and partials/work-home.html
 /public/work.html
+
+# Local Python test environment
+.venv/
