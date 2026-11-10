@@ -35,7 +35,30 @@
         filterLabel.append(filter);
         const list=document.createElement('ol'); list.className='public-comment-list';
         const more=document.createElement('button'); more.type='button'; more.textContent='ดูเพิ่มเติม'; more.hidden=true;
-        form.append(comment,controls,status); container.append(heading,intro,form,filterLabel,listStatus,list,more);
+        // Staff and executives may ask for an AI summary; it is off unless the backend has a model configured.
+        const summaryBox=document.createElement('div'); summaryBox.className='feedback-summary'; summaryBox.hidden=true;
+        const summarize=document.createElement('button'); summarize.type='button'; summarize.className='feedback-action-btn feedback-summary-btn';
+        summarize.textContent='สรุปความคิดเห็นด้วย AI';
+        const summaryText=document.createElement('p'); summaryText.className='feedback-summary-text'; summaryText.setAttribute('role','status');
+        const summaryNote=document.createElement('p'); summaryNote.className='feedback-summary-note'; summaryNote.hidden=true;
+        summaryNote.textContent='สรุปโดย AI จากความคิดเห็นที่แสดงอยู่ อาจคลาดเคลื่อนได้ โปรดอ่านความคิดเห็นจริงประกอบ';
+        summaryBox.append(summarize,summaryText,summaryNote);
+        summarize.onclick=async()=>{
+            summarize.disabled=true; summaryNote.hidden=true; summaryText.textContent='กำลังสรุปความคิดเห็น อาจใช้เวลาสักครู่';
+            try {
+                const result=(await window.CstuAuth.request('/'+kind+'/'+encodeURIComponent(record.id)+'/feedback-summary',{timeoutMs:30000})).data;
+                if(!container.isConnected)return;
+                if(typeof result?.summary==='string' && result.summary){
+                    summaryText.textContent=result.summary; summaryNote.hidden=false;
+                } else summaryText.textContent='ต้องมีความคิดเห็นอย่างน้อย '+(result?.minimum||3)+' รายการจึงจะสรุปได้ (ขณะนี้มี '+(result?.count||0)+' รายการ)';
+            } catch(error) {
+                summaryText.textContent=error.message==='SUMMARY_UNAVAILABLE'?'ระบบนี้ยังไม่ได้เปิดใช้การสรุปด้วย AI':
+                    error.status===429?'ขอสรุปบ่อยเกินไป กรุณาลองใหม่ภายหลัง':
+                    error.status===403||error.status===404?'คุณไม่มีสิทธิ์ขอสรุปความคิดเห็นของรายการนี้':'สรุปความคิดเห็นไม่ได้ กรุณาลองใหม่';
+            } finally { summarize.disabled=false; }
+        };
+        const reportReasons={spam:'สแปมหรือโฆษณา',abuse:'ข้อความไม่เหมาะสมหรือคุกคาม',personal_data:'มีข้อมูลส่วนบุคคล',other:'อื่น ๆ'};
+        form.append(comment,controls,status); container.append(heading,intro,form,summaryBox,filterLabel,listStatus,list,more);
         window.CstuFeedback?.enhanceComposer(form, [comment]);
         let cursor=null, revision=0, key=null, fingerprint=null, editing=null, canCreate=!scoped;
         async function load(reset=true) {
@@ -52,6 +75,7 @@
                         if(current!==revision || !container.isConnected)return;
                         if(next===null){
                             canCreate=page.canCreate===true && !options.hideCreate;
+                            summaryBox.hidden=page.canModerate!==true;
                             result=page;
                             form.hidden=!canCreate && !editing;
                         }
@@ -92,6 +116,69 @@
                     li.append(meta,text);
                     const footer=document.createElement('div'); footer.className='feedback-comment-footer';
                     if(!scoped || result.canReact===true) footer.append(votes);
+                    if(!scoped){
+                        // Reporting never deletes: enough reports hide the comment until staff review it.
+                        const report=document.createElement('button'); report.type='button'; report.className='feedback-action-btn feedback-report-btn';
+                        report.textContent='รายงาน'; report.setAttribute('aria-label','รายงานความคิดเห็นนี้');
+                        report.onclick=()=>{
+                            if(li.querySelector('.feedback-report-form'))return;
+                            const reportForm=document.createElement('form'); reportForm.className='feedback-report-form';
+                            const reasonLabel=document.createElement('label'); reasonLabel.textContent='เหตุผล ';
+                            const reason=document.createElement('select'); reason.setAttribute('aria-label','เหตุผลที่รายงาน');
+                            for(const [value,label] of Object.entries(reportReasons)){
+                                const option=document.createElement('option');option.value=value;option.textContent=label;reason.append(option);
+                            }
+                            reasonLabel.append(reason);
+                            const sendReport=document.createElement('button'); sendReport.type='submit'; sendReport.className='feedback-action-btn'; sendReport.textContent='ส่งรายงาน';
+                            const cancelReport=document.createElement('button'); cancelReport.type='button'; cancelReport.className='feedback-action-btn'; cancelReport.textContent='ยกเลิก';
+                            cancelReport.onclick=()=>{reportForm.remove();report.focus();};
+                            reportForm.append(reasonLabel,sendReport,cancelReport);
+                            reportForm.onsubmit=async event=>{
+                                event.preventDefault(); sendReport.disabled=true; cancelReport.disabled=true;
+                                try {
+                                    const session=await window.CstuAuth.refresh();
+                                    await window.CstuAuth.request(base+'/'+encodeURIComponent(row.id)+'/report',{
+                                        method:'PUT',headers:{'X-CSRF-Token':session.csrfToken},
+                                        body:JSON.stringify({reason:reason.value})});
+                                    reportForm.remove(); report.disabled=true; report.textContent='รายงานแล้ว';
+                                    listStatus.textContent='ได้รับรายงานแล้ว เจ้าหน้าที่จะตรวจสอบ ขอบคุณค่ะ';
+                                } catch(error) {
+                                    listStatus.textContent=error.status===429?'รายงานบ่อยเกินไป กรุณาลองใหม่ภายหลัง':
+                                        error.status===404?'ความคิดเห็นนี้ไม่อยู่ในรายการแล้ว':'ส่งรายงานไม่ได้ กรุณาลองใหม่';
+                                    sendReport.disabled=false; cancelReport.disabled=false;
+                                }
+                            };
+                            li.append(reportForm); reason.focus();
+                        };
+                        footer.append(report);
+                    }
+                    if(scoped && row.canModerate===true){
+                        const reports=Number(row.reports)||0;
+                        if(row.publiclyHidden)li.classList.add('is-hidden-comment');
+                        if(reports>0 || row.moderation){
+                            const note=document.createElement('p'); note.className='feedback-moderation-note';
+                            note.textContent=[reports>0?'ถูกรายงาน '+reports+' ครั้ง':'',
+                                row.publiclyHidden?'ซ่อนจากสาธารณะอยู่':row.moderation==='visible'?'เจ้าหน้าที่อนุญาตให้แสดง':''].filter(Boolean).join(' · ');
+                            li.append(note);
+                        }
+                        const moderate=document.createElement('button'); moderate.type='button'; moderate.className='feedback-action-btn feedback-moderate-btn';
+                        moderate.textContent=row.publiclyHidden?'แสดงต่อสาธารณะ':'ซ่อนจากสาธารณะ';
+                        moderate.onclick=async()=>{
+                            moderate.disabled=true;
+                            try {
+                                const session=await window.CstuAuth.refresh();
+                                await window.CstuAuth.request(base+'/'+encodeURIComponent(row.id)+'/moderation',{
+                                    method:'PUT',headers:{'X-CSRF-Token':session.csrfToken,'If-Match':'"'+row.version+'"'},
+                                    body:JSON.stringify({state:row.publiclyHidden?'visible':'hidden'})});
+                                await load();
+                            } catch(error) {
+                                listStatus.textContent=error.status===409?'ความคิดเห็นเปลี่ยนแล้ว กรุณาโหลดรายการใหม่':
+                                    error.status===403||error.status===404?'คุณไม่มีสิทธิ์จัดการความคิดเห็นนี้':'บันทึกไม่ได้ กรุณาลองใหม่';
+                                moderate.disabled=false;
+                            }
+                        };
+                        footer.append(moderate);
+                    }
                     const canEdit = scoped && row.canEdit;
                     const canDelete = scoped && (row.canDelete ?? row.canEdit);
                     if(canEdit || canDelete){

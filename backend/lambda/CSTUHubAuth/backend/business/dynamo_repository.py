@@ -20,6 +20,8 @@ from ..document_links import document_record
 from ..documents.uploads import parse_upload
 from .validation import normalize_payload
 from ..relationships.activity_links import plan_patch, LinkError
+from ..feedback_moderation import (MODERATION_STATES, MODERATOR_ROLES, REPORT_REASONS,
+                                   publicly_hidden)
 
 
 class DynamoBusinessRepository:
@@ -203,6 +205,8 @@ class DynamoBusinessRepository:
                         or row.get('scopeId') != parent['scopeId']
                         or row.get('parentType') != kind or row.get('parentId') != key):
                     continue
+                if publicly_hidden(row):
+                    continue  # Hidden by reports or staff; the row itself is kept.
                 public = pick(row, {'id', 'comment', 'respondentType', 'occurredOn', 'createdAt'})
                 public['likes'] = max(0, int(row.get('likes', 0)))
                 public['dislikes'] = max(0, int(row.get('dislikes', 0)))
@@ -292,6 +296,90 @@ class DynamoBusinessRepository:
         else:
             args['Item'] = values({'id':vote_id, 'entityType':'feedbackReaction', 'reaction':reaction})
             checks.append({'Put':args})
+        try:
+            self.client.transact_write_items(TransactItems=checks)
+        except Exception as error:
+            if getattr(error, 'response', {}).get('Error', {}).get('Code') == 'TransactionCanceledException':
+                raise AuthError('VERSION_CONFLICT', 409) from None
+            raise
+
+    def _web_feedback(self, kind, key, feedback_id, parent):
+        import re
+        if not isinstance(feedback_id, str) or not re.fullmatch(r'feedback-[A-Za-z0-9_-]{1,200}', feedback_id):
+            raise AuthError('NOT_FOUND', 404)
+        row = self.get('feedback', feedback_id)
+        if (not row or not parent or row.get('origin') != 'web' or row.get('source_state') == 'retired'
+                or row.get('scopeId') != parent.get('scopeId') or row.get('parentType') != kind
+                or row.get('parentId') != key or type(row.get('version')) is not int):
+            raise AuthError('NOT_FOUND', 404)
+        return row
+
+    def report_public_feedback(self, kind, key, feedback_id, session_hash, reporter_key, reason):
+        """Count one report per reporter; the comment is kept and only hidden from view."""
+        if reason not in REPORT_REASONS or not isinstance(reporter_key, str) or not reporter_key:
+            raise AuthError('INVALID_FIELDS', 422)
+        parent, partner = self._public_feedback_parent(kind, key)
+        row = self._web_feedback(kind, key, feedback_id, parent)
+        report_id = 'feedback-report-' + hashlib.sha256((feedback_id + '\0' + reporter_key).encode()).hexdigest()
+        if self._read(report_id):
+            return  # Repeating a report is accepted without counting twice.
+        now = int(self.clock())
+        checks = [{'ConditionCheck': {'TableName': self.sessions, 'Key': values({'tokenHash': session_hash}),
+                   'ConditionExpression': '#e > :now AND #a > :now AND attribute_not_exists(#r)',
+                   'ExpressionAttributeNames': {'#e': 'expiresAt', '#a': 'absoluteExpiresAt', '#r': 'revokedAt'},
+                   'ExpressionAttributeValues': values({':now': now})}}]
+        for item_kind, item in [(kind, parent)] + ([('partner', partner)] if partner else []):
+            checks.append({'ConditionCheck': {'TableName': self._table(item_kind), 'Key': self._key(item_kind, item),
+                'ConditionExpression': '#v = :v AND #s = :s',
+                'ExpressionAttributeNames': {'#v': 'version', '#s': 'scopeId'},
+                'ExpressionAttributeValues': values({':v': item['version'], ':s': item['scopeId']})}})
+        # The counter does not change `version`, so a staff edit is not invalidated.
+        checks.append({'Update': {'TableName': self.table, 'Key': values({'id': row['id']}),
+            'UpdateExpression': 'ADD #reports :one',
+            'ConditionExpression': '#origin = :web AND #s = :scope',
+            'ExpressionAttributeNames': {'#reports': 'reports', '#origin': 'origin', '#s': 'scopeId'},
+            'ExpressionAttributeValues': values({':one': 1, ':web': 'web', ':scope': row['scopeId']})}})
+        timestamp = datetime.fromtimestamp(now, timezone.utc).isoformat()
+        checks.append({'Put': {'TableName': self.table, 'ConditionExpression': 'attribute_not_exists(id)',
+            'Item': values({'id': report_id, 'entityType': 'feedbackReport', 'feedbackId': row['id'],
+                            'reason': reason, 'createdAt': timestamp})}})
+        try:
+            self.client.transact_write_items(TransactItems=checks)
+        except Exception as error:
+            if getattr(error, 'response', {}).get('Error', {}).get('Code') == 'TransactionCanceledException':
+                raise AuthError('VERSION_CONFLICT', 409) from None
+            raise
+
+    def moderate_feedback(self, kind, key, feedback_id, state, expected_version, context, session_hash):
+        """Staff or executive in the parent's scope hide or restore a public comment."""
+        from ..permissions.policy import matching_roles, require_record
+        from ..permissions.gateway import WriteConditions
+        if state not in MODERATION_STATES:
+            raise AuthError('INVALID_FIELDS', 422)
+        parent = self.get(kind, key)
+        candidate = {'entityType': 'feedback', 'scopeId': (parent or {}).get('scopeId'),
+                     'parentType': kind, 'parentId': key}
+        require_record(context, 'feedback', 'read', candidate, parent)
+        if not matching_roles(context, parent) & MODERATOR_ROLES:
+            raise AuthError('FORBIDDEN', 403)
+        row = self._web_feedback(kind, key, feedback_id, parent)
+        if row['version'] != expected_version:
+            raise AuthError('VERSION_CONFLICT', 409)
+        now = int(self.clock())
+        conditions = WriteConditions(context.user.user_id, context.user.authz_version, session_hash,
+                                     row['id'], row['version'], parent['id'], parent['version'], parent['scopeId'])
+        checks = transaction_checks(conditions, user_table=self.users, session_table=self.sessions,
+                                    business_table=self.table, now=now)
+        checks[-1]['ConditionCheck']['TableName'] = self._table(kind)
+        checks[-1]['ConditionCheck']['Key'] = self._key(kind, parent)
+        update = {'TableName': self.table, 'Key': values({'id': row['id']}),
+                  'UpdateExpression': 'SET #m = :m, #mb = :by, #ma = :at ADD #v :one'}
+        update.update(target_condition(conditions))
+        update['ExpressionAttributeNames'].update({'#m': 'moderation', '#mb': 'moderatedBy', '#ma': 'moderatedAt'})
+        update['ExpressionAttributeValues'].update(values({
+            ':m': state, ':by': context.user.user_id, ':one': 1,
+            ':at': datetime.fromtimestamp(now, timezone.utc).isoformat()}))
+        checks.append({'Update': update})
         try:
             self.client.transact_write_items(TransactItems=checks)
         except Exception as error:

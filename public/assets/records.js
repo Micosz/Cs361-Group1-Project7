@@ -89,7 +89,13 @@
             : kind === 'activities' ? ['academic_activity','event','research'] : kind === 'agreements' ? ['draft','active','expired','terminated'] : ['draft','ongoing','completed','cancelled'];
         for (const name of ['type','status']) form.elements.namedItem(name).replaceChildren(new Option('ทั้งหมด',''));
         const select = form.elements.namedItem(typed ? 'type':'status');
-        for (const value of values) { const option = document.createElement('option'); option.value = value; option.textContent = value; select.appendChild(option); }
+        // Show Thai labels; the stored code remains the submitted value.
+        for (const value of values) { const option = document.createElement('option'); option.value = value; option.textContent = codeLabel(typed ? 'type' : 'status', value); select.appendChild(option); }
+    }
+    function codeLabel(field, value) {
+        const labels = window.CstuLabels;
+        if (!value || !labels) return value || '';
+        return (field === 'status' ? labels.status(value) : kind === 'partners' ? labels.partnerType(value) : labels.activityType(value)) || value;
     }
     function validateList(result) {
         if (!Array.isArray(result?.data) || !Number.isInteger(result.count) || result.count < 0 || !result.page
@@ -334,8 +340,11 @@
     function renderEventCards(container = $('eventGrid')) {
         if (!container || !eventKinds.includes(kind) || overview) return;
         container.querySelectorAll('.protected-event-card').forEach(card => card.remove());
-        if (eventRows.length) container.querySelector('[data-public-event-empty]')?.remove();
-        const cards=eventRows.map(row=>{
+        // Follow the public list's current/ended view; ended rows stay in the archive view.
+        const cardType=kind==='agreements'?'agreement':'activity';
+        const shown=eventRows.filter(row=>window.matchesEventTimeView?.(row,cardType) ?? true);
+        if (shown.length) container.querySelector('[data-public-event-empty]')?.remove();
+        const cards=shown.map(row=>{
             const duplicate=Array.from(container.children).find(card=>card.id===row.id);
             if(duplicate){duplicate.hidden=true;duplicate.setAttribute('data-protected-duplicate','');}
             const card=window.createBrowseCard(row,kind==='agreements'?'agreement':'activity',
@@ -380,7 +389,7 @@
                     const li = document.createElement('li'), button = document.createElement('button');
                     button.type = 'button'; button.textContent = row.name || row.title || 'รายละเอียด'; button.onclick = () => detail(row,button);
                     li.appendChild(button);
-                    const summary = document.createElement('small'); summary.textContent = [row.type || row.status, row.periodDate || row.startDate, row.endDate].filter(Boolean).join(' · '); li.appendChild(summary); list.appendChild(li);
+                    const summary = document.createElement('small'); summary.textContent = [row.type ? codeLabel('type',row.type) : codeLabel('status',row.status), row.periodDate || row.startDate, row.endDate].filter(Boolean).join(' · '); li.appendChild(summary); list.appendChild(li);
                 }
                 nextCursor = result.page.nextCursor; status(`แสดงรายการเพิ่มเติม (${result.count} รายการทั้งหมด)`);
             }
@@ -453,7 +462,7 @@
                 const li = document.createElement('li'), button = document.createElement('button');
                 button.type = 'button'; button.textContent = row.name || row.title || 'รายละเอียด'; button.onclick = () => detail(row,button);
                 li.appendChild(button);
-                const summary = document.createElement('small'); summary.textContent = [row.type || row.status, row.periodDate || row.startDate, row.endDate].filter(Boolean).join(' · '); li.appendChild(summary); list.appendChild(li);
+                const summary = document.createElement('small'); summary.textContent = [row.type ? codeLabel('type',row.type) : codeLabel('status',row.status), row.periodDate || row.startDate, row.endDate].filter(Boolean).join(' · '); li.appendChild(summary); list.appendChild(li);
             }
             $('records-content').appendChild(list); nextCursor = result.page.nextCursor; placeSentinel();
             if (params.get('action') === 'create') {
