@@ -1,0 +1,122 @@
+/* Improvement of V5: loading placeholders, current/ended activity views,
+   undated-date control and public comment reporting. Loaded last so it only
+   adds to the existing layers; no existing rule is replaced. */
+
+/* --- Loading placeholders ------------------------------------------------ */
+/* While the opening waits for partner data, show the shape of the message
+   instead of an empty panel. It leaves as soon as the opening starts. */
+.hero-loading { display: none; }
+.hero-section.intro-pending > .hero-loading {
+    display: block;
+    position: absolute;
+    z-index: 3;
+    top: clamp(128px, calc((100svh - 92px) * .18), 176px);
+    left: 24%;
+    width: 52%;
+    height: 300px;
+    pointer-events: none;
+    background:
+        linear-gradient(#e9e1e4, #e9e1e4) center 0 / 34% 20px no-repeat,
+        linear-gradient(#e9e1e4, #e9e1e4) center 44px / 74% 52px no-repeat,
+        linear-gradient(#e9e1e4, #e9e1e4) center 112px / 52% 52px no-repeat,
+        linear-gradient(#efe9eb, #efe9eb) center 192px / 46% 12px no-repeat,
+        linear-gradient(#efe9eb, #efe9eb) center 216px / 50% 12px no-repeat,
+        linear-gradient(#efe9eb, #efe9eb) center 240px / 42% 12px no-repeat;
+    animation: cstu-skeleton-pulse 1.2s ease-in-out infinite;
+}
+@media (max-width: 1023px) {
+    .hero-section.intro-pending > .hero-loading { left: 8%; width: 84%; top: 96px; }
+}
+
+.card-skeleton {
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-card);
+    background: #fff;
+}
+.card-skeleton .skeleton-thumb { height: 184px; background: #f1ecee; }
+.card-skeleton .skeleton-body { display: grid; gap: 12px; padding: 20px; }
+.card-skeleton .skeleton-line { height: 12px; border-radius: 6px; background: #f1ecee; }
+.card-skeleton .skeleton-line.is-title { height: 18px; width: 70%; background: #ece6e8; }
+.card-skeleton .skeleton-line.is-short { width: 45%; }
+.card-skeleton { animation: cstu-skeleton-pulse 1.2s ease-in-out infinite; }
+@keyframes cstu-skeleton-pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) {
+    .card-skeleton { animation: none; }
+    /* Reduced motion keeps the real message visible, so no placeholder is needed. */
+    .hero-section.intro-pending > .hero-loading { display: none; }
+}
+
+/* --- Current / ended activity views -------------------------------------- */
+.event-time-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 20px; }
+.event-time-tabs { display: inline-flex; padding: 4px; gap: 4px; border: 1px solid #ddd5cb; border-radius: 999px; background: #fffdf9; }
+.event-time-tab {
+    min-height: 36px; padding: 6px 16px; border: 0; border-radius: 999px;
+    background: transparent; color: var(--text-gray); font: inherit; font-size: .875rem; font-weight: 600; cursor: pointer;
+}
+.event-time-tab span { font-weight: 400; }
+.event-time-tab.active { background: var(--tu-red); color: #fff; }
+.event-time-tab:not(.active):hover { color: var(--text-dark); background: #f3eef0; }
+.event-time-tab:focus-visible, .event-time-jump:focus-visible { outline: 3px solid #171717; outline-offset: 3px; }
+.event-time-hint { margin: 0; color: var(--text-gray); font-size: .8125rem; line-height: 1.6; }
+.event-time-hint:empty { display: none; }
+.event-time-jump {
+    margin-top: 16px; min-height: 40px; padding: 8px 18px; border: 1px solid var(--tu-red); border-radius: 999px;
+    background: #fff; color: var(--tu-red); font: inherit; font-weight: 600; cursor: pointer;
+}
+.event-time-jump:hover { background: #fbe4ea; }
+
+.card.is-ended > .card-thumbnail { filter: saturate(.55); }
+.card-ended-badge {
+    position: absolute; top: 10px; left: 10px; padding: 3px 10px; border-radius: 999px;
+    background: rgb(32 32 32 / 82%); color: #fff; font-size: .75rem; font-weight: 600; line-height: 1.5;
+}
+
+.undated-toggle { display: inline-flex; align-items: center; gap: 6px; flex-basis: 100%; color: var(--text-gray); font-size: .8125rem; cursor: pointer; }
+.undated-toggle[hidden] { display: none; }
+.undated-toggle input { width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0; accent-color: var(--tu-red); }
+
+/* --- Comment reporting, moderation and summary --------------------------- */
+.feedback-section .feedback-report-btn,
+.feedback-section .feedback-moderate-btn,
+.detail-sheet .feedback-section .feedback-report-btn,
+.detail-sheet .feedback-section .feedback-moderate-btn,
+#record-detail .feedback-section .feedback-report-btn,
+#record-detail .feedback-section .feedback-moderate-btn {
+    width: auto; min-height: 28px; height: 28px; padding: 0 10px; margin: 0; border: 1px solid transparent; border-radius: 14px;
+    background: transparent; color: #706970; font: inherit; font-size: .78rem; line-height: 1; cursor: pointer; box-shadow: none;
+}
+.feedback-section .feedback-report-btn:hover,
+.feedback-section .feedback-moderate-btn:hover { background: #f3eef0; color: #302b30; }
+.feedback-section .feedback-report-btn:disabled,
+.feedback-section .feedback-moderate-btn:disabled { opacity: .6; cursor: default; }
+.feedback-section .feedback-report-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: .82rem; color: #514b50; }
+.feedback-section .feedback-report-form select { width: auto; min-height: 32px; padding: 4px 28px 4px 8px; font: inherit; border: 1px solid #ded8da; border-radius: 8px; background-color: #fff; }
+.feedback-section .feedback-report-form button,
+.detail-sheet .feedback-section .feedback-report-form button,
+#record-detail .feedback-section .feedback-report-form button {
+    width: auto; min-height: 32px; height: 32px; padding: 0 14px; margin: 0; border: 1px solid #ded8da; border-radius: 999px;
+    background: #fff; color: #403940; font: inherit; font-size: .82rem; line-height: 1; cursor: pointer; box-shadow: none;
+}
+.feedback-section .feedback-report-form button[type='submit'],
+.detail-sheet .feedback-section .feedback-report-form button[type='submit'],
+#record-detail .feedback-section .feedback-report-form button[type='submit'] { border-color: var(--tu-red); background: var(--tu-red); color: #fff; }
+.feedback-section .feedback-moderation-note {
+    display: inline-flex; align-items: center; gap: 6px; margin: 6px 0 0; padding: 2px 10px; border-radius: 999px;
+    background: #fff4d6; color: #664d03; font-size: .78rem;
+}
+.feedback-section li.is-hidden-comment > p:not(.feedback-comment-meta):not(.feedback-moderation-note) { color: #8a8388; }
+.feedback-section .feedback-summary { margin: 0 0 20px; padding: 14px 16px; border: 1px solid #ded8da; border-radius: 12px; background: #fbf9fa; }
+.feedback-section .feedback-summary[hidden] { display: none; }
+.feedback-section .feedback-summary-text { margin: 10px 0 0; white-space: pre-wrap; line-height: 1.7; color: #302b30; font-size: .9rem; }
+.feedback-section .feedback-summary-text:empty { display: none; }
+.feedback-section .feedback-summary-note { margin: 8px 0 0; color: #777078; font-size: .78rem; }
+.feedback-section .feedback-summary-btn,
+.detail-sheet .feedback-section .feedback-summary-btn,
+#record-detail .feedback-section .feedback-summary-btn {
+    width: auto; min-height: 34px; padding: 6px 16px; margin: 0; border: 1px solid #c9bfb3; border-radius: 999px;
+    background: #fff; color: #302b30; font: inherit; font-size: .85rem; cursor: pointer;
+}
+.feedback-section .feedback-summary-btn:hover { background: #f3eef0; }
+.feedback-section .feedback-summary-btn:disabled { opacity: .6; cursor: wait; }
+.feedback-filtered > .feedback-summary { order: 1; }
