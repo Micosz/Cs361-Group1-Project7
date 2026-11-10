@@ -3,6 +3,7 @@
 import copy
 
 from .policy import allowed_roles, require_record
+from ..feedback_moderation import MODERATION_STATES, MODERATOR_ROLES, publicly_hidden, report_count
 from ..relationships.activity_links import public_links, LinkError
 
 COMMON = {'id', 'entityType', 'version', 'createdAt', 'updatedAt'}
@@ -54,6 +55,11 @@ def project(context, kind, record, parent=None):
     if kind == 'feedback':
         result['canEdit'] = bool(allowed_roles(context, kind, 'update', record, parent))
         result['canDelete'] = bool(allowed_roles(context, kind, 'delete', record, parent))
+        if roles & MODERATOR_ROLES and record.get('origin') == 'web':
+            # Report state is for moderators only; reporters stay anonymous.
+            state = record.get('moderation')
+            result.update(reports=report_count(record), publiclyHidden=publicly_hidden(record),
+                          moderation=state if state in MODERATION_STATES else None, canModerate=True)
     if editor:
         if kind == 'feedback':
             result.update(pick(record, {'respondentName'}))

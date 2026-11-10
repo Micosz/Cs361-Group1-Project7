@@ -73,8 +73,17 @@ def build_application():
             sessions, os.environ['USER_TABLE'], os.environ['SESSION_TABLE'], documents,
             index=os.environ.get('BUSINESS_SCOPE_INDEX', 'scope-entity-id'),
             partner_table=os.environ.get('PARTNER_TABLE'))
+    summarizer = None
+    if os.environ.get('FEEDBACK_SUMMARY_MODEL_ID'):
+        # Off by default. One attempt within the HTTP API's 25-second integration limit.
+        from .feedback_summary import BedrockFeedbackSummarizer
+        summarizer = BedrockFeedbackSummarizer(
+            boto3.client('bedrock-runtime',
+                         region_name=os.environ.get('FEEDBACK_SUMMARY_REGION') or os.environ['AWS_REGION'],
+                         config=Config(connect_timeout=3, read_timeout=20, retries={'total_max_attempts': 1})),
+            os.environ['FEEDBACK_SUMMARY_MODEL_ID'])
     return AuthApplication(sessions, provider, accounts, RoleService(store),
-        DynamoLoginLimiter(db.Table(os.environ['LOGIN_RATE_TABLE']), secret), repository)
+        DynamoLoginLimiter(db.Table(os.environ['LOGIN_RATE_TABLE']), secret), repository, summarizer)
 
 
 def handler(event, context):

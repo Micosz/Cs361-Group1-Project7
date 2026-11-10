@@ -67,6 +67,23 @@ class LocalDatabase:
                 return False
         return True
 
+    def _update(self, item):
+        # Models the SET and ADD clauses the adapter uses on existing rows.
+        row = self._row(item['TableName'], next(iter(decode(item['Key']).values())))
+        if row is None:
+            return
+        names = item.get('ExpressionAttributeNames', {})
+        vals = decode(item.get('ExpressionAttributeValues', {})) or {}
+        for keyword, clause in re.findall(r'(SET|ADD)\s+(.*?)(?=\s+(?:SET|ADD)\s|$)', item['UpdateExpression']):
+            for part in clause.split(','):
+                if keyword == 'SET':
+                    name, value = (text.strip() for text in part.split('='))
+                    row[names.get(name, name)] = vals[value]
+                else:
+                    name, value = part.split()
+                    field = names.get(name, name)
+                    row[field] = row.get(field, 0) + vals[value]
+
     def transact_write_items(self, TransactItems):
         with self.lock:
             if self.before_commit:
@@ -80,6 +97,8 @@ class LocalDatabase:
                 elif 'Delete' in operation:
                     key = decode(operation['Delete']['Key'])
                     self.rows.pop(key['id'], None)
+                elif 'Update' in operation:
+                    self._update(operation['Update'])
             self.transactions.append(copy.deepcopy(TransactItems))
         return {}
 
