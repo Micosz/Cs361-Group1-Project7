@@ -5,12 +5,16 @@ from .auth.require_session import require_session
 from .http_api import handle, headers, session_cookie, response, error_response
 from .permissions.gateway import body
 from .permissions.policy import require_role_management, require_role_management_scope
+from .feedback_moderation import MODERATION_STATES, MODERATOR_ROLES, REPORT_REASONS, publicly_hidden
+from .feedback_summary import MIN_COMMENTS
 
 
 class AuthApplication:
-    def __init__(self, sessions, provider, accounts, roles, limiter, repository=None):
+    def __init__(self, sessions, provider, accounts, roles, limiter, repository=None, summarizer=None):
         self.sessions, self.provider, self.accounts = sessions, provider, accounts
         self.roles, self.limiter, self.repository = roles, limiter, repository
+        # Optional: comment summaries stay unavailable until a model is configured.
+        self.summarizer = summarizer
 
     def handle(self, event):
         try:
@@ -31,6 +35,15 @@ class AuthApplication:
             scoped_reaction = re.fullmatch(r'/api/(partners|activities|exchanges)/([^/]+)/feedback/([^/]+)/reaction', path)
             if scoped_reaction:
                 return self.scoped_reaction(event, *scoped_reaction.groups())
+            report = re.fullmatch(r'/api/public/(partners|activities)/([^/]+)/feedback/([^/]+)/report', path)
+            if report:
+                return self.public_report(event, *report.groups())
+            moderation = re.fullmatch(r'/api/(partners|activities|exchanges)/([^/]+)/feedback/([^/]+)/moderation', path)
+            if moderation:
+                return self.feedback_moderation(event, *moderation.groups())
+            summary = re.fullmatch(r'/api/(partners|activities|exchanges)/([^/]+)/feedback-summary', path)
+            if summary:
+                return self.feedback_summary(event, *summary.groups())
             reaction = re.fullmatch(r'/api/public/(partners|activities)/([^/]+)/feedback/([^/]+)/reaction', path)
             if reaction:
                 return self.public_reaction(event, *reaction.groups())
@@ -176,6 +189,95 @@ class AuthApplication:
         self.repository.set_public_reaction('partner' if collection == 'partners' else 'activity', key,
                                             feedback_id, token_hash(token), payload['reaction'])
         return response(200, {'ok': True})
+
+    def _source_ip(self, event, check):
+        ip = event.get('requestContext', {}).get('http', {}).get('sourceIp')
+        if not isinstance(ip, str) or not ip or not self.limiter or not hasattr(self.limiter, check):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        return ip
+
+    def public_report(self, event, collection, key, feedback_id):
+        """Any visitor may flag a public comment; nothing is deleted."""
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'PUT':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        if event.get('queryStringParameters'):
+            raise AuthError('INVALID_QUERY', 422)
+        token = session_cookie(event)
+        request_headers = headers(event)
+        self.sessions.check_csrf(token, request_headers.get('origin'), request_headers.get('x-csrf-token'))
+        self.sessions.validate(token, require_user=False)
+        payload = body(event)
+        if (not isinstance(payload, dict) or set(payload) != {'reason'}
+                or not isinstance(payload['reason'], str) or payload['reason'] not in REPORT_REASONS):
+            raise AuthError('INVALID_FIELDS', 422)
+        if not self.repository or not hasattr(self.repository, 'report_public_feedback'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        ip = self._source_ip(event, 'check_reports')
+        if not hasattr(self.limiter, 'reporter_key'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        self.limiter.check_reports(ip)
+        self.repository.report_public_feedback('partner' if collection == 'partners' else 'activity', key,
+                                               feedback_id, token_hash(token), self.limiter.reporter_key(ip),
+                                               payload['reason'])
+        # The reply never says whether the comment is now hidden.
+        return response(200, {'ok': True})
+
+    def feedback_moderation(self, event, collection, key, feedback_id):
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'PUT':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        if event.get('queryStringParameters'):
+            raise AuthError('INVALID_QUERY', 422)
+        context = require_session(event, self.sessions)
+        payload = body(event)
+        if (not isinstance(payload, dict) or set(payload) != {'state'}
+                or not isinstance(payload['state'], str) or payload['state'] not in MODERATION_STATES):
+            raise AuthError('INVALID_FIELDS', 422)
+        version = headers(event).get('if-match')
+        if version is None:
+            raise AuthError('PRECONDITION_REQUIRED', 428)
+        if not re.fullmatch(r'"[1-9][0-9]*"', version):
+            raise AuthError('INVALID_VERSION', 422)
+        if not self.repository or not hasattr(self.repository, 'moderate_feedback'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        kind = {'partners': 'partner', 'activities': 'activity', 'exchanges': 'exchange'}[collection]
+        self.repository.moderate_feedback(kind, key, feedback_id, payload['state'], int(version[1:-1]),
+                                          context, token_hash(session_cookie(event)))
+        require_session(event, self.sessions)
+        return response(200, {'ok': True})
+
+    def feedback_summary(self, event, collection, key):
+        """AI summary of readable comments for staff and executives of the scope."""
+        from .permissions.policy import allowed_roles, matching_roles, require_record
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        if event.get('queryStringParameters'):
+            raise AuthError('INVALID_QUERY', 422)
+        context = require_session(event, self.sessions)
+        if not self.repository:
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        kind = {'partners': 'partner', 'activities': 'activity', 'exchanges': 'exchange'}[collection]
+        parent = self.repository.get(kind, key)
+        candidate = {'entityType': 'feedback', 'scopeId': (parent or {}).get('scopeId'),
+                     'parentType': kind, 'parentId': key}
+        require_record(context, 'feedback', 'read', candidate, parent)
+        if not matching_roles(context, parent) & MODERATOR_ROLES:
+            raise AuthError('FORBIDDEN', 403)
+        if self.summarizer is None:
+            raise AuthError('SUMMARY_UNAVAILABLE', 503)
+        rows = [row for row in self.repository.list('feedback', context, parent)
+                if allowed_roles(context, 'feedback', 'read', row, parent) and not publicly_hidden(row)]
+        rows.sort(key=lambda row: (row.get('createdAt') or '', row.get('id') or ''), reverse=True)
+        if len(rows) < MIN_COMMENTS:
+            return response(200, {'data': {'summary': None, 'count': len(rows), 'minimum': MIN_COMMENTS}})
+        self.limiter.check_summary(self._source_ip(event, 'check_summary'))
+        # Only comment text and respondent group leave the system; never names.
+        summary = self.summarizer(parent.get('title') or parent.get('name') or '',
+                                  [{'comment': row.get('comment'), 'improvement': row.get('improvement'),
+                                    'respondentType': row.get('respondentType'), 'sourceType': row.get('sourceType')}
+                                   for row in rows])
+        # A session revoked while the model was running must not receive the result.
+        require_session(event, self.sessions)
+        return response(200, {'data': {'summary': summary, 'count': len(rows), 'minimum': MIN_COMMENTS}})
 
     def selection_partners(self, event):
         context = require_session(event, self.sessions)

@@ -49,20 +49,25 @@ function fetchPartnersData() {
     }
 
     partnersDataRequest = (async () => {
+        // Start both public sources together so the first paint waits for the
+        // slower request only once. The additional source still fails soft.
+        const publishedRequest = window.CSTU_AUTH_CONFIG?.enabled === true
+            ? loadJson('/api/public/records', 8000).then(rows => ({ rows }), error => ({ error }))
+            : null;
         let rawData = await loadJson(API_URL, 8000);
         let partialData = false;
 
         // Merge published business records into the same browse/detail source.
         // The backend returns only its explicit public projection, without a session.
-        if (window.CSTU_AUTH_CONFIG?.enabled === true) {
-            try {
-                const published = await loadJson('/api/public/records', 8000);
-                const combined = new Map(rawData.map(row => [row.id,row]));
-                for (const row of published) if (row.visibility === 'public') combined.set(row.id,{...combined.get(row.id),...row,businessRecord:row.businessRecord !== false});
-                rawData = Array.from(combined.values());
-            } catch (error) {
-                console.warn('Published records unavailable:', error);
+        if (publishedRequest) {
+            const published = await publishedRequest;
+            if (published.error) {
+                console.warn('Published records unavailable:', published.error);
                 partialData = true;
+            } else {
+                const combined = new Map(rawData.map(row => [row.id,row]));
+                for (const row of published.rows) if (row.visibility === 'public') combined.set(row.id,{...combined.get(row.id),...row,businessRecord:row.businessRecord !== false});
+                rawData = Array.from(combined.values());
             }
         }
 
@@ -259,9 +264,9 @@ async function showSuggestions() {
     } else {
         dropdown.innerHTML = results.slice(0, 6).map(item => `
             <div class="suggestion-item" onclick="selectSuggestion('${item.id}', '${item.resultType}')">
-                <span class="suggestion-category">${item.topicLabel} • ${item.type.toUpperCase()}</span>
-                <span class="suggestion-title">${item.name || item.title}</span>
-                <span class="suggestion-desc">${item.summary || ''}</span>
+                <span class="suggestion-category">${item.topicLabel} • ${escapePartnerLinkText(typeLabel(item.type, item.resultType))}</span>
+                <span class="suggestion-title">${escapePartnerLinkText(item.name || item.title)}</span>
+                <span class="suggestion-desc">${escapePartnerLinkText(item.summary || '')}</span>
             </div>
         `).join('');
     }
@@ -294,16 +299,87 @@ function getColorClass(type) {
     }
 }
 
-function formatActivityDate(activity) {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(activity.period_date || '');
-    if (match) {
-        const [, year, month, day] = match;
-        const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
-        if (!Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === match[0]) {
-            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-                'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-            return `${Number(day)} ${months[Number(month) - 1]} ${String(Number(year) + 543).slice(-2)}`;
+// Thai labels for stored type/status codes. Unknown codes stay visible as-is
+// rather than being relabelled as something they are not.
+const PARTNER_TYPE_LABELS = {
+    company: 'บริษัท', university: 'มหาวิทยาลัย', government: 'หน่วยงานรัฐ',
+    research_institute: 'สถาบันวิจัย', internship: 'เครือข่ายสหกิจศึกษา'
+};
+const ACTIVITY_TYPE_LABELS = {
+    internship: 'ฝึกงานและสหกิจศึกษา', academic_activity: 'กิจกรรมวิชาการ',
+    event: 'กิจกรรมทั่วไปและสัมมนา', research: 'งานวิจัยและแลกเปลี่ยน', mou: 'MoU / MoA'
+};
+const RECORD_STATUS_LABELS = {
+    draft: 'ฉบับร่าง', active: 'มีผลใช้งาน', expired: 'หมดอายุ', terminated: 'ยุติแล้ว',
+    ongoing: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น', cancelled: 'ยกเลิก'
+};
+function typeLabel(type, kind = 'partner') {
+    const labels = kind === 'partner' ? PARTNER_TYPE_LABELS : ACTIVITY_TYPE_LABELS;
+    return labels[type] || (typeof type === 'string' && type ? type : 'ไม่ระบุประเภท');
+}
+window.CstuLabels = {
+    partnerType: type => typeLabel(type, 'partner'),
+    activityType: type => typeLabel(type, 'activity'),
+    status: status => RECORD_STATUS_LABELS[status] || status || ''
+};
+
+const THAI_SHORT_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+function isCalendarDay(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+// The calendar span a record is known to cover, taken only from stored fields:
+// an exact day, a stored end day, or the month the source states. Returns null
+// when the source gives no date; a day is never invented.
+function activityDateRange(activity) {
+    if (!activity) return null;
+    const start = activity.period_date ?? activity.periodDate;
+    const end = activity.period_end_date ?? activity.periodEndDate;
+    if (isCalendarDay(start)) return { start, end: isCalendarDay(end) && end >= start ? end : start };
+    if (activity.date_precision === 'month' && typeof activity.period === 'string') {
+        const match = /(ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)\s*(\d{4})/.exec(activity.period);
+        if (match) {
+            const year = Number(match[2]) - 543, month = THAI_SHORT_MONTHS.indexOf(match[1]);
+            if (year >= 1900 && year <= 9999) {
+                const pad = number => String(number).padStart(2, '0');
+                const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+                return { start: `${year}-${pad(month + 1)}-01`, end: `${year}-${pad(month + 1)}-${pad(lastDay)}` };
+            }
         }
+    }
+    return null;
+}
+
+function todayInBangkok() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok',
+        year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+
+// Ended records move to the archive view; nothing is deleted. A record without
+// a known date is never treated as ended.
+function isPastRecord(record, type = 'activity', today = todayInBangkok()) {
+    if (!record) return false;
+    if (type === 'agreement') {
+        if (['expired', 'terminated'].includes(record.status)) return true;
+        return isCalendarDay(record.endDate) && record.endDate < today;
+    }
+    const range = activityDateRange(record);
+    return Boolean(range) && range.end < today;
+}
+
+function formatActivityDate(activity) {
+    const formatDay = value => {
+        const [year, month, day] = value.split('-');
+        return `${Number(day)} ${THAI_SHORT_MONTHS[Number(month) - 1]} ${String(Number(year) + 543).slice(-2)}`;
+    };
+    const start = activity.period_date ?? activity.periodDate;
+    if (isCalendarDay(start)) {
+        const end = activity.period_end_date ?? activity.periodEndDate;
+        return isCalendarDay(end) && end > start ? `${formatDay(start)} – ${formatDay(end)}` : formatDay(start);
     }
     // Preserve a source's month precision; never invent a calendar day.
     if (activity.date_precision === 'month') {
@@ -416,8 +492,33 @@ function createBrowseCard(record, type = 'partner', onOpen = null) {
     }
     content.appendChild(title); content.appendChild(summary); content.appendChild(footer);
     card.appendChild(thumbnail); card.appendChild(content);
+    if (!partner && isPastRecord(record, type)) {
+        card.classList.add('is-ended');
+        const badge = document.createElement('span'); badge.className = 'card-ended-badge';
+        badge.textContent = agreement ? 'หมดอายุแล้ว' : 'สิ้นสุดแล้ว';
+        thumbnail.appendChild(badge);
+    }
     card.addEventListener('click', event => { if (!event.target.closest('button,a')) activate(); });
     return card;
+}
+
+// Placeholder cards for the first load only; real cards replace them. They are
+// not `.card`, so the opening and role-based lists never read them as data.
+function showLoadingSkeleton(container, count = 8) {
+    if (partnersDataCache !== null || container.children.length) return;
+    container.setAttribute('aria-busy', 'true');
+    container.replaceChildren(...Array.from({ length: count }, () => {
+        const card = document.createElement('div'); card.className = 'card-skeleton';
+        card.setAttribute('aria-hidden', 'true');
+        const thumb = document.createElement('div'); thumb.className = 'skeleton-thumb';
+        const body = document.createElement('div'); body.className = 'skeleton-body';
+        for (const name of ['is-title', '', 'is-short']) {
+            const line = document.createElement('div'); line.className = `skeleton-line ${name}`.trim();
+            body.appendChild(line);
+        }
+        card.append(thumb, body);
+        return card;
+    }));
 }
 
 // สร้างการ์ดหน้า Collaborator
@@ -427,14 +528,16 @@ async function renderCollaboratorCards() {
     
     // ดึงข้อมูล
     const version = ++collaboratorRenderVersion;
+    showLoadingSkeleton(container);
     let records;
     try {
         records = await getPublicPartners();
     } catch (error) {
-        if (version === collaboratorRenderVersion) { showDataLoadError(container); window.CstuRecords?.renderPartnerCards(container); }
+        if (version === collaboratorRenderVersion) { container.removeAttribute('aria-busy'); showDataLoadError(container); window.CstuRecords?.renderPartnerCards(container); }
         return;
     }
     if (version !== collaboratorRenderVersion) return;
+    container.removeAttribute('aria-busy');
     initHeroTicker(records); // Also recover the ticker after a failed initial load.
     const partners = filterBrowseRecords(records, 'name', 'filterCollab');
 
@@ -460,30 +563,107 @@ async function renderEventCards() {
     if (!container) return;
     
     const version = ++eventRenderVersion;
+    showLoadingSkeleton(container);
     let records;
     try {
         records = await getPublicActivities();
     } catch (error) {
-        if (version === eventRenderVersion) { showDataLoadError(container); window.CstuRecords?.renderEventCards(container); }
+        if (version === eventRenderVersion) { container.removeAttribute('aria-busy'); showDataLoadError(container); window.CstuRecords?.renderEventCards(container); }
         return;
     }
     if (version !== eventRenderVersion) return;
-    const activities = filterBrowseRecords(records, 'title', 'filterEvent');
+    container.removeAttribute('aria-busy');
+    updateUndatedToggle(records);
+    const matched = filterBrowseRecords(records, 'title', 'filterEvent');
+    const today = todayInBangkok();
+    const past = matched.filter(activity => isPastRecord(activity, 'activity', today));
+    const current = matched.filter(activity => !isPastRecord(activity, 'activity', today));
+    updateEventTimeTabs(current.length, past.length);
+    const activities = sortActivitiesForView(eventTimeView === 'past' ? past : current, eventTimeView);
 
     if (activities.length === 0) {
-        container.innerHTML = `
-            <div data-public-event-empty style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-gray);">
-                <i class="fas fa-search" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
-                <h3 style="color: var(--text-dark); margin-bottom: 0.5rem;">ไม่พบกิจกรรม</h3>
-                <p>ลองเปลี่ยนคำค้นหา หรือล้างตัวกรองเพื่อดูข้อมูลทั้งหมด</p>
-            </div>
-        `;
+        const other = eventTimeView === 'past' ? current.length : past.length;
+        const empty = document.createElement('div');
+        empty.setAttribute('data-public-event-empty', '');
+        empty.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-gray);';
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-search';
+        icon.style.cssText = 'font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;';
+        const heading = document.createElement('h3');
+        heading.style.cssText = 'color: var(--text-dark); margin-bottom: 0.5rem;';
+        heading.textContent = eventTimeView === 'past' ? 'ไม่พบกิจกรรมที่ผ่านมาแล้ว' : 'ไม่พบกิจกรรมปัจจุบัน';
+        const hint = document.createElement('p');
+        hint.textContent = 'ลองเปลี่ยนคำค้นหา หรือล้างตัวกรองเพื่อดูข้อมูลทั้งหมด';
+        empty.append(icon, heading, hint);
+        if (other > 0) {
+            // Matching records exist in the other view; say so instead of implying none.
+            const jump = document.createElement('button');
+            jump.type = 'button'; jump.className = 'event-time-jump';
+            jump.textContent = eventTimeView === 'past'
+                ? `ดูกิจกรรมปัจจุบัน (${other})` : `ดูกิจกรรมที่ผ่านมาแล้ว (${other})`;
+            jump.onclick = () => setEventTimeView(eventTimeView === 'past' ? 'current' : 'past');
+            empty.appendChild(jump);
+        }
+        container.replaceChildren(empty);
         window.CstuRecords?.renderEventCards(container);
         return;
     }
 
     container.replaceChildren(...activities.map(activity => createBrowseCard(activity,'activity')));
     window.CstuRecords?.renderEventCards(container);
+}
+
+// ==========================================
+// Current / ended views of the activity list
+// ==========================================
+let eventTimeView = 'current';
+
+function sortActivitiesForView(activities, view) {
+    const key = activity => activityDateRange(activity);
+    return [...activities].sort((a, b) => {
+        const first = key(a), second = key(b);
+        if (!first || !second) return first ? -1 : second ? 1 : 0; // No known date: last.
+        // Ended: most recent first. Current: soonest first.
+        return view === 'past' ? second.end.localeCompare(first.end) : first.start.localeCompare(second.start);
+    });
+}
+
+function updateEventTimeTabs(currentCount, pastCount) {
+    for (const [id, view, count] of [['eventTimeCurrent', 'current', currentCount], ['eventTimePast', 'past', pastCount]]) {
+        const tab = document.getElementById(id);
+        if (!tab) continue;
+        const active = eventTimeView === view;
+        tab.classList?.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+        const badge = document.getElementById(`${id}Count`);
+        if (badge) badge.textContent = `(${count})`;
+    }
+    const hint = document.getElementById('eventTimeHint');
+    if (hint) hint.textContent = eventTimeView === 'past'
+        ? 'กิจกรรมที่สิ้นสุดแล้วยังเก็บไว้เป็นประวัติความร่วมมือ ไม่ถูกลบออกจากระบบ'
+        : 'กิจกรรมที่กำลังจะมาถึงหรือยังดำเนินอยู่ รวมรายการที่แหล่งข้อมูลยังไม่ระบุวันที่';
+}
+
+function setEventTimeView(view) {
+    eventTimeView = view === 'past' ? 'past' : 'current';
+    hideSuggestions();
+    return renderEventCards();
+}
+
+// Role-based cards from records.js follow the same view as public cards.
+function matchesEventTimeView(record, type = 'activity') {
+    return isPastRecord(record, type) === (eventTimeView === 'past');
+}
+
+// Offer to keep undated activities only while a date range hides them.
+function updateUndatedToggle(records) {
+    const wrapper = document.getElementById('filterEventUndated');
+    if (!wrapper) return;
+    const active = Boolean(document.getElementById('filterEventDate')?.value || document.getElementById('filterEventDateEnd')?.value);
+    const undated = active ? records.filter(activity => !activityDateRange(activity)).length : 0;
+    wrapper.hidden = !undated;
+    const count = document.getElementById('filterEventUndatedCount');
+    if (count) count.textContent = undated ? `(${undated})` : '';
 }
 
 //ฟังก์ชันสลับ Tab
@@ -542,21 +722,21 @@ async function initHeroTicker(records) {
         const t1 = document.getElementById('heroTitle1');
         const d1 = document.getElementById('heroDesc1');
         const c1 = document.getElementById('heroCard1');
-        if (t1) { t1.textContent = p1.name; d1.textContent = `${p1.type.toUpperCase()}`; }
+        if (t1) { t1.textContent = p1.name; d1.textContent = typeLabel(p1.type); }
         if (c1) { c1.onclick = () => openModal(p1.id, 'partner'); }
 
         //การ์ดใบที่ 2
         const t2 = document.getElementById('heroTitle2');
         const d2 = document.getElementById('heroDesc2');
         const c2 = document.getElementById('heroCard2');
-        if (t2) { t2.textContent = p2.name; d2.textContent = `${p2.type.toUpperCase()}`; }
+        if (t2) { t2.textContent = p2.name; d2.textContent = typeLabel(p2.type); }
         if (c2) { c2.onclick = () => openModal(p2.id, 'partner'); }
 
         //การ์ดใบที่ 3
         const t3 = document.getElementById('heroTitle3');
         const d3 = document.getElementById('heroDesc3');
         const c3 = document.getElementById('heroCard3');
-        if (t3) { t3.textContent = p3.name; d3.textContent = `${p3.type.toUpperCase()}`; }
+        if (t3) { t3.textContent = p3.name; d3.textContent = typeLabel(p3.type); }
         if (c3) { c3.onclick = () => openModal(p3.id, 'partner'); }
     }
 
@@ -754,7 +934,7 @@ async function openModal(id, type, protectedPartner = null) {
         // --- 1. ส่วนของ Partner (แสดงการ์ดกิจกรรมที่เกี่ยวข้อง) ---
         document.getElementById('modalTitle').textContent = data.name;
         document.getElementById('modalName').textContent = data.location || 'ไม่ระบุสถานที่';
-        document.getElementById('modalInfo').textContent = (data.type || '').toUpperCase();
+        document.getElementById('modalInfo').textContent = typeLabel(data.type);
         
         if (data.logo_path) {
             modalImage.style.backgroundImage = `url('${data.logo_path}')`;
@@ -862,10 +1042,16 @@ function filterBrowseRecords(records, field, selectId, searchKeyword = browseKey
     const keyword = searchKeyword.trim().toLowerCase();
     const start = document.getElementById(`${selectId}Date`)?.value || '';
     const end = document.getElementById(`${selectId}DateEnd`)?.value || '';
-    const withinRange = day => (!start && !end) || (
-        typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) &&
-        (!start || day >= start) && (!end || day <= end)
-    );
+    const includeUndated = selectId === 'filterEvent' &&
+        document.getElementById('filterEventIncludeUndated')?.checked === true;
+    // A record matches when its known span overlaps the chosen range. Records
+    // with no stored date match only when the visitor asks to include them.
+    const withinRange = activity => {
+        if (!start && !end) return true;
+        const range = activityDateRange(activity);
+        if (!range) return includeUndated;
+        return (!start || range.end >= start) && (!end || range.start <= end);
+    };
     const matchesType = record => {
         const hasMoU = Array.isArray(record.activity_tags) && record.activity_tags.includes('mou');
         if (selectId === 'filterEvent' && type === 'mou') return hasMoU;
@@ -881,8 +1067,8 @@ function filterBrowseRecords(records, field, selectId, searchKeyword = browseKey
         String(record[field] ?? '').toLowerCase().includes(keyword) &&
         // Compare the stored calendar day directly, without timezone conversion.
         ((!start && !end) || (selectId === 'filterCollab'
-            ? record.collaborations?.some(activity => withinRange(activity.period_date))
-            : withinRange(record.period_date)))
+            ? record.collaborations?.some(withinRange)
+            : withinRange(record)))
     );
 }
 
@@ -925,6 +1111,8 @@ function clearBrowseDateFilter(selectId) {
     if (input) input.value = '';
     const end = document.getElementById(`${selectId}DateEnd`);
     if (end) end.value = '';
+    const undated = document.getElementById(`${selectId}IncludeUndated`);
+    if (undated) undated.checked = false;
     return applyBrowseDateFilter(selectId);
 }
 

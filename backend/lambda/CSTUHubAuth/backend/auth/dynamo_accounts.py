@@ -169,6 +169,31 @@ class DynamoLoginLimiter:
                 raise AuthError('RATE_LIMITED', 429) from None
             raise
 
+    def _check_ip(self, category, ip, limit):
+        window = int(self.clock()) // 300
+        fingerprint = hmac.new(self.secret, (category + '\0' + ip).encode(), hashlib.sha256).hexdigest()
+        try:
+            self.table.update_item(Key={'key': f'{category}:{window}:{fingerprint}'},
+                UpdateExpression='SET expiresAt = :expires ADD attempts :one',
+                ConditionExpression='attribute_not_exists(attempts) OR attempts < :limit',
+                ExpressionAttributeValues={':expires': (window + 2) * 300, ':one': 1, ':limit': limit})
+        except Exception as error:
+            if getattr(error, 'response', {}).get('Error', {}).get('Code') == 'ConditionalCheckFailedException':
+                raise AuthError('RATE_LIMITED', 429) from None
+            raise
+
+    def check_reports(self, ip):
+        """Limit comment reports per IP so one visitor cannot mass-hide comments."""
+        self._check_ip('reports', ip, 5)
+
+    def check_summary(self, ip):
+        """Limit paid summary requests per IP."""
+        self._check_ip('summary', ip, 10)
+
+    def reporter_key(self, ip):
+        """Stable keyed digest for one-report-per-network; the IP is not stored."""
+        return hmac.new(self.secret, ('reporter\0' + ip).encode(), hashlib.sha256).hexdigest()
+
     def check_reactions(self, ip):
         """Limit votes independently from comment submissions."""
         window = int(self.clock()) // 300

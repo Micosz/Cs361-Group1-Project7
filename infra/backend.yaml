@@ -44,9 +44,15 @@ Parameters:
     Default: 10
     MinValue: 1
     MaxValue: 20
+  FeedbackSummaryModelId:
+    Type: String
+    Default: ''
+    AllowedPattern: '[A-Za-z0-9.:_/-]{0,200}'
+    Description: Optional Bedrock model or inference profile id for staff comment summaries. Empty keeps the feature off.
 
 Conditions:
   UseCourseAccounts: !Equals [!Ref CourseTestEnabled, 'true']
+  UseFeedbackSummary: !Not [!Equals [!Ref FeedbackSummaryModelId, '']]
 
 Resources:
   TrialLogPolicy:
@@ -111,6 +117,14 @@ Resources:
                   - 'arn:${AWS::Partition}:s3:::${Bucket}/documents/*'
                   - Bucket:
                       Fn::ImportValue: !Sub '${TrialName}-data-DocumentsBucket'
+              - !If
+                - UseFeedbackSummary
+                - Effect: Allow
+                  Action: bedrock:InvokeModel
+                  Resource:
+                    - !Sub 'arn:${AWS::Partition}:bedrock:*::foundation-model/*'
+                    - !Sub 'arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:inference-profile/*'
+                - !Ref AWS::NoValue
 
   TuRole:
     Type: AWS::IAM::Role
@@ -196,6 +210,7 @@ Resources:
             - UseCourseAccounts
             - !Sub '{{resolve:secretsmanager:${TrialName}/auth:SecretString:courseAccounts::${AuthSecretVersion}}}'
             - !Ref AWS::NoValue
+          FEEDBACK_SUMMARY_MODEL_ID: !If [UseFeedbackSummary, !Ref FeedbackSummaryModelId, !Ref AWS::NoValue]
 
   TuLogs:
     Type: AWS::Logs::LogGroup

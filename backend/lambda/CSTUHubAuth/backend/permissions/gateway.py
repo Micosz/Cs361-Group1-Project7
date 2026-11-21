@@ -17,6 +17,8 @@ from ..http_api import error_response, headers, response, session_cookie
 from .policy import (BUSINESS, require_action, require_record, validate_fields,
                      allowed_roles)
 from .projections import project, public_projection
+from .policy import matching_roles
+from ..feedback_moderation import MODERATOR_ROLES, publicly_hidden
 from .listing import page
 from ..relationships.activity_links import internal_links, LinkError
 
@@ -231,6 +233,9 @@ class PermissionGateway:
                             continue
                     if not allowed_roles(context, kind, 'read', row, row_parent):
                         continue
+                    if (kind == 'feedback' and row.get('origin') == 'web' and publicly_hidden(row)
+                            and not matching_roles(context, row_parent) & MODERATOR_ROLES):
+                        continue  # Hidden pending review; kept for moderators, never deleted.
                     if mine and not self._participant(context, row if kind == 'exchange' else parent):
                         continue
                     projected = self._project(context, kind, row, row_parent)
@@ -258,6 +263,7 @@ class PermissionGateway:
                                  'parentType': parent['entityType'], 'parentId': parent['id']}
                     result_body['canCreate'] = bool(allowed_roles(context, 'feedback', 'create', candidate, parent))
                     result_body['canReact'] = hasattr(self.repository, 'set_scoped_reaction')
+                    result_body['canModerate'] = bool(matching_roles(context, parent) & MODERATOR_ROLES)
                 return response(200, result_body)
             if query:
                 raise AuthError('INVALID_QUERY', 422)
