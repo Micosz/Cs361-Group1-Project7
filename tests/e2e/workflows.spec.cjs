@@ -98,6 +98,42 @@ test('student mobile header and welcome shortcut work at narrow widths', async (
   await expect(page.getByRole('group', {name:'เลือกหมวดข้อมูล'})).toHaveCount(1);
 });
 
+test('short filtered board keeps category buttons clickable below the mobile header', async ({page}) => {
+  await fixture(page);
+  await page.route('**/fetchPartnersData', route => route.fulfill({json:[
+    {id:'p1', name:'Alpha University', type:'university', summary:'Fixture partner summary', visibility:'public'},
+    {id:'p2', name:'Beta Company', type:'company', visibility:'public'},
+  ]}));
+  await page.setViewportSize({width:320, height:707});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/index.html#board-section');
+  await page.locator('#filterCollab').selectOption('university');
+  const card = page.locator('#p1');
+  const dialog = page.getByRole('dialog', {name:'Alpha University'});
+  await card.getByRole('button', {name:'Alpha University', exact:true}).press('Enter');
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await card.locator('.card-desc').click();
+  await dialog.getByRole('button', {name:'ปิดรายละเอียด'}).click();
+  await expect(dialog).toBeHidden();
+
+  const event = page.locator('#tabEvent');
+  async function expectClickable() {
+    await expect.poll(() => event.evaluate(button => {
+      const {left, top, width, height} = button.getBoundingClientRect();
+      return [.1, .5, .9].every(fraction =>
+        button.contains(document.elementFromPoint(left + width / 2, top + height * fraction)));
+    })).toBe(true);
+  }
+  await expectClickable();
+  await page.evaluate(() => window.scrollTo({top:document.scrollingElement.scrollHeight, behavior:'instant'}));
+  await expect(page.locator('.browse-board-slot #tabEvent')).toBeVisible();
+  await expectClickable();
+  await event.click();
+  await expect(event).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('category buttons keep focus and selection across the desktop scroll scene', async ({page}) => {
   await fixture(page);
   await page.setViewportSize({width:1280,height:800});

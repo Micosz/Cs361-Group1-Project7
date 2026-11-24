@@ -247,5 +247,9 @@
 body:not(.feedback-inbox-view) .board-scene:has(.browse-board-slot) { min-height: 100svh; }
 .feedback-inbox-view .browse-board-slot { display: none; }
 @media (max-width: 767px) {
+    /* A short board and its sticky header share one viewport at the end of the page. */
+    body:not(.feedback-inbox-view) .board-scene:has(.browse-board-slot) {
+        min-height: calc(100svh - var(--browse-header-inset, 0px));
+    }
     .browse-tabs .tab { flex: 1 1 auto; padding-inline: clamp(6px, 2.5vw, 16px); }
 }

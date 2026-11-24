@@ -48,16 +48,27 @@
         const boardSlot = heroSlot && boardTabs ? document.createElement('div') : null;
         const header = document.querySelector('.navbar');
         let tabSizeObserver;
+        let stickyHeaderBottom = 0;
+        function measureBrowseHeader() {
+            if (!boardSlot || !header) return;
+            const style = getComputedStyle(header);
+            // Locking the document for a detail dialog can temporarily unstick the header.
+            stickyHeaderBottom = style.position === 'sticky'
+                ? header.offsetHeight + (parseFloat(style.top) || 0) : 0;
+            boardScene.style.setProperty('--browse-header-inset', stickyHeaderBottom + 'px');
+        }
         if (boardSlot) {
             boardSlot.className = 'browse-slot browse-board-slot';
             boardTabs.before(boardSlot);
             boardTabs.classList.add('browse-tabs');
             if ('ResizeObserver' in window) {
                 tabSizeObserver = new ResizeObserver(() => {
+                    measureBrowseHeader();
                     const height = boardTabs.offsetHeight;
                     if (height) boardSlot.style.minHeight = heroSlot.style.minHeight = height + 'px';
                 });
                 tabSizeObserver.observe(boardTabs);
+                if (header) tabSizeObserver.observe(header);
             }
         }
         const welcomeParts = [...hero.querySelectorAll('.heading-intro, .heading-end, .hero-features')];
@@ -135,7 +146,7 @@
                 else top = mix(heroSlot.getBoundingClientRect().top, boardSlot.getBoundingClientRect().top,
                     ease(sceneProgress / .82));
             } else {
-                const inset = Math.max(0, header.getBoundingClientRect().bottom) + 12;
+                const inset = Math.max(stickyHeaderBottom, header?.getBoundingClientRect().bottom || 0) + 12;
                 const boardTop = boardScene.getBoundingClientRect().top;
                 const atEnd = scrollY > 0 && scrollY + innerHeight >= document.documentElement.scrollHeight - 1;
                 if (boardTop <= inset || atEnd) parent = boardSlot;
@@ -231,6 +242,7 @@
         }
         const updateSceneMode = () => {
             clearSceneStyles();
+            measureBrowseHeader();
             sceneEnabled = sceneMode();
             cancelAnimationFrame(sceneFrame);
             sceneFrame = 0;
@@ -526,6 +538,7 @@
             bridge.remove();
             tabSizeObserver?.disconnect();
             if (boardSlot) {
+                boardScene.style.removeProperty('--browse-header-inset');
                 boardSlot.replaceWith(boardTabs);
                 boardTabs.classList.remove('browse-tabs','browse-floating','browse-at-board');
                 boardTabs.style.top = '';
