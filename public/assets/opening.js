@@ -256,7 +256,7 @@
             if (!settled) finish();
             scheduleScene();
         }, { passive: true });
-        function advanceScene() {
+        function advanceScene(immediate = false) {
             if (!boardScene) return;
             cancelAnimationFrame(navigationFrame);
             navigationFrame = requestAnimationFrame(() => {
@@ -275,7 +275,7 @@
                 const top = sceneEnabled
                     ? Math.ceil(Math.max(sceneTravel, boardScene.offsetTop - 92))
                     : Math.max(0, boardScene.getBoundingClientRect().top + window.scrollY - headerInset);
-                window.scrollTo({ top, behavior: reduced.matches ? 'instant' : 'smooth' });
+                window.scrollTo({ top, behavior: immediate || reduced.matches ? 'instant' : 'smooth' });
             });
         }
         // Own the ordinary anchor scroll so the browser cannot start a competing
@@ -288,7 +288,8 @@
                 try { window.history.pushState(null, '', '#board-section'); }
                 catch { /* Some local file previews disallow History API updates. */ }
             }
-            advanceScene();
+            // Keyboard and assistive activation should place the focused button at its destination immediately.
+            advanceScene(event.detail === 0);
         });
         on(document.querySelector('.search-btn'), 'click', () => {
             if (boardScene && scrollY < boardScene.offsetTop - 92) advanceScene();
