@@ -142,3 +142,43 @@ test('public feedback validates category, retries with the same key and renders 
   await expect(page.locator('#detailModal .public-comment-list img')).toHaveCount(0);
   await expect(form.getByRole('textbox')).toHaveValue('');
 });
+
+test('clearing the search from empty results keeps dates, type and activity view', async ({page}) => {
+  await fixture(page);
+  await page.route('**/fetchPartnersData', route => route.fulfill({json:[
+    {id:'p1', name:'Fixture University', type:'university', visibility:'public'},
+    {id:'p2', name:'Fixture Company', type:'company', visibility:'public'},
+    {id:'a1', title:'Research workshop (วันสมมติ)', type:'research', visibility:'public',
+      partnerId:'p1', period_date:'2020-06-15'}
+  ]}));
+  await page.goto('/index.html#board-section');
+  const input = page.locator('#searchInput');
+  const clear = {name:'ล้างคำค้นหา', exact:true};
+  await page.locator('#filterCollab').selectOption('university');
+  await input.fill('no matching text');
+  const collab = page.locator('#collaboratorGrid');
+  await collab.getByRole('button',clear).focus();
+  await page.keyboard.press('Enter');
+  await expect(input).toHaveValue('');
+  await expect(page.locator('#filterCollab')).toBeFocused();
+  await expect(collab).toContainText('Fixture University');
+  await expect(collab).not.toContainText('Fixture Company');
+  await expect(collab.getByRole('button',clear)).toHaveCount(0);
+
+  await page.locator('#tabEvent').click();
+  await page.locator('#filterEvent').selectOption('research');
+  await page.locator('#filterEventDate').fill('2020-01-01');
+  await page.locator('#filterEventDateEnd').fill('2020-12-31');
+  await input.fill('workshop');
+  const events = page.locator('#eventGrid');
+  await events.getByRole('button',{name:/ดูกิจกรรมที่ผ่านมาแล้ว/}).click();
+  await input.fill('no matching text');
+  await events.getByRole('button',clear).click();
+  await expect(input).toHaveValue('');
+  await expect(page.locator('#filterEvent')).toHaveValue('research');
+  await expect(page.locator('#filterEventDate')).toHaveValue('2020-01-01');
+  await expect(page.locator('#filterEventDateEnd')).toHaveValue('2020-12-31');
+  await expect(page.locator('#eventTimePast')).toHaveAttribute('aria-selected','true');
+  await expect(events).toContainText('Research workshop');
+  await expect(events.getByRole('button',clear)).toHaveCount(0);
+});

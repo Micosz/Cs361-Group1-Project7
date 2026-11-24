@@ -212,6 +212,21 @@ function handleSearch() {
     return setBrowseKeyword(getSearchKeyword());
 }
 
+function appendClearSearch(empty, filterId) {
+    if (!browseKeyword) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'event-time-jump';
+    button.textContent = 'ล้างคำค้นหา';
+    button.onclick = () => {
+        document.getElementById('searchInput').value = '';
+        // The button disappears on render. Keep keyboard focus in this result section.
+        document.getElementById(filterId).focus({preventScroll:true});
+        handleSearch();
+    };
+    empty.append(' ', button);
+}
+
 function scheduleSearch() {
     cancelPendingSearch();
     hideSuggestions();
@@ -549,6 +564,7 @@ async function renderCollaboratorCards() {
                 <p>ลองเปลี่ยนคำค้นหา หรือล้างตัวกรองเพื่อดูข้อมูลทั้งหมด</p>
             </div>
         `;
+        appendClearSearch(container.querySelector('[data-public-empty]'), 'filterCollab');
         window.CstuRecords?.renderPartnerCards(container);
         return;
     }
@@ -604,6 +620,7 @@ async function renderEventCards() {
             jump.onclick = () => setEventTimeView(eventTimeView === 'past' ? 'current' : 'past');
             empty.appendChild(jump);
         }
+        appendClearSearch(empty, 'filterEvent');
         container.replaceChildren(empty);
         window.CstuRecords?.renderEventCards(container);
         return;
