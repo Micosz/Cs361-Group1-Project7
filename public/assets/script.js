@@ -498,7 +498,11 @@ function createBrowseCard(record, type = 'partner', onOpen = null) {
         badge.textContent = agreement ? 'หมดอายุแล้ว' : 'สิ้นสุดแล้ว';
         thumbnail.appendChild(badge);
     }
-    card.addEventListener('click', event => { if (!event.target.closest('button,a')) activate(); });
+    card.addEventListener('click', event => {
+        if (event.target.closest('button,a')) return;
+        button.focus({preventScroll:true});
+        activate();
+    });
     return card;
 }
 

@@ -39,6 +39,46 @@ test('public catalog renders, searches, and opens detail in a real browser', asy
   await expect(page.locator('#detailModal')).toBeVisible();
   await expect(page.locator('#modalTitle')).toContainText('Alpha University');
 });
+test('filtered public cards restore focus and keep keyboard navigation inside partner details', async ({page}) => {
+  await page.setViewportSize({width:320,height:707});
+  await fixture(page);
+  const partner='มหาวิทยาลัยคลองกลาง (สมมติ)', activity='กิจกรรมคลองกลาง · วันสมมติ';
+  await page.route('**/fetchPartnersData', route => route.fulfill({json:[
+    {id:'sample-host', name:partner, type:'university', visibility:'public', summary:'ตัวอย่างสำหรับทดสอบ'},
+    {id:'sample-company', name:'บริษัทสมมติ', type:'company', visibility:'public'},
+    {id:'sample-event', title:activity, partnerId:'sample-host', type:'research', visibility:'public', summary:'ตัวอย่างสำหรับทดสอบ'}
+  ]}));
+  await page.goto('/index.html#board-section');
+  await page.locator('#filterCollab').selectOption('university');
+  const host=page.locator('#sample-host');
+  const title=host.getByRole('button',{name:partner});
+  const partnerDialog=page.getByRole('dialog',{name:partner});
+  await title.press('Enter');
+  await expect(partnerDialog).toBeVisible();
+  const identity=partnerDialog.locator('.detail-identity');
+  expect(await identity.evaluate(el=>el.scrollHeight>el.clientHeight)).toBe(true);
+  await page.keyboard.press('Tab');
+  await expect(identity).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  expect(await partnerDialog.evaluate(el=>el.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(partnerDialog).toBeHidden();
+  await expect(title).toBeFocused();
+
+  await host.locator('.card-desc').click();
+  await partnerDialog.getByRole('button',{name:'ปิดรายละเอียด'}).click();
+  await expect(title).toBeFocused();
+  await expect(page.locator('#filterCollab')).toHaveValue('university');
+  await page.locator('#tabEvent').click();
+  await page.locator('#filterEvent').selectOption('research');
+  const eventCard=page.locator('#sample-event');
+  await eventCard.locator('.card-desc').click();
+  const eventDialog=page.getByRole('dialog',{name:activity});
+  await expect(eventDialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(eventCard.getByRole('button',{name:activity})).toBeFocused();
+  await expect(page.locator('#filterEvent')).toHaveValue('research');
+});
 test('invalid login shows feedback, clears password, and sends CSRF', async ({page}) => {
   const requests=await fixture(page, null, true); await page.goto('/login.html');
   await page.locator('#student-id').fill('test-account'); await page.locator('#student-password').fill('dummy-password');

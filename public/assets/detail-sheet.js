@@ -70,6 +70,10 @@
         legacy.addEventListener('keydown', event => {
             if (event.key === 'Escape') { event.preventDefault(); window.closeModal(); }
             if (event.key !== 'Tab') return;
+            // A scrollable identity panel is also a keyboard stop on narrow screens.
+            const identity = legacyState.sidebar;
+            const scrollable = identity.scrollHeight > identity.clientHeight || identity.scrollWidth > identity.clientWidth;
+            identity.tabIndex = scrollable ? 0 : -1;
             const focusable = [...legacy.querySelectorAll('a[href],button,input,textarea,select,[tabindex]')]
                 .filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length);
             const first = focusable[0], last = focusable.at(-1);
