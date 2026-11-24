@@ -44,7 +44,23 @@
         const boardSubtitle = boardScene?.querySelector('.page-title h2');
         const boardTabs = boardScene?.querySelector('.tabs');
         const boardContent = boardScene?.querySelector('main');
-        const welcomeParts = [...hero.querySelectorAll('.heading-intro, .heading-end, .hero-features, .hero-btn')];
+        const heroSlot = hero.querySelector('.browse-hero-slot');
+        const boardSlot = heroSlot && boardTabs ? document.createElement('div') : null;
+        const header = document.querySelector('.navbar');
+        let tabSizeObserver;
+        if (boardSlot) {
+            boardSlot.className = 'browse-slot browse-board-slot';
+            boardTabs.before(boardSlot);
+            boardTabs.classList.add('browse-tabs');
+            if ('ResizeObserver' in window) {
+                tabSizeObserver = new ResizeObserver(() => {
+                    const height = boardTabs.offsetHeight;
+                    if (height) boardSlot.style.minHeight = heroSlot.style.minHeight = height + 'px';
+                });
+                tabSizeObserver.observe(boardTabs);
+            }
+        }
+        const welcomeParts = [...hero.querySelectorAll('.heading-intro, .heading-end, .hero-features')];
         const bridge = document.createElement('span');
         bridge.className = 'scene-title-bridge';
         bridge.setAttribute('aria-hidden', 'true');
@@ -105,9 +121,46 @@
                 scale
             };
         }
+        // The same buttons retain their listeners, permission state and focus at either end.
+        // In transit they sit outside the two scenes, which each become inert during the handoff.
+        function positionBrowseTabs() {
+            if (!boardSlot) return;
+            let parent;
+            let top;
+            if (document.body.classList.contains('feedback-inbox-view')) {
+                parent = boardSlot;
+            } else if (sceneEnabled) {
+                if (sceneProgress <= .03) parent = heroSlot;
+                else if (sceneProgress >= .82) parent = boardSlot;
+                else top = mix(heroSlot.getBoundingClientRect().top, boardSlot.getBoundingClientRect().top,
+                    ease(sceneProgress / .82));
+            } else {
+                const inset = Math.max(0, header.getBoundingClientRect().bottom) + 12;
+                const boardTop = boardScene.getBoundingClientRect().top;
+                const atEnd = scrollY > 0 && scrollY + innerHeight >= document.documentElement.scrollHeight - 1;
+                if (boardTop <= inset || atEnd) parent = boardSlot;
+                else if (heroSlot.getBoundingClientRect().top >= inset) parent = heroSlot;
+                else {
+                    const arrival = ease(1 - (boardTop - inset) / (innerHeight * .45));
+                    top = reduced.matches ? inset : mix(inset, boardSlot.getBoundingClientRect().top, arrival);
+                }
+            }
+
+            const target = parent || document.body;
+            if (boardTabs.parentElement !== target) {
+                const focused = boardTabs.contains(document.activeElement) && document.activeElement;
+                if (target.moveBefore) target.moveBefore(boardTabs, parent ? null : boardScene);
+                else target.insertBefore(boardTabs, parent ? null : boardScene);
+                if (focused && focused !== document.activeElement) focused.focus({preventScroll:true});
+            }
+            boardTabs.classList.toggle('browse-at-board', parent === boardSlot);
+            boardTabs.classList.toggle('browse-floating', !parent);
+            boardTabs.style.top = parent ? '' : Math.round(top) + 'px';
+        }
         function renderScene() {
             sceneFrame = 0;
-            if (!sceneEnabled || disposed) return;
+            if (disposed) return;
+            if (!sceneEnabled) { positionBrowseTabs(); return; }
             // Only scroll position is read here. Geometry is cached at startup/resize.
             const progress = clamp(window.scrollY / sceneTravel);
             if (!sceneDirty && progress === sceneProgress) return;
@@ -158,7 +211,7 @@
                 transform: `translateY(${(progress - 1) * sceneTravel + boardOffset}px)`
             });
             paintScene(boardTitle, { opacity: progress >= .82 || !titleGeometry ? '1' : '0' });
-            [[boardSubtitle, .36], [boardTabs, .46], [boardContent, .56]].forEach(([element, start]) => {
+            [[boardSubtitle, .36], [boardContent, .56]].forEach(([element, start]) => {
                 const reveal = ease((progress - start) / .26);
                 paintScene(element, { opacity: String(reveal), transform: `translateY(${18 * (1 - reveal)}px)` });
             });
@@ -169,9 +222,10 @@
             });
             hero.inert = progress >= .58 || originalInert.hero;
             boardScene.inert = progress < .72 || originalInert.board;
+            positionBrowseTabs();
         }
         function scheduleScene(refresh = false) {
-            if (!sceneEnabled || disposed) return;
+            if (disposed) return;
             sceneDirty ||= refresh;
             if (!sceneFrame) sceneFrame = requestAnimationFrame(renderScene);
         }
@@ -221,19 +275,15 @@
                 const top = sceneEnabled
                     ? Math.ceil(Math.max(sceneTravel, boardScene.offsetTop - 92))
                     : Math.max(0, boardScene.getBoundingClientRect().top + window.scrollY - headerInset);
-                window.scrollTo({ top, behavior: reduced.matches ? 'auto' : 'smooth' });
+                window.scrollTo({ top, behavior: reduced.matches ? 'instant' : 'smooth' });
             });
         }
         // Own the ordinary anchor scroll so the browser cannot start a competing
         // scroll toward the board while it is still transformed. Keep the same URL.
         on(window, 'cstu:board', () => { finish(); advanceScene(); });
-        on(hero.querySelector('.hero-btn'), 'click', event => {
-            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-            event.preventDefault();
+        if (boardSlot) on(boardTabs, 'click', event => {
+            if (!event.target.closest('button.tab') || boardTabs.parentElement === boardSlot) return;
             finish();
-            if (!document.getElementById('tabCollab')?.classList.contains('active')) {
-                window.CstuRecords?.open('partners');
-            }
             if (window.location.hash !== '#board-section') {
                 try { window.history.pushState(null, '', '#board-section'); }
                 catch { /* Some local file previews disallow History API updates. */ }
@@ -473,6 +523,12 @@
             finish();
             layer?.remove();
             bridge.remove();
+            tabSizeObserver?.disconnect();
+            if (boardSlot) {
+                boardSlot.replaceWith(boardTabs);
+                boardTabs.classList.remove('browse-tabs','browse-floating','browse-at-board');
+                boardTabs.style.top = '';
+            }
             document.body.classList.remove('scene-ready');
         };
     }

@@ -39,11 +39,6 @@
                 if (internal && params.get('public') !== '1') {
                     location.replace('work.html' + location.search + location.hash); return;
                 }
-                if (session?.user && window.CstuWork.roles(session).includes('student') && !internal && !document.getElementById('student-home-link')) {
-                    const shortcut = link('โครงการแลกเปลี่ยนของฉัน','index.html?kind=exchanges#board-section');
-                    shortcut.id = 'student-home-link'; shortcut.className = 'hero-btn';
-                    document.querySelector('.hero-content')?.append(shortcut);
-                }
                 return;
             }
             if (!internal) { location.replace(session?.user || document.body.dataset.signingOut === 'true' ? 'index.html' : 'login.html'); return; }
