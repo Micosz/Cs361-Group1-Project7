@@ -69,7 +69,8 @@ test('filtered public cards restore focus and keep keyboard navigation inside pa
   await partnerDialog.getByRole('button',{name:'ปิดรายละเอียด'}).click();
   await expect(title).toBeFocused();
   await expect(page.locator('#filterCollab')).toHaveValue('university');
-  await page.locator('#tabEvent').click();
+
+  await page.goto('/index.html?kind=activities#board-section');
   await page.locator('#filterEvent').selectOption('research');
   const eventCard=page.locator('#sample-event');
   await eventCard.locator('.card-desc').click();
