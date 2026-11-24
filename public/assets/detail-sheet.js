@@ -127,9 +127,9 @@
             if (!state || !container.classList.contains('form-feedback')) return;
             state.forms.replaceChildren(container); state.buttons[2].hidden = false;
         },
-        open() {
+        open(trigger) {
             if (!legacyState) return;
-            returnFocus = document.activeElement;
+            returnFocus = trigger ?? document.activeElement;
             legacyState.observer?.disconnect();
             legacyState.comments.replaceChildren(); legacyState.buttons[1].hidden = true;
             legacyState.buttons[1].textContent = 'ความคิดเห็น';

@@ -39,8 +39,7 @@ test('public catalog renders, searches, and opens detail in a real browser', asy
   await expect(page.locator('#detailModal')).toBeVisible();
   await expect(page.locator('#modalTitle')).toContainText('Alpha University');
 });
-test('filtered public cards restore focus and keep keyboard navigation inside partner details', async ({page}) => {
-  await page.setViewportSize({width:320,height:707});
+async function publicDetailFixture(page) {
   await fixture(page);
   const partner='มหาวิทยาลัยคลองกลาง (สมมติ)', activity='กิจกรรมคลองกลาง · วันสมมติ';
   await page.route('**/fetchPartnersData', route => route.fulfill({json:[
@@ -48,6 +47,11 @@ test('filtered public cards restore focus and keep keyboard navigation inside pa
     {id:'sample-company', name:'บริษัทสมมติ', type:'company', visibility:'public'},
     {id:'sample-event', title:activity, partnerId:'sample-host', type:'research', visibility:'public', summary:'ตัวอย่างสำหรับทดสอบ'}
   ]}));
+  return {partner, activity};
+}
+test('filtered public cards restore focus and keep keyboard navigation inside partner details', async ({page}) => {
+  await page.setViewportSize({width:320,height:707});
+  const {partner, activity} = await publicDetailFixture(page);
   await page.goto('/index.html#board-section');
   await page.locator('#filterCollab').selectOption('university');
   const host=page.locator('#sample-host');
@@ -79,6 +83,45 @@ test('filtered public cards restore focus and keep keyboard navigation inside pa
   await page.keyboard.press('Escape');
   await expect(eventCard.getByRole('button',{name:activity})).toBeFocused();
   await expect(page.locator('#filterEvent')).toHaveValue('research');
+});
+const detailOpenerCases = [
+  {kind:'partner', path:'/index.html#board-section', filter:'#filterCollab', value:'university', card:'#sample-host'},
+  {kind:'activity', path:'/index.html?kind=activities#board-section', filter:'#filterEvent', value:'research', card:'#sample-event'}
+];
+for (const scenario of detailOpenerCases) {
+  test(`public ${scenario.kind} title restores focus when activation leaves focus on the filter`, async ({page}) => {
+    const names = await publicDetailFixture(page);
+    await page.goto(scenario.path);
+    const filter = page.locator(scenario.filter);
+    await filter.selectOption(scenario.value);
+    const title = page.locator(scenario.card).getByRole('button', {name:names[scenario.kind], exact:true});
+    const dialog = page.getByRole('dialog', {name:names[scenario.kind], exact:true});
+    for (const close of ['escape','button']) {
+      await filter.focus();
+      await expect(filter).toBeFocused();
+      await title.evaluate(button => button.click());
+      await expect(dialog).toBeVisible();
+      if (close === 'escape') await page.keyboard.press('Escape');
+      else await dialog.getByRole('button', {name:'ปิดรายละเอียด'}).click();
+      await expect(dialog).toBeHidden();
+      await expect(title).toBeFocused();
+      await expect(filter).toHaveValue(scenario.value);
+    }
+  });
+}
+test('closing an activity opened from partner history restores the visible partner card title', async ({page}) => {
+  const {partner, activity} = await publicDetailFixture(page);
+  await page.goto('/index.html#board-section');
+  const title = page.locator('#sample-host').getByRole('button', {name:partner, exact:true});
+  await title.click();
+  const partnerDialog = page.getByRole('dialog', {name:partner, exact:true});
+  await partnerDialog.locator('.partner-history').getByRole('button', {name:activity, exact:true}).click();
+  const activityDialog = page.getByRole('dialog', {name:activity, exact:true});
+  await expect(partnerDialog).toBeHidden();
+  await expect(activityDialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(activityDialog).toBeHidden();
+  await expect(title).toBeFocused();
 });
 test('invalid login shows feedback, clears password, and sends CSRF', async ({page}) => {
   const requests=await fixture(page, null, true); await page.goto('/login.html');
