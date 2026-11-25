@@ -47,7 +47,7 @@
                 const buttonText = `${side} (${context})`;
                 picker.title = `ปฏิทิน ${buttonText}`;
                 picker.setAttribute('aria-label', picker.title);
-                picker.innerHTML = '<i class="far fa-calendar-alt" aria-hidden="true"></i>';
+                picker.innerHTML = '<span class="date-picker-icon" aria-hidden="true"></span>';
                 picker.append(document.createTextNode(buttonText));
                 date.before(shell);
                 shell.append(text, picker, date);

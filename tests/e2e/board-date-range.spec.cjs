@@ -14,6 +14,7 @@ const organizations = [
   id, name:(id === 'other' ? 'ทุ่งเหนือ' : keyword) + ' ' + name + ' (สมมติ)',
   type:id === 'firm' ? 'company' : 'university', visibility:'public'
 }));
+const signingHosts = organizations.filter(row => ['host','co','firm'].includes(row.id));
 const activities = [
   ['sign','host',day,day], ['before','early','2026-11-21','2026-11-24'],
   ['after','late','2026-11-26','2026-11-28'], ['ending','edge','2026-11-23',day],
@@ -23,7 +24,7 @@ const activities = [
   type:'academic_activity', activity_tags:['mou'], visibility:'public',
   summary:id === 'sign' ? 'เผยแพร่ 20 พ.ย. 2569 (วันสมมติ)' : 'เผยแพร่ 25 พ.ย. 2569 (วันสมมติ)',
   ...(start && {period_date:start, period_end_date:end}),
-  ...(id === 'sign' && {coHostPartnerIds:['co','firm']})
+  ...(id === 'sign' && {coHostPartnerIds:['co','firm'], co_hosts:signingHosts.map(row => row.name)})
 }));
 const agreements = [
   ['ag-left','2026-11-20',day], ['ag-right',day,'2026-11-28'], ['ag-before','2026-11-10','2026-11-24'],
@@ -57,7 +58,10 @@ async function visit(page) {
 async function dateValue(page, id, value) {
   const display = page.locator('#' + id + 'Display');
   await display.fill(value);
-  if (value) await expect(display).toHaveValue('25/11/2569');
+  if (value) {
+    await expect(display).toHaveValue('25/11/2569');
+    expect(await display.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  }
   await display.press('Tab');
   await expect(page.locator('#' + id)).toHaveValue(value ? day : '');
 }
@@ -87,14 +91,19 @@ for (const width of [320,390,1280]) {
           await expect(group.locator('#' + id + 'Label')).toHaveAttribute('for', id + 'Display');
           await expect(picker).toHaveText(caption);
           await expect(picker).toHaveAttribute('title',buttonName);
+          const source = page.locator('#' + id);
+          await source.evaluate(date => { date.showPicker = function() { this.dataset.activated = 'yes'; }; });
+          const icon = picker.locator('.date-picker-icon');
+          if (width < 500) await icon.tap(); else await icon.click();
+          await expect(source).toHaveAttribute('data-activated','yes');
           names.add(buttonName);
         }
         const fits = await group.evaluate(group => {
           const bounds = group.getBoundingClientRect();
           if (bounds.left < -1 || bounds.right > document.documentElement.clientWidth + 1) return false;
-          return [...group.querySelectorAll('legend,.date-range-field > label,.date-picker-btn')].every(el => {
+          return [...group.querySelectorAll('legend,.date-picker-btn')].every(el => {
             const box = el.getBoundingClientRect(), range = document.createRange();
-            range.selectNodeContents(el);
+            range.selectNodeContents(el.lastChild);
             return [...range.getClientRects()].every(r => r.left >= box.left-1 && r.right <= box.right+1 && r.top >= box.top-1 && r.bottom <= box.bottom+1);
           });
         });
@@ -148,7 +157,8 @@ for (const width of [320,390,1280]) {
         await expect(page.locator('#' + prefix)).toHaveValue(group === 0 ? 'university' : 'mou');
         if (group === 1) await expect(page.locator('#eventTimePast')).toHaveAttribute('aria-selected','true');
         trail.push({stage, cards:await ids(page,grid), from:await page.locator('#'+prefix+'Date').inputValue(),
-          to:await page.locator('#'+prefix+'DateEnd').inputValue()});
+          to:await page.locator('#'+prefix+'DateEnd').inputValue(),
+          states:await page.locator(grid+' .protected-event-card .author-name:visible').allTextContents()});
       }
       await page.locator('#filterCollab').selectOption('university');
       await page.locator('#searchInput').fill(keyword);
@@ -171,6 +181,11 @@ for (const width of [320,390,1280]) {
       await check('activity / to',1,['sign','before','ending','ag-left','ag-right','ag-before']);
       await dateValue(page,'filterEventDate','๒๕๑๑๒๕๖๙');
       await check('activity / same day',1,['sign','ending','ag-left','ag-right']);
+      const card = page.locator('#eventGrid #sign');
+      for (const host of signingHosts) {
+        await expect(card.getByRole('link',{name:host.name,exact:true})).toHaveAttribute('href','#partner-'+host.id);
+      }
+      await expect(page.locator('#eventGrid .protected-event-card .author-name:visible')).toHaveText(['หมดอายุ','หมดอายุ']);
       const exact = reads.filter(value => value.startsWith('/api/public/agreements')).map(value => new URL(value,'http://127.0.0.1:4173').searchParams);
       expect(exact.some(params => params.get('startDate') === day && params.get('endDate') === day && params.get('q') === keyword)).toBe(true);
       await dateValue(page,'filterEventDateEnd','');
@@ -179,10 +194,15 @@ for (const width of [320,390,1280]) {
       await check('activity / cleared',1,eventAll);
       await expect(page.locator('#filterCollabDate')).toHaveValue(day);
       await expect(page.locator('#filterCollabDateEnd')).toHaveValue(day);
+      await dateValue(page,'filterEventDateEnd','๒๕๑๑๒๕๖๙');
+      await check('activity / keep end while clearing organizations',1,['sign','before','ending','ag-left','ag-right','ag-before']);
       await page.locator('#tabCollab').click();
       await check('organization / still selected',0,['host','co','edge']);
       await page.locator('#filterCollabDateClear').click();
       await check('organization / cleared',0,orgAll);
+      await expect(page.locator('#filterEventDate')).toHaveValue('');
+      await expect(page.locator('#filterEventDateEnd')).toHaveValue(day);
+      await expect(page.locator('#filterEventDateEndDisplay')).toHaveValue('25/11/2569');
       await page.waitForLoadState('networkidle');
       expect(writes).toEqual([]);
       await info.attach('fixture-results-and-reads',{body:JSON.stringify({trail, reads, writes}),contentType:'application/json'});
