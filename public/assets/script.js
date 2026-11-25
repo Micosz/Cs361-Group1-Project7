@@ -191,8 +191,12 @@ async function getPublicActivityById(id) {
 let searchDebounceTimer = null;
 let suggestionsVersion = 0;
 
+function normalizeSearchText(value) {
+    return String(value ?? '').toLowerCase().trim();
+}
+
 function getSearchKeyword() {
-    return document.getElementById('searchInput').value.toLowerCase().trim();
+    return normalizeSearchText(document.getElementById('searchInput').value);
 }
 
 function hideSuggestions() {
@@ -254,7 +258,14 @@ async function showSuggestions() {
     const matchedActivities = filterBrowseRecords(activities, 'title', 'filterEvent', keyword)
         .map(a => ({ ...a, resultType: 'activity', topicLabel: 'กิจกรรม / โครงการ' }));
 
-    const results = [...matchedPartners, ...matchedActivities];
+    const exactMatches = [];
+    const partialMatches = [];
+    for (const item of [...matchedPartners, ...matchedActivities]) {
+        const name = item.resultType === 'partner' ? item.name : item.title;
+        const group = normalizeSearchText(name) === keyword ? exactMatches : partialMatches;
+        group.push(item);
+    }
+    const results = exactMatches.concat(partialMatches);
 
     if (results.length === 0) {
         const message = document.createElement('div');
