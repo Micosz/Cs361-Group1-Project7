@@ -1215,7 +1215,9 @@ function handlePartnerClick(event, partnerId) {
     
     // เรียกฟังก์ชันเปิด Popup ที่มีอยู่แล้วใน V1 (detailModal)
     if (partnerId) {
-        openModal(partnerId, 'partner');
+        const link = event.currentTarget;
+        const trigger = window.CstuRecords?.detailReturnTarget?.(link) ?? link;
+        openModal(partnerId, 'partner', null, trigger);
     } else {
         console.warn("ไม่พบ partnerId สำหรับเปิด Popup");
     }

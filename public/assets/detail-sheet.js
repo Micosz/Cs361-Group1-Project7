@@ -148,9 +148,10 @@
             legacy.focus({preventScroll:true});
         },
         close() {
+            const hadFocus = legacy?.contains(document.activeElement);
             legacyState?.observer?.disconnect();
             legacyState?.comments.replaceChildren();
-            if (returnFocus?.isConnected && legacy.contains(document.activeElement)) returnFocus.focus({preventScroll:true});
+            if (hadFocus && returnFocus?.isConnected) returnFocus.focus({preventScroll:true});
             returnFocus = null;
         }
     };
