@@ -143,14 +143,20 @@ for (const [width, height, touch] of [[320, 707, true], [390, 844, true], [1280,
       test(action + ' focuses the chapter heading and Escape restores the filtered board', async ({ page }) => {
         await visit(page);
         await page.locator('#searchInput').fill('เครือข่ายสมมติ');
+        await page.getByRole('button', { name: 'ค้นหา', exact: true }).click();
         await page.locator('#filterCollab').selectOption('university');
         await expect(page.locator('#collaboratorGrid .browse-card-open')).toHaveCount(7);
         await page.locator('#collaboratorGrid .browse-card-open').nth(4).scrollIntoViewIfNeeded();
-        const y = await page.evaluate(() => scrollY);
-        expect(y).toBeGreaterThan(0);
         const url = page.url();
         const opener = page.locator('.manual-labelled-trigger:visible').first();
-        const { dialog, input, results, content } = await openManual(page, opener);
+        // The manual saves the board position when its opener is activated.
+        const [y, { dialog, input, results, content }] = await Promise.all([
+          page.evaluate(() => new Promise(resolve => {
+            window.addEventListener('click', () => resolve(scrollY), { capture: true, once: true });
+          })),
+          openManual(page, opener)
+        ]);
+        expect(y).toBeGreaterThan(0);
         await input.fill('ผู้ตอบ');
         const title = 'กรองและแสดงความเห็นต่อ Comment';
         const result = results.getByRole('button', { name: title, exact: true });
@@ -172,7 +178,10 @@ for (const [width, height, touch] of [[320, 707, true], [390, 844, true], [1280,
         await expect(page.locator('#searchInput')).toHaveValue('เครือข่ายสมมติ');
         await expect(page.locator('#filterCollab')).toHaveValue('university');
         await expect(page.locator('#collaboratorGrid .browse-card-open')).toHaveCount(7);
-        expect(await page.evaluate(() => scrollY)).toBe(y);
+        const restored = await page.evaluate(() => new Promise(resolve => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve(scrollY)));
+        }));
+        expect(restored).toBe(y);
       });
     }
 
