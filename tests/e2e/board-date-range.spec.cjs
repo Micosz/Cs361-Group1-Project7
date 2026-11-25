@@ -156,13 +156,16 @@ for (const width of [320,390,1280]) {
         await expect(page.locator('#searchInput')).toHaveValue(keyword);
         await expect(page.locator('#' + prefix)).toHaveValue(group === 0 ? 'university' : 'mou');
         if (group === 1) await expect(page.locator('#eventTimePast')).toHaveAttribute('aria-selected','true');
+        await page.waitForLoadState('networkidle');
         trail.push({stage, cards:await ids(page,grid), from:await page.locator('#'+prefix+'Date').inputValue(),
           to:await page.locator('#'+prefix+'DateEnd').inputValue(),
           states:await page.locator(grid+' .protected-event-card .author-name:visible').allTextContents()});
       }
+      await page.waitForLoadState('networkidle');
       await page.locator('#filterCollab').selectOption('university');
+      await expect.poll(() => ids(page,'#collaboratorGrid')).not.toContain('firm');
+      await page.waitForLoadState('networkidle');
       await page.locator('#searchInput').fill(keyword);
-      await page.getByRole('button',{name:'ค้นหา',exact:true}).click();
       const orgAll = ['host','co','early','late','edge','post'];
       await check('organization / no dates',0,orgAll);
       await dateValue(page,'filterCollabDate','๒๕๑๑๒๕๖๙');
