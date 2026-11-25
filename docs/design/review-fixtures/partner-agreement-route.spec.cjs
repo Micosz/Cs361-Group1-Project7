@@ -202,5 +202,39 @@ for(const [width,height,touch] of [[390,844,true],[1280,800,false]]){
             const count=countIn(state.tabNames[1]);
             expect(count===null||count===state.eventCards.length).toBe(true);
         });
+        test('the catalogue signing story links back to its host and filtered list',async({page},info)=>{
+            await serve(page);
+            await enterBoard(page,touch);
+            await page.locator('#filterCollab').selectOption('university');
+            await page.locator('#searchInput').fill('คลองกลาง');
+            await activate(page.getByRole('button',{name:'ค้นหา',exact:true}),touch);
+            const hostButton=page.getByRole('button',{name:host,exact:true});
+            await expect(page.locator('#collaboratorGrid .browse-card-open:visible')).toHaveText([host]);
+            const original=await boardState(page);
+            const position=()=>hostButton.evaluate(el=>{
+                const rect=el.getBoundingClientRect();
+                return {scrollY:window.scrollY,top:Math.round(rect.top),inView:rect.top>=0&&rect.bottom<=innerHeight,focused:el===document.activeElement};
+            });
+            await hostButton.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
+            const before=await position();
+            await activate(hostButton,touch);
+            const partner=page.getByRole('dialog',{name:host,exact:true});
+            await activate(partner.getByRole('button',{name:signing,exact:true}),touch);
+            const article=page.getByRole('dialog',{name:signing,exact:true});
+            const hostLink=article.getByRole('link',{name:host}).first();
+            await expect(hostLink).toHaveAttribute('href','#partner-p-canal');
+            await activate(hostLink,touch);
+            await expect(partner.locator('.partner-history')).toBeVisible();
+            await close(page,partner,touch);
+            await expect(page.getByRole('dialog')).toHaveCount(0);
+            await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+            expect(await boardState(page)).toEqual(original);
+            const after=await position();
+            expect(after.inView).toBe(true);
+            const focused=()=>page.evaluate(()=>({tag:document.activeElement?.tagName,id:document.activeElement?.id}));
+            const afterClose=await focused();
+            await page.keyboard.press('Tab');
+            await capture(info,'catalogue-return',{before,after,afterClose,afterTab:await focused(),query:original.query,category:original.category});
+        });
     });
 }
