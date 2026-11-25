@@ -124,20 +124,26 @@ body { background: var(--portal-paper); }
 .filter-caption i { color: #c3002f; font-size: .75rem; }
 .has-filter-controls > .modern-select { flex: 0 1 auto; max-width: 100%; border-color: #c9bfb3; border-radius: 12px; }
 .has-filter-controls > .clear-filter-btn { border-color: #d7cfc9; border-radius: 12px; }
+.board-date-range { min-width: 0; max-width: 100%; margin: 0; padding: 0; border: 0; }
+.board-date-range > legend { max-width: 100%; margin-bottom: 4px; padding: 0; color: #403933; font-size: .875rem; font-weight: 600; line-height: 1.6; }
 .date-filter-row { display: flex; align-items: center; gap: 8px; margin: 0; }
 .date-filter-row input {
     min-height: 44px; min-width: 0; width: 176px; padding: 8px 12px;
     font: inherit; font-size: 1rem; color: #202020; background: #fff;
     border: 1px solid #c9bfb3; border-radius: 12px; color-scheme: light;
 }
-.buddhist-date-control { position: relative; min-width: 0; width: 180px; }
-.buddhist-date-control > input:not(.native-date-source) { width: 100%; padding-inline-end: 42px; }
+.buddhist-date-control { position: relative; display: grid; gap: 2px; min-width: 0; width: 180px; }
+.buddhist-date-control > input:not(.native-date-source) { width: 100%; }
 .buddhist-date-control input::placeholder { color: #655d55; opacity: 1; }
 .buddhist-date-control .native-date-source {
     position: absolute; bottom: 0; left: 0; width: 1px; height: 1px; min-height: 0;
     padding: 0; border: 0; opacity: 0; pointer-events: none;
 }
-.date-picker-btn { position: absolute; inset: 0 0 0 auto; width: 40px; border: 0; border-radius: 10px; background: transparent; color: #655d55; }
+.date-picker-btn {
+    display: inline-flex; align-items: center; justify-self: start; gap: 4px; min-height: 32px; max-width: 100%;
+    padding: 2px 4px; border: 0; border-radius: 6px; background: transparent; color: #8a1230;
+    font: inherit; font-size: .8125rem; line-height: 1.6; text-align: start; text-decoration: underline; text-underline-offset: .15em;
+}
 .date-clear-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 1px solid #d7cfc9; border-radius: 12px; background: #fff; color: #655d55; font-size: 1rem; }
 .date-clear-btn[hidden] { display: none; }
 .date-filter-row :is(input, button):focus-visible { outline: 3px solid #171717; outline-offset: 3px; }
@@ -149,10 +155,9 @@ body { background: var(--portal-paper); }
     .date-clear-btn, .date-picker-btn { transition: background-color 140ms ease-out, color 140ms ease-out; }
 }
 /* Calendar range labels remain compact and preserve Thai marks. */
-.filter-wrapper.has-filter-controls { align-items: flex-end; }
 .filter-caption { min-height: 44px; }
 .date-filter-row { align-items: flex-end; flex-wrap: wrap; }
-.date-range-field { display: grid; gap: 4px; min-width: 0; }
+.date-range-field { display: grid; align-self: start; gap: 4px; min-width: 0; }
 .date-range-field > label { color: #655d55; font-size: .8125rem; line-height: 1.7; }
 .date-range-error { flex-basis: 100%; color: #a50028; font-size: .8125rem; line-height: 1.7; }
 .date-range-error[hidden] { display: none; }
@@ -161,10 +166,10 @@ body { background: var(--portal-paper); }
     .filter-caption { display: none; }
     .has-filter-controls > .modern-select { grid-column: 1; grid-row: 1; width: 100% !important; max-width: 100%; padding-inline-start: 10px; font-size: .875rem; }
     .has-filter-controls > .clear-filter-btn { grid-column: 2; grid-row: 1; }
-    .date-filter-row { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; min-width: 0; }
+    .board-date-range { grid-column: 1 / -1; grid-row: 2; }
+    .date-filter-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; min-width: 0; }
     .buddhist-date-control { width: 100%; }
-    .buddhist-date-control > input:not(.native-date-source) { padding-inline-start: 8px; padding-inline-end: 34px; }
-    .date-picker-btn { width: 32px; }
+    .buddhist-date-control > input:not(.native-date-source) { padding-inline: 8px; }
     .date-filter-row > .date-clear-btn { grid-column: 2; justify-self: end; }
     .date-range-error { grid-column: 1 / -1; }
 }

@@ -6,7 +6,7 @@
         const cleanups = [];
         const controller = new AbortController();
         const listen = (el, event, fn) => el.addEventListener(event, fn, { signal: controller.signal });
-        ['filterCollab', 'filterEvent'].forEach(id => {
+        [['filterCollab', 'องค์กร'], ['filterEvent', 'กิจกรรม/MoU']].forEach(([id, context]) => {
             const select = document.getElementById(id);
             const wrapper = select?.closest('.filter-wrapper');
             if (!wrapper) return;
@@ -22,6 +22,7 @@
 
             // A Buddhist-year display adapter; the existing ISO date remains the filter value.
             const clear = document.getElementById(`${id}DateClear`);
+            const range = wrapper.querySelector('fieldset > legend')?.textContent;
             ['Date', 'DateEnd'].forEach(suffix => {
                 const date = document.getElementById(`${id}${suffix}`);
                 if (!date) return;
@@ -37,13 +38,17 @@
                 text.autocomplete = 'off';
                 text.name = `${id}${suffix}Buddhist`;
                 text.spellcheck = false;
-                text.setAttribute('aria-label', `${date.getAttribute('aria-label')} วัน/เดือน/ปี พ.ศ.`);
+                const side = label?.textContent || (suffix === 'Date' ? 'ตั้งแต่' : 'ถึง');
+                const fieldName = range ? `${side} ${range}` : date.getAttribute('aria-label') || side;
+                text.setAttribute('aria-label', `${fieldName} วัน/เดือน/ปี พ.ศ.`);
                 const picker = document.createElement('button');
                 picker.type = 'button';
                 picker.className = 'date-picker-btn';
-                picker.setAttribute('aria-label', 'เลือกวันที่จากปฏิทิน');
-                picker.title = 'เลือกวันที่จากปฏิทิน';
+                const buttonText = `${side} (${context})`;
+                picker.title = `ปฏิทิน ${buttonText}`;
+                picker.setAttribute('aria-label', picker.title);
                 picker.innerHTML = '<i class="far fa-calendar-alt" aria-hidden="true"></i>';
+                picker.append(document.createTextNode(buttonText));
                 date.before(shell);
                 shell.append(text, picker, date);
                 date.classList.add('native-date-source');
