@@ -1,7 +1,7 @@
 /* Presentation only. Reuses rendered collaborator logos without data requests,
    app state changes or scroll locking. A single RAF-batched scroll controller
    paints scene opacity and transforms directly across browsers.
-   Extra previews delegate to the existing detail function and hero ticker. */
+   Extra previews delegate to the existing detail function. */
 (() => {
     'use strict';
     let dispose;
@@ -26,6 +26,7 @@
         let navigationFrame = 0;
         let layer;
         let releaseDecode;
+        let companionTimer;
         const on = (target, type, handler, options = {}) => target.addEventListener(type, handler, { ...options, signal: controller.signal });
         const after = (fn, ms) => {
             const id = setTimeout(() => { timers.delete(id); fn(); }, ms);
@@ -272,7 +273,7 @@
         function refreshCompanions() {
             if (!settled || disposed || !tiles.length) return;
             const current = new Set(liveCards.map(card => card.querySelector('h4')?.textContent.trim()));
-            // Keep the preview under the pointer/focus stable until the next ticker cycle.
+            // Keep the preview under the pointer or keyboard focus stable.
             const held = tiles.filter(item => item.slot >= 3 &&
                 (item.tile.matches(':hover') || item.tile.contains(document.activeElement)));
             held.forEach(item => current.add(item.partner.title));
@@ -429,6 +430,7 @@
                 });
             });
             hero.append(layer);
+            companionTimer = setInterval(refreshCompanions, 10000);
             measure();
             // Clear only the pending-data timeout; the decorative sequence has its own bound.
             clearTimeout(pendingTimer);
@@ -436,12 +438,6 @@
             try { run(); } catch { finish(); } // Optional motion must always fail open.
         }
         const observer = new MutationObserver(() => { readPartners(); prepare(); });
-        // Follow the existing ten-second ticker; no extra timer or data request.
-        const tickerObserver = new MutationObserver(refreshCompanions);
-        liveCards.forEach(card => {
-            const title = card.querySelector('h4');
-            if (title) tickerObserver.observe(title, { childList: true, subtree: true, characterData: true });
-        });
         observer.observe(grid, { childList: true });
         const pendingTimer = settled ? 0 : after(() => finish(), 3500);
         if (!settled) hero.classList.add('intro-pending');
@@ -465,7 +461,7 @@
             controller.abort();
             observer.disconnect();
             bodyObserver?.disconnect();
-            tickerObserver.disconnect();
+            clearInterval(companionTimer);
             cancelAnimationFrame(resizeFrame);
             cancelAnimationFrame(navigationFrame);
             cancelAnimationFrame(sceneFrame);
