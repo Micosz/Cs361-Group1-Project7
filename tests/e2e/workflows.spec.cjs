@@ -47,6 +47,35 @@ test('invalid login shows feedback, clears password, and sends CSRF', async ({pa
   await expect(page.locator('#student-password')).toHaveValue('');
   expect(requests.find(r=>r.path.endsWith('/login')).headers['x-csrf-token']).toBe(csrfToken);
 });
+test('MoU period labels cover agreements and signing news without partial counts', async ({page}) => {
+  await fixture(page);
+  await page.clock.setFixedTime(new Date('2026-07-01T12:00:00+07:00'));
+  await page.route('http://127.0.0.1:4173/fetchPartnersData', route => route.fulfill({json:[
+    {id:'host',name:'Fixture University',type:'university',visibility:'public'},
+    {id:'story',partnerId:'host',title:'Signing story (fixture)',type:'academic_activity',activity_tags:['mou'],period_date:'2026-06-20',visibility:'public'}
+  ]}));
+  await page.route('http://127.0.0.1:4173/api/public/agreements?*', route => route.fulfill({json:{
+    data:[{id:'agreement',title:'Expired agreement (fixture)',entityType:'agreement',agreementType:'MoA',
+      startDate:'2025-06-01',endDate:'2026-06-30',status:'expired',publication:'public'}],count:1,page:{nextCursor:null}
+  }}));
+  await page.goto('/index.html');
+  await page.locator('#tabEvent').click();
+  const current = page.locator('#eventTimeCurrent'), past = page.locator('#eventTimePast');
+  await expect(current).toHaveAccessibleName('ปัจจุบัน (0)');
+  await expect(past).toHaveAccessibleName('ผ่านมาแล้ว (1)');
+
+  await page.locator('#filterEvent').selectOption('mou');
+  await expect(current).toHaveAccessibleName('ปัจจุบัน');
+  await expect(past).toHaveAccessibleName('ผ่านมาแล้ว');
+  await page.getByRole('button',{name:'ดูรายการที่ผ่านมาแล้ว',exact:true}).click();
+  await expect(past).toHaveAttribute('aria-selected','true');
+  await expect(page.locator('#eventGrid .browse-card-open:visible')).toHaveText(['Expired agreement (fixture)','Signing story (fixture)']);
+
+  await page.locator('#filterEvent').selectOption('all');
+  await expect(current).toHaveAccessibleName('ปัจจุบัน (0)');
+  await expect(past).toHaveAccessibleName('ผ่านมาแล้ว (1)');
+  await expect(page.locator('#eventGrid .browse-card-open:visible')).toHaveText(['Signing story (fixture)']);
+});
 test('successful student login returns to public home without storing credentials', async ({page}) => {
   await fixture(page); await page.goto('/login.html');
   await page.locator('#student-id').fill('test-account'); await page.locator('#student-password').fill('dummy-password');
