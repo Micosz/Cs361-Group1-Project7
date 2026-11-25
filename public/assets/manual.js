@@ -69,20 +69,71 @@
         modal.addEventListener('close',()=>{++generation;if(viewer.open)viewer.close();document.body.style.overflow=overflow;returnFocus?.isConnected&&returnFocus.focus({preventScroll:true});for(const [el,x,y] of scrollPositions)if(el.isConnected){el.scrollLeft=x;el.scrollTop=y;}if(scroll)window.scrollTo({left:scroll.x,top:scroll.y,behavior:'instant'});});
         role.onchange=()=>draw();search.addEventListener('input',()=>draw());
     }
-    function draw() {
-        const allowed=available(), select=modal.querySelector('#manual-role'), q=modal.querySelector('#manual-search').value.trim().toLocaleLowerCase();
-        const role=allowed.includes(select.value)?select.value:'public';
-        const guides=data.guides.filter(g=>g.roles.includes(role) && (!q||[g.title,g.category,...g.steps.map(s=>s.text)].join(' ').toLocaleLowerCase().includes(q)));
-        const toc=modal.querySelector('#manual-toc');toc.replaceChildren();modal.querySelector('#manual-count').textContent=`พบ ${guides.length} ฟีเจอร์`;
-        let category='';for(const g of guides){if(g.category!==category){category=g.category;toc.append(node('h3',category));}const b=node('button',g.title);b.type='button';b.dataset.guide=g.id;b.onclick=()=>show(g);toc.append(b);}
-        const selected=guides.find(g=>g.id===currentGuide)||guides[0];if(selected)show(selected);else modal.querySelector('#manual-content').replaceChildren(node('p','ไม่พบคู่มือ ลองเปลี่ยนคำค้นหรือเลือกบทบาทอื่นที่คุณมี'));
+    function matchingGuides(role, query) {
+        const results = [];
+        const containsQuery = value => String(value ?? '').toLocaleLowerCase().includes(query);
+        for (const guide of data.guides) {
+            if (!guide.roles.includes(role)) continue;
+            const matchedSteps = query
+                ? guide.steps.filter(step => containsQuery(step.title) || containsQuery(step.text))
+                : [];
+            if (query && !matchedSteps.length) {
+                // Existing searches can span the chapter title, category and instructions.
+                const chapterText = [guide.title, guide.category, ...guide.steps.map(step => step.text)].join(' ');
+                if (!containsQuery(chapterText)) continue;
+            }
+            results.push({ guide, matchedSteps });
+        }
+        return results;
     }
-    function show(g) {
+    function draw() {
+        const allowed = available();
+        const select = modal.querySelector('#manual-role');
+        const role = allowed.includes(select.value) ? select.value : 'public';
+        const query = modal.querySelector('#manual-search').value.trim().toLocaleLowerCase();
+        const results = matchingGuides(role, query);
+        const count = modal.querySelector('#manual-count');
+        const message = `พบ ${results.length} ฟีเจอร์`;
+        if (count.textContent !== message) count.textContent = message;
+
+        const toc = modal.querySelector('#manual-toc');
+        const items = document.createDocumentFragment();
+        let category = '';
+        for (const { guide, matchedSteps } of results) {
+            if (guide.category !== category) {
+                category = guide.category;
+                items.append(node('h3', category));
+            }
+            const button = node('button', guide.title);
+            button.type = 'button';
+            button.dataset.guide = guide.id;
+            button.onclick = () => show(guide, { focusHeading: true });
+            items.append(button);
+            if (matchedSteps.length) {
+                const list = node('ul', null, 'manual-step-matches');
+                list.id = 'manual-matches-' + guide.id;
+                for (const step of matchedSteps) list.append(node('li', step.title));
+                button.setAttribute('aria-describedby', list.id);
+                items.append(list);
+            }
+        }
+        toc.classList.toggle('manual-search-results', Boolean(query));
+        toc.replaceChildren(items);
+
+        const selected = results.find(({ guide }) => guide.id === currentGuide) || results[0];
+        if (selected) show(selected.guide);
+        else modal.querySelector('#manual-content').replaceChildren(node('p', 'ไม่พบคู่มือ ลองเปลี่ยนคำค้นหรือเลือกบทบาทอื่นที่คุณมี'));
+    }
+    function show(g, { focusHeading = false } = {}) {
         currentGuide=g.id;for(const b of modal.querySelectorAll('[data-guide]')){b.setAttribute('aria-current',String(b.dataset.guide===g.id));}
-        const host=modal.querySelector('#manual-content');host.replaceChildren(node('p',g.category,'manual-eyebrow'),node('h2',g.title));
+        const host = modal.querySelector('#manual-content');
+        const heading = node('h2', g.title);
+        heading.tabIndex = -1;
+        host.replaceChildren(node('p', g.category, 'manual-eyebrow'), heading);
         if(g.note)host.append(node('p',g.note,'manual-note'));
         g.steps.forEach((s,i)=>{const section=node('section',null,'manual-step');section.append(node('h3',`${i+1}. ${s.title}`),figure(s),node('p',s.text));host.append(section);});
         host.append(node('p','สิทธิ์ขึ้นกับบทบาท ขอบเขต และงานที่ได้รับมอบหมาย ภาพประกอบถ่ายจากเว็บจริง ชื่อรายการอาจต่างจากข้อมูลของคุณ','manual-caption'));host.scrollTop=0;
+        if (focusHeading) heading.focus({ preventScroll: true });
     }
     async function open(source) {
         build();if(modal.open)return;
