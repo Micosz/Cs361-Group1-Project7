@@ -14,6 +14,7 @@
     "test:lambda": "node scripts/run-tests.cjs lambda",
     "test:deployment": "node scripts/run-tests.cjs deployment",
     "test:e2e": "playwright test",
+    "test:exchange-admissions": "playwright test --config tests/exchange-admissions/playwright.config.cjs",
     "test:ci": "npm test && npm run test:e2e"
   },
   "repository": {

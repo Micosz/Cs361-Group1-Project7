@@ -1,0 +1,36 @@
+name: Exchange admissions journey
+on:
+  pull_request:
+    paths:
+      - 'backend/lambda/CSTUHubAuth/backend/admission*.py'
+      - 'backend/lambda/CSTUHubAuth/backend/application.py'
+      - 'public/assets/exchange-admissions*'
+      - 'public/assets/records.js'
+      - 'public/assets/login.js'
+      - 'public/index.html'
+      - 'public/login*.html'
+      - 'public/login/**'
+      - 'tests/exchange-admissions/**'
+      - 'tests/backend/CSTUHubAuth/support/admissions_fixture.py'
+      - '.github/workflows/exchange-admissions.yml'
+permissions:
+  contents: read
+jobs:
+  exchange-journey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: pip install -r backend/lambda/CSTUHubAuth/requirements.txt
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:exchange-admissions
