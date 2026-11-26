@@ -205,7 +205,7 @@
             request.required = true;
             request.maxLength = 700;
             channel.maxLength = 300;
-            const send = node('button', 'บันทึกคำขอข้อมูล', 'admission-button-secondary');
+            const send = node('button', 'บันทึกข้อมูลคำขอ', 'admission-button-secondary');
             send.type = 'submit';
             form.append(
                 field('สิ่งที่ขอ', request),

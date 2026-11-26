@@ -13,12 +13,12 @@ function thaiInput(epoch) {
 }
 const detail = (page) => page.locator('#record-detail');
 const panel = (page) => detail(page).locator('.exchange-admissions:visible').first();
-async function capture(page, name, focus) {
+async function capture(page, name, focus, region = page) {
     if (!process.env.CSTU_ADMISSIONS_EVIDENCE_DIR) return;
-    if (focus) await focus.scrollIntoViewIfNeeded();
+    if (focus) await focus.evaluate((element) => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
     const dir = process.env.CSTU_ADMISSIONS_EVIDENCE_DIR;
     await fs.mkdir(dir, { recursive: true });
-    await page.screenshot({
+    await region.screenshot({
         path: path.join(dir, name + '.jpg'),
         type: 'jpeg',
         quality: 80,
@@ -81,6 +81,8 @@ async function submit(page, user) {
     const p = panel(page);
     await p.getByRole('button', { name: 'สมัครเข้าร่วมเพื่อให้สาขาคัดเลือก' }).click();
     await p.getByLabel('หัวข้อที่สนใจศึกษา').fill('งานวิจัยสมมติ ' + user.slice(-1).toUpperCase());
+    if (user === 'student-a')
+        await capture(page, '01-student-application-form', p.getByRole('button', { name: 'ส่งใบสมัคร', exact: true }));
     await p.getByRole('button', { name: 'ส่งใบสมัคร', exact: true }).click();
     await expect(p.getByText('ส่งใบสมัครแล้ว', { exact: true })).toBeVisible();
     if (user === 'student-a')
@@ -100,13 +102,15 @@ async function roster(page) {
 function row(p, name) {
     return p.locator('article').filter({ has: p.page().getByRole('heading', { name, exact: true }) });
 }
-async function draft(card, value) {
+async function draft(card, value, evidence) {
     await card.getByLabel('ผลคัดเลือกร่าง').selectOption(value);
+    if (evidence) await capture(card.page(), evidence, card);
     await card.getByRole('button', { name: 'บันทึกร่างผล' }).click();
     await expect(card.getByText('ตรวจทานก่อนเผยแพร่')).toBeVisible();
 }
-async function publish(card) {
+async function publish(card, evidence) {
     await card.getByText('ตรวจทานก่อนเผยแพร่').click();
+    if (evidence) await capture(card.page(), evidence, card.getByRole('button', { name: 'เผยแพร่ผลให้ผู้สมัครคนนี้' }));
     await card.getByRole('button', { name: 'เผยแพร่ผลให้ผู้สมัครคนนี้' }).click();
     await expect(card.getByText(/เผยแพร่แล้ว ·/)).toBeVisible();
 }
@@ -171,28 +175,79 @@ test('public activity, two private applications, staff publication, partner acce
         const p = await roster(manager),
             ar = row(p, 'นักศึกษา A'),
             br = row(p, 'นักศึกษา B');
-        await expect(ar.getByRole('button', { name: 'เริ่มพิจารณา' })).toHaveCSS('background-color', 'rgb(195, 0, 47)');
-        await expect(ar.locator('summary', { hasText: 'ขอข้อมูลเพิ่ม' })).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-        await expect(ar.getByRole('button', { name: 'บันทึกร่างผล' })).toHaveCSS('color', 'rgb(195, 0, 47)');
-        await capture(manager, 'exchange-action-hierarchy', ar.getByRole('button', { name: 'เริ่มพิจารณา' }));
-        await ar.getByText('ขอข้อมูลเพิ่ม', { exact: true }).click();
+        const startReview = ar.getByRole('button', { name: 'เริ่มพิจารณา' });
+        const requestInfo = ar.getByText('ขอข้อมูลเพิ่ม', { exact: true });
+        const saveDraft = ar.getByRole('button', { name: 'บันทึกร่างผล' });
+        await expect(startReview).toHaveCSS('background-color', 'rgb(195, 0, 47)');
+        await expect(saveDraft).toHaveCSS('border-top-color', 'rgb(195, 0, 47)');
+        await expect(saveDraft).toHaveCSS('border-top-width', '1px');
+        await expect(ar).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+        await expect(requestInfo).toHaveCSS('color', 'rgb(180, 77, 102)');
+        await expect(requestInfo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+        await expect(requestInfo).toHaveCSS('border-top-style', 'none');
+        await expect(requestInfo).toHaveCSS('display', 'list-item');
+        const hitArea = await requestInfo.boundingBox();
+        expect(hitArea.height).toBeGreaterThanOrEqual(44);
+        expect(hitArea.width).toBeGreaterThanOrEqual(44);
+        await capture(manager, 'exchange-action-hierarchy', ar);
+        await capture(manager, 'review-disclosure', ar, ar);
+        const mobileManager = await fx.browserPage(browser, 'manager', {
+            viewport: { width: 390, height: 844 },
+            isMobile: true,
+            hasTouch: true
+        });
+        contexts.push(mobileManager.context());
+        const mobileRow = row(await roster(mobileManager), 'นักศึกษา A');
+        const mobileRequest = mobileRow.getByText('ขอข้อมูลเพิ่ม', { exact: true });
+        for (const width of [390, 320]) {
+            await mobileManager.setViewportSize({ width, height: 844 });
+            await mobileRequest.scrollIntoViewIfNeeded();
+            const box = await mobileRequest.boundingBox();
+            expect(box.height).toBeGreaterThanOrEqual(44);
+            expect(box.width).toBeGreaterThanOrEqual(44);
+            expect(box.x).toBeGreaterThanOrEqual(0);
+            expect(box.x + box.width).toBeLessThanOrEqual(width);
+            await mobileRequest.tap();
+            await expect(mobileRow.getByLabel('สิ่งที่ขอ')).toBeVisible();
+            await mobileRequest.tap();
+            await expect(mobileRow.getByLabel('สิ่งที่ขอ')).toBeHidden();
+        }
+        await startReview.click();
+        await expect(ar.getByText('ใบสมัคร · อยู่ระหว่างพิจารณา', { exact: true })).toBeVisible();
+        await startReview.focus();
+        await manager.keyboard.press('Tab');
+        await expect(requestInfo).toBeFocused();
+        await expect(requestInfo).toHaveCSS('outline-style', 'solid');
+        await requestInfo.press('Enter');
+        await expect(ar.getByLabel('สิ่งที่ขอ')).toBeVisible();
+        await requestInfo.press('Space');
+        await expect(ar.getByLabel('สิ่งที่ขอ')).toBeHidden();
+        await requestInfo.hover();
+        await expect(requestInfo).toHaveCSS('text-decoration-line', 'underline');
+        await expect(requestInfo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+        await requestInfo.click();
         await ar.getByLabel('สิ่งที่ขอ').fill('หัวข้อฉบับปรับปรุง (สมมติ)');
         await ar.getByLabel('ช่องทางส่งข้อมูล').fill('ช่องทางของสาขา (สมมติ)');
         await ar.getByLabel('กำหนดส่ง (เวลาไทย)').fill(thaiInput(clock + 180));
-        await ar.getByRole('button', { name: 'บันทึกคำขอข้อมูล' }).click();
+        const saveRequest = ar.getByRole('button', { name: 'บันทึกข้อมูลคำขอ', exact: true });
+        await expect(saveRequest).toBeVisible();
+        await capture(manager, '03-request-information', ar.locator('details[open] form'));
+        await saveRequest.click();
         await expect(ar.getByText(/ช่องทางของสาขา/)).toBeVisible();
         await a.reload();
         await expect(panel(a)).toContainText('หัวข้อฉบับปรับปรุง');
+        await capture(a, '04-student-information-request', panel(a).getByText('ต้องส่งข้อมูลเพิ่ม', { exact: true }));
         await b.reload();
         await expect(panel(b)).not.toContainText('หัวข้อฉบับปรับปรุง');
         await fx.send('clock', { offset: 180 });
-        await draft(ar, 'passed');
+        await draft(ar, 'passed', '05-select-draft');
         await draft(br, 'declined');
         await a.reload();
         await expect(panel(a).getByText('อยู่ระหว่างพิจารณา', { exact: true })).toBeVisible();
         await expect(panel(a)).not.toContainText('ผ่านการคัดเลือกของสาขา · รอยืนยันสิทธิ์');
+        await capture(a, '06-student-before-publication', panel(a).getByText('อยู่ระหว่างพิจารณา', { exact: true }));
         await fx.send('clock', { offset: 240 });
-        await publish(ar);
+        await publish(ar, '07-publication-preview');
         await publish(br);
         await capture(manager, 'exchange-review', ar.getByText('รอนักศึกษายืนยันสิทธิ์'));
         await myExchange(a);
@@ -205,6 +260,7 @@ test('public activity, two private applications, staff publication, partner acce
         await capture(a, 'exchange-my-application', mine.getByRole('button', { name: 'ยืนยันสิทธิ์ของฉัน' }));
         await mine.getByRole('link', { name: round, exact: true }).click();
         const confirmation = panel(a).getByRole('button', { name: 'ยืนยันสิทธิ์ของฉัน' });
+        await capture(a, '08-student-confirm-place', confirmation);
         await confirmation.focus();
         await a.keyboard.press('Space');
         await expect(panel(a)).toContainText('รอคู่สัญญาตอบรับ');
@@ -232,10 +288,13 @@ test('public activity, two private applications, staff publication, partner acce
         await expect(b.locator('#records-content')).not.toContainText(round);
         await roster(manager);
         await expect(br.getByText(/เผยแพร่แล้ว · ไม่ผ่าน/)).toBeVisible();
+        await capture(manager, '09-coordinator-partner-acceptance', ar);
         await ar.getByRole('button', { name: 'บันทึกว่าคู่สัญญาตอบรับแล้ว' }).click();
         await expect(ar.getByText('เข้าร่วมโครงการแล้ว', { exact: true })).toBeVisible();
+        await capture(manager, '10-coordinator-enrolled', ar);
         await myExchange(a);
         await expect(mine).toContainText('เข้าร่วมโครงการแล้ว');
+        await capture(a, '11-student-my-exchange', a.locator('.records-list').getByRole('button', { name: project }));
         await a.locator('.records-list').getByRole('button', { name: project }).click();
         await expect(detail(a)).toContainText('กำหนดการสำหรับผู้เข้าร่วม (สมมติ)');
         await checkHandbook(a);

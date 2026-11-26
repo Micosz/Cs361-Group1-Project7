@@ -71,8 +71,7 @@
     background: var(--tu-red-hover);
     border-color: var(--tu-red-hover);
 }
-:is(#record-detail, #home-records) .exchange-admissions .admission-button-secondary,
-.exchange-admissions .admission-disclosure-secondary {
+:is(#record-detail, #home-records) .exchange-admissions .admission-button-secondary {
     background: white;
     color: var(--tu-red);
     border: 1px solid var(--tu-red);
@@ -81,12 +80,17 @@
     width: fit-content;
     max-width: 100%;
     box-sizing: border-box;
-    padding: 0.55rem 0.85rem;
-    border-radius: 0.4rem;
+    min-height: 44px;
+    padding: 0.625rem 0.9375rem;
+    color: #b44d66;
     text-decoration: none;
 }
-:is(#record-detail, #home-records) .exchange-admissions .admission-button-secondary:hover:not(:disabled),
 .exchange-admissions .admission-disclosure-secondary:hover {
+    color: var(--tu-red-hover);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+:is(#record-detail, #home-records) .exchange-admissions .admission-button-secondary:hover:not(:disabled) {
     color: var(--tu-red-hover);
     border-color: var(--tu-red-hover);
     background: #fff5f7;
