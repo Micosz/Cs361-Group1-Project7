@@ -582,7 +582,7 @@ async function renderCollaboratorCards() {
     }
     if (version !== collaboratorRenderVersion) return;
     container.removeAttribute('aria-busy');
-    initHeroTicker(records); // Also recover the ticker after a failed initial load.
+    initHeroCards(records); // An initial catalogue error can recover on Search or filter.
     const partners = filterBrowseRecords(records, 'name', 'filterCollab');
 
     if (partners.length === 0) {
@@ -736,15 +736,15 @@ function switchTab(tabName) {
     }
 }
 
-//ฟังก์ชันสุ่มข้อความใส่การ์ดทุกๆ 10 วินาที
-let heroTickerStarted = false;
+let heroCardsReady = false;
 
-async function initHeroTicker(records) {
-    if (heroTickerStarted) return;
+async function initHeroCards(records) {
+    if (heroCardsReady) return;
     let partners;
     try {
         partners = records || await getPublicPartners();
     } catch (error) {
+        if (heroCardsReady) return;
         for (let i = 1; i <= 3; i++) {
             const title = document.getElementById(`heroTitle${i}`);
             const description = document.getElementById(`heroDesc${i}`);
@@ -753,51 +753,26 @@ async function initHeroTicker(records) {
         }
         return;
     }
-    if (heroTickerStarted) return;
-    if (!partners || partners.length === 0) return;
-    heroTickerStarted = true;
+    if (heroCardsReady || !partners?.length) return;
+    heroCardsReady = true;
 
-    function updateCards() {
-        // สลับลำดับข้อมูลแบบสุ่ม (Shuffle)
-        let shuffled = [...partners].sort(() => 0.5 - Math.random());
-        
-        // ดึง3บริษัทแรกหลังจากการสุ่ม
-        const p1 = shuffled[0] || partners[0];
-        const p2 = shuffled[1] || partners[0];
-        const p3 = shuffled[2] || partners[0];
-
-        //การ์ดใบที่ 1
-        const t1 = document.getElementById('heroTitle1');
-        const d1 = document.getElementById('heroDesc1');
-        const c1 = document.getElementById('heroCard1');
-        if (t1) { t1.textContent = p1.name; d1.textContent = typeLabel(p1.type); }
-        if (c1) { c1.onclick = () => openModal(p1.id, 'partner'); }
-
-        //การ์ดใบที่ 2
-        const t2 = document.getElementById('heroTitle2');
-        const d2 = document.getElementById('heroDesc2');
-        const c2 = document.getElementById('heroCard2');
-        if (t2) { t2.textContent = p2.name; d2.textContent = typeLabel(p2.type); }
-        if (c2) { c2.onclick = () => openModal(p2.id, 'partner'); }
-
-        //การ์ดใบที่ 3
-        const t3 = document.getElementById('heroTitle3');
-        const d3 = document.getElementById('heroDesc3');
-        const c3 = document.getElementById('heroCard3');
-        if (t3) { t3.textContent = p3.name; d3.textContent = typeLabel(p3.type); }
-        if (c3) { c3.onclick = () => openModal(p3.id, 'partner'); }
+    const remaining = [...partners];
+    for (let i = 1; i <= 3; i++) {
+        const card = document.getElementById(`heroCard${i}`);
+        if (!card) continue;
+        const index = Math.floor(Math.random() * remaining.length);
+        const partner = remaining.splice(index, 1)[0] || partners[0];
+        card.querySelector('h4').textContent = partner.name;
+        card.querySelector('p').textContent = typeLabel(partner.type);
+        card.onclick = () => openModal(partner.id, 'partner');
     }
-
-    updateCards();
-
-    setInterval(updateCards, 10000);
 }
 
 //สั่งให้ Render การ์ดทันทีเมื่อโหลดโครงสร้าง HTML เสร็จ
 document.addEventListener('DOMContentLoaded', () => {
     renderCollaboratorCards();
     renderEventCards();
-    initHeroTicker(); // เติมบรรทัดนี้เพื่อให้ระบบสุ่มเริ่มทำงาน
+    initHeroCards();
 });
 
 // One article layout for source-backed and newly created activities.
