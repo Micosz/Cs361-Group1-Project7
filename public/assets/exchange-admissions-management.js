@@ -102,7 +102,7 @@
             ['คำถามเพิ่มเติมที่จำเป็น (ถ้ามี)', question]
         ])
             grid.append(field(label, control));
-        const submit = node('button', 'เปิดรอบรับสมัคร');
+        const submit = node('button', 'เปิดรอบรับสมัคร', 'admission-button-primary');
         submit.type = 'submit';
         form.append(node('p', 'กรอกวันและเวลาทั้งหมดตามเวลาไทย (Asia/Bangkok, UTC+7)'), grid, submit, notice);
         let key = crypto.randomUUID();
@@ -197,7 +197,7 @@
         } else {
             block.append(action('เริ่มพิจารณา', () => update({ action: 'review' })));
             const more = node('details');
-            more.append(node('summary', 'ขอข้อมูลเพิ่ม'));
+            more.append(node('summary', 'ขอข้อมูลเพิ่ม', 'admission-disclosure-secondary'));
             const form = node('form'),
                 request = node('textarea'),
                 channel = input('text', true),
@@ -205,7 +205,7 @@
             request.required = true;
             request.maxLength = 700;
             channel.maxLength = 300;
-            const send = node('button', 'บันทึกคำขอข้อมูล');
+            const send = node('button', 'บันทึกคำขอข้อมูล', 'admission-button-secondary');
             send.type = 'submit';
             form.append(
                 field('สิ่งที่ขอ', request),
@@ -235,7 +235,7 @@
                 field('ผลคัดเลือกร่าง', decision),
                 action('บันทึกร่างผล', () => {
                     if (decision.reportValidity()) update({ action: 'decide', decision: decision.value });
-                })
+                }, 'secondary')
             );
             if (row.decision) {
                 const preview = node('details');

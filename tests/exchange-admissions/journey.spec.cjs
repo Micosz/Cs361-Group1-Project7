@@ -171,6 +171,10 @@ test('public activity, two private applications, staff publication, partner acce
         const p = await roster(manager),
             ar = row(p, 'นักศึกษา A'),
             br = row(p, 'นักศึกษา B');
+        await expect(ar.getByRole('button', { name: 'เริ่มพิจารณา' })).toHaveCSS('background-color', 'rgb(195, 0, 47)');
+        await expect(ar.locator('summary', { hasText: 'ขอข้อมูลเพิ่ม' })).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+        await expect(ar.getByRole('button', { name: 'บันทึกร่างผล' })).toHaveCSS('color', 'rgb(195, 0, 47)');
+        await capture(manager, 'exchange-action-hierarchy', ar.getByRole('button', { name: 'เริ่มพิจารณา' }));
         await ar.getByText('ขอข้อมูลเพิ่ม', { exact: true }).click();
         await ar.getByLabel('สิ่งที่ขอ').fill('หัวข้อฉบับปรับปรุง (สมมติ)');
         await ar.getByLabel('ช่องทางส่งข้อมูล').fill('ช่องทางของสาขา (สมมติ)');
@@ -196,7 +200,7 @@ test('public activity, two private applications, staff publication, partner acce
         await expect(mine).toContainText('รอยืนยันสิทธิ์');
         await expect(mine.getByRole('button', { name: 'ยืนยันสิทธิ์ของฉัน' })).toHaveCSS(
             'background-color',
-            'rgb(121, 36, 58)'
+            'rgb(195, 0, 47)'
         );
         await capture(a, 'exchange-my-application', mine.getByRole('button', { name: 'ยืนยันสิทธิ์ของฉัน' }));
         await mine.getByRole('link', { name: round, exact: true }).click();

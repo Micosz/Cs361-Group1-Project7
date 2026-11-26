@@ -19,7 +19,7 @@
 .admission-card {
     background: #fff;
     border: 1px solid #dacfd1;
-    border-inline-start: 4px solid #84293d;
+    border-inline-start: 4px solid var(--tu-red);
     border-radius: 0.6rem;
     padding: 0.9rem;
     margin-block: 0.7rem;
@@ -49,22 +49,51 @@
 }
 .exchange-admissions a,
 .exchange-admissions summary {
-    color: #772439;
+    color: var(--tu-red);
     text-decoration: underline;
     cursor: pointer;
 }
 :is(#record-detail, #home-records) .exchange-admissions button {
-    background: #79243a;
-    color: white;
+    background: white;
+    color: var(--tu-red);
     padding: 0.55rem 0.85rem;
-    border: 1px solid #682031;
+    border: 1px solid var(--tu-red);
     border-radius: 0.4rem;
     font: inherit;
     cursor: pointer;
     margin: 0.2rem 0.35rem 0.2rem 0;
 }
+:is(#record-detail, #home-records) .exchange-admissions .admission-button-primary {
+    background: var(--tu-red);
+    color: white;
+}
+:is(#record-detail, #home-records) .exchange-admissions .admission-button-primary:hover:not(:disabled) {
+    background: var(--tu-red-hover);
+    border-color: var(--tu-red-hover);
+}
+:is(#record-detail, #home-records) .exchange-admissions .admission-button-secondary,
+.exchange-admissions .admission-disclosure-secondary {
+    background: white;
+    color: var(--tu-red);
+    border: 1px solid var(--tu-red);
+}
+.exchange-admissions .admission-disclosure-secondary {
+    width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.55rem 0.85rem;
+    border-radius: 0.4rem;
+    text-decoration: none;
+}
+:is(#record-detail, #home-records) .exchange-admissions .admission-button-secondary:hover:not(:disabled),
+.exchange-admissions .admission-disclosure-secondary:hover {
+    color: var(--tu-red-hover);
+    border-color: var(--tu-red-hover);
+    background: #fff5f7;
+}
 .exchange-admissions button:disabled {
     opacity: 0.65;
+    cursor: not-allowed;
 }
 .exchange-admissions :focus-visible {
     outline: 3px solid #0964a0;

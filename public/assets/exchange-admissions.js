@@ -32,8 +32,8 @@
             STUDENT_REQUIRED: 'ต้องใช้บัญชีนักศึกษา TU ที่มีสิทธิ์ในหลักสูตรนี้',
             INVALID_REFERENCE: 'กิจกรรม คู่ความร่วมมือ หรือโครงการไม่ตรงกัน'
         })[e.message] || 'ทำรายการไม่สำเร็จ กรุณาลองอีกครั้ง';
-    const action = (label, fn) => {
-        const b = node('button', label);
+    const action = (label, fn, variant = 'primary') => {
+        const b = node('button', label, 'admission-button-' + variant);
         b.type = 'button';
         b.onclick = fn;
         return b;
@@ -195,7 +195,7 @@
         const form = node('form'),
             answer = node('textarea'),
             feedback = status(),
-            b = node('button', 'ส่งใบสมัคร');
+            b = node('button', 'ส่งใบสมัคร', 'admission-button-primary');
         b.type = 'submit';
         answer.maxLength = 1200;
         answer.required = Boolean(r.question);
