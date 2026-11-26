@@ -5,6 +5,7 @@
         const scoped = options.scoped === true;
         if (!record?.id || !(scoped ? ['partners','activities','exchanges'] : ['partners','activities']).includes(kind)) return;
         container.classList.add('feedback-section', 'public-feedback');
+        const ui = scoped ? null : window.CstuLanguage;
         const categories={student:'นักศึกษา',teacher:'อาจารย์',partner:'คู่ความร่วมมือ',participant:'ผู้เข้าร่วม',other:'อื่น ๆ'};
         const base=(scoped ? '/' : '/public/')+kind+'/'+encodeURIComponent(record.id)+'/feedback';
         const heading=document.createElement('h3'); heading.textContent='ความคิดเห็น';
@@ -59,6 +60,8 @@
         };
         const reportReasons={spam:'สแปมหรือโฆษณา',abuse:'ข้อความไม่เหมาะสมหรือคุกคาม',personal_data:'มีข้อมูลส่วนบุคคล',other:'อื่น ๆ'};
         form.append(comment,controls,status); container.append(heading,intro,form,summaryBox,filterLabel,listStatus,list,more);
+        if (ui) [heading, intro, comment, label, filterLabel, filter, ...category.options, ...filter.options, cancel].forEach(el => ui.capture(el));
+        ui?.live(send, status, listStatus, more);
         window.CstuFeedback?.enhanceComposer(form, [comment]);
         let cursor=null, revision=0, key=null, fingerprint=null, editing=null, canCreate=!scoped;
         async function load(reset=true) {
@@ -91,7 +94,10 @@
                     const li=document.createElement('li');
                     li.dataset.feedbackId=row.id;
                     const meta=document.createElement('p'); meta.className='feedback-comment-meta';
-                    meta.textContent=(categories[row.respondentType||row.sourceType]||'ผู้เยี่ยมชม')+' · '+(row.occurredOn||'');
+                    const respondent = categories[row.respondentType || row.sourceType] || 'ผู้เยี่ยมชม';
+                    const date = row.occurredOn || '';
+                    meta.textContent = respondent + ' · ' + date;
+                    ui?.pair(meta, (window.CstuPublicEnglish[respondent] ?? respondent) + ' · ' + date);
                     const text=document.createElement('p'); text.textContent=row.comment;
                     const votes=document.createElement('div'); votes.className='feedback-reactions';
                     for (const [choice,icon,label,count] of [['like','👍','ถูกใจ',row.likes],['dislike','👎','ไม่ถูกใจ',row.dislikes]]) {
@@ -111,6 +117,7 @@
                                 for(const b of votes.querySelectorAll('button'))b.disabled=false;
                             }
                         };
+                        ui?.capture(button);
                         votes.append(button);
                     }
                     li.append(meta,text);
@@ -120,6 +127,7 @@
                         // Reporting never deletes: enough reports hide the comment until staff review it.
                         const report=document.createElement('button'); report.type='button'; report.className='feedback-action-btn feedback-report-btn';
                         report.textContent='รายงาน'; report.setAttribute('aria-label','รายงานความคิดเห็นนี้');
+                        ui?.live(report);
                         report.onclick=()=>{
                             if(li.querySelector('.feedback-report-form'))return;
                             const reportForm=document.createElement('form'); reportForm.className='feedback-report-form';
@@ -132,6 +140,7 @@
                             const sendReport=document.createElement('button'); sendReport.type='submit'; sendReport.className='feedback-action-btn'; sendReport.textContent='ส่งรายงาน';
                             const cancelReport=document.createElement('button'); cancelReport.type='button'; cancelReport.className='feedback-action-btn'; cancelReport.textContent='ยกเลิก';
                             cancelReport.onclick=()=>{reportForm.remove();report.focus();};
+                            if (ui) [reasonLabel, reason, ...reason.options, sendReport, cancelReport].forEach(el => ui.capture(el));
                             reportForm.append(reasonLabel,sendReport,cancelReport);
                             reportForm.onsubmit=async event=>{
                                 event.preventDefault(); sendReport.disabled=true; cancelReport.disabled=true;

@@ -76,7 +76,8 @@
             if (!session?.user) {
                 showAccount(null); finishClose();
                 const login = document.createElement('a');
-                login.href = 'login.html'; login.className = 'login-btn'; login.textContent = 'Log in';
+                login.href = 'login.html'; login.className = 'login-btn'; login.textContent = 'เข้าสู่ระบบ';
+                window.CstuLanguage?.capture(login);
                 host.replaceChildren(login); return;
             }
             if (window.CstuAuth.isInternal(session) && !document.body.classList.contains('work-home')) {
@@ -87,6 +88,7 @@
                     workspace.href = 'work.html';
                     workspace.className = 'login-btn work-home-link';
                     workspace.textContent = 'กลับหน้าทำงาน';
+                    window.CstuLanguage?.capture(workspace);
                     host.replaceChildren(workspace);
                 }
                 showAccount(session);
@@ -100,7 +102,7 @@
                 if (!direct) {
                     direct = document.createElement('button');
                     direct.type = 'button'; direct.className = 'login-btn work-logout-trigger';
-                    direct.textContent = 'Log out';
+                    direct.textContent = 'ออกจากระบบ';
                     const message = document.createElement('p');
                     message.className = 'work-logout-status'; message.setAttribute('role', 'status');
                     direct.onclick = async () => {
@@ -113,7 +115,7 @@
                         } catch {
                             delete document.body.dataset.signingOut;
                             message.textContent = 'ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง';
-                            direct.disabled = false; direct.textContent = 'Log out';
+                            direct.disabled = false; direct.textContent = 'ออกจากระบบ';
                         }
                     };
                     host.replaceChildren(direct, message);
@@ -126,7 +128,8 @@
             if (!trigger) {
                 trigger = document.createElement('button');
                 trigger.type = 'button'; trigger.className = 'login-btn role-menu-trigger';
-                trigger.textContent = 'Menu'; trigger.setAttribute('aria-haspopup', 'dialog');
+                trigger.textContent = 'เมนู'; trigger.setAttribute('aria-haspopup', 'dialog');
+                window.CstuLanguage?.capture(trigger);
                 trigger.setAttribute('aria-controls', 'role-menu'); trigger.setAttribute('aria-expanded', 'false');
                 trigger.onclick = async event => {
                     // Re-check role/session whenever opening; do not trust a stale menu.
@@ -148,6 +151,7 @@
                 const link = document.createElement('a'); link.href = href;
                 const title = document.createElement('span'); title.textContent = label;
                 const small = document.createElement('small'); small.textContent = description;
+                window.CstuLanguage?.capture(title); window.CstuLanguage?.capture(small);
                 link.append(title, small); links.append(link);
             };
             const roles = window.CstuAuth.roles(session);
@@ -161,6 +165,7 @@
             const retry = document.createElement('button'); retry.type = 'button';
             retry.className = 'login-btn'; retry.textContent = 'ลองใหม่';
             retry.setAttribute('aria-label', 'ตรวจสถานะเข้าสู่ระบบอีกครั้ง'); retry.onclick = refresh;
+            window.CstuLanguage?.capture(retry);
             host.replaceChildren(retry);
         }
     }

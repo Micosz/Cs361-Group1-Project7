@@ -16,12 +16,22 @@
             icon.className = 'fas fa-filter';
             icon.setAttribute('aria-hidden', 'true');
             caption.append(icon, document.createTextNode('ตัวกรอง'));
+            window.CstuLanguage?.capture(caption);
             select.before(caption);
             wrapper.classList.add('has-filter-controls');
             cleanups.push(() => { caption.remove(); wrapper.classList.remove('has-filter-controls'); });
 
             // A Buddhist-year display adapter; the existing ISO date remains the filter value.
             const clear = document.getElementById(`${id}DateClear`);
+            const hint = document.createElement('small');
+            if (window.CstuLanguage) {
+                hint.id = id + 'BuddhistHint';
+                hint.className = 'public-buddhist-hint';
+                hint.lang = 'en';
+                hint.textContent = 'Use a Buddhist Era year (e.g. 2569 for 2026).';
+                wrapper.append(hint);
+                cleanups.push(() => hint.remove());
+            }
             ['Date', 'DateEnd'].forEach(suffix => {
                 const date = document.getElementById(`${id}${suffix}`);
                 if (!date) return;
@@ -37,6 +47,7 @@
                 text.autocomplete = 'off';
                 text.name = `${id}${suffix}Buddhist`;
                 text.spellcheck = false;
+                if (hint.isConnected) text.setAttribute('aria-describedby', hint.id);
                 text.setAttribute('aria-label', `${date.getAttribute('aria-label')} วัน/เดือน/ปี พ.ศ.`);
                 const picker = document.createElement('button');
                 picker.type = 'button';
@@ -44,6 +55,17 @@
                 picker.setAttribute('aria-label', 'เลือกวันที่จากปฏิทิน');
                 picker.title = 'เลือกวันที่จากปฏิทิน';
                 picker.innerHTML = '<i class="far fa-calendar-alt" aria-hidden="true"></i>';
+                const side = suffix === 'Date' ? 'start' : 'end';
+                const group = id === 'filterCollab' ? 'Partner activity' : 'Activity';
+                const thaiName = 'วันที่' + (side === 'start' ? 'เริ่มต้น' : 'สิ้นสุด') + (id === 'filterCollab' ? 'ความร่วมมือ' : 'กิจกรรม');
+                text.setAttribute('aria-label', thaiName + ' วัน/เดือน/ปี พ.ศ.');
+                window.CstuLanguage?.attr(text, 'aria-label', text.getAttribute('aria-label'), group + ' ' + side + ' date, day/month/Buddhist Era year');
+                window.CstuLanguage?.capture(text);
+                const pickerName = 'เลือกวันที่จากปฏิทิน ' + thaiName;
+                for (const attribute of ['title', 'aria-label']) {
+                    picker.setAttribute(attribute, pickerName);
+                    window.CstuLanguage?.attr(picker, attribute, pickerName, 'Choose ' + group.toLowerCase() + ' ' + side + ' date');
+                }
                 date.before(shell);
                 shell.append(text, picker, date);
                 date.classList.add('native-date-source');
@@ -71,6 +93,10 @@
                     // Format a complete compact date without disturbing partial edits or the caret.
                     if (/^[0-9๐-๙]{8}$/.test(text.value)) text.value = normalizeDateText(text.value);
                 });
+                const invalid = 'กรอกวันที่จริงในรูปแบบ วัน/เดือน/ปี พ.ศ. เช่น 17/08/2563';
+                if (window.CstuLanguage) listen(window, 'cstu:language', () => {
+                    if (text.validity.customError) text.setCustomValidity(window.CstuLanguage.translate(invalid));
+                });
                 listen(text, 'change', () => {
                     const value = normalizeDateText(text.value);
                     const match = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/.exec(value);
@@ -84,7 +110,7 @@
                             iso = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     }
                     if (value && !iso) {
-                        text.setCustomValidity('กรอกวันที่จริงในรูปแบบ วัน/เดือน/ปี พ.ศ. เช่น 17/08/2563');
+                        text.setCustomValidity(window.CstuLanguage?.translate(invalid) ?? invalid);
                         text.reportValidity();
                         return;
                     }

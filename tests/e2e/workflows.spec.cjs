@@ -177,7 +177,7 @@ test('student mobile header and welcome shortcut work at narrow widths', async (
   await page.goto('/index.html');
   const brand = page.locator('.navbar .logo');
   const account = page.locator('.navbar .account-summary');
-  const menu = page.getByRole('button', {name:'Menu', exact:true});
+  const menu = page.getByRole('button', {name:'เมนู', exact:true});
   const search = page.locator('.navbar .search-wrapper');
   await expect(account).toContainText('Student');
   await expect(menu).toBeVisible();
@@ -195,10 +195,10 @@ test('student mobile header and welcome shortcut work at narrow widths', async (
   await menu.click();
   const dialog = page.getByRole('dialog', {name:'เมนูตามสิทธิ์'});
   await expect(dialog).toBeVisible();
-  await dialog.getByRole('button', {name:/Close/}).click();
+  await dialog.getByRole('button', {name:'ปิด', exact:true}).click();
   await expect(dialog).toBeHidden();
 
-  const exchange = page.getByRole('button', {name:'EXCHANGE', exact:true});
+  const exchange = page.getByRole('button', {name:'โครงการแลกเปลี่ยน', exact:true});
   await exchange.focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/#board-section$/);

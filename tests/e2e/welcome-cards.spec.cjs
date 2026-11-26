@@ -134,7 +134,7 @@ for (const motion of ['no-preference', 'reduce']) {
             await expect(hero).toHaveAttribute('data-constellation-motion', 'running');
           }
           await readForTwentySeconds(page);
-          const enter = hero.getByRole('link', { name: /เริ่มต้นเลย/ }).or(hero.getByRole('button', { name: 'COLLABORATOR', exact: true }));
+          const enter = hero.getByRole('link', { name: /เริ่มต้นเลย/ }).or(hero.getByRole('button', { name: 'คู่ความร่วมมือ', exact: true }));
           await enter.click();
           await expect(page.locator('#tabCollab')).toHaveAttribute('aria-pressed', 'true');
           const listed = page.locator('#collaboratorGrid .browse-card-open');

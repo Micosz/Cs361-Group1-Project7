@@ -95,6 +95,7 @@
         toggle.setAttribute('aria-label', 'พักการเคลื่อนไหวพื้นหลัง');
         toggle.setAttribute('aria-pressed', String(pausedByUser));
         toggle.textContent = pausedByUser ? 'เล่นพื้นหลังต่อ' : 'พักพื้นหลัง';
+        window.CstuLanguage?.capture(toggle);
         hero.append(toggle);
 
         function update() {
@@ -139,6 +140,7 @@
             pausedByUser = !pausedByUser;
             toggle.setAttribute('aria-pressed', String(pausedByUser));
             toggle.textContent = pausedByUser ? 'เล่นพื้นหลังต่อ' : 'พักพื้นหลัง';
+            window.CstuLanguage?.capture(toggle);
             update();
         });
         on(document, 'visibilitychange', schedule);

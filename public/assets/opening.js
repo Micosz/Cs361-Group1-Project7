@@ -79,6 +79,7 @@
         bridge.textContent = subject?.textContent || '';
         bridge.hidden = true;
         document.body.append(bridge);
+        on(window, 'cstu:language', () => { bridge.textContent = subject?.textContent || ''; });
         let titleGeometry;
         const originalInert = { hero: hero.inert, board: boardScene?.inert };
         const sceneStyles = new Map();
@@ -330,6 +331,7 @@
         function assign(item, partner) {
             item.partner = partner;
             item.tile.setAttribute('aria-label', `ดูรายละเอียด ${partner.title}`);
+            window.CstuLanguage?.attr(item.tile, 'aria-label', 'ดูรายละเอียด ' + partner.title, 'View details for ' + partner.title);
             item.tile.title = partner.title;
             if (item.image.getAttribute('src') !== partner.src) item.image.src = partner.src;
         }
