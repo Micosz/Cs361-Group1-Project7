@@ -212,6 +212,34 @@ function handleSearch() {
     return setBrowseKeyword(getSearchKeyword());
 }
 
+function appendClearSearch(empty, filterId) {
+    if (!browseKeyword) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'event-time-jump';
+    button.textContent = 'ล้างคำค้นหา';
+    button.onclick = async () => {
+        document.getElementById('searchInput').value = '';
+        // Keep focus in this section as the empty-state button disappears.
+        const filter = document.getElementById(filterId);
+        filter.focus({preventScroll:true});
+        await handleSearch();
+        if (document.activeElement !== filter) return;
+
+        // Restored cards can push the focused filter behind the sticky header.
+        const bounds = filter.getBoundingClientRect();
+        const headerBottom = document.querySelector('.navbar')?.getBoundingClientRect().bottom ?? 0;
+        const visibleTop = Math.max(0, headerBottom) + 8;
+        const visibleBottom = window.innerHeight - 8;
+        if (bounds.top < visibleTop) {
+            window.scrollBy({top:bounds.top - visibleTop, behavior:'instant'});
+        } else if (bounds.bottom > visibleBottom) {
+            window.scrollBy({top:bounds.bottom - visibleBottom, behavior:'instant'});
+        }
+    };
+    empty.append(' ', button);
+}
+
 function scheduleSearch() {
     cancelPendingSearch();
     hideSuggestions();
@@ -549,6 +577,7 @@ async function renderCollaboratorCards() {
                 <p>ลองเปลี่ยนคำค้นหา หรือล้างตัวกรองเพื่อดูข้อมูลทั้งหมด</p>
             </div>
         `;
+        appendClearSearch(container.querySelector('[data-public-empty]'), 'filterCollab');
         window.CstuRecords?.renderPartnerCards(container);
         return;
     }
@@ -604,6 +633,7 @@ async function renderEventCards() {
             jump.onclick = () => setEventTimeView(eventTimeView === 'past' ? 'current' : 'past');
             empty.appendChild(jump);
         }
+        appendClearSearch(empty, 'filterEvent');
         container.replaceChildren(empty);
         window.CstuRecords?.renderEventCards(container);
         return;
