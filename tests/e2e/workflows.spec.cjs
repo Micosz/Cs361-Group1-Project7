@@ -21,13 +21,17 @@ async function fixture(page, role, failLogin = false) {
     }
     if(url.pathname === '/api/auth/logout') {signedIn=false; return route.fulfill({json:{}});}
     if(url.pathname === '/api/public/records') return route.fulfill({json:[]});
-    return route.fulfill({json:{data:[],items:[],page:{nextCursor:null}}});
+    if(url.pathname === '/api/me/exchanges') return route.fulfill({json:{
+      data:[{id:'fixture-exchange',title:'โครงการแลกเปลี่ยนตัวอย่างที่เข้าร่วม'}], count:1, page:{nextCursor:null}
+    }});
+    return route.fulfill({json:{data:[],count:0,items:[],page:{nextCursor:null}}});
   });
   return requests;
 }
 test('public catalog renders, searches, and opens detail in a real browser', async ({page}) => {
   await fixture(page); await page.goto('/index.html');
-  await page.locator('.hero-btn[href="#board-section"]').click();
+  await page.locator('#tabCollab').click();
+  await expect(page.locator('#tabExchange')).toBeHidden();
   const grid=page.locator('#collaboratorGrid');
   await expect(grid).toContainText('Alpha University'); await expect(grid).toContainText('Beta Company');
   await page.locator('#filterCollab').selectOption('university');
@@ -80,7 +84,7 @@ test('successful student login returns to public home without storing credential
   await fixture(page); await page.goto('/login.html');
   await page.locator('#student-id').fill('test-account'); await page.locator('#student-password').fill('dummy-password');
   await page.locator('#login-submit').click(); await expect(page).toHaveURL(/index.html/);
-  await expect(page.locator('#student-home-link')).toBeVisible();
+  await expect(page.locator('.browse-hero-slot #tabExchange')).toBeVisible();
   expect(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).not.toMatch(/dummy-password|test-account/);
 });
 test('student mobile header and welcome shortcut work at narrow widths', async ({page}) => {
@@ -110,15 +114,69 @@ test('student mobile header and welcome shortcut work at narrow widths', async (
   await dialog.getByRole('button', {name:/Close/}).click();
   await expect(dialog).toBeHidden();
 
-  const shortcut = page.locator('#student-home-link');
-  await expect(shortcut).toHaveText('โครงการแลกเปลี่ยนของฉัน');
-  await shortcut.click();
-  await expect(page.locator('#tabExchange')).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('link', {name:/เริ่มต้นเลย/}).click();
+  const exchange = page.getByRole('button', {name:'EXCHANGE', exact:true});
+  await exchange.focus();
+  await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/#board-section$/);
-  await expect(page.locator('#tabCollab')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#tabExchange')).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.locator('#tabCollab')).toBeInViewport();
+  await expect(page.locator('.browse-board-slot #tabExchange')).toBeFocused();
+  await expect(page.locator('#records-content')).toContainText('โครงการแลกเปลี่ยนตัวอย่างที่เข้าร่วม');
+  await expect(exchange).toHaveAttribute('aria-pressed', 'true');
+  await page.evaluate(() => window.scrollTo({top:0, behavior:'instant'}));
+  await expect(page.locator('.browse-hero-slot #tabExchange')).toBeFocused();
+  await expect(exchange).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('group', {name:'เลือกหมวดข้อมูล'})).toHaveCount(1);
+});
+
+test('short filtered board keeps category buttons clickable below the mobile header', async ({page}) => {
+  await fixture(page);
+  await page.route('**/fetchPartnersData', route => route.fulfill({json:[
+    {id:'p1', name:'Alpha University', type:'university', summary:'Fixture partner summary', visibility:'public'},
+    {id:'p2', name:'Beta Company', type:'company', visibility:'public'},
+  ]}));
+  await page.setViewportSize({width:320, height:707});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/index.html#board-section');
+  await page.locator('#filterCollab').selectOption('university');
+  const card = page.locator('#p1');
+  const dialog = page.getByRole('dialog', {name:'Alpha University'});
+  await card.getByRole('button', {name:'Alpha University', exact:true}).press('Enter');
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await card.locator('.card-desc').click();
+  await dialog.getByRole('button', {name:'ปิดรายละเอียด'}).click();
+  await expect(dialog).toBeHidden();
+
+  const event = page.locator('#tabEvent');
+  async function expectClickable() {
+    await expect.poll(() => event.evaluate(button => {
+      const {left, top, width, height} = button.getBoundingClientRect();
+      return [.1, .5, .9].every(fraction =>
+        button.contains(document.elementFromPoint(left + width / 2, top + height * fraction)));
+    })).toBe(true);
+  }
+  await expectClickable();
+  await page.evaluate(() => window.scrollTo({top:document.scrollingElement.scrollHeight, behavior:'instant'}));
+  await expect(page.locator('.browse-board-slot #tabEvent')).toBeVisible();
+  await expectClickable();
+  await event.click();
+  await expect(event).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('category buttons keep focus and selection across the desktop scroll scene', async ({page}) => {
+  await fixture(page);
+  await page.setViewportSize({width:1280,height:800});
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.goto('/index.html');
+  const event = page.locator('#tabEvent');
+  await event.focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('.browse-board-slot #tabEvent')).toBeFocused();
+  await expect(event).toHaveAttribute('aria-pressed','true');
+  await page.evaluate(() => window.scrollTo({top:0,behavior:'instant'}));
+  await expect(page.locator('.browse-hero-slot #tabEvent')).toBeFocused();
+  await expect(event).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#tabExchange')).toBeHidden();
 });
 
 for (const role of ['coordinator','staff','executive']) test(`${role} gets internal navigation and create actions`, async ({page}) => {
@@ -152,7 +210,7 @@ test('public feedback validates category, retries with the same key and renders 
     return route.fulfill({status:201,json:{data:rows[0]}});
   });
   await page.goto('/index.html');
-  await page.locator('.hero-btn[href="#board-section"]').click();
+  await page.locator('#tabCollab').click();
   await page.locator('#collaboratorGrid').getByRole('button', {name:'Alpha University', exact:true}).click();
   await page.locator('#detailModal').getByRole('tab', {name:'ความคิดเห็น', exact:true}).click();
   const form=page.locator('#detailModal .public-comment-composer');
