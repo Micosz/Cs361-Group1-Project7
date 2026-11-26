@@ -21,6 +21,11 @@ class AuthApplication:
             if event.get('version') != '2.0':
                 raise AuthError('UNSUPPORTED_EVENT', 400)
             path = event.get('rawPath', '')
+            if 'admission-' in path:
+                from . import admissions
+                admission = admissions.ROUTES.fullmatch(path)
+                if admission:
+                    return admissions.handle(self, event, admission)
             proposal = re.fullmatch(r'/api/proposals(?:/(proposal-[a-f0-9]{64})/interest)?', path)
             if proposal:
                 from .proposals import handle as proposal_board

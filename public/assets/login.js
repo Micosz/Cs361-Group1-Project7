@@ -24,7 +24,14 @@ function mount() {
             if (controller.signal.aborted) return;
             if (!session.user) throw new Error('คำตอบ Login ไม่ถูกต้อง');
             // No password/profile/Session credential in browser storage.
-            window.location.href = window.CstuAuth.home(session);
+            const back = new URLSearchParams(location.search);
+            const activity = back.get('admissionActivity'), round = back.get('admissionRound');
+            if (activity && activity.length <= 200 && /^round-[a-f0-9]{64}$/.test(round || '')) {
+                const target = new URLSearchParams({public:'1',admissionActivity:activity,admissionRound:round});
+                window.location.href = new URL('index.html?' + target + '#board-section', document.baseURI).href;
+            } else {
+                window.location.href = window.CstuAuth.home(session);
+            }
         } catch (error) {
             if (controller.signal.aborted) return;
             const messages = {
