@@ -557,7 +557,10 @@
         roleFrame.remove(); roleFrame = null;
         dialog.close(); lastTrigger?.focus();
     });
-    window.CstuRecords = {open, openRelated, filter:browseFilter, renderPartnerCards, renderEventCards, attachPartnerManagement, openPublicActivity, closeDetail};
+    function detailReturnTarget(link) {
+        return dialog.open && link && dialog.contains(link) ? lastTrigger : link;
+    }
+    window.CstuRecords = {open, openRelated, filter:browseFilter, renderPartnerCards, renderEventCards, attachPartnerManagement, openPublicActivity, closeDetail, detailReturnTarget};
     $('tabExchange').addEventListener('click', () => open('exchanges'));
     function browseFilter(detail) {
         if (typeof detail?.keyword === 'string') keyword = detail.keyword;

@@ -70,6 +70,10 @@
         legacy.addEventListener('keydown', event => {
             if (event.key === 'Escape') { event.preventDefault(); window.closeModal(); }
             if (event.key !== 'Tab') return;
+            // A scrollable identity panel is also a keyboard stop on narrow screens.
+            const identity = legacyState.sidebar;
+            const scrollable = identity.scrollHeight > identity.clientHeight || identity.scrollWidth > identity.clientWidth;
+            identity.tabIndex = scrollable ? 0 : -1;
             const focusable = [...legacy.querySelectorAll('a[href],button,input,textarea,select,[tabindex]')]
                 .filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length);
             const first = focusable[0], last = focusable.at(-1);
@@ -123,9 +127,9 @@
             if (!state || !container.classList.contains('form-feedback')) return;
             state.forms.replaceChildren(container); state.buttons[2].hidden = false;
         },
-        open() {
+        open(trigger) {
             if (!legacyState) return;
-            returnFocus = document.activeElement;
+            returnFocus = trigger ?? document.activeElement;
             legacyState.observer?.disconnect();
             legacyState.comments.replaceChildren(); legacyState.buttons[1].hidden = true;
             legacyState.buttons[1].textContent = 'ความคิดเห็น';
@@ -144,9 +148,10 @@
             legacy.focus({preventScroll:true});
         },
         close() {
+            const hadFocus = legacy?.contains(document.activeElement);
             legacyState?.observer?.disconnect();
             legacyState?.comments.replaceChildren();
-            if (returnFocus?.isConnected && legacy.contains(document.activeElement)) returnFocus.focus({preventScroll:true});
+            if (hadFocus && returnFocus?.isConnected) returnFocus.focus({preventScroll:true});
             returnFocus = null;
         }
     };

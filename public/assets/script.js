@@ -451,7 +451,7 @@ function buildPartnerActivityHistory(partnerId, activities) {
     });
 }
 
-function renderPartnerActivityHistory(container, partnerId, activities) {
+function renderPartnerActivityHistory(container, partnerId, activities, trigger) {
     const heading = document.createElement('h3');
     heading.textContent = 'ประวัติความร่วมมือ';
     container.appendChild(heading);
@@ -472,7 +472,8 @@ function renderPartnerActivityHistory(container, partnerId, activities) {
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = entry.label;
-        button.addEventListener('click', () => openModal(entry.sourceId, 'activity'));
+        // The activity replaces this panel, so its history button will no longer be visible on close.
+        button.addEventListener('click', () => openModal(entry.sourceId, 'activity', null, trigger));
         row.appendChild(date);
         row.appendChild(button);
         list.appendChild(row);
@@ -511,7 +512,7 @@ function createBrowseCard(record, type = 'partner', onOpen = null) {
     const title = document.createElement('h3'); title.className = 'card-title';
     title.style.cssText = 'margin-bottom:.5rem;font-size:1.1rem;color:var(--text-dark)';
     const button = document.createElement('button'); button.type = 'button'; button.className = 'browse-card-open';
-    const activate = () => onOpen ? onOpen(record,button) : openModal(record.id,type);
+    const activate = () => onOpen ? onOpen(record,button) : openModal(record.id,type,null,button);
     button.textContent = name; button.onclick = activate;
     title.appendChild(button);
     const summary = document.createElement('p'); summary.className = 'card-desc'; summary.textContent = record.summary || (agreement ? 'ข้อตกลงความร่วมมือ '+(record.agreementType || 'MoU / MoA') : '');
@@ -537,7 +538,11 @@ function createBrowseCard(record, type = 'partner', onOpen = null) {
         badge.textContent = agreement ? 'หมดอายุแล้ว' : 'สิ้นสุดแล้ว';
         thumbnail.appendChild(badge);
     }
-    card.addEventListener('click', event => { if (!event.target.closest('button,a')) activate(); });
+    card.addEventListener('click', event => {
+        if (event.target.closest('button,a')) return;
+        button.focus({preventScroll:true});
+        activate();
+    });
     return card;
 }
 
@@ -903,7 +908,7 @@ function hasLegacySourceLinks(value) {
 
 let modalRenderVersion = 0;
 
-function showDetailModal() {
+function showDetailModal(trigger) {
     if (window.CstuRecords?.closeDetail) {
         window.CstuRecords.closeDetail();
     } else {
@@ -914,10 +919,10 @@ function showDetailModal() {
     const modalContent = detailModal.querySelector?.('.modal-content');
     if (modalContent) modalContent.scrollTop = 0;
     detailModal.style.display = 'flex';
-    window.CstuDetailSheet?.open();
+    window.CstuDetailSheet?.open(trigger);
 }
 
-async function openModal(id, type, protectedPartner = null) {
+async function openModal(id, type, protectedPartner = null, trigger = null) {
     const version = ++modalRenderVersion;
     let data = null;
     let allActivities;
@@ -939,7 +944,7 @@ async function openModal(id, type, protectedPartner = null) {
         document.getElementById('modalInfo').textContent = '';
         document.getElementById('modalImage').style.display = 'none';
         showDataLoadError(document.getElementById('modalDetails'));
-        showDetailModal();
+        showDetailModal(trigger);
         return;
     }
 
@@ -997,7 +1002,7 @@ async function openModal(id, type, protectedPartner = null) {
         } else {
             modalDetails.replaceChildren(...createLegacyDescriptionNodes(partnerDetailText, { partner: true }));
         }
-        renderPartnerActivityHistory(modalDetails, data.id, allActivities);
+        renderPartnerActivityHistory(modalDetails, data.id, allActivities, trigger);
 
     } else {
         // --- 2. ส่วนของ Activity (แสดง Event อื่นๆ ของบริษัทเดียวกัน) ---
@@ -1042,7 +1047,7 @@ async function openModal(id, type, protectedPartner = null) {
             while (modalDetails.firstChild) content.appendChild(modalDetails.firstChild);
         }
         closeModal();
-        return window.CstuRecords.openPublicActivity(data,content,document.activeElement);
+        return window.CstuRecords.openPublicActivity(data,content,trigger ?? document.activeElement);
     }
 
     if (window.CstuWork) {
@@ -1056,7 +1061,7 @@ async function openModal(id, type, protectedPartner = null) {
         modalDetails.appendChild(feedback);
         window.CstuPublicFeedback.mount(feedback, data, 'partners');
     }
-    showDetailModal();
+    showDetailModal(trigger);
 }
 
 function closeModal() {
@@ -1253,7 +1258,9 @@ function handlePartnerClick(event, partnerId) {
     
     // เรียกฟังก์ชันเปิด Popup ที่มีอยู่แล้วใน V1 (detailModal)
     if (partnerId) {
-        openModal(partnerId, 'partner');
+        const link = event.currentTarget;
+        const trigger = window.CstuRecords?.detailReturnTarget?.(link) ?? link;
+        openModal(partnerId, 'partner', null, trigger);
     } else {
         console.warn("ไม่พบ partnerId สำหรับเปิด Popup");
     }
