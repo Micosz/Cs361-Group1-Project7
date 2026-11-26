@@ -607,7 +607,9 @@ async function renderEventCards() {
     const today = todayInBangkok();
     const past = matched.filter(activity => isPastRecord(activity, 'activity', today));
     const current = matched.filter(activity => !isPastRecord(activity, 'activity', today));
-    updateEventTimeTabs(current.length, past.length);
+    // The MoU filter also shows agreements from a separate paginated list.
+    const showActivityCounts = document.getElementById('filterEvent')?.value !== 'mou';
+    updateEventTimeTabs(current.length, past.length, showActivityCounts);
     const activities = sortActivitiesForView(eventTimeView === 'past' ? past : current, eventTimeView);
 
     if (activities.length === 0) {
@@ -628,8 +630,8 @@ async function renderEventCards() {
             // Matching records exist in the other view; say so instead of implying none.
             const jump = document.createElement('button');
             jump.type = 'button'; jump.className = 'event-time-jump';
-            jump.textContent = eventTimeView === 'past'
-                ? `ดูกิจกรรมปัจจุบัน (${other})` : `ดูกิจกรรมที่ผ่านมาแล้ว (${other})`;
+            const period = eventTimeView === 'past' ? 'ปัจจุบัน' : 'ที่ผ่านมาแล้ว';
+            jump.textContent = showActivityCounts ? `ดูกิจกรรม${period} (${other})` : `ดูรายการ${period}`;
             jump.onclick = () => setEventTimeView(eventTimeView === 'past' ? 'current' : 'past');
             empty.appendChild(jump);
         }
@@ -658,7 +660,7 @@ function sortActivitiesForView(activities, view) {
     });
 }
 
-function updateEventTimeTabs(currentCount, pastCount) {
+function updateEventTimeTabs(currentCount, pastCount, showActivityCounts) {
     for (const [id, view, count] of [['eventTimeCurrent', 'current', currentCount], ['eventTimePast', 'past', pastCount]]) {
         const tab = document.getElementById(id);
         if (!tab) continue;
@@ -666,7 +668,7 @@ function updateEventTimeTabs(currentCount, pastCount) {
         tab.classList?.toggle('active', active);
         tab.setAttribute('aria-selected', String(active));
         const badge = document.getElementById(`${id}Count`);
-        if (badge) badge.textContent = `(${count})`;
+        if (badge) badge.textContent = showActivityCounts ? `(${count})` : '';
     }
     const hint = document.getElementById('eventTimeHint');
     if (hint) hint.textContent = eventTimeView === 'past'
