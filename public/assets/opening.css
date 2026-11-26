@@ -232,11 +232,22 @@
     flex-wrap: nowrap; width: max-content; max-width: 100%; margin: 0;
     background: #171b20; border-color: #171b20;
 }
-.browse-tabs:not(.browse-at-board) .tab { color: #fff; }
+/* Welcome uses the warm page palette with compact, touch-friendly controls. */
+.browse-tabs:not(.browse-at-board) {
+    background: #fffaf2;
+    border-color: #ddd5cb;
+}
+.browse-tabs:not(.browse-at-board) .tab { color: #59414a; }
+.browse-hero-slot .browse-tabs .tab {
+    min-height: 49px;
+    padding: 8px 14px;
+    font-size: .75rem;
+}
+.browse-tabs:not(.browse-at-board) .tab.active { color: #fff; }
 .browse-tabs:not(.browse-at-board) .tab.active,
-.browse-tabs:not(.browse-at-board) .tab-indicator { background: #454c54; }
+.browse-tabs:not(.browse-at-board) .tab-indicator { background: #a6002a; }
 .browse-tabs:not(.browse-at-board).has-indicator .tab.active { background: transparent; }
-.browse-tabs:not(.browse-at-board) .tab:not(.active):hover { color: #fff; background: #343a40; }
+.browse-tabs:not(.browse-at-board) .tab:not(.active):hover { color: #772439; background: #f6e8df; }
 .browse-tabs.browse-at-board { background: #fff; border-color: #ddd5cb; }
 .browse-tabs .tab:focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
 .browse-tabs.browse-floating {
@@ -252,4 +263,8 @@ body:not(.feedback-inbox-view) .board-scene:has(.browse-board-slot) { min-height
         min-height: calc(100svh - var(--browse-header-inset, 0px));
     }
     .browse-tabs .tab { flex: 1 1 auto; padding-inline: clamp(6px, 2.5vw, 16px); }
+}
+
+@media (max-width: 767px) {
+    .browse-hero-slot .browse-tabs .tab { min-height: 48px; }
 }
