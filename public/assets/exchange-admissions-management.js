@@ -233,7 +233,7 @@
             if (row.decision) decision.value = row.decision;
             block.append(
                 field('ผลคัดเลือกร่าง', decision),
-                action('บันทึกร่างผล', () => {
+                action('บันทึกผลร่าง', () => {
                     if (decision.reportValidity()) update({ action: 'decide', decision: decision.value });
                 }, 'secondary')
             );

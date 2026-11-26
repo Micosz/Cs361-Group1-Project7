@@ -105,7 +105,7 @@ function row(p, name) {
 async function draft(card, value, evidence) {
     await card.getByLabel('ผลคัดเลือกร่าง').selectOption(value);
     if (evidence) await capture(card.page(), evidence, card);
-    await card.getByRole('button', { name: 'บันทึกร่างผล' }).click();
+    await card.getByRole('button', { name: 'บันทึกผลร่าง', exact: true }).click();
     await expect(card.getByText('ตรวจทานก่อนเผยแพร่')).toBeVisible();
 }
 async function publish(card, evidence) {
@@ -177,7 +177,10 @@ test('public activity, two private applications, staff publication, partner acce
             br = row(p, 'นักศึกษา B');
         const startReview = ar.getByRole('button', { name: 'เริ่มพิจารณา' });
         const requestInfo = ar.getByText('ขอข้อมูลเพิ่ม', { exact: true });
-        const saveDraft = ar.getByRole('button', { name: 'บันทึกร่างผล' });
+        const saveDraft = ar.getByRole('button', { name: 'บันทึกผลร่าง', exact: true });
+        await expect(saveDraft).toHaveText('บันทึกผลร่าง');
+        expect(await manager.evaluate(() => window.CstuAdmissions.message(new Error('NO_DRAFT'))))
+            .toBe('กรุณาบันทึกผลร่างก่อนเผยแพร่');
         await expect(startReview).toHaveCSS('background-color', 'rgb(195, 0, 47)');
         await expect(saveDraft).toHaveCSS('border-top-color', 'rgb(195, 0, 47)');
         await expect(saveDraft).toHaveCSS('border-top-width', '1px');
@@ -231,6 +234,7 @@ test('public activity, two private applications, staff publication, partner acce
         await ar.getByLabel('กำหนดส่ง (เวลาไทย)').fill(thaiInput(clock + 180));
         const saveRequest = ar.getByRole('button', { name: 'บันทึกข้อมูลคำขอ', exact: true });
         await expect(saveRequest).toBeVisible();
+        await expect(saveRequest).toHaveText('บันทึกข้อมูลคำขอ');
         await capture(manager, '03-request-information', ar.locator('details[open] form'));
         await saveRequest.click();
         await expect(ar.getByText(/ช่องทางของสาขา/)).toBeVisible();
