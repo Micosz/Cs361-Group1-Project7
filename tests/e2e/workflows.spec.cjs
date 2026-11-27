@@ -199,7 +199,11 @@ test('student can use Help and Exchange, then log out directly from the Welcome 
   await page.keyboard.press('Escape');
   await expect(page.locator('#cstu-manual')).toBeHidden();
 
-  const exchange = page.getByRole('button', {name:'EXCHANGE', exact:true});
+  const languages = page.locator('.navbar .public-language');
+  await languages.getByRole('button', {name:'English', exact:true}).press('Enter');
+  await expect(page.locator('#authNavButtons').getByRole('button', {name:'Logout', exact:true})).toBeVisible();
+  const exchange = page.locator('#tabExchange');
+  await expect(exchange).toHaveAccessibleName('Exchange');
   await exchange.focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/#board-section$/);
@@ -211,10 +215,10 @@ test('student can use Help and Exchange, then log out directly from the Welcome 
   await expect(exchange).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('group', {name:'เลือกหมวดข้อมูล'})).toHaveCount(1);
 
-  await page.locator('html').evaluate(el => { el.lang = 'en'; });
-  const englishLogout = page.locator('#authNavButtons').getByRole('button', {name:'Logout', exact:true});
-  await expect(englishLogout).toBeVisible();
-  await englishLogout.press('Space');
+  await expect(languages).toBeHidden();
+  await expect(exchange).toHaveAccessibleName('โครงการแลกเปลี่ยน');
+  await expect(logout).toBeVisible();
+  await logout.press('Space');
   await expect(page.locator('#authNavButtons a[href="login.html"]')).toBeVisible();
   await expect(exchange).toBeHidden();
   await expect(page.locator('#records-content')).not.toContainText('โครงการแลกเปลี่ยนตัวอย่างที่เข้าร่วม');
@@ -233,8 +237,10 @@ test('failed student logout can be retried from the header', async ({page}) => {
   await expect(page.locator('#authNavButtons [role="status"]')).toHaveText('ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง');
   await expect(logout).toBeEnabled();
   await expect(page.locator('#tabExchange')).toBeVisible();
-  await logout.press('Enter');
-  await expect(page.locator('#authNavButtons a[href="login.html"]')).toBeVisible();
+  await page.locator('.navbar .public-language').getByRole('button', {name:'English', exact:true}).press('Enter');
+  await expect(page.locator('#authNavButtons [role="status"]')).toHaveText('Could not log out. Try again.');
+  await page.locator('#authNavButtons').getByRole('button', {name:'Logout', exact:true}).press('Enter');
+  await expect(page.locator('#authNavButtons').getByRole('link', {name:'Sign in', exact:true})).toBeVisible();
   await expect(page.locator('#tabExchange')).toBeHidden();
 });
 
@@ -249,7 +255,7 @@ test('the Student shortcut follows active grants and preserves role management a
   await expect(logout).toBeVisible();
   session.capabilities = [{name:'manageRoles',scopeId:'demo',active:true}];
   await page.evaluate(() => window.dispatchEvent(new Event('authchange')));
-  await header.getByRole('button', {name:'Menu',exact:true}).click();
+  await header.getByRole('button', {name:'เมนู',exact:true}).click();
   const dialog = page.locator('#role-menu');
   await expect(dialog.getByRole('link',{name:/จัดการสิทธิ์ผู้ใช้/})).toBeVisible();
   await expect(dialog.getByRole('link',{name:/โครงการแลกเปลี่ยนของฉัน/})).toBeVisible();

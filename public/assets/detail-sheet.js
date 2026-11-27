@@ -14,6 +14,8 @@
         const main = node('div', 'detail-main');
         const bar = node('div', 'detail-toolbar');
         const tabs = node('div', 'detail-tabs'); tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', 'ส่วนของรายละเอียด');
+        const ui = window.CstuLanguage;
+        ui?.capture(tabs);
         const details = node('section', 'detail-panel detail-reading');
         const comments = node('section', 'detail-panel detail-comments');
         const forms = node('section', 'detail-panel detail-forms');
@@ -27,6 +29,7 @@
             panels[index].setAttribute('role', 'tabpanel');
             panels[index].setAttribute('aria-labelledby', button.id);
             panels[index].tabIndex = 0;
+            ui?.capture(button);
             tabs.append(button); return button;
         });
         function select(index, focus = false) {
@@ -50,7 +53,10 @@
             };
         });
         buttons[1].hidden = buttons[2].hidden = true;
-        details.append(...content); bar.append(tabs, close); main.append(bar, ...panels);
+        details.append(...content);
+        bar.append(tabs);
+        if (ui) bar.append(ui.selector());
+        bar.append(close); main.append(bar, ...panels);
         root.append(sidebar, main); root.classList.add('detail-sheet');
         select(0);
         const state = {root, sidebar, details, comments, forms, buttons, select, title, close};
@@ -63,6 +69,7 @@
         const title = document.getElementById('modalTitle');
         const meta = legacy.querySelector('.user-info');
         const heading = node('h2', 'detail-section-title', 'เกี่ยวกับองค์กร');
+        window.CstuLanguage?.capture(heading);
         legacyState = create(legacy, 'partner-detail', title, legacy.querySelector('.close-btn'), [heading, document.getElementById('modalDetails')], [image]);
         legacyState.sidebar.append(meta);
         legacy.setAttribute('role', 'dialog'); legacy.setAttribute('aria-modal', 'true'); legacy.setAttribute('aria-labelledby', 'modalTitle');
@@ -106,6 +113,8 @@
         recordState = create(dialog, 'record-detail-view', title, document.getElementById('detail-close'),
             ['detail-status','detail-fields','detail-actions'].map(id => document.getElementById(id)), identity);
         const meta = node('p', 'detail-record-meta', [data.location, window.CstuWork?.kinds[kind]?.label].filter(Boolean).join(' · '));
+        const kindLabel = window.CstuWork?.kinds[kind]?.label;
+        window.CstuLanguage?.pair(meta, [data.location, window.CstuPublicEnglish?.[kindLabel] ?? kindLabel].filter(Boolean).join(' · '));
         recordState.sidebar.append(meta);
     }
     function feedback(container, isPartner = false) {
@@ -114,7 +123,9 @@
         state.comments.append(container); state.buttons[1].hidden = false;
         const update = () => {
             const count = state.comments.querySelectorAll('ol > li').length;
-            state.buttons[1].textContent = 'ความคิดเห็น' + (count ? ' (' + count + ')' : '');
+            const suffix = count ? ' (' + count + ')' : '';
+            state.buttons[1].textContent = 'ความคิดเห็น' + suffix;
+            window.CstuLanguage?.pair(state.buttons[1], 'Comments' + suffix);
         };
         state.observer?.disconnect(); state.observer = new MutationObserver(update);
         state.observer.observe(state.comments, {childList:true, subtree:true}); update();
@@ -133,6 +144,7 @@
             legacyState.observer?.disconnect();
             legacyState.comments.replaceChildren(); legacyState.buttons[1].hidden = true;
             legacyState.buttons[1].textContent = 'ความคิดเห็น';
+            window.CstuLanguage?.capture(legacyState.buttons[1]);
             document.getElementById('modalDetails').querySelectorAll('.feedback-section')
                 .forEach(container => feedback(container, true));
             legacyState.forms.replaceChildren(); legacyState.buttons[2].hidden = true;
@@ -143,6 +155,7 @@
             if (acronym) legacyState.title.before(node('p', 'detail-short-name', acronym));
             const image = document.getElementById('modalImage');
             image.setAttribute('role', 'img'); image.setAttribute('aria-label', 'โลโก้ ' + name);
+            window.CstuLanguage?.attr(image, 'aria-label', 'โลโก้ ' + name, name + ' logo');
             legacyState.select(0); legacyState.details.scrollTop = 0;
             legacyState.sidebar.scrollTop = 0;
             legacy.focus({preventScroll:true});

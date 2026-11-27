@@ -4,6 +4,7 @@ const status = document.getElementById('login-status');
 const submit = document.getElementById('login-submit');
 const usernameInput = document.getElementById('student-id');
 const passwordInput = document.getElementById('student-password');
+window.CstuLanguage?.live(status);
 function mount() {
     const controller = new AbortController();
     form.addEventListener('submit', async event => {

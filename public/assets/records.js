@@ -21,7 +21,7 @@
     else window.addEventListener('scroll', () => {
         if (!sentinel.hidden && sentinel.getBoundingClientRect().top < window.innerHeight + 400) loadMore();
     }, {passive:true});
-    const status = text => { $('records-status').textContent = text; };
+    const status = text => { $('records-status').textContent = text; window.CstuLanguage?.capture($('records-status')); };
     function showDetailDialog() {
         if (typeof window.closeModal === 'function') window.closeModal();
         if (!dialog.open) dialog.showModal();
@@ -291,7 +291,9 @@
             const fields = {summary:'สรุป',fullDescription:'รายละเอียด',outcomeSummary:'ผลลัพธ์ที่เกิดขึ้น',location:'สถานที่',type:'ประเภท',agreementType:'ชนิดข้อตกลง',periodDate:'วันจัดกิจกรรม',startDate:'วันเริ่ม',endDate:'วันสิ้นสุด',status:'สถานะ',renewalDueOn:'วันต่ออายุ',renewalNote:'ข้อมูลต่ออายุ',internalNote:'หมายเหตุภายใน',supportingInfo:'ข้อมูลประกอบ',supportingInfoForParticipant:'ข้อมูลสำหรับผู้เข้าร่วม'};
             for (const [field,label] of Object.entries(fields)) if (typeof record[field] === 'string') {
                 const dt = document.createElement('dt'), dd = document.createElement('dd');
-                dt.textContent = label; dd.textContent = record[field]; $('detail-fields').append(dt,dd);
+                dt.textContent = label; dd.textContent = record[field];
+                if (resourceKind === 'agreements' && publicAgreements(resourceKind, fresh)) window.CstuLanguage?.capture(dt);
+                $('detail-fields').append(dt,dd);
             }
             }
             if (resourceKind === 'exchanges' && window.CstuWork.canEdit(fresh, record)) {
@@ -319,6 +321,7 @@
         } catch (error) {
             if (current !== detailRevision || page !== revision) return;
             $('detail-title').textContent = 'รายละเอียด'; $('detail-status').textContent = errorMessage(error);
+            window.CstuLanguage?.capture($('detail-title')); window.CstuLanguage?.capture($('detail-status'));
             if (error.status === 401) redirectLogin();
         }
     }
@@ -415,12 +418,25 @@
             if (!window.CstuAuth.enabled()) { status('พื้นที่ผู้ใช้ยังไม่เปิดใช้งาน'); return; }
             session = await window.CstuAuth.refresh();
             if (current !== revision) return;
-            if (!session?.user && kind !== 'agreements') { if (params.get('action') === 'create') { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); updateTabs([]); return; } host.hidden = true; updateTabs([]); return; }
+            const publicId = params.get('id');
+            const publicKind = kind === 'partners' ? 'partner' : kind === 'activities' ? 'activity' : null;
             const roles = window.CstuWork.roles(session);
-            updateTabs(roles);
-            if (!roles.some(role => ['coordinator','staff','executive'].includes(role)) && kind !== 'agreements' && !(kind === 'exchanges' && roles.includes('student'))) {
-                if (params.get('action') === 'create') { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; } host.hidden = true; return;
+            const internal = roles.some(role => ['coordinator', 'staff', 'executive'].includes(role));
+            const needsPublicList = !internal && kind !== 'agreements' && !(kind === 'exchanges' && roles.includes('student'));
+            if (needsPublicList) {
+                const create = params.get('action') === 'create';
+                updateTabs(roles);
+                if (create) {
+                    params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return;
+                }
+                host.hidden = true;
+                if (publicId && publicKind) {
+                    params.delete('id');
+                    await window.openModal?.(publicId, publicKind);
+                }
+                return;
             }
+            updateTabs(roles);
             nav();
             if (overview) {
                 if (!roles.some(role => ['staff','executive'].includes(role))) { status('คุณไม่มีสิทธิ์ใช้งานส่วนนี้'); return; }
@@ -442,6 +458,7 @@
             }
             if (!config) { status('ไม่พบชนิดข้อมูล'); return; }
             $('records-title').textContent = config.label;
+            window.CstuLanguage?.capture($('records-title'));
             form.hidden = kind !== 'exchanges'; status('กำลังโหลดข้อมูล');
             if (kind === 'activities' && !['all','academic_activity','event','research'].includes($('filterEvent').value)) {
                 if (params.get('action') === 'create') { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; } host.hidden = true; return;
@@ -496,6 +513,7 @@
         }
     }
     function syncBoard() {
+        window.CstuLanguage?.setPublic(['partners', 'activities', 'agreements'].includes(kind) && !params.has('action'));
         document.body.classList.toggle('feedback-inbox-view',feedbackInbox);
         const eventView = eventKinds.includes(kind);
         $('sectionCollaborator').style.display = kind === 'partners' ? 'block' : 'none';
