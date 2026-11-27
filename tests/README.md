@@ -78,3 +78,9 @@ Updated old UI assertions follow separate public/work pages and the shared publi
 Browser fixtures use the supported reduced-motion preference to keep functional checks independent of decorative scroll animation timing. Animation appearance is not covered by these checks.
 
 Node release setup and limitations: [four-Lambda auto deployment](../docs/deployment/node-lambda-autodeploy.md). Deployment tests now include 11 additional Node packaging/release checks (19 total).
+
+## เส้นทางสมัคร Exchange
+
+เตรียม Node, Python และ Chromium ตามด้านบน แล้วรัน `npm run test:exchange-admissions` จาก root
+ชุดทดสอบเปิดหน้ากิจกรรมและ My Exchange จริงใน Chromium ส่งคำขอไปยัง Python Lambda ผ่าน test harness ที่ใช้บัญชี TU และฐานข้อมูลจำลองในหน่วยความจำ
+ชุด `npm test` ครอบคลุมขอบเวลา ร่างผล การมองเห็นผลรายคน การสมัครพร้อมกัน และการยืนยันซ้ำ

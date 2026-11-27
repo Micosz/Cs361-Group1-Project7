@@ -34,7 +34,7 @@
     <script src="assets/agreement.js?v=exec-staff-1" defer></script>
     <script src="assets/detail-sheet.js?v=public-comments-2" defer></script>
     <script src="assets/script.js?v=clear-result-focus" defer></script>
-    <link rel="stylesheet" href="assets/role-menu.css?v=account-1">
+    <link rel="stylesheet" href="assets/role-menu.css?v=student-logout">
     <link rel="stylesheet" href="assets/records.css?v=document-delete-4">
     <link rel="stylesheet" href="assets/overview.css?v=stakeholder-1">
     <link rel="stylesheet" href="assets/feedback-inbox.css?v=inbox-tabs-1">
@@ -50,8 +50,11 @@
     <script src="assets/overview.js?v=stakeholder-1" defer></script>
     <script src="assets/form-import-data.js?v=1" defer></script>
     <script src="assets/form-feedback.js?v=shared-feedback-206" defer></script>
-    <script src="assets/records.js?v=improve-v5-1" defer></script>
-    <script src="assets/role-menu.js?v=work-return-1" defer></script>
+    <link rel="stylesheet" href="assets/exchange-admissions.css?v=1">
+    <script src="assets/exchange-admissions.js?v=1" defer></script>
+    <script src="assets/exchange-admissions-management.js?v=1" defer></script>
+    <script src="assets/records.js?v=exchange-admissions-1" defer></script>
+    <script src="assets/role-menu.js?v=student-logout" defer></script>
     <script src="assets/filter-presentation.js?v=5" defer></script>
     <script src="assets/presentation.js?v=intro-balanced-1" defer></script>
     <script src="assets/opening.js?v=browse-shortcuts-header" defer></script>
@@ -93,6 +96,10 @@
         </div>
     </nav>
 
+    <template id="student-header-actions">
+        <button type="button" class="login-btn student-logout-trigger"><span lang="th">ออกจากระบบ</span><span lang="en">Logout</span></button>
+        <span class="student-logout-status" role="status"></span>
+    </template>
     <dialog data-ui id="role-menu" class="role-menu" aria-label="เมนูตามสิทธิ์">
         <div class="role-menu-header">
             <a class="role-menu-brand" href="index.html">CSTU<span>Hub</span></a>

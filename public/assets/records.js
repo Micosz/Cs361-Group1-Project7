@@ -241,6 +241,7 @@
         $('detail-actions').replaceChildren();
         window.CstuDetailSheet?.record(record, 'activities');
         showDetailDialog();
+        window.CstuAdmissions?.activity(content, record.id);
         const feedback = document.createElement('section'); feedback.className = 'feedback-section';
         $('detail-fields').appendChild(feedback);
         window.CstuPublicFeedback?.mount(feedback, record, 'activities');
@@ -278,7 +279,9 @@
             if (!record || record.id !== row.id || typeof record !== 'object') throw Error('INVALID_DETAIL');
             $('detail-title').textContent = record.name || record.title || 'รายละเอียด';
             if (resourceKind === 'activities') {
-                $('detail-fields').appendChild(window.createActivityDetailContent({...record,businessRecord:true}));
+                const content = window.createActivityDetailContent({...record,businessRecord:true});
+                $('detail-fields').appendChild(content);
+                if (record.publication === 'public') window.CstuAdmissions?.activity(content, record.id);
                 if (record.outcomeSummary) {
                     const outcome = document.createElement('section'), heading = document.createElement('h3'), text = document.createElement('p');
                     heading.textContent = 'ผลลัพธ์ที่เกิดขึ้น'; text.textContent = record.outcomeSummary;
@@ -292,6 +295,9 @@
                 if (resourceKind === 'agreements' && publicAgreements(resourceKind, fresh)) window.CstuLanguage?.capture(dt);
                 $('detail-fields').append(dt,dd);
             }
+            }
+            if (resourceKind === 'exchanges' && window.CstuWork.canEdit(fresh, record)) {
+                window.CstuAdmissionsManagement?.mount($('detail-fields'), record.id);
             }
             if (resourceKind === 'partners' && window.PartnerContacts) {
                 const contacts = document.createElement('section'); $('detail-fields').appendChild(contacts);
@@ -481,7 +487,11 @@
                 li.appendChild(button);
                 const summary = document.createElement('small'); summary.textContent = [row.type ? codeLabel('type',row.type) : codeLabel('status',row.status), row.periodDate || row.startDate, row.endDate].filter(Boolean).join(' · '); li.appendChild(summary); list.appendChild(li);
             }
-            $('records-content').appendChild(list); nextCursor = result.page.nextCursor; placeSentinel();
+            $('records-content').appendChild(list);
+            if (kind === 'exchanges' && roles.includes('student') && session.user?.accountType !== 'demo') {
+                window.CstuAdmissions?.personal($('records-content'));
+            }
+            nextCursor = result.page.nextCursor; placeSentinel();
             if (params.get('action') === 'create') {
                 if (!window.CstuWork.canCreate(session,kind)) { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; }
                 if (!window.CstuWork.handler(kind,'create')) { status('ฟอร์มเพิ่มรายการนี้ยังไม่พร้อมใช้งาน'); return; }
@@ -599,6 +609,7 @@
         const url = new URL(link.href, location.href);
         if (url.origin !== location.origin || !/\/(index|records|work)\.html$/.test(url.pathname)) return;
         if (document.body.classList.contains('work-home')) return;
+        if (url.searchParams.has('admissionActivity')) return;
         if (url.searchParams.get('view') === 'roles') {
             event.preventDefault(); if ($('role-menu')?.open) $('role-menu').close();
             openRoles(); return;
@@ -619,6 +630,8 @@
     window.addEventListener('authchange', () => { ++revision; clear(); host.hidden = true; updateTabs([]); load(); });
     window.addEventListener('pageshow', event => { if (event.persisted) load(); });
     const initial = new URLSearchParams(location.search);
-    if (initial.get('view') === 'roles') { window.dispatchEvent(new Event('cstu:board')); openRoles(); }
+    if (!document.body.classList.contains('work-home') && initial.has('admissionActivity') && /^round-[a-f0-9]{64}$/.test(initial.get('admissionRound') || '')) {
+        open('activities',null,null,true).then(() => window.openModal(initial.get('admissionActivity'),'activity'));
+    } else if (initial.get('view') === 'roles') { window.dispatchEvent(new Event('cstu:board')); openRoles(); }
     else open(initial.get('kind') || (['overview','feedback'].includes(initial.get('view')) ? initial.get('view') : 'partners'),initial.get('action'),initial.get('id'),Boolean(initial.size));
 })();

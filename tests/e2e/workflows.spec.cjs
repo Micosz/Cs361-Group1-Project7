@@ -171,34 +171,39 @@ test('successful student login returns to public home without storing credential
   await expect(page.locator('.browse-hero-slot #tabExchange')).toBeVisible();
   expect(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).not.toMatch(/dummy-password|test-account/);
 });
-test('student mobile header and welcome shortcut work at narrow widths', async ({page}) => {
+test('student can use Help and Exchange, then log out directly from the Welcome header', async ({page}) => {
   await page.setViewportSize({width:483,height:707});
-  await fixture(page, 'student');
+  const requests = await fixture(page, 'student');
   await page.goto('/index.html');
   const brand = page.locator('.navbar .logo');
   const account = page.locator('.navbar .account-summary');
-  const menu = page.getByRole('button', {name:'เมนู', exact:true});
+  const logout = page.locator('#authNavButtons').getByRole('button', {name:'ออกจากระบบ', exact:true});
   const search = page.locator('.navbar .search-wrapper');
   await expect(account).toContainText('Student');
-  await expect(menu).toBeVisible();
-  for (const width of [483, 320]) {
-    await page.setViewportSize({width,height:707});
-    const [logoBox, accountBox, menuBox, searchBox] = await Promise.all(
-      [brand, account, menu, search].map(control => control.boundingBox()));
+  await expect(logout).toBeVisible();
+  await expect(logout).not.toHaveAttribute('aria-haspopup', 'dialog');
+  await expect(page.locator('.role-menu-trigger')).toHaveCount(0);
+  for (const width of [521, 483, 320]) {
+    await page.setViewportSize({width,height:708});
+    const [logoBox, accountBox, logoutBox, searchBox] = await Promise.all(
+      [brand, account, logout, search].map(control => control.boundingBox()));
     expect(logoBox.y + logoBox.height / 2).toBeGreaterThan(accountBox.y);
     expect(logoBox.y + logoBox.height / 2).toBeLessThan(accountBox.y + accountBox.height);
-    expect(accountBox.x + accountBox.width).toBeLessThan(menuBox.x);
-    expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(width);
-    expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(searchBox.y);
+    expect(accountBox.x + accountBox.width).toBeLessThan(logoutBox.x);
+    expect(logoutBox.x + logoutBox.width).toBeLessThanOrEqual(width);
+    expect(logoutBox.y + logoutBox.height).toBeLessThanOrEqual(searchBox.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
   }
-  await menu.click();
-  const dialog = page.getByRole('dialog', {name:'เมนูตามสิทธิ์'});
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole('button', {name:'ปิด', exact:true}).click();
-  await expect(dialog).toBeHidden();
+  await page.locator('.navbar .manual-trigger').click();
+  await expect(page.locator('#cstu-manual')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#cstu-manual')).toBeHidden();
 
-  const exchange = page.getByRole('button', {name:'โครงการแลกเปลี่ยน', exact:true});
+  const languages = page.locator('.navbar .public-language');
+  await languages.getByRole('button', {name:'English', exact:true}).press('Enter');
+  await expect(page.locator('#authNavButtons').getByRole('button', {name:'Logout', exact:true})).toBeVisible();
+  const exchange = page.locator('#tabExchange');
+  await expect(exchange).toHaveAccessibleName('Exchange');
   await exchange.focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/#board-section$/);
@@ -209,6 +214,61 @@ test('student mobile header and welcome shortcut work at narrow widths', async (
   await expect(page.locator('.browse-hero-slot #tabExchange')).toBeFocused();
   await expect(exchange).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('group', {name:'เลือกหมวดข้อมูล'})).toHaveCount(1);
+
+  await expect(languages).toBeHidden();
+  await expect(exchange).toHaveAccessibleName('โครงการแลกเปลี่ยน');
+  await expect(logout).toBeVisible();
+  await logout.press('Space');
+  await expect(page.locator('#authNavButtons a[href="login.html"]')).toBeVisible();
+  await expect(exchange).toBeHidden();
+  await expect(page.locator('#records-content')).not.toContainText('โครงการแลกเปลี่ยนตัวอย่างที่เข้าร่วม');
+  const signouts = requests.filter(r => r.path === '/api/auth/logout');
+  expect(signouts).toHaveLength(1);
+  expect(signouts[0].method).toBe('POST');
+  expect(signouts[0].headers['x-csrf-token']).toBe(csrfToken);
+});
+
+test('failed student logout can be retried from the header', async ({page}) => {
+  await fixture(page, 'student');
+  await page.route('**/api/auth/logout', route => route.fulfill({status:503, json:{error:{code:'UNAVAILABLE'}}}), {times:1});
+  await page.goto('/index.html');
+  const logout = page.locator('#authNavButtons').getByRole('button', {name:'ออกจากระบบ', exact:true});
+  await logout.click();
+  await expect(page.locator('#authNavButtons [role="status"]')).toHaveText('ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง');
+  await expect(logout).toBeEnabled();
+  await expect(page.locator('#tabExchange')).toBeVisible();
+  await page.locator('.navbar .public-language').getByRole('button', {name:'English', exact:true}).press('Enter');
+  await expect(page.locator('#authNavButtons [role="status"]')).toHaveText('Could not log out. Try again.');
+  await page.locator('#authNavButtons').getByRole('button', {name:'Logout', exact:true}).press('Enter');
+  await expect(page.locator('#authNavButtons').getByRole('link', {name:'Sign in', exact:true})).toBeVisible();
+  await expect(page.locator('#tabExchange')).toBeHidden();
+});
+
+test('the Student shortcut follows active grants and preserves role management and multi-role navigation', async ({page}) => {
+  await fixture(page, 'student');
+  const student = {role:'student', scopeId:'demo', active:true};
+  const session = {user:{id:'fixture-user'}, grants:[student, {...student,role:'staff',active:false}], capabilities:[], csrfToken};
+  await page.route('**/api/auth/session', route => route.fulfill({json:session}));
+  await page.goto('/index.html?public=1');
+  const header = page.locator('#authNavButtons');
+  const logout = header.getByRole('button', {name:'ออกจากระบบ',exact:true});
+  await expect(logout).toBeVisible();
+  session.capabilities = [{name:'manageRoles',scopeId:'demo',active:true}];
+  await page.evaluate(() => window.dispatchEvent(new Event('authchange')));
+  await header.getByRole('button', {name:'เมนู',exact:true}).click();
+  const dialog = page.locator('#role-menu');
+  await expect(dialog.getByRole('link',{name:/จัดการสิทธิ์ผู้ใช้/})).toBeVisible();
+  await expect(dialog.getByRole('link',{name:/โครงการแลกเปลี่ยนของฉัน/})).toBeVisible();
+
+  session.capabilities[0].active = false;
+  await page.evaluate(() => window.dispatchEvent(new Event('authchange')));
+  await expect(dialog).toBeHidden();
+  await expect(logout).toBeVisible();
+  await expect(logout).not.toHaveAttribute('aria-expanded', 'false');
+  session.grants.push({...student,role:'coordinator'});
+  await page.evaluate(() => window.dispatchEvent(new Event('authchange')));
+  await expect(header.locator('a[href="work.html"]')).toBeVisible();
+  await expect(logout).toHaveCount(0);
 });
 
 test('short filtered board keeps category buttons clickable below the mobile header', async ({page}) => {
