@@ -44,4 +44,33 @@
 }
 
 .public-buddhist-hint { display: none; }
-html[lang="en"] .public-buddhist-hint { display: block; flex-basis: 100%; color: #554a4f; font-size: .85rem; }
+html[lang="en"] .public-buddhist-hint {
+    display: block;
+    grid-column: 1 / -1;
+    color: #554a4f;
+    font-size: .85rem;
+}
+@media (min-width: 768px) {
+    html[lang="en"] .filter-wrapper.has-filter-controls {
+        --date-columns: [from] minmax(0, 180px) [to] minmax(0, 180px) [clear-date] auto;
+        display: grid;
+        grid-template-columns: repeat(3, auto) var(--date-columns);
+        gap: 8px;
+    }
+    html[lang="en"] .date-filter-row { display: contents; }
+    html[lang="en"] .date-range-field:first-child { grid-area: 1 / from; }
+    html[lang="en"] .date-range-field + .date-range-field { grid-area: 1 / to; }
+    html[lang="en"] .date-clear-btn { grid-area: 1 / clear-date; }
+    html[lang="en"] .buddhist-date-control { width: 100%; }
+    html[lang="en"] .date-filter-row > :is(.public-buddhist-hint, .date-range-error, .undated-toggle) {
+        grid-column: from / -1;
+    }
+}
+@media (768px <= width < 1024px) {
+    html[lang="en"] .filter-wrapper.has-filter-controls { grid-template-columns: repeat(3, auto); }
+    html[lang="en"] .date-filter-row {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-template-columns: var(--date-columns);
+    }
+}

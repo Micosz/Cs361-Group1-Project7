@@ -152,6 +152,42 @@ for (const width of [320, 390, 1280]) {
   });
 }
 
+for (const width of [320, 390, 768, 1280, 1728]) {
+  test.describe('date filters at ' + width, () => {
+    test.use({viewport:{width, height:800}, hasTouch:width < 500, isMobile:width < 500});
+
+    test('both English date fields share a hint directly below the range', async ({page, baseURL}) => {
+      await fixture(page, baseURL);
+      await page.goto('/index.html');
+      await language(header(page), 'en');
+      for (const [tab, filter, type] of [
+        ['#tabCollab', '#filterCollab', 'university'],
+        ['#tabEvent', '#filterEvent', 'mou'],
+      ]) {
+        await page.locator(tab).click();
+        const start = page.locator(filter + 'DateDisplay');
+        const end = page.locator(filter + 'DateEndDisplay');
+        const hint = page.locator(filter + 'BuddhistHint');
+        const description = 'Use a Buddhist Era year (e.g. 2569 for 2026).';
+        await expect(start).toHaveAccessibleDescription(description);
+        await expect(end).toHaveAccessibleDescription(description);
+        for (const category of ['all', type]) {
+          await page.locator(filter).selectOption(category);
+          if (category !== 'all') {
+            await start.fill('25112569');
+            await start.press('Tab');
+          }
+          const [from, to, help] = await Promise.all([start.boundingBox(), end.boundingBox(), hint.boundingBox()]);
+          const gap = help.y - Math.max(from.y + from.height, to.y + to.height);
+          expect(Math.abs(help.x - from.x)).toBeLessThanOrEqual(1);
+          expect(gap).toBeGreaterThanOrEqual(0);
+          expect(gap).toBeLessThanOrEqual(16);
+        }
+      }
+    });
+  });
+}
+
 test('both public login URLs remember the language; the staff workspace stays Thai', async ({page,baseURL}) => {
   const writes = await fixture(page,baseURL,'coordinator');
   await page.setViewportSize({width:1280,height:800});

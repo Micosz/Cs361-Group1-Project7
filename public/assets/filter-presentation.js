@@ -29,7 +29,7 @@
                 hint.className = 'public-buddhist-hint';
                 hint.lang = 'en';
                 hint.textContent = 'Use a Buddhist Era year (e.g. 2569 for 2026).';
-                wrapper.append(hint);
+                document.getElementById(`${id}DateEnd`)?.closest('.date-range-field')?.after(hint);
                 cleanups.push(() => hint.remove());
             }
             ['Date', 'DateEnd'].forEach(suffix => {
