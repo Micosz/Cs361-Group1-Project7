@@ -4,10 +4,10 @@
     gap: 2px;
     inline-size: max-content;
     padding: 2px;
-    border: 1px solid #d8d1d3;
+    border: 1px solid var(--tu-red, #c3002f);
     border-radius: 999px;
-    background: #fff;
-    color: #33292d;
+    background: #fffaf2;
+    color: var(--tu-red-hover, #9f0026);
     font: 600 0.875rem/1.2 'Noto Sans Thai', sans-serif;
 }
 .public-language[hidden] { display: none; }
@@ -23,8 +23,8 @@
     min-width: 34px;
     cursor: pointer;
 }
-.public-language button[aria-pressed="true"] { background: #382a2f; color: #fff; }
-.public-language button:focus-visible { outline: 3px solid #0964a0; outline-offset: 2px; }
+.public-language button[aria-pressed="true"] { background: var(--tu-red, #c3002f); color: #fff; }
+.public-language button:focus-visible { outline: 3px solid var(--text-dark, #202020); outline-offset: 2px; }
 .login-header > .public-language { margin-inline-start: auto; }
 .login-header .back-link { margin-inline-start: 0.6rem; }
 .detail-toolbar > .public-language, .manual-header > .public-language { flex: none; }
