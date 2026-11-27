@@ -57,7 +57,7 @@
         dialog.classList.remove('is-open', 'instant');
         if (dialog.open) dialog.close();
         restoreScroll();
-        host.querySelector('button')?.setAttribute('aria-expanded', 'false');
+        host.querySelector('.role-menu-trigger')?.setAttribute('aria-expanded', 'false');
     }
     function close(event) {
         ++openRevision;
@@ -122,7 +122,22 @@
                 links.replaceChildren(); status.textContent = '';
                 return;
             }
-            let trigger = host.querySelector('button');
+            const activeGrants = session.grants.filter(grant => grant.active !== false);
+            if (activeGrants.length && activeGrants.every(grant => grant.role === 'student') && !managedScopes(session).length) {
+                if (!host.querySelector('.student-logout-trigger')) {
+                    finishClose();
+                    links.replaceChildren();
+                    status.textContent = '';
+                    const actions = document.getElementById('student-header-actions').content.cloneNode(true);
+                    const button = actions.querySelector('button');
+                    const message = actions.querySelector('[role="status"]');
+                    button.onclick = () => publicLogout(button, message);
+                    host.replaceChildren(actions);
+                }
+                showAccount(session);
+                return;
+            }
+            let trigger = host.querySelector('.role-menu-trigger');
             if (!trigger) {
                 trigger = document.createElement('button');
                 trigger.type = 'button'; trigger.className = 'login-btn role-menu-trigger';
@@ -174,14 +189,24 @@
         clearTimeout(closing); closing = null;
         restoreScroll();
         dialog.classList.remove('is-open', 'instant');
-        host.querySelector('button')?.setAttribute('aria-expanded','false');
+        host.querySelector('.role-menu-trigger')?.setAttribute('aria-expanded','false');
     });
-    logout.onclick = async () => {
-        logout.disabled = true; status.textContent = '';
-        try { await window.CstuAuth.logout(); finishClose(); await refresh(); }
-        catch { status.textContent = 'ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง'; }
-        finally { logout.disabled = false; }
-    };
+    async function publicLogout(button, message) {
+        if (button.disabled) return;
+        button.disabled = true;
+        message.textContent = '';
+        try {
+            await window.CstuAuth.logout();
+            finishClose();
+            await refresh();
+        } catch {
+            message.textContent = document.documentElement.matches(':lang(en)')
+                ? 'Could not log out. Try again.' : 'ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง';
+        } finally {
+            button.disabled = false;
+        }
+    }
+    logout.onclick = () => publicLogout(logout, status);
     window.addEventListener('authchange', refresh);
     window.addEventListener('focus', refresh);
     window.addEventListener('pageshow', refresh);
