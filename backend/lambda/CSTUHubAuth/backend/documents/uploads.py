@@ -30,6 +30,10 @@ def parse_upload(event):
                     file_bytes = part.get_payload(decode=True)
                     file_meta = {'fileName': part.get_filename(), 'contentType': part.get_content_type()}
                 elif name in {'displayName', 'audience', 'containsPersonal'}:
+                    if (name == 'displayName' and part.get_content_type() == 'text/plain'
+                            and part.get_param('charset') is None):
+                        # Browser FormData sends UTF-8 text without a per-part charset.
+                        part.set_param('charset', 'utf-8')
                     fields[name] = part.get_content().strip()
                 else:
                     raise ValueError()
