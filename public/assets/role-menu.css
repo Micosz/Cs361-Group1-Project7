@@ -1,4 +1,8 @@
-.role-menu-trigger { font: inherit; cursor: pointer; }
+.role-menu-trigger, .student-logout-trigger { font: inherit; cursor: pointer; }
+:root:lang(en) .student-logout-trigger [lang="th"],
+:root:not(:lang(en)) .student-logout-trigger [lang="en"] { display: none; }
+.student-logout-status { position: absolute; inset-inline-end: 12px; top: 100%; max-width: calc(100% - 24px); }
+.student-logout-status:not(:empty) { margin-top: 4px; padding: 6px 12px; border-radius: 8px; background: white; color: #921b36; }
 .role-menu {
     position: fixed; inset: 0; width: 100%; max-width: none; height: 100%; height: 100dvh;
     max-height: none; margin: 0; padding: 0; border: 0; color: #fff8f0; background: #bb002e;

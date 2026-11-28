@@ -57,7 +57,7 @@
         dialog.classList.remove('is-open', 'instant');
         if (dialog.open) dialog.close();
         restoreScroll();
-        host.querySelector('button')?.setAttribute('aria-expanded', 'false');
+        host.querySelector('.role-menu-trigger')?.setAttribute('aria-expanded', 'false');
     }
     function close(event) {
         ++openRevision;
@@ -76,7 +76,8 @@
             if (!session?.user) {
                 showAccount(null); finishClose();
                 const login = document.createElement('a');
-                login.href = 'login.html'; login.className = 'login-btn'; login.textContent = 'Log in';
+                login.href = 'login.html'; login.className = 'login-btn'; login.textContent = 'เข้าสู่ระบบ';
+                window.CstuLanguage?.capture(login);
                 host.replaceChildren(login); return;
             }
             if (window.CstuAuth.isInternal(session) && !document.body.classList.contains('work-home')) {
@@ -87,6 +88,7 @@
                     workspace.href = 'work.html';
                     workspace.className = 'login-btn work-home-link';
                     workspace.textContent = 'กลับหน้าทำงาน';
+                    window.CstuLanguage?.capture(workspace);
                     host.replaceChildren(workspace);
                 }
                 showAccount(session);
@@ -100,7 +102,7 @@
                 if (!direct) {
                     direct = document.createElement('button');
                     direct.type = 'button'; direct.className = 'login-btn work-logout-trigger';
-                    direct.textContent = 'Log out';
+                    direct.textContent = 'ออกจากระบบ';
                     const message = document.createElement('p');
                     message.className = 'work-logout-status'; message.setAttribute('role', 'status');
                     direct.onclick = async () => {
@@ -113,7 +115,7 @@
                         } catch {
                             delete document.body.dataset.signingOut;
                             message.textContent = 'ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง';
-                            direct.disabled = false; direct.textContent = 'Log out';
+                            direct.disabled = false; direct.textContent = 'ออกจากระบบ';
                         }
                     };
                     host.replaceChildren(direct, message);
@@ -122,11 +124,27 @@
                 links.replaceChildren(); status.textContent = '';
                 return;
             }
-            let trigger = host.querySelector('button');
+            const activeGrants = session.grants.filter(grant => grant.active !== false);
+            if (activeGrants.length && activeGrants.every(grant => grant.role === 'student') && !managedScopes(session).length) {
+                if (!host.querySelector('.student-logout-trigger')) {
+                    finishClose();
+                    links.replaceChildren();
+                    status.textContent = '';
+                    const actions = document.getElementById('student-header-actions').content.cloneNode(true);
+                    const button = actions.querySelector('button');
+                    const message = actions.querySelector('[role="status"]');
+                    button.onclick = () => publicLogout(button, message);
+                    host.replaceChildren(actions);
+                }
+                showAccount(session);
+                return;
+            }
+            let trigger = host.querySelector('.role-menu-trigger');
             if (!trigger) {
                 trigger = document.createElement('button');
                 trigger.type = 'button'; trigger.className = 'login-btn role-menu-trigger';
-                trigger.textContent = 'Menu'; trigger.setAttribute('aria-haspopup', 'dialog');
+                trigger.textContent = 'เมนู'; trigger.setAttribute('aria-haspopup', 'dialog');
+                window.CstuLanguage?.capture(trigger);
                 trigger.setAttribute('aria-controls', 'role-menu'); trigger.setAttribute('aria-expanded', 'false');
                 trigger.onclick = async event => {
                     // Re-check role/session whenever opening; do not trust a stale menu.
@@ -148,6 +166,7 @@
                 const link = document.createElement('a'); link.href = href;
                 const title = document.createElement('span'); title.textContent = label;
                 const small = document.createElement('small'); small.textContent = description;
+                window.CstuLanguage?.capture(title); window.CstuLanguage?.capture(small);
                 link.append(title, small); links.append(link);
             };
             const roles = window.CstuAuth.roles(session);
@@ -161,6 +180,7 @@
             const retry = document.createElement('button'); retry.type = 'button';
             retry.className = 'login-btn'; retry.textContent = 'ลองใหม่';
             retry.setAttribute('aria-label', 'ตรวจสถานะเข้าสู่ระบบอีกครั้ง'); retry.onclick = refresh;
+            window.CstuLanguage?.capture(retry);
             host.replaceChildren(retry);
         }
     }
@@ -174,14 +194,26 @@
         clearTimeout(closing); closing = null;
         restoreScroll();
         dialog.classList.remove('is-open', 'instant');
-        host.querySelector('button')?.setAttribute('aria-expanded','false');
+        host.querySelector('.role-menu-trigger')?.setAttribute('aria-expanded','false');
     });
-    logout.onclick = async () => {
-        logout.disabled = true; status.textContent = '';
-        try { await window.CstuAuth.logout(); finishClose(); await refresh(); }
-        catch { status.textContent = 'ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง'; }
-        finally { logout.disabled = false; }
-    };
+    async function publicLogout(button, message) {
+        if (button.disabled) return;
+        button.disabled = true;
+        message.textContent = '';
+        try {
+            await window.CstuAuth.logout();
+            finishClose();
+            await refresh();
+        } catch {
+            const english = 'Could not log out. Try again.';
+            message.textContent = 'ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง';
+            if (window.CstuLanguage) window.CstuLanguage.pair(message, english);
+            else if (document.documentElement.matches(':lang(en)')) message.textContent = english;
+        } finally {
+            button.disabled = false;
+        }
+    }
+    logout.onclick = () => publicLogout(logout, status);
     window.addEventListener('authchange', refresh);
     window.addEventListener('focus', refresh);
     window.addEventListener('pageshow', refresh);

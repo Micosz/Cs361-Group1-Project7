@@ -17,7 +17,7 @@
       "steps": [
         {
           "title": "เลือกหมวดที่ต้องการ",
-          "text": "กด COLLABORATOR เพื่อดูคู่ความร่วมมือ หรือ ACTIVITIES & MOU เพื่อดูกิจกรรมและข้อตกลง แล้วกดชื่อบนการ์ดเพื่อเปิดรายละเอียด",
+          "text": "กดคู่ความร่วมมือเพื่อดูองค์กร หรือกิจกรรมและ MoU เพื่อดูกิจกรรมและข้อตกลง แล้วกดชื่อบนการ์ดเพื่อเปิดรายละเอียด",
           "image": "board-tabs.jpg",
           "highlight": [
             27.2,
@@ -25,7 +25,12 @@
             15.735,
             7.085
           ],
-          "alt": "เลือกหมวดที่ต้องการ — หน้าจอ CSTUHub"
+          "alt": "เลือกหมวดที่ต้องการ — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Choose a category",
+            "text": "Choose Partners to see organizations, or Activities & MoU to see activities and agreements. Select a card title to open its details.",
+            "alt": "Thai interface: Choose a category"
+          }
         },
         {
           "title": "อ่านรายละเอียดและปิดกลับ",
@@ -37,10 +42,20 @@
             16.134,
             7.071
           ],
-          "alt": "อ่านรายละเอียดและปิดกลับ — หน้าจอ CSTUHub"
+          "alt": "อ่านรายละเอียดและปิดกลับ — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Read the details and return",
+            "text": "Use the Details, Comments or Form feedback tabs when available. Select the close button to return to the same list.",
+            "alt": "Thai interface: Read the details and return"
+          }
         }
       ],
-      "note": "ผู้ใช้ทั่วไปเห็นเฉพาะข้อมูลที่เผยแพร่ ส่วนข้อมูลภายในแสดงตามสิทธิ์ของบัญชี"
+      "note": "ผู้ใช้ทั่วไปเห็นเฉพาะข้อมูลที่เผยแพร่ ส่วนข้อมูลภายในแสดงตามสิทธิ์ของบัญชี",
+      "en": {
+        "title": "Browse partners, activities and MoUs",
+        "category": "Getting started",
+        "note": "Visitors can see published records. Access to internal information depends on your account."
+      }
     },
     {
       "id": "search",
@@ -58,7 +73,7 @@
       "steps": [
         {
           "title": "ค้นหาจากแถบด้านบน",
-          "text": "กรอกชื่อองค์กร กิจกรรม หรือคำที่ต้องการ แล้วกดปุ่มแว่นขยาย",
+          "text": "กรอกชื่อองค์กร กิจกรรม หรือคำที่ต้องการ แล้วกดค้นหา",
           "image": "search.jpg",
           "highlight": [
             21.53,
@@ -66,7 +81,12 @@
             44.602,
             5.587
           ],
-          "alt": "ค้นหาจากแถบด้านบน — หน้าจอ CSTUHub"
+          "alt": "ค้นหาจากแถบด้านบน — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Search from the top bar",
+            "text": "Enter an organization name, activity title or keyword, then select Search.",
+            "alt": "Thai interface: Search from the top bar"
+          }
         },
         {
           "title": "เลือกประเภทและช่วงวันที่",
@@ -78,9 +98,18 @@
             14.044,
             6.223
           ],
-          "alt": "เลือกประเภทและช่วงวันที่ — หน้าจอ CSTUHub"
+          "alt": "เลือกประเภทและช่วงวันที่ — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Choose a type and date range",
+            "text": "Choose a type in the current category and enter either or both dates. If no matches appear, use the clear button beside the filter to remove it.",
+            "alt": "Thai interface: Choose a type and date range"
+          }
         }
-      ]
+      ],
+      "en": {
+        "title": "Search and filter the board",
+        "category": "Getting started"
+      }
     },
     {
       "id": "login",
@@ -98,7 +127,7 @@
       "steps": [
         {
           "title": "กรอกบัญชีและรหัสผ่าน",
-          "text": "กด Log in จากหน้าแรก กรอกบัญชี TU และรหัสผ่าน แล้วกดเข้าสู่ระบบ หากระบบแจ้งข้อผิดพลาดให้ตรวจข้อมูลและลองอีกครั้ง",
+          "text": "กดเข้าสู่ระบบจากหน้าแรก กรอกบัญชี TU และรหัสผ่าน แล้วกดเข้าสู่ระบบ หากระบบแจ้งข้อผิดพลาดให้ตรวจข้อมูลและลองอีกครั้ง",
           "image": "login.jpg",
           "highlight": [
             5.784,
@@ -106,11 +135,16 @@
             60.846,
             44.272
           ],
-          "alt": "กรอกบัญชีและรหัสผ่าน — หน้าจอ CSTUHub"
+          "alt": "กรอกบัญชีและรหัสผ่าน — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Enter your TU account and password",
+            "text": "Select Sign in on the home page. Enter your TU account and password and select Sign in. If an error appears, check the details and try again.",
+            "alt": "Thai interface: Enter your TU account and password"
+          }
         },
         {
           "title": "ตรวจบทบาทและขอบเขต",
-          "text": "หลังเข้าสู่ระบบ เปิด Menu เพื่อตรวจบัญชีและขอบเขตที่ได้รับสิทธิ์ เมนูของแต่ละคนอาจไม่เหมือนภาพ หากยังไม่มีบทบาทให้ติดต่อผู้จัดการสิทธิ์ของหลักสูตร",
+          "text": "หลังเข้าสู่ระบบ เปิดเมนูเพื่อตรวจบัญชีและขอบเขตที่ได้รับสิทธิ์ เมนูของแต่ละคนอาจไม่เหมือนภาพ หากยังไม่มีบทบาทให้ติดต่อผู้จัดการสิทธิ์ของหลักสูตร",
           "image": "menu.jpg",
           "highlight": [
             43.995,
@@ -118,9 +152,18 @@
             37.168,
             4.276
           ],
-          "alt": "ตรวจบทบาทและขอบเขต — หน้าจอ CSTUHub"
+          "alt": "ตรวจบทบาทและขอบเขต — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Check your role and scope",
+            "text": "After signing in, open the menu to check your account and assigned scope. Available tools can differ from the illustration. If you have no assigned role, contact the program’s role manager.",
+            "alt": "Thai interface: Check your role and scope"
+          }
         }
-      ]
+      ],
+      "en": {
+        "title": "Sign in with a TU account",
+        "category": "Getting started"
+      }
     },
     {
       "id": "account",
@@ -185,9 +228,18 @@
             7.142,
             6.223
           ],
-          "alt": "กดพักพื้นหลัง — หน้าจอ CSTUHub"
+          "alt": "กดพักพื้นหลัง — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Pause the background",
+            "text": "Select Pause background on the home page to stop the animation. Select it again to resume.",
+            "alt": "Thai interface: Pause the background"
+          }
         }
-      ]
+      ],
+      "en": {
+        "title": "Pause background motion",
+        "category": "Getting started"
+      }
     },
     {
       "id": "public-comment",
@@ -213,7 +265,12 @@
             16.134,
             7.071
           ],
-          "alt": "เปิดรายการที่ต้องการแสดงความคิดเห็น — หน้าจอ CSTUHub"
+          "alt": "เปิดรายการที่ต้องการแสดงความคิดเห็น — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Open the record you want to discuss",
+            "text": "Open a partner or activity and choose the Comments tab.",
+            "alt": "Thai interface: Open the record you want to discuss"
+          }
         },
         {
           "title": "เขียนและเลือกกลุ่มผู้ตอบ",
@@ -225,10 +282,20 @@
             58.199,
             5.092
           ],
-          "alt": "เขียนและเลือกกลุ่มผู้ตอบ — หน้าจอ CSTUHub"
+          "alt": "เขียนและเลือกกลุ่มผู้ตอบ — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Write a comment and choose a respondent group",
+            "text": "Select Add a comment, write your message and choose your respondent group. Select Post comment or Cancel. The group describes your comment and does not change account permissions.",
+            "alt": "Thai interface: Write a comment and choose a respondent group"
+          }
         }
       ],
-      "note": "ความคิดเห็นส่วนนี้แสดงต่อสาธารณะโดยไม่ระบุชื่อ อย่าใส่ข้อมูลส่วนบุคคลหรือข้อมูลภายใน"
+      "note": "ความคิดเห็นส่วนนี้แสดงต่อสาธารณะโดยไม่ระบุชื่อ อย่าใส่ข้อมูลส่วนบุคคลหรือข้อมูลภายใน",
+      "en": {
+        "title": "Read and post public comments",
+        "category": "Comments and feedback",
+        "note": "Public comments are anonymous. Keep personal and internal information out of your comment."
+      }
     },
     {
       "id": "comment-filter",
@@ -254,9 +321,18 @@
             58.199,
             5.092
           ],
-          "alt": "เลือกกลุ่มผู้ตอบและอ่านรายการ — หน้าจอ CSTUHub"
+          "alt": "เลือกกลุ่มผู้ตอบและอ่านรายการ — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Choose a respondent group and read the comments",
+            "text": "Choose a respondent group to filter the list. Select Like or Dislike below a comment to react. Select it again to remove your reaction.",
+            "alt": "Thai interface: Choose a respondent group and read the comments"
+          }
         }
-      ]
+      ],
+      "en": {
+        "title": "Filter and react to comments",
+        "category": "Comments and feedback"
+      }
     },
     {
       "id": "internal-feedback",
@@ -1408,7 +1484,12 @@
             37.168,
             4.276
           ],
-          "alt": "ตรวจบัญชีและบทบาทก่อน — หน้าจอ CSTUHub"
+          "alt": "ตรวจบัญชีและบทบาทก่อน — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Check your account and role first",
+            "text": "If a menu is missing, check that you signed in with the correct account and have the role for that scope. Visitors and students see only the tools available to them.",
+            "alt": "Thai interface: Check your account and role first"
+          }
         },
         {
           "title": "เก็บข้อความก่อนลองใหม่",
@@ -1420,7 +1501,12 @@
             87.018,
             11.739
           ],
-          "alt": "เก็บข้อความก่อนลองใหม่ — หน้าจอ CSTUHub"
+          "alt": "เก็บข้อความก่อนลองใหม่ — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Keep a copy before trying again",
+            "text": "If a record did not load completely or someone else changed it, keep a copy of your unsaved text. Reload the current record before making changes.",
+            "alt": "Thai interface: Keep a copy before trying again"
+          }
         },
         {
           "title": "อ่านเหตุผลของไฟล์ที่ไม่สำเร็จ",
@@ -1432,9 +1518,18 @@
             16.105,
             5.558
           ],
-          "alt": "อ่านเหตุผลของไฟล์ที่ไม่สำเร็จ — หน้าจอ CSTUHub"
+          "alt": "อ่านเหตุผลของไฟล์ที่ไม่สำเร็จ — หน้าจอ CSTUHub",
+          "en": {
+            "title": "Read the file error",
+            "text": "Check the file type, size and access. If the problem continues, tell the administrator the time, feature and error message. Keep passwords and private document contents out of your report.",
+            "alt": "Thai interface: Read the file error"
+          }
         }
-      ]
+      ],
+      "en": {
+        "title": "Missing controls, incomplete data or an unsuccessful save",
+        "category": "Help"
+      }
     }
   ]
 }

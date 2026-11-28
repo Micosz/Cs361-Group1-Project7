@@ -73,6 +73,36 @@ class TestDocumentValidation(unittest.TestCase):
     def test_reject_zip_header_as_docx(self):
         self.assertFalse(validate_file('fake.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', b'PK\x03\x04 not a document')[0])
 
+    def test_multipart_attachment_names_and_bytes(self):
+        from backend.documents.uploads import parse_upload
+
+        content = b'%PDF-1.4\nfixture\n%%EOF'
+        cases = [
+            ('รายงานภาคสนาม.pdf', 'รายงานภาคสนาม.pdf', None),
+            ('Field-บันทึกประชุม.pdf', 'Field-บันทึกประชุม.pdf', None),
+            ('Meeting-notes.pdf', 'Meeting-notes.pdf', None),
+            ('report.pdf', 'Résumé.pdf', 'iso-8859-1'),
+        ]
+        for filename, display_name, charset in cases:
+            with self.subTest(filename=filename, charset=charset):
+                file_headers = (f'--form\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+                                'Content-Type: application/pdf\r\n\r\n').encode('utf-8')
+                name_headers = '--form\r\nContent-Disposition: form-data; name="displayName"\r\n'
+                if charset:
+                    name_headers += f'Content-Type: text/plain; charset={charset}\r\n'
+                body = b'\r\n'.join([
+                    file_headers + content,
+                    name_headers.encode('ascii') + b'\r\n' + display_name.encode(charset or 'utf-8'),
+                    b'--form--', b'',
+                ])
+                payload, upload = parse_upload({
+                    'headers': {'content-type': 'multipart/form-data; boundary=form'},
+                    'body': base64.b64encode(body).decode('ascii'), 'isBase64Encoded': True,
+                })
+                self.assertEqual(display_name, payload['displayName'])
+                self.assertEqual(filename, upload['metadata']['originalFileName'])
+                self.assertEqual(content, upload['bytes'])
+
     def test_upload_round_trip_and_unknown_fields(self):
         from backend.documents.uploads import parse_upload
         from backend.auth.session_service import AuthError

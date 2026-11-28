@@ -21,10 +21,17 @@ class AuthApplication:
             if event.get('version') != '2.0':
                 raise AuthError('UNSUPPORTED_EVENT', 400)
             path = event.get('rawPath', '')
-            proposal = re.fullmatch(r'/api/proposals(?:/(proposal-[a-f0-9]{64})/interest)?', path)
-            if proposal:
-                from .proposals import handle as proposal_board
-                return proposal_board(event, self.sessions, self.repository, proposal[1])
+            if 'admission-' in path:
+                from . import admissions
+                admission = admissions.ROUTES.fullmatch(path)
+                if admission:
+                    return admissions.handle(self, event, admission)
+            if path == '/api/proposals' or path.startswith('/api/proposals/'):
+                from . import proposal_api
+                proposal = proposal_api.ROUTES.fullmatch(path)
+                if not proposal:
+                    raise AuthError('NOT_FOUND', 404)
+                return proposal_api.handle(event, self.sessions, self.repository, proposal)
             from .documents.direct_gateway import handles, DirectUploadGateway
             if handles(path):
                 return DirectUploadGateway(self.sessions, self.repository).handle(event)

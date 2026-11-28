@@ -1,7 +1,7 @@
 /* Presentation only. Reuses rendered collaborator logos without data requests,
    app state changes or scroll locking. A single RAF-batched scroll controller
    paints scene opacity and transforms directly across browsers.
-   Extra previews delegate to the existing detail function and hero ticker. */
+   Extra previews delegate to the existing detail function. */
 (() => {
     'use strict';
     let dispose;
@@ -26,6 +26,7 @@
         let navigationFrame = 0;
         let layer;
         let releaseDecode;
+        let companionTimer;
         const on = (target, type, handler, options = {}) => target.addEventListener(type, handler, { ...options, signal: controller.signal });
         const after = (fn, ms) => {
             const id = setTimeout(() => { timers.delete(id); fn(); }, ms);
@@ -44,13 +45,41 @@
         const boardSubtitle = boardScene?.querySelector('.page-title h2');
         const boardTabs = boardScene?.querySelector('.tabs');
         const boardContent = boardScene?.querySelector('main');
-        const welcomeParts = [...hero.querySelectorAll('.heading-intro, .heading-end, .hero-features, .hero-btn')];
+        const heroSlot = hero.querySelector('.browse-hero-slot');
+        const boardSlot = heroSlot && boardTabs ? document.createElement('div') : null;
+        const header = document.querySelector('.navbar');
+        let tabSizeObserver;
+        let stickyHeaderBottom = 0;
+        function measureBrowseHeader() {
+            if (!boardSlot || !header) return;
+            const style = getComputedStyle(header);
+            // Locking the document for a detail dialog can temporarily unstick the header.
+            stickyHeaderBottom = style.position === 'sticky'
+                ? header.offsetHeight + (parseFloat(style.top) || 0) : 0;
+            boardScene.style.setProperty('--browse-header-inset', stickyHeaderBottom + 'px');
+        }
+        if (boardSlot) {
+            boardSlot.className = 'browse-slot browse-board-slot';
+            boardTabs.before(boardSlot);
+            boardTabs.classList.add('browse-tabs');
+            if ('ResizeObserver' in window) {
+                tabSizeObserver = new ResizeObserver(() => {
+                    measureBrowseHeader();
+                    const height = boardTabs.offsetHeight;
+                    if (height) boardSlot.style.minHeight = heroSlot.style.minHeight = height + 'px';
+                });
+                tabSizeObserver.observe(boardTabs);
+                if (header) tabSizeObserver.observe(header);
+            }
+        }
+        const welcomeParts = [...hero.querySelectorAll('.heading-intro, .heading-end, .hero-features')];
         const bridge = document.createElement('span');
         bridge.className = 'scene-title-bridge';
         bridge.setAttribute('aria-hidden', 'true');
         bridge.textContent = subject?.textContent || '';
         bridge.hidden = true;
         document.body.append(bridge);
+        on(window, 'cstu:language', () => { bridge.textContent = subject?.textContent || ''; });
         let titleGeometry;
         const originalInert = { hero: hero.inert, board: boardScene?.inert };
         const sceneStyles = new Map();
@@ -105,9 +134,46 @@
                 scale
             };
         }
+        // The same buttons retain their listeners, permission state and focus at either end.
+        // In transit they sit outside the two scenes, which each become inert during the handoff.
+        function positionBrowseTabs() {
+            if (!boardSlot) return;
+            let parent;
+            let top;
+            if (document.body.classList.contains('feedback-inbox-view')) {
+                parent = boardSlot;
+            } else if (sceneEnabled) {
+                if (sceneProgress <= .03) parent = heroSlot;
+                else if (sceneProgress >= .82) parent = boardSlot;
+                else top = mix(heroSlot.getBoundingClientRect().top, boardSlot.getBoundingClientRect().top,
+                    ease(sceneProgress / .82));
+            } else {
+                const inset = Math.max(stickyHeaderBottom, header?.getBoundingClientRect().bottom || 0) + 12;
+                const boardTop = boardScene.getBoundingClientRect().top;
+                const atEnd = scrollY > 0 && scrollY + innerHeight >= document.documentElement.scrollHeight - 1;
+                if (boardTop <= inset || atEnd) parent = boardSlot;
+                else if (heroSlot.getBoundingClientRect().top >= inset) parent = heroSlot;
+                else {
+                    const arrival = ease(1 - (boardTop - inset) / (innerHeight * .45));
+                    top = reduced.matches ? inset : mix(inset, boardSlot.getBoundingClientRect().top, arrival);
+                }
+            }
+
+            const target = parent || document.body;
+            if (boardTabs.parentElement !== target) {
+                const focused = boardTabs.contains(document.activeElement) && document.activeElement;
+                if (target.moveBefore) target.moveBefore(boardTabs, parent ? null : boardScene);
+                else target.insertBefore(boardTabs, parent ? null : boardScene);
+                if (focused && focused !== document.activeElement) focused.focus({preventScroll:true});
+            }
+            boardTabs.classList.toggle('browse-at-board', parent === boardSlot);
+            boardTabs.classList.toggle('browse-floating', !parent);
+            boardTabs.style.top = parent ? '' : Math.round(top) + 'px';
+        }
         function renderScene() {
             sceneFrame = 0;
-            if (!sceneEnabled || disposed) return;
+            if (disposed) return;
+            if (!sceneEnabled) { positionBrowseTabs(); return; }
             // Only scroll position is read here. Geometry is cached at startup/resize.
             const progress = clamp(window.scrollY / sceneTravel);
             if (!sceneDirty && progress === sceneProgress) return;
@@ -158,7 +224,7 @@
                 transform: `translateY(${(progress - 1) * sceneTravel + boardOffset}px)`
             });
             paintScene(boardTitle, { opacity: progress >= .82 || !titleGeometry ? '1' : '0' });
-            [[boardSubtitle, .36], [boardTabs, .46], [boardContent, .56]].forEach(([element, start]) => {
+            [[boardSubtitle, .36], [boardContent, .56]].forEach(([element, start]) => {
                 const reveal = ease((progress - start) / .26);
                 paintScene(element, { opacity: String(reveal), transform: `translateY(${18 * (1 - reveal)}px)` });
             });
@@ -169,14 +235,16 @@
             });
             hero.inert = progress >= .58 || originalInert.hero;
             boardScene.inert = progress < .72 || originalInert.board;
+            positionBrowseTabs();
         }
         function scheduleScene(refresh = false) {
-            if (!sceneEnabled || disposed) return;
+            if (disposed) return;
             sceneDirty ||= refresh;
             if (!sceneFrame) sceneFrame = requestAnimationFrame(renderScene);
         }
         const updateSceneMode = () => {
             clearSceneStyles();
+            measureBrowseHeader();
             sceneEnabled = sceneMode();
             cancelAnimationFrame(sceneFrame);
             sceneFrame = 0;
@@ -202,7 +270,7 @@
             if (!settled) finish();
             scheduleScene();
         }, { passive: true });
-        function advanceScene() {
+        function advanceScene(immediate = false) {
             if (!boardScene) return;
             cancelAnimationFrame(navigationFrame);
             navigationFrame = requestAnimationFrame(() => {
@@ -221,24 +289,21 @@
                 const top = sceneEnabled
                     ? Math.ceil(Math.max(sceneTravel, boardScene.offsetTop - 92))
                     : Math.max(0, boardScene.getBoundingClientRect().top + window.scrollY - headerInset);
-                window.scrollTo({ top, behavior: reduced.matches ? 'auto' : 'smooth' });
+                window.scrollTo({ top, behavior: immediate || reduced.matches ? 'instant' : 'smooth' });
             });
         }
         // Own the ordinary anchor scroll so the browser cannot start a competing
         // scroll toward the board while it is still transformed. Keep the same URL.
         on(window, 'cstu:board', () => { finish(); advanceScene(); });
-        on(hero.querySelector('.hero-btn'), 'click', event => {
-            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-            event.preventDefault();
+        if (boardSlot) on(boardTabs, 'click', event => {
+            if (!event.target.closest('button.tab') || boardTabs.parentElement === boardSlot) return;
             finish();
-            if (!document.getElementById('tabCollab')?.classList.contains('active')) {
-                window.CstuRecords?.open('partners');
-            }
             if (window.location.hash !== '#board-section') {
                 try { window.history.pushState(null, '', '#board-section'); }
                 catch { /* Some local file previews disallow History API updates. */ }
             }
-            advanceScene();
+            // Keyboard and assistive activation should place the focused button at its destination immediately.
+            advanceScene(event.detail === 0);
         });
         on(document.querySelector('.search-btn'), 'click', () => {
             if (boardScene && scrollY < boardScene.offsetTop - 92) advanceScene();
@@ -266,13 +331,14 @@
         function assign(item, partner) {
             item.partner = partner;
             item.tile.setAttribute('aria-label', `ดูรายละเอียด ${partner.title}`);
+            window.CstuLanguage?.attr(item.tile, 'aria-label', 'ดูรายละเอียด ' + partner.title, 'View details for ' + partner.title);
             item.tile.title = partner.title;
             if (item.image.getAttribute('src') !== partner.src) item.image.src = partner.src;
         }
         function refreshCompanions() {
             if (!settled || disposed || !tiles.length) return;
             const current = new Set(liveCards.map(card => card.querySelector('h4')?.textContent.trim()));
-            // Keep the preview under the pointer/focus stable until the next ticker cycle.
+            // Keep the preview under the pointer or keyboard focus stable.
             const held = tiles.filter(item => item.slot >= 3 &&
                 (item.tile.matches(':hover') || item.tile.contains(document.activeElement)));
             held.forEach(item => current.add(item.partner.title));
@@ -429,6 +495,7 @@
                 });
             });
             hero.append(layer);
+            companionTimer = setInterval(refreshCompanions, 10000);
             measure();
             // Clear only the pending-data timeout; the decorative sequence has its own bound.
             clearTimeout(pendingTimer);
@@ -436,12 +503,6 @@
             try { run(); } catch { finish(); } // Optional motion must always fail open.
         }
         const observer = new MutationObserver(() => { readPartners(); prepare(); });
-        // Follow the existing ten-second ticker; no extra timer or data request.
-        const tickerObserver = new MutationObserver(refreshCompanions);
-        liveCards.forEach(card => {
-            const title = card.querySelector('h4');
-            if (title) tickerObserver.observe(title, { childList: true, subtree: true, characterData: true });
-        });
         observer.observe(grid, { childList: true });
         const pendingTimer = settled ? 0 : after(() => finish(), 3500);
         if (!settled) hero.classList.add('intro-pending');
@@ -465,7 +526,7 @@
             controller.abort();
             observer.disconnect();
             bodyObserver?.disconnect();
-            tickerObserver.disconnect();
+            clearInterval(companionTimer);
             cancelAnimationFrame(resizeFrame);
             cancelAnimationFrame(navigationFrame);
             cancelAnimationFrame(sceneFrame);
@@ -473,6 +534,13 @@
             finish();
             layer?.remove();
             bridge.remove();
+            tabSizeObserver?.disconnect();
+            if (boardSlot) {
+                boardScene.style.removeProperty('--browse-header-inset');
+                boardSlot.replaceWith(boardTabs);
+                boardTabs.classList.remove('browse-tabs','browse-floating','browse-at-board');
+                boardTabs.style.top = '';
+            }
             document.body.classList.remove('scene-ready');
         };
     }

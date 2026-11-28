@@ -6,7 +6,7 @@
         const cleanups = [];
         const controller = new AbortController();
         const listen = (el, event, fn) => el.addEventListener(event, fn, { signal: controller.signal });
-        [['filterCollab', 'องค์กร'], ['filterEvent', 'กิจกรรม/MoU']].forEach(([id, context]) => {
+        ['filterCollab', 'filterEvent'].forEach(id => {
             const select = document.getElementById(id);
             const wrapper = select?.closest('.filter-wrapper');
             if (!wrapper) return;
@@ -16,13 +16,22 @@
             icon.className = 'fas fa-filter';
             icon.setAttribute('aria-hidden', 'true');
             caption.append(icon, document.createTextNode('ตัวกรอง'));
+            window.CstuLanguage?.capture(caption);
             select.before(caption);
             wrapper.classList.add('has-filter-controls');
             cleanups.push(() => { caption.remove(); wrapper.classList.remove('has-filter-controls'); });
 
             // A Buddhist-year display adapter; the existing ISO date remains the filter value.
             const clear = document.getElementById(`${id}DateClear`);
-            const range = wrapper.querySelector('fieldset > legend')?.textContent;
+            const hint = document.createElement('small');
+            if (window.CstuLanguage) {
+                hint.id = id + 'BuddhistHint';
+                hint.className = 'public-buddhist-hint';
+                hint.lang = 'en';
+                hint.textContent = 'Use a Buddhist Era year (e.g. 2569 for 2026).';
+                document.getElementById(`${id}DateEnd`)?.closest('.date-range-field')?.after(hint);
+                cleanups.push(() => hint.remove());
+            }
             ['Date', 'DateEnd'].forEach(suffix => {
                 const date = document.getElementById(`${id}${suffix}`);
                 if (!date) return;
@@ -38,17 +47,22 @@
                 text.autocomplete = 'off';
                 text.name = `${id}${suffix}Buddhist`;
                 text.spellcheck = false;
-                const side = label?.textContent || (suffix === 'Date' ? 'ตั้งแต่' : 'ถึง');
-                const fieldName = range ? `${side} ${range}` : date.getAttribute('aria-label') || side;
-                text.setAttribute('aria-label', `${fieldName} วัน/เดือน/ปี พ.ศ.`);
+                window.CstuLanguage?.capture(text);
+                const legend = wrapper.querySelector('legend');
+                text.setAttribute('aria-labelledby', label.id + ' ' + legend.id);
                 const picker = document.createElement('button');
                 picker.type = 'button';
                 picker.className = 'date-picker-btn';
-                const buttonText = `${side} (${context})`;
-                picker.title = `ปฏิทิน ${buttonText}`;
-                picker.setAttribute('aria-label', picker.title);
-                picker.innerHTML = '<span class="date-picker-icon" aria-hidden="true"></span>';
-                picker.append(document.createTextNode(buttonText));
+                picker.innerHTML = '<i class="far fa-calendar-alt" aria-hidden="true"></i>';
+                const updateLanguage = () => {
+                    if (hint.isConnected && document.documentElement.lang === 'en') text.setAttribute('aria-describedby', hint.id);
+                    else text.removeAttribute('aria-describedby');
+                    const action = window.CstuLanguage?.translate('เปิดปฏิทิน', 'Open calendar') || 'เปิดปฏิทิน';
+                    picker.title = action + ' · ' + label.textContent + ' · ' + legend.textContent;
+                    picker.setAttribute('aria-label', picker.title);
+                };
+                updateLanguage();
+                listen(window, 'cstu:language', updateLanguage);
                 date.before(shell);
                 shell.append(text, picker, date);
                 date.classList.add('native-date-source');
@@ -76,6 +90,10 @@
                     // Format a complete compact date without disturbing partial edits or the caret.
                     if (/^[0-9๐-๙]{8}$/.test(text.value)) text.value = normalizeDateText(text.value);
                 });
+                const invalid = 'กรอกวันที่จริงในรูปแบบ วัน/เดือน/ปี พ.ศ. เช่น 17/08/2563';
+                if (window.CstuLanguage) listen(window, 'cstu:language', () => {
+                    if (text.validity.customError) text.setCustomValidity(window.CstuLanguage.translate(invalid));
+                });
                 listen(text, 'change', () => {
                     const value = normalizeDateText(text.value);
                     const match = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/.exec(value);
@@ -89,7 +107,7 @@
                             iso = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     }
                     if (value && !iso) {
-                        text.setCustomValidity('กรอกวันที่จริงในรูปแบบ วัน/เดือน/ปี พ.ศ. เช่น 17/08/2563');
+                        text.setCustomValidity(window.CstuLanguage?.translate(invalid) ?? invalid);
                         text.reportValidity();
                         return;
                     }

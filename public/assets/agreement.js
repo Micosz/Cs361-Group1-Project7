@@ -114,6 +114,7 @@
             return span;
         };
 
+        window.CstuWork?.addProposalLink?.(content, agreement);
         addRow('ประเภทข้อตกลง', agreement.agreementType);
         addRow('สถานะ', agreement.status);
         addRow('ขอบเขตหลักสูตร (Scope)', agreement.scopeId);

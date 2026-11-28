@@ -2,11 +2,13 @@
 #detailModal .detail-sheet, #record-detail.detail-sheet {
     width: min(1120px, calc(100vw - 48px)); max-width: 1120px;
     height: min(850px, calc(100dvh - 64px)); max-height: calc(100dvh - 64px);
-    padding: 0; border: 1px solid #eaded9; border-radius: 24px; overflow: hidden;
+    padding: 0; border-radius: 24px; overflow: hidden;
     background: #fff; color: #202027; box-shadow: 0 24px 70px #21121a33;
     grid-template-columns: minmax(250px, 31%) minmax(0, 1fr);
 }
 #detailModal .detail-sheet, #record-detail.detail-sheet[open] { display: grid; }
+/* The record dialog is already visible while its detail request is pending. */
+#detailModal .detail-sheet, #record-detail.reading-record { border: var(--detail-popup-border); }
 /* The hero can hide the board wrapper while a public activity dialog is open. */
 #record-detail.detail-sheet[open] { visibility: visible; pointer-events: auto; }
 .detail-sheet [hidden] { display: none !important; }

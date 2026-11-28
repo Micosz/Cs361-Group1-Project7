@@ -103,20 +103,58 @@ body.work-home{--work-ink:#28232b;--work-red:#bf0030;background:#f7f6f3;color:va
 .proposal-stage{align-self:flex-start;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#f6e8d9;color:#7c4e28}
 .proposal-flow-trigger{align-self:flex-end}
 .proposal-board #proposal-flow-dialog{width:min(720px,94vw)}
-.proposal-prototype-notice{font-size:13px;color:#756970}
-.proposal-flow-steps{display:flex;gap:6px;padding:0;list-style:none;margin:20px 0;flex-wrap:wrap}
-.proposal-flow-steps li{flex:1 1 95px;padding:10px 8px;background:#f2eeee;border-radius:8px;font-size:13px;text-align:center;color:#6d656a}
-.proposal-flow-steps li.complete{background:#e9f1ed;color:#286045}
-.proposal-flow-steps [aria-current=step]{background:#ad0032;color:white;font-weight:600}
 #proposal-flow-waiting{padding:12px;background:#fff3f3;border-radius:8px;font-weight:600}
 #proposal-flow-people{display:grid;gap:10px;margin:18px 0}
 #proposal-flow-people small{white-space:pre-wrap;overflow-wrap:anywhere}
 #proposal-flow-dialog label{display:block;font-size:14px;margin-bottom:6px}
 #proposal-flow-dialog label span{font-size:12px;color:#756970}
-#proposal-flow-note{box-sizing:border-box;width:100%;font:inherit;padding:9px;border:1px solid #cdbfc1;border-radius:8px}
 #proposal-flow-actions{margin-top:14px}
 #proposal-flow-status{color:#a0002e;margin:10px 0}
 #proposal-flow-dialog h3{margin-top:22px;font-size:17px}
 #proposal-flow-history{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:14px}
 #proposal-flow-history li{padding-left:14px;border-left:2px solid #e6ccd3;overflow-wrap:anywhere}
 #proposal-flow-history small{display:block;color:#756970;font-size:12px;margin:3px 0}
+
+.proposal-board [hidden]{display:none!important}
+.proposal-board #proposal-dialog{width:min(600px,94vw)}
+.proposal-board .proposal-check{display:flex!important;align-items:center;gap:8px}
+#proposal-form .proposal-check input[type=checkbox],.proposal-board .proposal-check input[type=checkbox]{width:1.1rem;flex:0 0 1.1rem;min-width:1.1rem;height:1.1rem;margin:0;padding:0;accent-color:var(--tu-red,#c3002f)}
+.proposal-board form :is(input,select,textarea):not([type=checkbox]){max-width:100%;box-sizing:border-box}
+.proposal-board a{color:#8a1937;text-underline-offset:3px;overflow-wrap:anywhere}
+.proposal-board :is(a,button,input,select,textarea,summary):focus-visible{outline:3px solid #341a23;outline-offset:2px}
+.proposal-tools select,.proposal-board #proposal-flow-content :is(input,select,textarea):not([type=checkbox]){
+    display:block;width:100%;min-height:42px;padding:8px 10px;border:1px solid #cdbfc1;border-radius:8px;color:#292229;background:white;font:inherit}
+.proposal-tools select{display:inline-block;width:auto}
+.proposal-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.proposal-pair label{min-width:0}
+.proposal-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.proposal-kind,#proposal-detail-kind{font-size:.84rem;font-weight:700;color:#8a1937}
+.proposal-board .proposal-summary,#proposal-flow-history li p{white-space:pre-wrap;overflow-wrap:anywhere}
+.proposal-board #proposal-queue-tools{margin-bottom:16px}
+.proposal-board dialog :is(h2,h3,h4,p,dt,dd,small){overflow-wrap:anywhere}
+.proposal-board form small,.proposal-board #proposal-review-file small{display:block;color:#655962;font-weight:400}
+.proposal-board dialog [role=status]:empty,#proposal-partner-status:empty{display:none}
+.proposal-board #proposal-form :is([role=status],#proposal-author){font-size:.9rem}
+.proposal-board #proposal-flow-content form{display:grid;gap:10px;margin-top:12px}
+.proposal-board #proposal-flow-content form>button{justify-self:start}
+.proposal-board .proposal-support{padding:12px 14px;background:#fbf8f5;border:1px solid #e7ddd6;border-radius:10px}
+.proposal-support summary{cursor:pointer;font-weight:600}
+.proposal-board .proposal-support[open] > :not(summary){display:block;margin-top:10px}
+.proposal-board .proposal-support[open] > form{display:grid}
+.proposal-board .proposal-meta{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 18px;margin:14px 0}
+.proposal-meta dt{color:#695d64}
+.proposal-meta dd{margin:0}
+#proposal-flow-support,#proposal-flow-people,#proposal-review-file:not(:empty),#proposal-destination-panel:not(:empty){margin-top:16px}
+.proposal-board #proposal-flow-dialog :is(h3,h4){margin:14px 0 8px}
+.proposal-board #proposal-review-file a{display:inline-block;font-weight:650}
+.proposal-board #proposal-flow-dialog .proposal-secondary{color:#80203b;background:white;border:1px solid #d9bdc4}
+@media(max-width:520px){
+    .proposal-pair{grid-template-columns:1fr}
+    .proposal-board dialog{padding:16px}
+    .proposal-board .proposal-meta{grid-template-columns:1fr;gap:2px}
+    .proposal-meta dd+dt{margin-top:6px}
+}
+
+.proposal-board .detail-toolbar{padding:0;gap:10px}
+.proposal-board .detail-toolbar>div:first-child,.proposal-board .proposal-dialog-title h2{flex:1;min-width:0}
+.proposal-board .proposal-dialog-title .manual-toolbar-trigger{order:1}

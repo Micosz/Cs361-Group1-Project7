@@ -21,8 +21,9 @@
     else window.addEventListener('scroll', () => {
         if (!sentinel.hidden && sentinel.getBoundingClientRect().top < window.innerHeight + 400) loadMore();
     }, {passive:true});
-    const status = text => { $('records-status').textContent = text; };
-    function showDetailDialog() {
+    const status = text => { $('records-status').textContent = text; window.CstuLanguage?.capture($('records-status')); };
+    function showDetailDialog(reading = false) {
+        dialog.classList.toggle('reading-record', reading);
         if (typeof window.closeModal === 'function') window.closeModal();
         if (!dialog.open) dialog.showModal();
     }
@@ -240,7 +241,8 @@
         $('detail-fields').replaceChildren(content);
         $('detail-actions').replaceChildren();
         window.CstuDetailSheet?.record(record, 'activities');
-        showDetailDialog();
+        showDetailDialog(true);
+        window.CstuAdmissions?.activity(content, record.id);
         const feedback = document.createElement('section'); feedback.className = 'feedback-section';
         $('detail-fields').appendChild(feedback);
         window.CstuPublicFeedback?.mount(feedback, record, 'activities');
@@ -253,6 +255,7 @@
             const actions = document.createElement('div'); actions.className = 'detail-record-actions';
             $('detail-fields').appendChild(actions);
             mountDetailActions(fresh,latest,'activities',current,page,actions);
+            window.CstuWork.addProposalLink?.($('detail-actions'), latest);
             mountFormFeedback(latest, 'activities', fresh, $('detail-fields'));
             if (window.CstuWork.roles(fresh, latest.scopeId).some(role => ['staff','coordinator','executive'].includes(role))) {
                 const internal = document.createElement('section'); feedback.append(internal);
@@ -266,7 +269,7 @@
         window.CstuDetailSheet?.resetRecord();
         const current = ++detailRevision, page = revision;
         lastTrigger = trigger; $('detail-title').textContent = 'กำลังโหลด'; $('detail-status').textContent = '';
-        $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); showDetailDialog();
+        $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); showDetailDialog(true);
         try {
             const fresh = await window.CstuAuth.refresh();
             if (!fresh?.user && resourceKind !== 'agreements') { redirectLogin(); return; }
@@ -278,7 +281,9 @@
             if (!record || record.id !== row.id || typeof record !== 'object') throw Error('INVALID_DETAIL');
             $('detail-title').textContent = record.name || record.title || 'รายละเอียด';
             if (resourceKind === 'activities') {
-                $('detail-fields').appendChild(window.createActivityDetailContent({...record,businessRecord:true}));
+                const content = window.createActivityDetailContent({...record,businessRecord:true});
+                $('detail-fields').appendChild(content);
+                if (record.publication === 'public') window.CstuAdmissions?.activity(content, record.id);
                 if (record.outcomeSummary) {
                     const outcome = document.createElement('section'), heading = document.createElement('h3'), text = document.createElement('p');
                     heading.textContent = 'ผลลัพธ์ที่เกิดขึ้น'; text.textContent = record.outcomeSummary;
@@ -288,8 +293,13 @@
             const fields = {summary:'สรุป',fullDescription:'รายละเอียด',outcomeSummary:'ผลลัพธ์ที่เกิดขึ้น',location:'สถานที่',type:'ประเภท',agreementType:'ชนิดข้อตกลง',periodDate:'วันจัดกิจกรรม',startDate:'วันเริ่ม',endDate:'วันสิ้นสุด',status:'สถานะ',renewalDueOn:'วันต่ออายุ',renewalNote:'ข้อมูลต่ออายุ',internalNote:'หมายเหตุภายใน',supportingInfo:'ข้อมูลประกอบ',supportingInfoForParticipant:'ข้อมูลสำหรับผู้เข้าร่วม'};
             for (const [field,label] of Object.entries(fields)) if (typeof record[field] === 'string') {
                 const dt = document.createElement('dt'), dd = document.createElement('dd');
-                dt.textContent = label; dd.textContent = record[field]; $('detail-fields').append(dt,dd);
+                dt.textContent = label; dd.textContent = record[field];
+                if (resourceKind === 'agreements' && publicAgreements(resourceKind, fresh)) window.CstuLanguage?.capture(dt);
+                $('detail-fields').append(dt,dd);
             }
+            }
+            if (resourceKind === 'exchanges' && window.CstuWork.canEdit(fresh, record)) {
+                window.CstuAdmissionsManagement?.mount($('detail-fields'), record.id);
             }
             if (resourceKind === 'partners' && window.PartnerContacts) {
                 const contacts = document.createElement('section'); $('detail-fields').appendChild(contacts);
@@ -301,6 +311,7 @@
             }
             const actions = document.createElement('div'); actions.className = 'detail-record-actions';
             mountDetailActions(fresh, record, resourceKind, current, page, actions);
+            window.CstuWork.addProposalLink?.($('detail-actions'), record);
             if (['agreements','exchanges'].includes(resourceKind) && window.DocumentComponent
                     && !(resourceKind === 'agreements' && !record.scopeId)) {
                 const docs = document.createElement('section'); $('detail-fields').appendChild(docs);
@@ -313,6 +324,7 @@
         } catch (error) {
             if (current !== detailRevision || page !== revision) return;
             $('detail-title').textContent = 'รายละเอียด'; $('detail-status').textContent = errorMessage(error);
+            window.CstuLanguage?.capture($('detail-title')); window.CstuLanguage?.capture($('detail-status'));
             if (error.status === 401) redirectLogin();
         }
     }
@@ -409,12 +421,25 @@
             if (!window.CstuAuth.enabled()) { status('พื้นที่ผู้ใช้ยังไม่เปิดใช้งาน'); return; }
             session = await window.CstuAuth.refresh();
             if (current !== revision) return;
-            if (!session?.user && kind !== 'agreements') { if (params.get('action') === 'create') { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); updateTabs([]); return; } host.hidden = true; updateTabs([]); return; }
+            const publicId = params.get('id');
+            const publicKind = kind === 'partners' ? 'partner' : kind === 'activities' ? 'activity' : null;
             const roles = window.CstuWork.roles(session);
-            updateTabs(roles);
-            if (!roles.some(role => ['coordinator','staff','executive'].includes(role)) && kind !== 'agreements' && !(kind === 'exchanges' && roles.includes('student'))) {
-                if (params.get('action') === 'create') { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; } host.hidden = true; return;
+            const internal = roles.some(role => ['coordinator', 'staff', 'executive'].includes(role));
+            const needsPublicList = !internal && kind !== 'agreements' && !(kind === 'exchanges' && roles.includes('student'));
+            if (needsPublicList) {
+                const create = params.get('action') === 'create';
+                updateTabs(roles);
+                if (create) {
+                    params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return;
+                }
+                host.hidden = true;
+                if (publicId && publicKind) {
+                    params.delete('id');
+                    await window.openModal?.(publicId, publicKind);
+                }
+                return;
             }
+            updateTabs(roles);
             nav();
             if (overview) {
                 if (!roles.some(role => ['staff','executive'].includes(role))) { status('คุณไม่มีสิทธิ์ใช้งานส่วนนี้'); return; }
@@ -436,6 +461,7 @@
             }
             if (!config) { status('ไม่พบชนิดข้อมูล'); return; }
             $('records-title').textContent = config.label;
+            window.CstuLanguage?.capture($('records-title'));
             form.hidden = kind !== 'exchanges'; status('กำลังโหลดข้อมูล');
             if (kind === 'activities' && !['all','academic_activity','event','research'].includes($('filterEvent').value)) {
                 if (params.get('action') === 'create') { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; } host.hidden = true; return;
@@ -464,7 +490,11 @@
                 li.appendChild(button);
                 const summary = document.createElement('small'); summary.textContent = [row.type ? codeLabel('type',row.type) : codeLabel('status',row.status), row.periodDate || row.startDate, row.endDate].filter(Boolean).join(' · '); li.appendChild(summary); list.appendChild(li);
             }
-            $('records-content').appendChild(list); nextCursor = result.page.nextCursor; placeSentinel();
+            $('records-content').appendChild(list);
+            if (kind === 'exchanges' && roles.includes('student') && session.user?.accountType !== 'demo') {
+                window.CstuAdmissions?.personal($('records-content'));
+            }
+            nextCursor = result.page.nextCursor; placeSentinel();
             if (params.get('action') === 'create') {
                 if (!window.CstuWork.canCreate(session,kind)) { params.delete('action'); host.hidden = false; status('คุณไม่มีสิทธิ์เพิ่มข้อมูลนี้'); return; }
                 if (!window.CstuWork.handler(kind,'create')) { status('ฟอร์มเพิ่มรายการนี้ยังไม่พร้อมใช้งาน'); return; }
@@ -486,6 +516,7 @@
         }
     }
     function syncBoard() {
+        window.CstuLanguage?.setPublic(['partners', 'activities', 'agreements'].includes(kind) && !params.has('action'));
         document.body.classList.toggle('feedback-inbox-view',feedbackInbox);
         const eventView = eventKinds.includes(kind);
         $('sectionCollaborator').style.display = kind === 'partners' ? 'block' : 'none';
@@ -557,7 +588,10 @@
         roleFrame.remove(); roleFrame = null;
         dialog.close(); lastTrigger?.focus();
     });
-    window.CstuRecords = {open, openRelated, filter:browseFilter, renderPartnerCards, renderEventCards, attachPartnerManagement, openPublicActivity, closeDetail};
+    function detailReturnTarget(link) {
+        return dialog.open && link && dialog.contains(link) ? lastTrigger : link;
+    }
+    window.CstuRecords = {open, openRelated, filter:browseFilter, renderPartnerCards, renderEventCards, attachPartnerManagement, openPublicActivity, closeDetail, detailReturnTarget};
     $('tabExchange').addEventListener('click', () => open('exchanges'));
     function browseFilter(detail) {
         if (typeof detail?.keyword === 'string') keyword = detail.keyword;
@@ -578,6 +612,7 @@
         const url = new URL(link.href, location.href);
         if (url.origin !== location.origin || !/\/(index|records|work)\.html$/.test(url.pathname)) return;
         if (document.body.classList.contains('work-home')) return;
+        if (url.searchParams.has('admissionActivity')) return;
         if (url.searchParams.get('view') === 'roles') {
             event.preventDefault(); if ($('role-menu')?.open) $('role-menu').close();
             openRoles(); return;
@@ -598,6 +633,8 @@
     window.addEventListener('authchange', () => { ++revision; clear(); host.hidden = true; updateTabs([]); load(); });
     window.addEventListener('pageshow', event => { if (event.persisted) load(); });
     const initial = new URLSearchParams(location.search);
-    if (initial.get('view') === 'roles') { window.dispatchEvent(new Event('cstu:board')); openRoles(); }
+    if (!document.body.classList.contains('work-home') && initial.has('admissionActivity') && /^round-[a-f0-9]{64}$/.test(initial.get('admissionRound') || '')) {
+        open('activities',null,null,true).then(() => window.openModal(initial.get('admissionActivity'),'activity'));
+    } else if (initial.get('view') === 'roles') { window.dispatchEvent(new Event('cstu:board')); openRoles(); }
     else open(initial.get('kind') || (['overview','feedback'].includes(initial.get('view')) ? initial.get('view') : 'partners'),initial.get('action'),initial.get('id'),Boolean(initial.size));
 })();

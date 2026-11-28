@@ -44,7 +44,14 @@
             link.textContent = 'จัดการรายการนี้'; container.appendChild(link);
         } catch { /* Public detail stays readable when the protected API is unavailable. */ }
     }
-    window.CstuWork = {kinds, roles, menu, canCreate, canEdit, attachDetailAction,
+    function addProposalLink(container, record) {
+        if (!record?.proposalId) return;
+        const link = document.createElement('a');
+        link.href = 'work.html?view=proposals&proposal=' + encodeURIComponent(record.proposalId);
+        link.textContent = 'เปิดข้อเสนอต้นทาง';
+        container.appendChild(link);
+    }
+    window.CstuWork = {kinds, roles, menu, canCreate, canEdit, attachDetailAction, addProposalLink,
         register(kind, handlers) {
             if (!kinds[kind] || !handlers || Object.keys(handlers).some(key => !['create','edit','status','documents'].includes(key) || typeof handlers[key] !== 'function')) throw Error('INVALID_FORM_ADAPTER');
             forms.set(kind, Object.freeze({...handlers}));

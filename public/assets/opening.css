@@ -225,3 +225,46 @@
     .hero-animation .card-text p { font-size: .8125rem; }
     .orbit-tile { width: 160px; height: 132px; padding: 18px; border-radius: 22px; }
 }
+
+/* The public page shares its category buttons between these two spaces. */
+.browse-slot { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 58px; }
+.browse-tabs.tabs {
+    flex-wrap: nowrap; width: max-content; max-width: 100%; margin: 0;
+    background: #171b20; border-color: #171b20;
+}
+/* Welcome uses the warm page palette with compact, touch-friendly controls. */
+.browse-tabs:not(.browse-at-board) {
+    background: #fffaf2;
+    border-color: #ddd5cb;
+}
+.browse-tabs:not(.browse-at-board) .tab { color: #59414a; }
+.browse-hero-slot .browse-tabs .tab {
+    min-height: 49px;
+    padding: 8px 14px;
+    font-size: .75rem;
+}
+.browse-tabs:not(.browse-at-board) .tab.active { color: #fff; }
+.browse-tabs:not(.browse-at-board) .tab.active,
+.browse-tabs:not(.browse-at-board) .tab-indicator { background: #a6002a; }
+.browse-tabs:not(.browse-at-board).has-indicator .tab.active { background: transparent; }
+.browse-tabs:not(.browse-at-board) .tab:not(.active):hover { color: #772439; background: #f6e8df; }
+.browse-tabs.browse-at-board { background: #fff; border-color: #ddd5cb; }
+.browse-tabs .tab:focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
+.browse-tabs.browse-floating {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    z-index: 8; max-width: calc(100% - 32px);
+}
+/* A short or still-loading list must leave enough scroll range to reach its header. */
+body:not(.feedback-inbox-view) .board-scene:has(.browse-board-slot) { min-height: 100svh; }
+.feedback-inbox-view .browse-board-slot { display: none; }
+@media (max-width: 767px) {
+    /* A short board and its sticky header share one viewport at the end of the page. */
+    body:not(.feedback-inbox-view) .board-scene:has(.browse-board-slot) {
+        min-height: calc(100svh - var(--browse-header-inset, 0px));
+    }
+    .browse-tabs .tab { flex: 1 1 auto; padding-inline: clamp(6px, 2.5vw, 16px); }
+}
+
+@media (max-width: 767px) {
+    .browse-hero-slot .browse-tabs .tab { min-height: 48px; }
+}

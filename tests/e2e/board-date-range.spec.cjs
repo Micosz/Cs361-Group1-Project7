@@ -4,7 +4,7 @@ const groups = [
   {prefix:'filterCollab', tab:'#tabCollab', grid:'#collaboratorGrid', context:'องค์กร', legend:'วันจัดกิจกรรมที่องค์กรมีส่วนร่วม'},
   {prefix:'filterEvent', tab:'#tabEvent', grid:'#eventGrid', context:'กิจกรรม/MoU', legend:'วันจัดกิจกรรมหรือช่วงวันที่ของข้อตกลง'}
 ];
-const sides = [['Date','ตั้งแต่'], ['DateEnd','ถึง']];
+const sides = [['Date','เริ่มต้น (ตั้งแต่)'], ['DateEnd','สิ้นสุด (ถึง)']];
 const keyword = 'คลองกลาง';
 const day = '2026-11-25';
 const organizations = [
@@ -78,22 +78,22 @@ for (const width of [320,390,1280]) {
     test('groups, visible captions and field names identify both ranges without clipping', async ({page}) => {
       await visit(page);
       const names = new Set();
-      for (const {prefix,tab,context,legend} of groups) {
+      for (const {prefix,tab,legend} of groups) {
         await page.locator(tab).click();
         const group = page.getByRole('group', {name:legend,exact:true});
         await expect(group).toBeVisible();
         for (const [suffix,side] of sides) {
-          const id = prefix + suffix, caption = side + ' (' + context + ')';
-          const field = group.getByRole('textbox', {name:side + ' ' + legend + ' วัน/เดือน/ปี พ.ศ.',exact:true});
-          const buttonName = 'ปฏิทิน ' + caption;
+          const id = prefix + suffix;
+          const field = group.getByRole('textbox', {name:side + ' ' + legend,exact:true});
+          const buttonName = 'เปิดปฏิทิน · ' + side + ' · ' + legend;
           const picker = group.getByRole('button', {name:buttonName,exact:true});
           await expect(field).toHaveAttribute('id', id + 'Display');
           await expect(group.locator('#' + id + 'Label')).toHaveAttribute('for', id + 'Display');
-          await expect(picker).toHaveText(caption);
+          await expect(group.locator('#' + id + 'Label')).toHaveText(side);
           await expect(picker).toHaveAttribute('title',buttonName);
           const source = page.locator('#' + id);
           await source.evaluate(date => { date.showPicker = function() { this.dataset.activated = 'yes'; }; });
-          const icon = picker.locator('.date-picker-icon');
+          const icon = picker;
           if (width < 500) await icon.tap(); else await icon.click();
           await expect(source).toHaveAttribute('data-activated','yes');
           names.add(buttonName);
@@ -101,7 +101,7 @@ for (const width of [320,390,1280]) {
         const fits = await group.evaluate(group => {
           const bounds = group.getBoundingClientRect();
           if (bounds.left < -1 || bounds.right > document.documentElement.clientWidth + 1) return false;
-          return [...group.querySelectorAll('legend,.date-picker-btn')].every(el => {
+          return [...group.querySelectorAll('legend,.date-range-field > label')].every(el => {
             const box = el.getBoundingClientRect(), range = document.createRange();
             range.selectNodeContents(el.lastChild);
             return [...range.getClientRects()].every(r => r.left >= box.left-1 && r.right <= box.right+1 && r.top >= box.top-1 && r.bottom <= box.bottom+1);
@@ -113,6 +113,40 @@ for (const width of [320,390,1280]) {
         expect(Math.abs(first.y - last.y)).toBeLessThanOrEqual(1);
       }
       expect(names.size).toBe(4);
+    });
+
+    test('inline labels and both bounds survive a public language round trip', async ({page}) => {
+      await visit(page);
+      for (const {prefix,tab,legend} of groups) {
+        await page.locator(tab).click();
+        const fields = ['Date','DateEnd'].map(s => page.locator('#' + prefix + s + 'Display'));
+        for (const [start,end] of [[false,false],[true,false],[false,true],[true,true]]) {
+          await dateValue(page,prefix+'Date',start ? '๒๕๑๑๒๕๖๙' : '');
+          await dateValue(page,prefix+'DateEnd',end ? '๒๕๑๑๒๕๖๙' : '');
+          for (const lang of ['th','en','th']) {
+            await page.locator('.navbar button[data-language='+lang+']').click();
+            const heading = lang==='th' ? legend : prefix==='filterCollab'
+              ? 'Dates of activities involving the organization' : 'Activity dates or agreement period';
+            const group = page.getByRole('group',{name:heading,exact:true});
+            await expect(group).toBeVisible();
+            const labels = lang==='th' ? ['เริ่มต้น (ตั้งแต่)','สิ้นสุด (ถึง)'] : ['Start (from)','End (to)'];
+            for (const [index,field] of fields.entries()) {
+              const name = labels[index]+' '+heading;
+              await expect(field).toHaveAccessibleName(name);
+              const action = lang==='th' ? 'เปิดปฏิทิน' : 'Open calendar';
+              const buttonName = [action,labels[index],heading].join(' · ');
+              await expect(group.getByRole('button',{name:buttonName,exact:true})).toHaveAttribute('title',buttonName);
+              await expect(field).toHaveValue([start,end][index] ? '25/11/2569' : '');
+            }
+            const hint = page.locator('#'+prefix+'BuddhistHint');
+            if (lang==='en') await expect(hint).toBeVisible(); else await expect(hint).toBeHidden();
+            const [a,b] = await Promise.all(fields.map(field=>field.boundingBox()));
+            expect(Math.abs(a.y-b.y)).toBeLessThanOrEqual(1);
+            expect(b.x).toBeGreaterThanOrEqual(a.x+a.width);
+            expect(b.x+b.width).toBeLessThanOrEqual(width+1);
+          }
+        }
+      }
     });
 
     for (const mode of ['no-op','missing','throws']) {
