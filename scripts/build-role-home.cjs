@@ -26,6 +26,6 @@ page = page.replace('</title>', tag => `${tag}
     <style>@media (prefers-reduced-motion: no-preference) { @supports selector(:active-view-transition-type(staff-shortcut)) { @view-transition { navigation: auto; types: staff-shortcut; } } }</style>
     <script>
 ${shortcuts}    </script>`)
- .replace('</head>', '<link rel="stylesheet" href="assets/staff-landing.css?v=dialog-focus-edge">\n</head>')
+ .replace('</head>', '<link rel="stylesheet" href="assets/staff-landing.css?v=dialog-focus-grey">\n</head>')
  .replace('assets/role-home.js?v=proposal-board-1','assets/role-home.js?v=staff-desk-3');
 fs.writeFileSync('public/work.html', page);

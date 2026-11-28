@@ -428,6 +428,7 @@ test.describe('workspace shortcut motion', () => {
     await expect(dialog).toHaveCSS('outline-style','solid');
     await expect(dialog).toHaveCSS('outline-width','2px');
     await expect(dialog).toHaveCSS('outline-offset','-1px');
+    await expect(dialog).toHaveCSS('outline-color','rgb(128, 128, 128)');
     await page.keyboard.press('Tab');
     await expect(dialog.locator(':focus-visible')).toHaveCount(1);
     await page.keyboard.press('Escape');
