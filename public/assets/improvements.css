@@ -72,6 +72,27 @@
     background: rgb(32 32 32 / 82%); color: #fff; font-size: .75rem; font-weight: 600; line-height: 1.5;
 }
 
+/* The public activity board shares its card markup with the staff workspace. */
+body:not(.work-home) #sectionEvent :is(.browse-card-open, .card-image-placeholder) {
+    font-size: 1.375rem;
+    line-height: 1.5;
+}
+body:not(.work-home) #sectionEvent :is(.event-time-tab, .card-desc) {
+    font-size: 1.125rem;
+}
+/* Let the longer current-period label wrap first on narrow screens. */
+body:not(.work-home) #eventTimePast {
+    flex-shrink: 0;
+    max-width: 50%;
+}
+body:not(.work-home) #sectionEvent :is(.event-time-hint, .author-name, .event-date, .card-ended-badge) {
+    font-size: 1rem;
+}
+body:not(.work-home) #sectionEvent .event-date {
+    max-width: 100%;
+    white-space: normal;
+}
+
 .undated-toggle { display: inline-flex; align-items: center; gap: 6px; flex-basis: 100%; color: var(--text-gray); font-size: .8125rem; cursor: pointer; }
 .undated-toggle[hidden] { display: none; }
 .undated-toggle input { width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0; accent-color: var(--tu-red); }
