@@ -168,3 +168,15 @@ body { background: var(--portal-paper); }
     .date-filter-row > .date-clear-btn { grid-column: 2; justify-self: end; }
     .date-range-error { grid-column: 1 / -1; }
 }
+
+.board-date-range { min-inline-size: 0; max-width: 100%; margin: 0; padding: 0; border: 0; }
+@media (min-width: 1024px) {
+    .filter-wrapper.has-filter-controls { align-items: flex-start; }
+    /* Align the category controls with the date inputs below their labels. */
+    .has-filter-controls > :is(.filter-caption, .modern-select, .clear-filter-btn) {
+        margin-block-start: calc(.8125rem * 1.7 + 4px);
+    }
+}
+@media (max-width: 767px) {
+    .board-date-range { grid-column: 1 / -1; }
+}

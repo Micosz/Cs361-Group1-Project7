@@ -3,7 +3,7 @@ const fs = require('node:fs');
 let page = fs.readFileSync('public/index.html', 'utf8');
 page = page.replace('<title data-ui>กระดานข้อมูล | CSTUHub</title>', '<title>หน้าทำงาน | CSTUHub</title>')
  .replace(/    <script src="assets\/public-(english|language)\.js(?:\?[^"]*)?" defer><\/script>\n/g, '')
- .replace('    <link rel="stylesheet" href="assets/public-language.css">\n', '')
+ .replace(/    <link rel="stylesheet" href="assets\/public-language\.css(?:\?[^"]*)?">\n/, '')
  .replaceAll(' data-ui', '')
  .replace('<body>', '<body class="work-home work-checking">')
  .replace(/    <div class="hero-scroll">[\s\S]*?(?=    <div class="board-scene">)/, '')

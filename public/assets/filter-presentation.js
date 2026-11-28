@@ -47,25 +47,22 @@
                 text.autocomplete = 'off';
                 text.name = `${id}${suffix}Buddhist`;
                 text.spellcheck = false;
-                if (hint.isConnected) text.setAttribute('aria-describedby', hint.id);
-                text.setAttribute('aria-label', `${date.getAttribute('aria-label')} วัน/เดือน/ปี พ.ศ.`);
+                window.CstuLanguage?.capture(text);
+                const legend = wrapper.querySelector('legend');
+                text.setAttribute('aria-labelledby', label.id + ' ' + legend.id);
                 const picker = document.createElement('button');
                 picker.type = 'button';
                 picker.className = 'date-picker-btn';
-                picker.setAttribute('aria-label', 'เลือกวันที่จากปฏิทิน');
-                picker.title = 'เลือกวันที่จากปฏิทิน';
                 picker.innerHTML = '<i class="far fa-calendar-alt" aria-hidden="true"></i>';
-                const side = suffix === 'Date' ? 'start' : 'end';
-                const group = id === 'filterCollab' ? 'Partner activity' : 'Activity';
-                const thaiName = 'วันที่' + (side === 'start' ? 'เริ่มต้น' : 'สิ้นสุด') + (id === 'filterCollab' ? 'ความร่วมมือ' : 'กิจกรรม');
-                text.setAttribute('aria-label', thaiName + ' วัน/เดือน/ปี พ.ศ.');
-                window.CstuLanguage?.attr(text, 'aria-label', text.getAttribute('aria-label'), group + ' ' + side + ' date, day/month/Buddhist Era year');
-                window.CstuLanguage?.capture(text);
-                const pickerName = 'เลือกวันที่จากปฏิทิน ' + thaiName;
-                for (const attribute of ['title', 'aria-label']) {
-                    picker.setAttribute(attribute, pickerName);
-                    window.CstuLanguage?.attr(picker, attribute, pickerName, 'Choose ' + group.toLowerCase() + ' ' + side + ' date');
-                }
+                const updateLanguage = () => {
+                    if (hint.isConnected && document.documentElement.lang === 'en') text.setAttribute('aria-describedby', hint.id);
+                    else text.removeAttribute('aria-describedby');
+                    const action = window.CstuLanguage?.translate('เปิดปฏิทิน', 'Open calendar') || 'เปิดปฏิทิน';
+                    picker.title = action + ' · ' + label.textContent + ' · ' + legend.textContent;
+                    picker.setAttribute('aria-label', picker.title);
+                };
+                updateLanguage();
+                listen(window, 'cstu:language', updateLanguage);
                 date.before(shell);
                 shell.append(text, picker, date);
                 date.classList.add('native-date-source');
