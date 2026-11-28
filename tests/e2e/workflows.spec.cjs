@@ -325,11 +325,14 @@ test('category buttons keep focus and selection across the desktop scroll scene'
 
 for (const role of ['coordinator','staff','executive']) test(`${role} gets internal navigation and create actions`, async ({page}) => {
   await fixture(page, role); await page.goto('/index.html'); await expect(page).toHaveURL(/work.html/);
+  await expect(page.locator('.work-dashboard')).toBeVisible();
+  await expect(page.locator('.staff-landing')).toHaveCount(role === 'coordinator' ? 0 : 1);
   await expect(page.locator('#work-nav')).toContainText('คู่ความร่วมมือ');
   await expect(page.locator('#work-actions')).toContainText('อ่านผลตอบรับ');
   await page.locator('#work-nav a[href*="view=feedback"]').click();
   await expect(page).toHaveURL(/view=feedback/);
   await expect(page.locator('#work-nav a[aria-current="page"]')).toContainText('Feedback');
+  await expect(page.locator('.staff-landing')).toHaveCount(0);
 });
 for(const role of [null,'student']) test(`${role || 'anonymous'} direct work URL is redirected`, async ({page}) => {
   await fixture(page, role); await page.goto('/work.html'); await expect(page).toHaveURL(role ? /index.html/ : /login.html/);

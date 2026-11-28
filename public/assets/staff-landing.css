@@ -1,0 +1,257 @@
+/* Only the authenticated Staff / Executive landing gets this presentation. */
+.staff-landing {
+    --desk-paper: #fffdf8;
+    --desk-line: #d9d3c9;
+    --desk-muted: #675f59;
+}
+
+.staff-landing .work-welcome {
+    margin-inline: 280px 30px;
+    padding-block: 16px 0;
+}
+
+.staff-landing .work-welcome-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 12px;
+    align-items: center;
+    border-top: 2px solid var(--work-ink);
+    margin-bottom: 18px;
+    padding-top: 16px;
+}
+
+/* Keep the role beside the section label, leaving the whole next line for Thai names. */
+.staff-landing .work-welcome-heading > div { display: contents; }
+.staff-landing .work-welcome-heading :is(h1, #work-description) { grid-column: 1 / -1; }
+
+.staff-landing .work-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 6px;
+    color: var(--desk-muted);
+    font-size: 12px;
+    letter-spacing: normal;
+}
+
+.staff-landing .work-eyebrow::before {
+    content: "";
+    width: 20px;
+    height: 3px;
+    flex: none;
+    background: var(--tu-red);
+}
+
+.staff-landing .work-welcome h1 {
+    margin: 0 0 3px;
+    font-size: clamp(26px, 2.8vw, 40px);
+    letter-spacing: normal;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.staff-landing #work-description {
+    color: var(--desk-muted);
+    line-height: 1.65;
+}
+
+.staff-landing .work-role {
+    grid-area: 1 / 2;
+    max-width: min(42vw, 230px);
+    padding: 4px 12px;
+    border: 1px solid var(--desk-line);
+    background: var(--desk-paper);
+    color: var(--work-ink);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.staff-landing .work-sidebar {
+    background: var(--desk-paper);
+    border-color: var(--desk-line);
+    border-radius: 14px;
+}
+
+.staff-landing .work-sidebar > .work-eyebrow {
+    margin: 4px 10px;
+    letter-spacing: .12em;
+    font-size: 10px;
+}
+
+.staff-landing .work-sidebar nav a[aria-current="page"] {
+    color: white;
+    background: var(--work-ink);
+    box-shadow: inset 4px 0 var(--tu-red);
+}
+
+.staff-landing .work-public-link {
+    font-family: "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Thai", sans-serif;
+    font-variant-emoji: text;
+}
+
+.staff-landing .work-sidebar-note {
+    color: var(--desk-muted);
+}
+
+.staff-landing .work-actions {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr 1fr;
+    gap: 8px;
+}
+
+.staff-landing .work-actions a {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-content: center;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 2px;
+    padding: 15px 16px;
+    border: 1px solid var(--desk-line);
+    border-radius: var(--radius-card);
+    background: var(--desk-paper);
+    color: var(--work-ink);
+    text-decoration: none;
+    transform: none;
+    transition: none;
+    box-shadow: none;
+}
+
+.staff-landing .work-actions a::after {
+    content: "";
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    width: 7px;
+    height: 7px;
+    margin-right: 2px;
+    border: solid currentColor;
+    border-width: 1.5px 1.5px 0 0;
+    transform: rotate(45deg);
+}
+
+.staff-landing .work-actions i {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    margin: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-control);
+    background: #f4ede5;
+    color: var(--tu-red-hover);
+}
+
+.staff-landing .work-actions strong,
+.staff-landing .work-actions small {
+    grid-column: 2;
+    overflow-wrap: anywhere;
+}
+
+.staff-landing .work-actions strong {
+    line-height: 1.5;
+}
+
+.staff-landing .work-actions small {
+    line-height: 1.6;
+    color: var(--desk-muted);
+    font-size: 13px;
+}
+
+.staff-landing .work-actions #proposal-shortcut {
+    grid-row: span 2;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-content: end;
+    gap: 4px;
+    padding: 20px;
+    border-color: var(--work-ink);
+    background: var(--work-ink);
+    color: white;
+}
+
+.staff-landing #proposal-shortcut i {
+    grid-row: auto;
+    margin-bottom: 12px;
+    width: 36px;
+    height: 36px;
+    color: white;
+    background: var(--tu-red);
+}
+
+.staff-landing #proposal-shortcut strong,
+.staff-landing #proposal-shortcut small {
+    grid-column: 1 / -1;
+}
+
+.staff-landing #proposal-shortcut strong {
+    font-size: clamp(18px, 1.6vw, 24px);
+}
+
+.staff-landing #proposal-shortcut small {
+    color: #e2d8db;
+}
+
+.staff-landing #proposal-shortcut::after {
+    position: absolute;
+    right: 19px;
+    top: 22px;
+    grid-area: auto;
+}
+
+.staff-landing .work-actions a[href*="view=feedback"] {
+    grid-column: 1 / -1;
+    grid-template-columns: auto 1fr auto;
+    min-height: 46px;
+    padding-block: 9px;
+    background: #eee9e1;
+}
+
+.staff-landing .work-actions a[href*="view=feedback"] strong {
+    grid-column: 1;
+}
+
+.staff-landing .work-actions a:hover {
+    border-color: var(--work-ink);
+}
+
+.staff-landing .work-actions a:is(:hover, :focus-visible) strong {
+    text-decoration: underline;
+    text-underline-offset: .2em;
+}
+
+.staff-landing :is(.work-sidebar, .work-actions) a:focus-visible {
+    outline: 3px solid var(--tu-red);
+    outline-offset: 2px;
+    z-index: 1;
+}
+
+@media (max-width: 1100px) {
+    .staff-landing .work-welcome { margin-inline-start: 250px; }
+    .staff-landing .work-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .staff-landing .work-actions #proposal-shortcut {
+        grid-area: auto / 1 / auto / -1;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-content: center;
+        column-gap: 12px;
+        padding: 14px 16px;
+    }
+    .staff-landing #proposal-shortcut i { grid-row: 1 / span 2; margin: 0; }
+    .staff-landing #proposal-shortcut :is(strong, small) { grid-column: 2; }
+    .staff-landing #proposal-shortcut::after { position: static; grid-area: 1 / 3 / span 2; }
+}
+
+@media (max-width: 760px) {
+    .staff-landing .work-sidebar > .work-eyebrow { display: none; }
+    .staff-landing .work-welcome { margin-inline: 16px; padding-top: 4px; }
+    .staff-landing .work-welcome-heading { padding-top: 10px; }
+    .staff-landing .work-sidebar { padding: 10px; }
+    .staff-landing .work-sidebar nav { padding: 5px; }
+    .staff-landing .work-public-link { padding: 10px; min-height: 44px; }
+}
+
+@media (max-width: 580px) {
+    .staff-landing .work-actions { grid-template-columns: minmax(0, 1fr); }
+    .staff-landing .work-actions a { padding: 10px 14px; }
+    .staff-landing .work-actions a[href*="view=feedback"] { grid-template-columns: minmax(0, 1fr) auto; }
+    .staff-landing .work-actions a[href*="view=feedback"] small { grid-column: 1; }
+    .staff-landing .work-actions a[href*="view=feedback"]::after { grid-column: 2; }
+}

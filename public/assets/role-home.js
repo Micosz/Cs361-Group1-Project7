@@ -47,7 +47,8 @@
             const selected = new URLSearchParams(location.search);
             const active = selected.get('view') || selected.get('kind') || 'home';
             const entries = [...destinations];
-            if (roles.some(r => ['staff','executive'].includes(r))) entries.push(['ภาพรวมความร่วมมือ','work.html?view=overview#board-section','overview']);
+            const staffOrExecutive = roles.some(r => ['staff','executive'].includes(r));
+            if (staffOrExecutive) entries.push(['ภาพรวมความร่วมมือ','work.html?view=overview#board-section','overview']);
             if (auth.managedScopes(session).length) entries.push(['จัดการสิทธิ์ผู้ใช้','work.html?view=roles#board-section','roles']);
             for (const [title,href,key] of entries) {
                 const a = link(title,href); if (active === key) a.setAttribute('aria-current','page'); nav.append(a);
@@ -69,7 +70,9 @@
                 const icon = document.createElement('i'); icon.className = `fas fa-${icons[kind]}`; icon.setAttribute('aria-hidden','true'); a.prepend(icon); actions.append(a);
             }
             actions.append(link('อ่านผลตอบรับ','work.html?view=feedback#board-section','รวบรวม Comment และ Form Feedback'));
-            document.body.classList.toggle('work-dashboard', !selected.has('kind') && !selected.has('view'));
+            const landing = !selected.has('kind') && !selected.has('view');
+            document.body.classList.toggle('work-dashboard', landing);
+            document.body.classList.toggle('staff-landing', landing && staffOrExecutive);
             document.body.classList.toggle('work-proposals', active === 'proposals');
             document.body.classList.remove('work-checking');
             if (active === 'proposals' || active === 'home') window.CstuProposals?.mount(session, active);
