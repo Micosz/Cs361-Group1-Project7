@@ -268,14 +268,23 @@ class PublicCatalogTests(unittest.TestCase):
             dict(id='v3-a1', type='event', entityType='activity', title='Modern Activity',
                  summary='V3 act summary', fullDescription='V3 act detail',
                  partnerId='v3-p1', publication='public', scopeId='cs-demo', version=1),
-            # Legacy records (NO entityType)
-            dict(id='leg-p1', type='company', name='Legacy Partner',
+            # Legacy records (NO entityType), including two similarly named partners
+            dict(id='leg-p1', type='company', name='ศูนย์สายน้ำ',
                  summary='Legacy summary', full_description='Legacy full detail',
                  location='Bangkok', access_level='public'),
+            dict(id='leg-p2', type='company', name='ศูนย์สายน้ำเหนือ',
+                 summary='Similar partner summary', full_description='North detail',
+                 location='Chiang Mai', access_level='public'),
+            # Legacy activity with primary host repeated in raw co_hosts and NO coHostPartnerIds
             dict(id='leg-a1', type='event', title='Legacy Activity',
                  summary='Legacy act summary', full_description='Legacy act full detail',
-                 partnerId='leg-p1', co_hosts=['Legacy Partner'],
-                 period_date='2025-10-01', visibility='public'),
+                 partnerId='leg-p1', co_hosts=['ศูนย์สายน้ำ'],
+                 period_date='2026-07-03', visibility='public'),
+            # Legacy activity WITH verified coHostPartnerIds
+            dict(id='leg-a2', type='event', title='Legacy Joint Activity',
+                 summary='Joint summary', full_description='Joint full detail',
+                 partnerId='leg-p1', coHostPartnerIds=['leg-p2'],
+                 period_date='2026-07-10', visibility='public'),
             # Non-public / retired legacy rows must stay hidden
             dict(id='leg-hidden', type='company', name='Hidden Legacy', access_level='internal'),
             dict(id='leg-retired', type='company', name='Retired Legacy',
@@ -311,9 +320,16 @@ class PublicCatalogTests(unittest.TestCase):
                                        requestContext={'http': {'method': 'GET'}}))
             self.assertEqual(200, list_res['statusCode'])
             cards = json.loads(list_res['body'])
-            self.assertEqual({'v3-p1', 'v3-a1', 'leg-p1', 'leg-a1'}, {r['id'] for r in cards})
+            by_id = {r['id']: r for r in cards}
+            self.assertEqual({'v3-p1', 'v3-a1', 'leg-p1', 'leg-p2', 'leg-a1', 'leg-a2'}, set(by_id))
             self.assertIn('attribute_not_exists(#kind)', scan_queries[0]['FilterExpression'])
             self.assertTrue(all('full_description' not in r for r in cards))
+            # Unverified raw co_hosts without coHostPartnerIds must NOT be copied onto legacy activity
+            self.assertEqual([], by_id['leg-a1']['co_hosts'])
+            self.assertNotIn('coHostPartnerIds', by_id['leg-a1'])
+            # Verified coHostPartnerIds resolve public co-host names and IDs
+            self.assertEqual(['ศูนย์สายน้ำเหนือ'], by_id['leg-a2']['co_hosts'])
+            self.assertEqual(['leg-p2'], by_id['leg-a2']['coHostPartnerIds'])
 
             leg_p_res = app.handle(dict(version='2.0', rawPath='/api/public/partners/leg-p1',
                                         requestContext={'http': {'method': 'GET'}}))
@@ -325,8 +341,16 @@ class PublicCatalogTests(unittest.TestCase):
             self.assertEqual(200, leg_a_res['statusCode'])
             leg_a_data = json.loads(leg_a_res['body'])['data']
             self.assertEqual('Legacy act full detail', leg_a_data['full_description'])
-            self.assertEqual('Legacy Partner', leg_a_data['partnerName'])
-            self.assertEqual(['Legacy Partner'], leg_a_data['co_hosts'])
+            self.assertEqual('ศูนย์สายน้ำ', leg_a_data['partnerName'])
+            self.assertEqual([], leg_a_data['co_hosts'])
+            self.assertNotIn('coHostPartnerIds', leg_a_data)
+
+            leg_a2_res = app.handle(dict(version='2.0', rawPath='/api/public/activities/leg-a2',
+                                         requestContext={'http': {'method': 'GET'}}))
+            self.assertEqual(200, leg_a2_res['statusCode'])
+            leg_a2_data = json.loads(leg_a2_res['body'])['data']
+            self.assertEqual(['ศูนย์สายน้ำเหนือ'], leg_a2_data['co_hosts'])
+            self.assertEqual(['leg-p2'], leg_a2_data['coHostPartnerIds'])
 
         joined_logs = '\n'.join(captured.output)
         self.assertIn('"metric": "public_catalog_read"', joined_logs)

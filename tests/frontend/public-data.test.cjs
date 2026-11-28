@@ -85,6 +85,49 @@ test('Welcome loads a single unified card-list API and fetches full detail only 
     await app.detail('partner', 'p1');
     assert.equal(urls.filter(u => u === '/api/public/partners/p1').length, 2);
 });
+test('date filter matches partners by verified host/co-host IDs and never leaks similarly named partners', async () => {
+    const controls = new Map([
+        ['filterCollab', { value: 'all' }],
+        ['filterCollabDate', { value: '2026-07-03' }],
+        ['filterCollabDateEnd', { value: '2026-07-03' }]
+    ]);
+    const context = vm.createContext({
+        AbortController, setTimeout, clearTimeout, Intl,
+        console: { warn() {}, error() {} },
+        window: { CSTU_AUTH_CONFIG: { enabled: true }, addEventListener() {} },
+        document: {
+            addEventListener() {},
+            getElementById: id => controls.get(id),
+            createElement: () => ({ style: {}, setAttribute() {} }),
+            body: { prepend() {} }
+        },
+        fetch: async url => {
+            assert.equal(url, '/api/public/records?view=cards');
+            return response([
+                { id: 'river', name: 'ศูนย์สายน้ำ', type: 'research_institute', visibility: 'public' },
+                { id: 'river-north', name: 'ศูนย์สายน้ำเหนือ', type: 'research_institute', visibility: 'public' },
+                // Legacy-style payload with primary host name repeated in co_hosts and no coHostPartnerIds.
+                { id: 'act-july3', title: 'งานวันที่ 3 ก.ค.', partnerId: 'river', partnerName: 'ศูนย์สายน้ำ',
+                  co_hosts: ['ศูนย์สายน้ำ'], period_date: '2026-07-03', visibility: 'public' },
+                // Activity with verified coHostPartnerIds links both partners on its own date.
+                { id: 'act-july10', title: 'งานร่วมวันที่ 10 ก.ค.', partnerId: 'river', partnerName: 'ศูนย์สายน้ำ',
+                  coHostPartnerIds: ['river-north'], co_hosts: ['ศูนย์สายน้ำเหนือ'], period_date: '2026-07-10', visibility: 'public' }
+            ]);
+        }
+    });
+    vm.runInContext(source, context);
+    const partners = await context.fetchPartnersData();
+
+    // July 3: only 'ศูนย์สายน้ำ' owns the activity; 'ศูนย์สายน้ำเหนือ' must NOT match via name substring.
+    const july3 = context.filterBrowseRecords(partners, 'name', 'filterCollab', '');
+    assert.deepEqual(july3.map(p => p.id), ['river']);
+
+    // July 10: verified coHostPartnerIds includes both host and co-host.
+    controls.get('filterCollabDate').value = '2026-07-10';
+    controls.get('filterCollabDateEnd').value = '2026-07-10';
+    const july10 = context.filterBrowseRecords(partners, 'name', 'filterCollab', '');
+    assert.deepEqual(july10.map(p => p.id), ['river', 'river-north']);
+});
 test('CstuAuth.refresh deduplicates concurrent startup calls without caching stale sessions', async () => {
     let calls = 0;
     let releaseFirst;

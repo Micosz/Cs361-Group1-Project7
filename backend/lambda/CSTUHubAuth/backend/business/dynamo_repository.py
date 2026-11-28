@@ -252,7 +252,7 @@ class DynamoBusinessRepository:
             projected = public_projection(kind, row, partners, card=card_only)
             if projected is not None:
                 projected['visibility'] = 'public'
-                if kind == 'activity' and (row.get('legacySource') or ('entityType' not in row and 'coHostPartnerIds' not in row)):
+                if kind == 'activity' and row.get('legacySource'):
                     labels = row.get('co_hosts', [])
                     if isinstance(labels, list) and all(isinstance(label, str) for label in labels):
                         projected['co_hosts'] = list(labels)
@@ -307,7 +307,7 @@ class DynamoBusinessRepository:
         if projected is None:
             raise AuthError('NOT_FOUND', 404)
         projected['visibility'] = 'public'
-        if kind == 'activity' and (row.get('legacySource') or ('entityType' not in row and 'coHostPartnerIds' not in row)):
+        if kind == 'activity' and row.get('legacySource'):
             labels = row.get('co_hosts', [])
             if isinstance(labels, list) and all(isinstance(label, str) for label in labels):
                 projected['co_hosts'] = list(labels)

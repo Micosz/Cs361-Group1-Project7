@@ -77,19 +77,11 @@ function fetchPartnersData() {
 
         const events = publicRecords.filter(item => item.partnerId);
 
-        // Reconstruct partner relationships from API records.
+        // Reconstruct partner relationships strictly from verified host/co-host IDs.
         partners.forEach(partner => {
             partner.collaborations = events.filter(event => {
                 if (event.partnerId === partner.id) return true;
                 if (Array.isArray(event.coHostPartnerIds) && event.coHostPartnerIds.includes(partner.id)) return true;
-
-                if (Array.isArray(event.co_hosts)) {
-                    return event.co_hosts.some(hostName =>
-                        typeof hostName === 'string' &&
-                        partner.name.includes(hostName)
-                    );
-                }
-
                 return false;
             });
         });
