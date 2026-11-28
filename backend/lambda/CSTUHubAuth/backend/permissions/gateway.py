@@ -525,14 +525,32 @@ class PermissionGateway:
                       and in_period('agreement', row) and related_to_selected_stakeholder('agreement', row)
                       and (not selected_agreement or row['id'] == selected_agreement)]
         selected_agreement_ids = {row['id'] for row in agreements}
+        agreement_scope = {row['id']: row.get('scopeId') for row in agreements}
+
+        def linked_agreements(kind, row):
+            """Agreement IDs a work row names, kept only when the agreement is visible and in the same scope."""
+            raw = row.get('agreementIds') if kind == 'activity' else [row.get('agreementId')]
+            raw = raw if isinstance(raw, list) else []
+            return [aid for aid in dict.fromkeys(raw)
+                    if isinstance(aid, str) and agreement_scope.get(aid) == row.get('scopeId')]
+
         activities = [row for row in authorized('activity')
                       if ('activityType' not in query or row.get('type') == query['activityType'])
                       and in_period('activity', row) and related_to_selected_stakeholder('activity', row)
-                      and (not selected_agreement or any(aid in selected_agreement_ids for aid in (row.get('agreementIds') or [])))]
+                      and (not selected_agreement or linked_agreements('activity', row))]
         exchanges = [row for row in authorized('exchange')
                      if ('status' not in query or row.get('status') == query['status'])
                      and in_period('exchange', row) and related_to_selected_stakeholder('exchange', row)
-                     and (not selected_agreement or row.get('agreementId') in selected_agreement_ids)]
+                     and (not selected_agreement or linked_agreements('exchange', row))]
+
+        from .. import overview_admissions
+        admissions_ready = overview_admissions.available(self.repository)
+        admission_buckets = overview_admissions.summarize(self.repository, exchanges) if admissions_ready else {}
+
+        def student_counts(exchange_ids):
+            if not admissions_ready:
+                return None, None
+            return overview_admissions.totals(admission_buckets, exchange_ids)
 
         def counts(rows, field):
             result = {}
@@ -673,6 +691,22 @@ class PermissionGateway:
             if isinstance(src, str) and src:
                 form_by_source[src] = form_by_source.get(src, 0) + batch['responseCount']
 
+        # #265: one row per agreement answering "how many activities, how many
+        # confirmed Exchange students, and which Feedback" under the same filters.
+        agreement_summary = []
+        for agr in agreement_stats.values():
+            agr_activities = [row for row in activities if agr['id'] in linked_agreements('activity', row)]
+            agr_exchanges = [row for row in exchanges if agr['id'] in linked_agreements('exchange', row)]
+            confirmed, awaiting = student_counts([row['id'] for row in agr_exchanges])
+            agreement_summary.append({
+                **agr,
+                'activityCount': len(agr_activities),
+                'exchangeCount': len(agr_exchanges),
+                'confirmedStudents': confirmed,
+                'awaitingConfirmation': awaiting,
+            })
+        total_confirmed, total_awaiting = student_counts([row['id'] for row in exchanges])
+
         result = {
             'role': role,
             'filters': {key: query[key] for key in sorted(query)},
@@ -683,7 +717,10 @@ class PermissionGateway:
                            'outcomesRecorded': sum(isinstance(row.get('outcomeSummary'), str) and bool(row['outcomeSummary'].strip()) for row in activities)},
             'agreements': {'count': len(agreements), 'statuses': counts(agreements, 'status')},
             'exchanges': {'count': len(exchanges), 'statuses': counts(exchanges, 'status'),
-                          'outcomesRecorded': sum(isinstance(row.get('outcomeSummary'), str) and bool(row['outcomeSummary'].strip()) for row in exchanges)},
+                          'outcomesRecorded': sum(isinstance(row.get('outcomeSummary'), str) and bool(row['outcomeSummary'].strip()) for row in exchanges),
+                          'confirmedStudents': total_confirmed,
+                          'awaitingConfirmation': total_awaiting},
+            'agreementSummary': agreement_summary,
             'outcomes': {'count': len(outcomes), 'records': outcomes[:5]},
             'feedback': {'count': len(feedback), 'bySource': counts(feedback, 'sourceType'),
                          'withImprovement': sum(bool(row.get('improvement')) for row in feedback),

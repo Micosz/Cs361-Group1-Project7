@@ -682,3 +682,16 @@
 .overview-dashboard .overview-form-feedback button.overview-read-source:hover { background: #fff0f3; }
 .overview-source-detail { margin-top: .75rem; padding-left: .9rem; border-left: 2px solid #eadde2; }
 .overview-source-detail[hidden] { display: none !important; }
+
+/* #265 per-agreement report */
+.overview-agreement-report { margin-top: 1rem; }
+.overview-agreement-table { width: 100%; border-collapse: collapse; margin-top: .75rem; color: #131827; font-variant-numeric: tabular-nums; }
+.overview-agreement-table th, .overview-agreement-table td { padding: 10px 8px; border-bottom: 1px solid #f4dfe4; text-align: center; }
+.overview-agreement-table thead th { color: #6c6b80; font-weight: 600; font-size: .9rem; }
+.overview-agreement-table tbody th { text-align: left; font-weight: 650; overflow-wrap: anywhere; }
+.overview-agreement-table thead th:first-child { text-align: left; }
+.overview-agreement-table [data-agreement-status="unspecified"] th { color: #6b5e63; }
+@container (max-width: 700px) {
+    .overview-agreement-report { overflow-x: auto; }
+    .overview-agreement-table th, .overview-agreement-table td { padding: 8px 4px; font-size: .85rem; }
+}

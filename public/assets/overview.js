@@ -53,15 +53,46 @@
         label.appendChild(input); return {label, input};
     };
     const countRows = values => Object.entries(values || {}).sort(([a], [b]) => a.localeCompare(b));
-    function csvCell(value) { return '"' + String(value ?? '').replaceAll('"', '""') + '"'; }
+    const filterLabels = {scopeId: 'ขอบเขต', stakeholderType: 'ประเภท Stakeholder', activityType: 'ประเภทกิจกรรม',
+        status: 'สถานะ', startDate: 'ตั้งแต่วันที่', endDate: 'ถึงวันที่', agreementId: 'ข้อตกลง'};
+    // null means the server could not read admission results; never show it as zero.
+    const studentCount = value => (Number.isInteger(value) ? value : '—');
+    function csvCell(value) {
+        const textValue = String(value ?? '');
+        // Spreadsheet formula injection guard for user-entered titles.
+        return '"' + (/^[=+\-@\t\r]/.test(textValue) ? "'" + textValue : textValue).replaceAll('"', '""') + '"';
+    }
     function exportCsv(data) {
         const rows = [['หมวด', 'รายการ', 'จำนวน']];
+        const agreementTitles = new Map((data.agreementSummary || []).map(row => [row.id, row.title || row.id]));
         rows.push(['รายงาน', 'บทบาท', labels[data.role] || data.role]);
-        for (const [key, value] of Object.entries(data.filters || {})) rows.push(['ตัวกรอง', labels[key] || key, value]);
+        for (const [key, value] of Object.entries(data.filters || {})) {
+            rows.push(['ตัวกรอง', filterLabels[key] || labels[key] || key,
+                key === 'agreementId' ? agreementTitles.get(value) || value : labels[value] || value]);
+        }
         rows.push(['ภาพรวม', 'คู่ความร่วมมือ / Stakeholder', data.stakeholders?.count || 0]);
         rows.push(['ภาพรวม', 'กิจกรรม', data.activities?.count || 0]);
         rows.push(['ภาพรวม', 'ข้อตกลง', data.agreements?.count || 0]);
         rows.push(['ภาพรวม', 'การแลกเปลี่ยน', data.exchanges?.count || 0]);
+        rows.push(['ภาพรวม', 'นักศึกษายืนยันสิทธิ์ Exchange', studentCount(data.exchanges?.confirmedStudents)]);
+        rows.push(['ภาพรวม', 'ผ่านแต่ยังไม่ยืนยันสิทธิ์ (ไม่นับรวม)', studentCount(data.exchanges?.awaitingConfirmation)]);
+        for (const agr of data.agreementSummary || []) {
+            const group = `ข้อตกลง: ${agr.agreementType || 'MoU'} ${agr.title || agr.id}`;
+            rows.push([group, 'กิจกรรม', agr.activityCount || 0]);
+            rows.push([group, 'การแลกเปลี่ยน', agr.exchangeCount || 0]);
+            rows.push([group, 'นักศึกษายืนยันสิทธิ์ Exchange', studentCount(agr.confirmedStudents)]);
+            rows.push([group, 'ผ่านแต่ยังไม่ยืนยันสิทธิ์ (ไม่นับรวม)', studentCount(agr.awaitingConfirmation)]);
+            rows.push([group, 'Feedback ความคิดเห็น', agr.commentCount || 0]);
+            rows.push([group, 'Feedback ชุดแบบฟอร์ม', agr.batchCount || 0]);
+            rows.push([group, 'Feedback คำตอบจากแบบฟอร์ม', agr.responseCount || 0]);
+        }
+        const unspecified = data.formFeedback?.unspecifiedAgreement;
+        if (unspecified) {
+            const group = unspecified.label || 'ยังไม่ระบุข้อตกลง';
+            rows.push([group, 'Feedback ความคิดเห็น', unspecified.commentCount || 0]);
+            rows.push([group, 'Feedback ชุดแบบฟอร์ม', unspecified.batchCount || 0]);
+            rows.push([group, 'Feedback คำตอบจากแบบฟอร์ม', unspecified.responseCount || 0]);
+        }
         rows.push(['Feedback', 'ทั้งหมด', data.feedback?.count || 0]);
         rows.push(['Feedback', 'มีข้อเสนอแนะเพื่อปรับปรุง', data.feedback?.withImprovement || 0]);
         for (const [type, count] of countRows(data.stakeholders?.byType)) rows.push(['Stakeholder', labels[type] || type, count]);
@@ -84,8 +115,59 @@
         }
         const content = '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n');
         const url = URL.createObjectURL(new Blob([content], {type: 'text/csv;charset=utf-8'}));
-        const link = document.createElement('a'); link.href = url; link.download = 'cstuhub-overview.csv';
+        const suffix = [data.filters?.agreementId, data.filters?.startDate, data.filters?.endDate]
+            .filter(Boolean).join('_').replace(/[^A-Za-z0-9_-]/g, '');
+        const link = document.createElement('a'); link.href = url; link.download = `cstuhub-overview${suffix ? '-' + suffix : ''}.csv`;
         document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    /** #265 answer panel: activities, confirmed Exchange students and Feedback per agreement. */
+    function agreementReport(data) {
+        const section = text('section', undefined, 'overview-panel overview-agreement-report');
+        const header = text('div', undefined, 'overview-panel-heading');
+        const badge = text('span', undefined, 'overview-panel-icon'); badge.appendChild(icon('file-lines'));
+        const copy = text('div', undefined, 'overview-panel-title');
+        const period = [data.filters?.startDate, data.filters?.endDate].filter(Boolean).join(' – ');
+        copy.append(text('h3', 'สรุปตามข้อตกลง'),
+            text('p', `กิจกรรม นักศึกษายืนยันสิทธิ์ Exchange และ Feedback${period ? ' ช่วง ' + period : ' ทุกช่วงเวลา'}`, 'overview-muted'));
+        header.append(badge, copy, text('span', `นักศึกษายืนยันสิทธิ์ ${studentCount(data.exchanges?.confirmedStudents)} คน`, 'overview-panel-total'));
+        section.appendChild(header);
+        const rows = data.agreementSummary || [];
+        if (!rows.length) {
+            section.appendChild(text('p', 'ไม่มีข้อตกลงตามเงื่อนไขที่เลือก', 'overview-empty'));
+            return section;
+        }
+        const table = text('table', undefined, 'overview-agreement-table');
+        table.setAttribute('aria-label', 'สรุปกิจกรรม นักศึกษา และ Feedback ตามข้อตกลง');
+        const head = document.createElement('thead'), headRow = document.createElement('tr');
+        for (const title of ['ข้อตกลง', 'กิจกรรม', 'นักศึกษายืนยันสิทธิ์', 'ผ่านแต่ยังไม่ยืนยัน', 'ความคิดเห็น', 'แบบฟอร์ม (ชุด · คำตอบ)']) {
+            const th = text('th', title); th.setAttribute('scope', 'col'); headRow.appendChild(th);
+        }
+        head.appendChild(headRow); table.appendChild(head);
+        const body = document.createElement('tbody');
+        const addRow = (cells, dataset) => {
+            const tr = document.createElement('tr');
+            Object.assign(tr.dataset, dataset);
+            cells.forEach((value, index) => {
+                const cell = text(index ? 'td' : 'th', value);
+                if (!index) cell.setAttribute('scope', 'row');
+                tr.appendChild(cell);
+            });
+            body.appendChild(tr);
+        };
+        for (const agr of rows) {
+            addRow([`${agr.agreementType || 'MoU'} · ${agr.title || agr.id}`, agr.activityCount || 0,
+                studentCount(agr.confirmedStudents), studentCount(agr.awaitingConfirmation),
+                agr.commentCount || 0, `${agr.batchCount || 0} · ${agr.responseCount || 0}`], {agreementId: agr.id});
+        }
+        const unspecified = data.formFeedback?.unspecifiedAgreement;
+        if (unspecified && (unspecified.commentCount || unspecified.batchCount)) {
+            addRow([unspecified.label || 'ยังไม่ระบุข้อตกลง', '—', '—', '—', unspecified.commentCount || 0,
+                `${unspecified.batchCount || 0} · ${unspecified.responseCount || 0}`], {agreementStatus: 'unspecified'});
+        }
+        table.appendChild(body);
+        section.appendChild(table);
+        section.appendChild(text('p', 'นับนักศึกษาที่ผ่านและกดยืนยันสิทธิ์แล้ว (หรือรอบที่ไม่ต้องยืนยัน) ไม่ซ้ำคน; ผู้ที่ยังไม่ยืนยันแสดงแยกและไม่นับรวม; Feedback ที่ยังไม่ระบุข้อตกลงไม่บวกเข้าฉบับใด', 'overview-muted'));
+        return section;
     }
     function render(container, session) {
         container.cstuOverviewDispose?.();
@@ -102,10 +184,36 @@
         const stakeholderType = select('ประเภท Stakeholder', [['', 'ทั้งหมด'], ...['company','university','government','research_institute','internship'].map(value => [value, labels[value]])], 'stakeholderType');
         const activityType = select('ประเภทกิจกรรม', [['', 'ทั้งหมด'], ...['academic_activity','event','research'].map(value => [value, labels[value]])], 'activityType');
         const status = select('สถานะข้อตกลง / แลกเปลี่ยน', [['', 'ทั้งหมด'], ...['draft','active','expired','terminated','ongoing','completed','cancelled'].map(value => [value, labels[value]])], 'status');
+        // #265: report one MoU/MoA at a time. Options come from the same permission-scoped agreement list.
+        const agreement = select('ข้อตกลง MoU / MoA', [['', 'ทุกข้อตกลง']], 'agreementId');
+        let agreementOptionsRun = 0;
+        async function loadAgreementOptions() {
+            const run = ++agreementOptionsRun, chosen = agreement.input.value;
+            const rows = [];
+            try {
+                let cursor = null, pages = 0;
+                do {
+                    const params = new URLSearchParams({limit: '100'});
+                    if (scope.input.value) params.set('scopeId', scope.input.value);
+                    if (cursor) params.set('cursor', cursor);
+                    const page = await window.CstuAuth.request('/agreements?' + params.toString());
+                    rows.push(...(page?.data || []).filter(row => row && typeof row.id === 'string'));
+                    cursor = page?.page?.nextCursor || null;
+                } while (cursor && ++pages < 10);
+            } catch { /* The report still works for all agreements. */ }
+            if (run !== agreementOptionsRun) return;
+            rows.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'th') || a.id.localeCompare(b.id));
+            const options = [['', 'ทุกข้อตกลง'], ...rows.map(row => [row.id, `${row.agreementType || 'MoU'} · ${row.title || row.id}`])];
+            agreement.input.replaceChildren(...options.map(([value, caption]) => {
+                const option = document.createElement('option'); option.value = value; option.textContent = caption; return option;
+            }));
+            agreement.input.value = rows.some(row => row.id === chosen) ? chosen : '';
+        }
+        scope.input.addEventListener?.('change', () => { agreement.input.value = ''; loadAgreementOptions(); });
         const startLabel = text('label', 'ตั้งแต่วันที่'), start = document.createElement('input'); start.type = 'date'; start.name = 'startDate'; start.lang = 'th-TH'; startLabel.appendChild(start);
         const endLabel = text('label', 'ถึงวันที่'), end = document.createElement('input'); end.type = 'date'; end.name = 'endDate'; end.lang = 'th-TH'; endLabel.appendChild(end);
         const dateHint = text('small', 'ช่วงวันที่กรองกิจกรรม ข้อตกลง การแลกเปลี่ยน และ Feedback; ยอด Stakeholder นับตามประเภทที่เลือก', 'overview-filter-hint');
-        for (const field of [scope, stakeholderType, activityType, status]) filters.appendChild(field.label);
+        for (const field of [scope, agreement, stakeholderType, activityType, status]) filters.appendChild(field.label);
         filters.append(startLabel, endLabel, dateHint);
         const actions = text('div', undefined, 'overview-actions');
         const apply = text('button', 'แสดงผล', 'overview-btn-primary'); apply.type = 'submit';
@@ -184,6 +292,7 @@
                     summary.appendChild(group);
                 }
                 pane.appendChild(summary);
+                if (Array.isArray(result.agreementSummary)) pane.appendChild(agreementReport(result));
                 const grid = text('div', undefined, 'overview-breakdowns');
                 for (const [key, title] of [['agreements','สถานะข้อตกลง'], ['exchanges','สถานะการแลกเปลี่ยน']]) {
                     const block = text('section', undefined, 'overview-panel overview-status-panel'); block.dataset.kind = key;
@@ -387,7 +496,7 @@
         async function load() {
             const current = ++requestNumber; statusText.dataset.state = 'loading'; statusText.textContent = 'กำลังโหลดข้อมูลสรุป'; download.disabled = true;
             const query = new URLSearchParams();
-            for (const input of [scope.input, stakeholderType.input, activityType.input, status.input, start, end]) if (input.value) query.set(input.name, input.value);
+            for (const input of [scope.input, agreement.input, stakeholderType.input, activityType.input, status.input, start, end]) if (input.value) query.set(input.name, input.value);
             try {
                 const response = await window.CstuAuth.request('/overview' + (query.size ? '?' + query.toString() : ''));
                 if (current !== requestNumber) return;
@@ -411,7 +520,7 @@
             observer = new MutationObserver(() => { if (!root.isConnected) container.cstuOverviewDispose?.(); });
             observer.observe(container, {childList: true});
         }
-        setTab('summary'); load();
+        setTab('summary'); load(); loadAgreementOptions();
     }
     window.CstuOverview = {render};
 })();
