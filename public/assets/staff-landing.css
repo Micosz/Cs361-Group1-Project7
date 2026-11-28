@@ -1,261 +1,209 @@
-/* Only the authenticated Staff / Executive landing gets this presentation. */
-.staff-landing {
-    --desk-paper: #fffdf8;
-    --desk-line: #d9d3c9;
-    --desk-muted: #675f59;
-}
-
-.staff-landing .work-welcome {
-    margin-inline: 280px 30px;
-    padding-block: 16px 0;
-}
-
-.staff-landing .work-welcome-heading {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 2px 12px;
-    align-items: center;
-    border-top: 2px solid var(--work-ink);
-    margin-bottom: 18px;
-    padding-top: 16px;
-}
-
-/* Keep the role beside the section label, leaving the whole next line for Thai names. */
-.staff-landing .work-welcome-heading > div { display: contents; }
-.staff-landing .work-welcome-heading :is(h1, #work-description) { grid-column: 1 / -1; }
-
-.staff-landing .work-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    margin: 0 0 6px;
-    color: var(--desk-muted);
-    font-size: 12px;
-    letter-spacing: normal;
-}
-
-.staff-landing .work-eyebrow::before {
-    content: "";
-    width: 20px;
-    height: 3px;
-    flex: none;
-    background: var(--tu-red);
-}
-
-.staff-landing .work-welcome h1 {
-    margin: 0 0 3px;
-    font-size: clamp(26px, 2.8vw, 40px);
-    letter-spacing: normal;
-    line-height: 1.4;
-    overflow-wrap: anywhere;
-}
-
-.staff-landing #work-description {
-    color: var(--desk-muted);
-    line-height: 1.65;
-}
-
-.staff-landing .work-role {
-    grid-area: 1 / 2;
-    max-width: min(42vw, 230px);
-    padding: 4px 12px;
-    border: 1px solid var(--desk-line);
-    background: var(--desk-paper);
-    color: var(--work-ink);
-    font-size: 13px;
-    font-weight: 600;
+/* Authenticated Staff / Executive desk. Destinations retain their own layout. */
+body.staff-landing {
+    --desk-line: #ddd9d1;
+    --desk-muted: #635d55;
+    --desk-paper: #fff;
+    background: #faf9f6;
+    color: var(--text-dark);
 }
 
 .staff-landing .work-sidebar {
-    background: var(--desk-paper);
-    border-color: var(--desk-line);
-    border-radius: 14px;
+    background: transparent;
+    border: 0;
+    border-right: 1px solid var(--desk-line);
+    border-radius: 0;
+    padding: 8px 14px 8px 0;
 }
-
-.staff-landing .work-sidebar > .work-eyebrow {
-    margin: 4px 10px;
-    letter-spacing: .12em;
-    font-size: 10px;
+.staff-landing .work-sidebar > .work-eyebrow,
+.staff-landing .work-welcome-heading .work-eyebrow { display: none; }
+.staff-landing .work-sidebar h2 {
+    margin: 8px 12px 14px;
+    color: var(--desk-muted);
+    font-size: 14px;
+    line-height: 1.5;
 }
-
+.staff-landing .work-sidebar nav { gap: 3px; }
+.staff-landing .work-sidebar nav a { color: #49453e; border-radius: var(--radius-control); }
 .staff-landing .work-sidebar nav a[aria-current="page"] {
-    color: white;
-    background: var(--work-ink);
-    box-shadow: inset 4px 0 var(--tu-red);
+    background: #f9e8e9;
+    color: var(--tu-red-hover);
+    box-shadow: inset 3px 0 var(--tu-red);
+    font-weight: 700;
 }
-
 .staff-landing .work-public-link {
+    color: var(--tu-red-hover);
     font-family: "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Thai", sans-serif;
     font-variant-emoji: text;
 }
+.staff-landing .work-sidebar-note { color: var(--desk-muted); }
 
-.staff-landing .work-sidebar-note {
-    color: var(--desk-muted);
+.staff-landing .work-welcome { margin-inline: 280px 30px; padding-block: 12px 0; }
+.staff-landing .work-welcome-heading {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-block: 4px 18px;
+    margin: 0;
 }
-
-.staff-landing .work-actions {
-    display: grid;
-    grid-template-columns: 1.05fr 1fr 1fr;
-    gap: 8px;
+.staff-landing .work-welcome h1 {
+    margin: 0;
+    font-size: clamp(23px, 2.1vw, 30px);
+    line-height: 1.45;
+    letter-spacing: normal;
+    overflow-wrap: anywhere;
 }
-
+.staff-landing #work-description { color: var(--desk-muted); font-size: 14px; }
+.staff-landing .work-role {
+    padding: 5px 12px;
+    flex: none;
+    max-width: 40%;
+    border: 1px solid var(--desk-line);
+    background: var(--desk-paper);
+    color: var(--text-dark);
+    font-size: 13px;
+    font-weight: 600;
+}
+.staff-landing .work-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
 .staff-landing .work-actions a {
     position: relative;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-content: center;
     align-items: center;
-    column-gap: 12px;
-    row-gap: 2px;
-    padding: 15px 16px;
-    border: 1px solid var(--desk-line);
-    border-radius: var(--radius-card);
-    background: var(--desk-paper);
-    color: var(--work-ink);
-    text-decoration: none;
+    color: var(--text-dark);
     transform: none;
     transition: none;
+    text-decoration: none;
     box-shadow: none;
 }
-
 .staff-landing .work-actions a::after {
     content: "";
-    grid-column: 3;
-    grid-row: 1 / span 2;
-    width: 7px;
-    height: 7px;
-    margin-right: 2px;
+    width: 8px;
+    height: 8px;
     border: solid currentColor;
     border-width: 1.5px 1.5px 0 0;
     transform: rotate(45deg);
 }
-
-.staff-landing .work-actions i {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-    margin: 0;
-    width: 34px;
-    height: 34px;
-    border-radius: var(--radius-control);
-    background: #f4ede5;
-    color: var(--tu-red-hover);
-}
-
-.staff-landing .work-actions strong,
-.staff-landing .work-actions small {
-    grid-column: 2;
-    overflow-wrap: anywhere;
-}
-
-.staff-landing .work-actions strong {
-    line-height: 1.5;
-}
-
-.staff-landing .work-actions small {
-    line-height: 1.6;
-    color: var(--desk-muted);
-    font-size: 13px;
-}
+.staff-landing .work-actions strong { line-height: 1.5; overflow-wrap: anywhere; }
+.staff-landing .work-actions small { color: var(--desk-muted); font-size: 13px; line-height: 1.6; }
+.staff-landing .work-actions i { margin: 0; }
 
 .staff-landing .work-actions #proposal-shortcut {
-    grid-row: span 2;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-content: end;
-    gap: 4px;
-    padding: 20px;
-    border-color: var(--work-ink);
-    background: var(--work-ink);
-    color: white;
-}
-
-.staff-landing #proposal-shortcut i {
-    grid-row: auto;
-    margin-bottom: 12px;
-    width: 36px;
-    height: 36px;
-    color: white;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    gap: 16px;
+    padding: 18px 24px;
+    border: 0;
+    border-radius: var(--radius-card);
     background: var(--tu-red);
+    color: white;
 }
-
-.staff-landing #proposal-shortcut strong,
+.staff-landing #proposal-shortcut i {
+    width: 42px;
+    height: 42px;
+    background: var(--tu-red-hover);
+    color: white;
+    border-radius: var(--radius-card);
+    font-size: 18px;
+}
+.staff-landing #proposal-shortcut strong { font-size: clamp(18px, 1.6vw, 23px); }
 .staff-landing #proposal-shortcut small {
-    grid-column: 1 / -1;
+    justify-self: start;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: var(--tu-yellow);
+    color: var(--text-dark);
 }
+.staff-landing #proposal-shortcut:hover { background: var(--tu-red-hover); }
 
-.staff-landing #proposal-shortcut strong {
-    font-size: clamp(18px, 1.6vw, 24px);
+.staff-landing .desk-create { margin-block: 22px 0; }
+.staff-landing .desk-create h2 { margin: 0 0 8px; font-size: 18px; line-height: 1.5; }
+.staff-landing .desk-create-links {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 4px;
+    border: 1px solid var(--desk-line);
+    border-radius: var(--radius-card);
+    background: var(--desk-paper);
 }
-
-.staff-landing #proposal-shortcut small {
-    color: #e2d8db;
+.staff-landing .desk-create-links a {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 10px;
+    align-content: start;
+    padding: 13px 16px;
+    border: 0;
+    border-radius: 5px;
+    background: var(--desk-paper);
 }
-
-.staff-landing #proposal-shortcut::after {
+.staff-landing .desk-create-links a + a::before {
+    content: "";
     position: absolute;
-    right: 19px;
-    top: 22px;
-    grid-area: auto;
+    inset: 13px auto 13px -1px;
+    border-left: 1px solid var(--desk-line);
 }
+.staff-landing .desk-create-links i {
+    grid-area: 1 / 1;
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+    border-radius: var(--radius-control);
+    color: var(--tu-red);
+    background: #fbeced;
+}
+.staff-landing .desk-create-links strong,
+.staff-landing .desk-create-links small { grid-column: 1 / -1; }
+.staff-landing .desk-create-links a::after { grid-area: 1 / 2; color: var(--desk-muted); }
+.staff-landing .desk-create-links a:hover { background: #fff8ee; }
 
 .staff-landing .work-actions a[href*="view=feedback"] {
-    grid-column: 1 / -1;
-    grid-template-columns: auto 1fr auto;
-    min-height: 46px;
-    padding-block: 9px;
-    background: #eee9e1;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 12px;
+    margin-top: 7px;
+    padding: 10px 14px;
+    min-height: 44px;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: #faf9f6;
 }
-
-.staff-landing .work-actions a[href*="view=feedback"] strong {
-    grid-column: 1;
-}
-
-.staff-landing .work-actions a:hover {
-    border-color: var(--work-ink);
-}
-
-.staff-landing .work-actions a:is(:hover, :focus-visible) strong {
-    text-decoration: underline;
-    text-underline-offset: .2em;
-}
-
-.staff-landing :is(.work-sidebar, .work-actions) a:focus-visible {
-    outline: 3px solid var(--tu-red);
-    outline-offset: 2px;
-    z-index: 1;
-}
+.staff-landing .work-actions a[href*="view=feedback"] i { width: 24px; height: 24px; color: var(--desk-muted); background: none; }
+.staff-landing .work-actions a[href*="view=feedback"] strong { font-size: 14px; }
+.staff-landing .work-actions a[href*="view=feedback"]:hover { background: #f1eee8; }
+.staff-landing .work-actions a:is(:hover, :focus-visible) strong { text-decoration: underline; text-underline-offset: .2em; }
+.staff-landing :is(.work-sidebar, .work-actions) a:focus-visible { outline: 3px solid var(--tu-red); outline-offset: 2px; z-index: 1; }
 
 @media (max-width: 1100px) {
     .staff-landing .work-welcome { margin-inline-start: 250px; }
-    .staff-landing .work-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .staff-landing .work-actions #proposal-shortcut {
-        grid-area: auto / 1 / auto / -1;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-content: center;
-        column-gap: 12px;
-        padding: 14px 16px;
-    }
-    .staff-landing #proposal-shortcut i { grid-row: 1 / span 2; margin: 0; }
-    .staff-landing #proposal-shortcut :is(strong, small) { grid-column: 2; }
-    .staff-landing #proposal-shortcut::after { position: static; grid-area: 1 / 3 / span 2; }
+    .staff-landing .desk-create-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .staff-landing .desk-create-links a:nth-child(odd)::before { display: none; }
+    .staff-landing .desk-create-links a:nth-child(n+3) { border-top: 1px solid var(--desk-line); }
 }
-
 @media (max-width: 760px) {
-    /* Match the space reserved for the fixed, wrapped search header in work-home.css. */
     html:has(> body.staff-landing) { scroll-padding-top: 184px; }
-    .staff-landing .work-sidebar > .work-eyebrow { display: none; }
-    .staff-landing .work-welcome { margin-inline: 16px; padding-top: 4px; }
-    .staff-landing .work-welcome-heading { padding-top: 10px; }
-    .staff-landing .work-sidebar { padding: 10px; }
+    .staff-landing .work-sidebar { border: 1px solid var(--desk-line); border-radius: var(--radius-card); padding: 6px; }
     .staff-landing .work-sidebar nav { padding: 5px; scroll-padding-inline: 25%; }
     .staff-landing .work-public-link { padding: 10px; min-height: 44px; }
+    .staff-landing .work-welcome { margin-inline: 16px; padding-top: 4px; }
 }
-
 @media (max-width: 580px) {
-    .staff-landing .work-actions { grid-template-columns: minmax(0, 1fr); }
-    .staff-landing .work-actions a { padding: 10px 14px; }
-    .staff-landing .work-actions a[href*="view=feedback"] { grid-template-columns: minmax(0, 1fr) auto; }
-    .staff-landing .work-actions a[href*="view=feedback"] small { grid-column: 1; }
-    .staff-landing .work-actions a[href*="view=feedback"]::after { grid-column: 2; }
+    .staff-landing .work-welcome-heading { flex-wrap: wrap; gap: 5px 10px; padding-bottom: 14px; }
+    .staff-landing .work-role { max-width: 100%; }
+    .staff-landing .work-actions #proposal-shortcut { grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; padding: 15px; }
+    .staff-landing #proposal-shortcut i { grid-row: span 2; }
+    .staff-landing #proposal-shortcut small { grid-column: 2; margin-top: 4px; }
+    .staff-landing #proposal-shortcut::after { grid-area: 1 / 3 / span 2; }
+    .staff-landing .desk-create { margin-top: 16px; }
+    .staff-landing .desk-create-links { grid-template-columns: minmax(0, 1fr); }
+    .staff-landing .desk-create-links a { grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 12px; padding: 10px; }
+    .staff-landing .desk-create-links a + a { border-top: 1px solid var(--desk-line); }
+    .staff-landing .desk-create-links a::before { display: none; }
+    .staff-landing .desk-create-links i { grid-area: 1 / 1 / span 2; margin: 0; }
+    .staff-landing .desk-create-links :is(strong, small) { grid-column: 2; }
+    .staff-landing .desk-create-links a::after { grid-area: 1 / 3 / span 2; }
+    .staff-landing .work-actions a[href*="view=feedback"] { grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 10px; }
+    .staff-landing .work-actions a[href*="view=feedback"] i { grid-row: span 2; }
+    .staff-landing .work-actions a[href*="view=feedback"] small { grid-column: 2; }
+    .staff-landing .work-actions a[href*="view=feedback"]::after { grid-area: 1 / 3 / span 2; }
 }
 
 /* The browser owns the navigation, snapshots and their lifetime, including Back. */
@@ -266,36 +214,53 @@
     .staff-landing .shortcut-opening::after { visibility: hidden; }
     .staff-landing .work-actions a.shortcut-opening strong { view-transition-name: desk-title; text-decoration: none; }
 
+    :root { --desk-duration: 660ms; }
+    :root:active-view-transition-type(staff-shortcut)::view-transition { pointer-events: none; }
+
     :root:active-view-transition-type(staff-shortcut)::view-transition-group(*) {
-        animation-duration: 440ms;
+        animation-duration: var(--desk-duration);
         animation-timing-function: cubic-bezier(.65, 0, .45, 1);
     }
 
     :root:active-view-transition-type(staff-shortcut)::view-transition-group(root) { z-index: 0; }
 
+    /* Keep the incoming frame on top when Chromium releases the outgoing snapshot. */
+    :where(:root:has(body.work-home))::view-transition-old(root) { opacity: 0; animation: none; }
+    :where(:root:has(body.work-home))::view-transition-new(root) { opacity: 1; animation: none; }
+    /* Let the native backdrop supply its tint while the snapshots blend. Blur resumes on the live dialog. */
+    :root:active-view-transition-type(staff-shortcut) #record-detail::backdrop { backdrop-filter: none; }
     :root:active-view-transition-type(staff-shortcut)::view-transition-old(root) {
         mix-blend-mode: normal;
-        z-index: 1;
-        animation: desk-hold 440ms both;
+        animation: desk-depart var(--desk-duration) both;
     }
 
-    :root:active-view-transition-type(staff-shortcut)::view-transition-new(root) { animation: none; }
+    :root:active-view-transition-type(staff-shortcut)::view-transition-new(root) {
+        mix-blend-mode: normal;
+        z-index: 1;
+        animation: desk-arrive var(--desk-duration) both;
+    }
 
-    ::view-transition-group(desk-actions) { z-index: 1; background: #fffdf8; animation-name: desk-hold; }
-    ::view-transition-old(desk-actions) { animation: desk-wash 440ms both; }
+    ::view-transition-group(desk-actions) { z-index: 1; background: #fffdf8; animation-name: desk-release; }
+    ::view-transition-old(desk-actions) { animation: desk-wash var(--desk-duration) both; }
 
     ::view-transition-group(desk-card) {
         z-index: 2;
         overflow: clip;
         border-radius: var(--radius-card);
-        background: #3f1427;
-        animation-name: desk-expand;
+        background: #fffdf9;
+        animation-name: desk-expand, desk-reveal;
+    }
+
+    /* Fade the solid red image pair over the form's paper colour without repainting the field. */
+    ::view-transition-image-pair(desk-card) {
+        background: var(--tu-red);
+        animation: desk-surface var(--desk-duration) both;
     }
 
     ::view-transition-old(desk-card) {
         height: 100%;
         object-fit: cover;
-        animation: desk-ink 440ms both;
+        animation: desk-ink var(--desk-duration) both;
     }
 
     ::view-transition-group(desk-title) {
@@ -305,33 +270,48 @@
     }
 
     ::view-transition-old(desk-title) {
-        animation: desk-title-ink 440ms both;
+        animation: desk-title-ink var(--desk-duration) both;
     }
 
-    @keyframes desk-hold {
-        0%, 79% { opacity: 1; }
+    /* The destination stays live below the outgoing snapshots, including the native dialog. */
+    @keyframes desk-depart {
+        0%, 85% { opacity: 1; }
         to { opacity: 0; }
     }
+    @keyframes desk-arrive {
+        0%, 30% { opacity: 0; animation-timing-function: linear; }
+        90%, 100% { opacity: 1; }
+    }
+    @keyframes desk-release {
+        0%, 38% { opacity: 1; animation-timing-function: ease-in-out; }
+        90%, 100% { opacity: 0; }
+    }
     @keyframes desk-wash {
-        0% { opacity: 1; }
-        60%, 100% { opacity: .06; }
+        from { opacity: 1; }
+        40%, 100% { opacity: .06; }
     }
     @keyframes desk-ink {
-        0% { opacity: 1; }
-        65%, 100% { opacity: 0; }
+        from { opacity: 1; }
+        38%, 100% { opacity: 0; }
     }
     @keyframes desk-title-ink {
-        0% { filter: none; }
-        50%, 100% { filter: brightness(0) invert(1); }
+        from { filter: none; }
+        34%, 100% { filter: brightness(0) invert(1); }
     }
     @keyframes desk-expand {
-        75%, 100% { transform: translate(6vw, 16vh); width: 88vw; height: 60vh; }
-        85% { opacity: 1; }
+        50%, 100% { transform: translate(6vw, 16vh); width: 88vw; height: 60vh; }
+    }
+    @keyframes desk-surface {
+        0%, 35% { opacity: 1; animation-timing-function: linear; }
+        94%, 100% { opacity: 0; }
+    }
+    @keyframes desk-reveal {
+        0%, 42% { opacity: 1; animation-timing-function: linear; }
         to { opacity: 0; }
     }
     @keyframes desk-enlarge-title {
-        75%, 100% { transform: translate(12vw, 38vh) scale(1.5); }
-        85% { opacity: 1; }
-        to { opacity: 0; }
+        42% { opacity: 1; }
+        50%, 100% { transform: translate(12vw, 38vh) scale(1.5); }
+        74%, 100% { opacity: 0; }
     }
 }

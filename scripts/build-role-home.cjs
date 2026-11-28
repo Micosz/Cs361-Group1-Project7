@@ -10,12 +10,12 @@ page = page.replace('<title data-ui>กระดานข้อมูล | CSTUH
  .replace('<body>', '<body class="work-home work-checking">')
  .replace(/    <div class="hero-scroll">[\s\S]*?(?=    <div class="board-scene">)/, '')
  .replace(/    <script src="assets\/(opening|constellation|header-motion)\.js[^>]*><\/script>\n/g, '')
- .replace('</head>', '<link rel="stylesheet" href="assets/work-home.css?v=workflow-1">\n<link rel="stylesheet" href="assets/staff-landing.css?v=shortcut-motion">\n</head>');
+ .replace('</head>', '<link rel="stylesheet" href="assets/work-home.css?v=workflow-1">\n<link rel="stylesheet" href="assets/staff-landing.css?v=shortcut-handoff">\n</head>');
 page = page.replace('    <script src="assets/role-home.js?v=browse-shortcuts" defer></script>', [
  '    <script src="assets/proposal-avatars.js?v=1" defer></script>',
  '    <script src="assets/proposal-flow.js?v=1" defer></script>',
  '    <script src="assets/proposal-board.js?v=workflow-1" defer></script>',
- '    <script src="assets/role-home.js?v=staff-landing-1" defer></script>',
+ '    <script src="assets/role-home.js?v=staff-desk-2" defer></script>',
  '    <script src="assets/staff-shortcuts.js?v=1" defer></script>'
 ].join('\n'));
 page = page.replace('assets/records.js?v=role-home-1','assets/records.js?v=proposal-board-1');
