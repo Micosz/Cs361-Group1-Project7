@@ -28,6 +28,34 @@ async function fixture(page, role, failLogin = false) {
   });
   return requests;
 }
+test('record border follows the read dialog through loading and leaves the creation form alone', async ({page}) => {
+  await fixture(page,'staff');
+  const row = {id:'edge-fixture',title:'Sample exchange',scopeId:'demo'};
+  await page.route('**/api/exchanges?*', route => route.fulfill({json:{data:[row],count:1,page:{nextCursor:null}}}));
+  let release;
+  const pending = new Promise(resolve => { release = resolve; });
+  await page.route('**/api/exchanges/edge-fixture', async route => {
+    await pending;
+    await route.fulfill({json:{data:row}});
+  });
+  await page.goto('/work.html?kind=exchanges#board-section');
+  const button = page.locator('.records-list').getByRole('button',{name:row.title});
+  const dialog = page.locator('#record-detail[open]');
+  await button.press('Enter');
+  try {
+    await expect(dialog.locator('#detail-title')).toHaveText('กำลังโหลด');
+    await expect(dialog).toHaveCSS('border-top-color','rgb(128, 128, 128)');
+  } finally { release(); }
+  await expect(dialog.locator('#detail-title')).toHaveText(row.title);
+  await expect(dialog).toHaveCSS('border-top-width','1px');
+  await expect(dialog).toHaveCSS('border-top-color','rgb(128, 128, 128)');
+  await page.keyboard.press('Escape');
+  await expect(button).toBeFocused();
+  await page.goto('/work.html?kind=partners&action=create#board-section');
+  await expect(dialog.locator('.entry-form')).toBeVisible();
+  await expect(dialog).not.toHaveCSS('border-top-color','rgb(128, 128, 128)');
+});
+
 test('public catalog renders, searches, and opens detail in a real browser', async ({page}) => {
   await fixture(page); await page.goto('/index.html');
   await page.locator('#tabCollab').click();
@@ -307,6 +335,49 @@ test('short filtered board keeps category buttons clickable below the mobile hea
   await expect(event).toHaveAttribute('aria-pressed', 'true');
 });
 
+test.describe('Welcome category buttons on a narrow phone', () => {
+  test.use({ viewport: {width:320, height:708}, isMobile:true, hasTouch:true, reducedMotion:'reduce' });
+  for (const role of [null, 'student']) {
+    for (const language of ['th', 'en']) {
+      test(`${role || 'guest'} can read and tap the ${language} categories`, async ({page}) => {
+        await fixture(page, role);
+        await page.goto('/index.html');
+        await page.locator('.navbar [data-language="' + language + '"]').click();
+        const group = page.locator('.browse-hero-slot .browse-tabs');
+        const buttons = group.getByRole('button');
+        await expect(buttons).toHaveCount(role ? 3 : 2);
+        for (const button of await buttons.all()) {
+          const geometry = await button.evaluate(node => {
+            const box = node.getBoundingClientRect();
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            const lines = [...range.getClientRects()];
+            const fits = lines.every(line =>
+              line.left >= box.left - 1 && line.right <= box.right + 1 &&
+              line.top >= box.top - 1 && line.bottom <= box.bottom + 1);
+            return {fits, lines:lines.length, left:box.left, right:box.right, height:box.height, font:parseFloat(getComputedStyle(node).fontSize)};
+          });
+          expect(geometry.fits).toBe(true);
+          expect(geometry.left).toBeGreaterThanOrEqual(0);
+          expect(geometry.right).toBeLessThanOrEqual(320);
+          expect(geometry.height).toBeGreaterThanOrEqual(48);
+          expect(geometry.font).toBeGreaterThanOrEqual(16);
+          if (language === 'en' && !(await button.innerText()).includes(' ')) expect(geometry.lines).toBe(1);
+        }
+        const activity = language === 'th' ? 'กิจกรรมและ MoU' : 'Activities & MoU';
+        await group.getByRole('button', {name:activity, exact:true}).tap();
+        await expect(page.locator('.browse-board-slot #tabEvent')).toHaveAttribute('aria-pressed','true');
+        if (!role) {
+          for (const button of await page.locator('.browse-board-slot').getByRole('button').all()) {
+            await expect(button).toHaveCSS('font-size', '16px');
+          }
+        }
+        await expect(page).toHaveURL(/#board-section$/);
+      });
+    }
+  }
+});
+
 test('category buttons keep focus and selection across the desktop scroll scene', async ({page}) => {
   await fixture(page);
   await page.setViewportSize({width:1280,height:800});
@@ -317,6 +388,14 @@ test('category buttons keep focus and selection across the desktop scroll scene'
   await page.keyboard.press('Space');
   await expect(page.locator('.browse-board-slot #tabEvent')).toBeFocused();
   await expect(event).toHaveAttribute('aria-pressed','true');
+  await expect(event).toHaveCSS('font-size', '18px');
+  await expect(page.locator('#tabCollab')).toHaveCSS('font-size', '18px');
+  await page.evaluate(() => window.scrollTo({top:window.scrollY / 2, behavior:'instant'}));
+  const floating = page.locator('.browse-tabs.browse-floating');
+  await expect(floating.locator('#tabEvent')).toBeFocused();
+  await expect(floating.locator('#tabEvent')).toHaveCSS('font-size', '18px');
+  await expect(floating.locator('#tabCollab')).toHaveCSS('font-size', '18px');
+  await expect(floating.locator('.tab-indicator')).toHaveCSS('background-color', 'rgb(166, 0, 42)');
   await page.evaluate(() => window.scrollTo({top:0,behavior:'instant'}));
   await expect(page.locator('.browse-hero-slot #tabEvent')).toBeFocused();
   await expect(event).toHaveAttribute('aria-pressed','true');
@@ -325,12 +404,135 @@ test('category buttons keep focus and selection across the desktop scroll scene'
 
 for (const role of ['coordinator','staff','executive']) test(`${role} gets internal navigation and create actions`, async ({page}) => {
   await fixture(page, role); await page.goto('/index.html'); await expect(page).toHaveURL(/work.html/);
+  await expect(page.locator('.work-dashboard')).toBeVisible();
+  await expect(page.locator('.staff-landing')).toHaveCount(role === 'coordinator' ? 0 : 1);
   await expect(page.locator('#work-nav')).toContainText('คู่ความร่วมมือ');
   await expect(page.locator('#work-actions')).toContainText('อ่านผลตอบรับ');
   await page.locator('#work-nav a[href*="view=feedback"]').click();
   await expect(page).toHaveURL(/view=feedback/);
   await expect(page.locator('#work-nav a[aria-current="page"]')).toContainText('Feedback');
+  await expect(page.locator('.staff-landing')).toHaveCount(0);
 });
+for (const width of [320, 390]) test(`workspace keyboard focus stays in view at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width, height:844});
+  await fixture(page, 'executive');
+  await page.goto('/work.html');
+  const links = page.locator('.staff-landing :is(.work-sidebar, .work-actions) a');
+  await links.first().focus();
+  const count = await links.count();
+  for (const key of ['Tab', 'Shift+Tab']) {
+    for (let step = 1; step < count; step++) {
+      await page.keyboard.press(key);
+      const current = links.nth(key === 'Tab' ? step : count - 1 - step);
+      await expect(current).toBeFocused();
+      await expect.poll(() => current.evaluate(link => {
+        const box = link.getBoundingClientRect();
+        return link.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+      })).toBe(true);
+    }
+  }
+});
+
+test.describe('workspace shortcut motion', () => {
+  test.use({hasTouch:true});
+  const shortcuts = [
+    ['proposals','#proposal-board'],
+    ['partners','#record-detail'],
+    ['activities','.entry-frame-dialog'],
+    ['agreements','.agreement-dialog'],
+    ['exchanges','.entry-frame-dialog'],
+    ['feedback','#home-records']
+  ];
+  for (const [role,width] of [['staff',390],['executive',1280]]) {
+    for (const [route,selector] of shortcuts) test(`${role} shortcut grows into the real ${route} surface at ${width}px`,async ({page}) => {
+      await page.setViewportSize({width,height:800});
+      await page.emulateMedia({reducedMotion:'no-preference'});
+      await fixture(page,role);
+      await page.addInitScript(() => {
+        document.addEventListener('animationstart',event => {
+          if (event.animationName !== 'desk-receive') return;
+          const animations = event.target.getAnimations({subtree:true}).filter(a => ['desk-receive','desk-tint'].includes(a.animationName));
+          animations.forEach(a => a.pause());
+          window.measureDesk = fraction => {
+            animations.forEach(a => { a.currentTime = fraction * a.effect.getTiming().duration; });
+            const {x,y,width,height} = event.target.getBoundingClientRect();
+            return {x,y,width,height,tint:Number(getComputedStyle(event.target,'::after').opacity)};
+          };
+          window.finishDesk = () => animations.forEach(a => a.finish());
+        });
+      });
+      await page.goto('/index.html');
+      const link = page.locator(`#work-actions a[href*="=${route}"]`);
+      await link.scrollIntoViewIfNeeded();
+      const source = await link.boundingBox();
+      if (role === 'staff') await link.tap();
+      else await link.press('Enter');
+      const surface = page.locator(selector);
+      await expect(surface).toBeVisible();
+      await page.waitForFunction(() => typeof window.measureDesk === 'function');
+      const [first,middle,last] = await page.evaluate(() => [0,.5,.999].map(window.measureDesk));
+      expect(first.tint).toBeGreaterThan(middle.tint);
+      expect(middle.tint).toBeGreaterThan(last.tint);
+      await page.evaluate(() => window.finishDesk());
+      await expect(surface).not.toHaveClass(/desk-receiving/);
+      const destination = await surface.boundingBox();
+      for (const key of ['x','y','width','height']) {
+        expect(Math.abs(first[key] - source[key]),'source '+key).toBeLessThan(2);
+        expect(Math.abs(last[key] - destination[key]),'destination '+key).toBeLessThan(2);
+        expect(middle[key]).toBeGreaterThanOrEqual(Math.min(first[key],last[key]) - 1);
+        expect(middle[key]).toBeLessThanOrEqual(Math.max(first[key],last[key]) + 1);
+      }
+      if (selector.includes('dialog') || selector === '#record-detail') {
+        await expect.poll(() => surface.evaluate(el => el.contains(document.activeElement))).toBe(true);
+      }
+      await page.goBack();
+      await expect(link).toBeVisible();
+      await expect(page.locator('.desk-receiving, .shortcut-opening')).toHaveCount(0);
+    });
+  }
+
+  test('partner dialog keeps a single focus ring when it opens before the workspace gate',async ({page}) => {
+    await fixture(page,'staff');
+    await page.goto('/index.html');
+    const link = page.locator('#work-actions a[href*="kind=partners"]');
+    await expect(link).toBeVisible();
+    const dialog = page.locator('#record-detail[open]');
+    // Reproduce the load order which requires the workspace to focus the dialog itself.
+    await page.route('**/assets/role-home.js*',async route => {
+      await dialog.waitFor({state:'attached'});
+      await route.continue();
+    },{times:1});
+    await link.press('Enter');
+    await expect(dialog).toBeFocused();
+    await expect(dialog).toHaveCSS('outline-style','solid');
+    await expect(dialog).toHaveCSS('outline-width','2px');
+    await expect(dialog).toHaveCSS('outline-offset','-1px');
+    await expect(dialog).toHaveCSS('outline-color','rgb(128, 128, 128)');
+    await page.keyboard.press('Tab');
+    await expect(dialog.locator(':focus-visible')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+  });
+
+  for (const [role,motion] of [['staff','reduce'],['coordinator','no-preference']]) {
+    test(`${role} opens the partner form directly with ${motion}`,async ({page}) => {
+      await page.emulateMedia({reducedMotion:motion});
+      await fixture(page,role);
+      await page.addInitScript(() => {
+        window.deskMotion = false;
+        document.addEventListener('animationstart',event => {
+          if (event.animationName === 'desk-receive') window.deskMotion = true;
+        });
+      });
+      await page.goto('/index.html');
+      await page.locator('#work-actions a[href*="kind=partners"]').press('Enter');
+      await expect(page.locator('#record-detail .entry-form')).toBeVisible();
+      await page.locator('#record-detail').getByRole('textbox',{name:/^ชื่อ/}).fill('ตัวอย่าง');
+      expect(await page.evaluate(() => window.deskMotion)).toBe(false);
+    });
+  }
+});
+
 for(const role of [null,'student']) test(`${role || 'anonymous'} direct work URL is redirected`, async ({page}) => {
   await fixture(page, role); await page.goto('/work.html'); await expect(page).toHaveURL(role ? /index.html/ : /login.html/);
 });

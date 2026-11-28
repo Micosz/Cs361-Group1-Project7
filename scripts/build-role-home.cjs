@@ -3,7 +3,7 @@ const fs = require('node:fs');
 let page = fs.readFileSync('public/index.html', 'utf8');
 page = page.replace('<title data-ui>กระดานข้อมูล | CSTUHub</title>', '<title>หน้าทำงาน | CSTUHub</title>')
  .replace(/    <script src="assets\/public-(english|language)\.js(?:\?[^"]*)?" defer><\/script>\n/g, '')
- .replace('    <link rel="stylesheet" href="assets/public-language.css">\n', '')
+ .replace(/    <link rel="stylesheet" href="assets\/public-language\.css(?:\?[^"]*)?">\n/, '')
  .replaceAll(' data-ui', '')
  .replace('<body>', '<body class="work-home work-checking">')
  .replace(/    <div class="hero-scroll">[\s\S]*?(?=    <div class="board-scene">)/, '')
@@ -22,4 +22,12 @@ const shell = fs.readFileSync('public/partials/work-home.html', 'utf8');
 page = page.replace('    <div class="board-scene">', shell + '\n    <div class="board-scene">')
  .replace('href="/"', 'href="work.html"')
  .replace('href="index.html"', 'href="work.html"');
+// Register pagereveal before first paint without blocking the work shell on a script request.
+const shortcuts = fs.readFileSync('public/assets/staff-shortcuts.js','utf8');
+page = page.replace('</title>', tag => `${tag}
+    <style>@media (prefers-reduced-motion: no-preference) { @supports selector(:active-view-transition-type(staff-shortcut)) { @view-transition { navigation: auto; types: staff-shortcut; } } }</style>
+    <script>
+${shortcuts}    </script>`)
+ .replace('</head>', '<link rel="stylesheet" href="assets/staff-landing.css?v=dialog-focus-grey">\n</head>')
+ .replace('assets/role-home.js?v=proposal-board-1','assets/role-home.js?v=staff-desk-3');
 fs.writeFileSync('public/work.html', page);

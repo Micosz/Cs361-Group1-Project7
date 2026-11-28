@@ -12,6 +12,7 @@
     --text-gray: #595959;
     --text-light: #646464;
     --border-color: #dedede;
+    --detail-popup-border: 1px solid #808080;
     --control-border: #858585;
     /* Restrained shape scale: 6px controls, 8px cards, 12px detail sheet. */
     --radius-control: 6px;
@@ -181,6 +182,10 @@ main { flex: 1; }
 .footer-text { font-size: 0.8125rem; color: var(--text-gray); }
 
 .modal-overlay { display: none; position: fixed; inset: 0; width: 100%; height: 100%; padding: 24px; background: rgb(32 32 32 / 42%); z-index: 30; justify-content: center; align-items: center; }
+/* Dedicated detail dialogs share the edge of the public record sheet. */
+#proposal-flow-dialog, #my-exchange-dialog { border: var(--detail-popup-border); }
+/* Keep the content inset of the original 3px native dialog border. */
+#my-exchange-dialog { padding: calc(2rem + 2px); }
 .modal-content { position: relative; background: #fff; width: 100%; max-width: 960px; max-height: 90vh; max-height: 90dvh; padding: 40px; border-radius: 12px; overflow-y: auto; overscroll-behavior: contain; box-shadow: 0 16px 48px rgb(32 32 32 / 12%); }
 .close-btn { position: absolute; top: 16px; right: 16px; display: flex; justify-content: center; align-items: center; width: 44px; height: 44px; border: 1px solid var(--border-color); border-radius: var(--radius-control); background: var(--bg-gray); color: var(--text-dark); font-size: 28px; line-height: 1; cursor: pointer; }
 .modal-title { padding-right: 48px; font-size: clamp(1.375rem, 2.5vw, 2rem); line-height: 1.55; font-weight: 600; letter-spacing: -0.02em; overflow-wrap: anywhere; margin-bottom: 16px; }

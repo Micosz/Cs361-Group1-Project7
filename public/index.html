@@ -15,14 +15,14 @@
             window.__CSTUHubReloadIntro = { previousMode };
         })();
     </script>
-    <link rel="stylesheet" href="assets/styles.css?v=4">
+    <link rel="stylesheet" href="assets/styles.css?v=detail-edge">
     <link rel="stylesheet" href="assets/spatial.css?v=intro-balanced-1">
     <link rel="stylesheet" href="assets/showcase.css?v=4">
     <link rel="stylesheet" href="assets/cinematic.css?v=1">
     <link rel="stylesheet" href="assets/opening.css?v=browse-welcome-palette">
-    <link rel="stylesheet" href="assets/portal.css?v=6">
+    <link rel="stylesheet" href="assets/portal.css?v=range-labels-only">
     <link rel="stylesheet" href="assets/constellation.css?v=mobile-header-1">
-    <script src="assets/public-english.js?v=board-date-format" defer></script>
+    <script src="assets/public-english.js?v=range-inline" defer></script>
     <script src="assets/public-language.js" defer></script>
     <script src="assets/auth-config.js" defer></script>
     <script src="assets/auth-client.js?v=role-home-1" defer></script>
@@ -53,9 +53,9 @@
     <link rel="stylesheet" href="assets/exchange-admissions.css?v=1">
     <script src="assets/exchange-admissions.js?v=1" defer></script>
     <script src="assets/exchange-admissions-management.js?v=1" defer></script>
-    <script src="assets/records.js?v=exchange-admissions-1" defer></script>
+    <script src="assets/records.js?v=detail-edge" defer></script>
     <script src="assets/role-menu.js?v=student-logout" defer></script>
-    <script src="assets/filter-presentation.js?v=7" defer></script>
+    <script src="assets/filter-presentation.js?v=range-inline-notes" defer></script>
     <script src="assets/presentation.js?v=intro-balanced-1" defer></script>
     <script src="assets/opening.js?v=browse-shortcuts-header" defer></script>
     <script src="assets/constellation.js?v=intro-balanced-1" defer></script>
@@ -63,7 +63,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/entry-forms.css?v=2">
     <script src="assets/entry-forms.js?v=2" defer></script>
-    <link rel="stylesheet" href="assets/detail-sheet.css?v=public-comments-2">
+    <link rel="stylesheet" href="assets/detail-sheet.css?v=detail-edge">
     <link rel="stylesheet" href="assets/form-feedback.css?v=1">
     <link rel="stylesheet" href="assets/feedback.css?v=feedback-reactions-1">
     <link rel="stylesheet" href="assets/manual.css?v=1">
@@ -71,7 +71,7 @@
     <script src="assets/role-home.js?v=browse-shortcuts" defer></script>
     <link rel="stylesheet" href="assets/density.css?v=1">
     <link rel="stylesheet" href="assets/improvements.css?v=1">
-    <link rel="stylesheet" href="assets/public-language.css">
+    <link rel="stylesheet" href="assets/public-language.css?v=range-inline-notes">
 </head>
 <body>
     <div class="scroll-progress" aria-hidden="true"><span></span></div>
@@ -209,12 +209,15 @@
                     <option data-ui value="research_institute">สถาบันวิจัย (Research Institute)</option>
                     <option data-ui value="internship">เครือข่ายสหกิจศึกษา (Internship)</option>
                 </select>
-                <div class="date-filter-row">
-                    <div class="date-range-field"><label data-ui id="filterCollabDateLabel" for="filterCollabDate">เริ่มต้น</label><input data-ui type="date" id="filterCollabDate" onchange="applyBrowseDateFilter('filterCollab')" aria-label="วันที่เริ่มต้นความร่วมมือ" lang="th-TH"></div>
-                    <div class="date-range-field"><label data-ui id="filterCollabDateEndLabel" for="filterCollabDateEnd">สิ้นสุด</label><input data-ui type="date" id="filterCollabDateEnd" onchange="applyBrowseDateFilter('filterCollab')" aria-label="วันที่สิ้นสุดความร่วมมือ" lang="th-TH"></div>
-                    <button data-ui type="button" id="filterCollabDateClear" class="date-clear-btn" onclick="clearBrowseDateFilter('filterCollab')" aria-label="ล้างวันที่" title="ล้างวันที่" hidden disabled><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
-                    <span id="filterCollabDateError" class="date-range-error" role="status" hidden></span>
-                </div>
+                <fieldset class="board-date-range" aria-labelledby="filterCollabDateLegend">
+                    <legend data-ui id="filterCollabDateLegend" hidden>วันจัดกิจกรรมที่องค์กรมีส่วนร่วม</legend>
+                    <div class="date-filter-row">
+                        <div class="date-range-field"><label data-ui id="filterCollabDateLabel" for="filterCollabDate">เริ่มต้น (ตั้งแต่)</label><input data-ui type="date" id="filterCollabDate" onchange="applyBrowseDateFilter('filterCollab')" lang="th-TH"></div>
+                        <div class="date-range-field"><label data-ui id="filterCollabDateEndLabel" for="filterCollabDateEnd">สิ้นสุด (ถึง)</label><input data-ui type="date" id="filterCollabDateEnd" onchange="applyBrowseDateFilter('filterCollab')" lang="th-TH"></div>
+                        <button data-ui type="button" id="filterCollabDateClear" class="date-clear-btn" onclick="clearBrowseDateFilter('filterCollab')" aria-label="ล้างวันที่" title="ล้างวันที่" hidden disabled><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                        <span id="filterCollabDateError" class="date-range-error" role="status" hidden></span>
+                    </div>
+                </fieldset>
             </div>
             <div class="grid" id="collaboratorGrid"></div>
         </section>
@@ -229,13 +232,16 @@
                     <option data-ui value="event">กิจกรรมทั่วไปและสัมมนา</option>
                     <option data-ui value="research">งานวิจัยและแลกเปลี่ยน</option>
                 </select>
-                <div class="date-filter-row">
-                    <div class="date-range-field"><label data-ui id="filterEventDateLabel" for="filterEventDate">เริ่มต้น</label><input data-ui type="date" id="filterEventDate" onchange="applyBrowseDateFilter('filterEvent')" aria-label="วันที่เริ่มต้นกิจกรรม" lang="th-TH"></div>
-                    <div class="date-range-field"><label data-ui id="filterEventDateEndLabel" for="filterEventDateEnd">สิ้นสุด</label><input data-ui type="date" id="filterEventDateEnd" onchange="applyBrowseDateFilter('filterEvent')" aria-label="วันที่สิ้นสุดกิจกรรม" lang="th-TH"></div>
-                    <button data-ui type="button" id="filterEventDateClear" class="date-clear-btn" onclick="clearBrowseDateFilter('filterEvent')" aria-label="ล้างวันที่" title="ล้างวันที่" hidden disabled><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
-                    <span id="filterEventDateError" class="date-range-error" role="status" hidden></span>
-                    <label data-ui id="filterEventUndated" class="undated-toggle" hidden><input type="checkbox" id="filterEventIncludeUndated" onchange="applyEventFilters()"> รวมกิจกรรมที่ไม่ระบุวันที่ <span id="filterEventUndatedCount"></span></label>
-                </div>
+                <fieldset class="board-date-range" aria-labelledby="filterEventDateLegend">
+                    <legend data-ui id="filterEventDateLegend" hidden>วันจัดกิจกรรมหรือช่วงวันที่ของข้อตกลง</legend>
+                    <div class="date-filter-row">
+                        <div class="date-range-field"><label data-ui id="filterEventDateLabel" for="filterEventDate">เริ่มต้น (ตั้งแต่)</label><input data-ui type="date" id="filterEventDate" onchange="applyBrowseDateFilter('filterEvent')" lang="th-TH"></div>
+                        <div class="date-range-field"><label data-ui id="filterEventDateEndLabel" for="filterEventDateEnd">สิ้นสุด (ถึง)</label><input data-ui type="date" id="filterEventDateEnd" onchange="applyBrowseDateFilter('filterEvent')" lang="th-TH"></div>
+                        <button data-ui type="button" id="filterEventDateClear" class="date-clear-btn" onclick="clearBrowseDateFilter('filterEvent')" aria-label="ล้างวันที่" title="ล้างวันที่" hidden disabled><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+                        <span id="filterEventDateError" class="date-range-error" role="status" hidden></span>
+                        <label data-ui id="filterEventUndated" class="undated-toggle" hidden><input type="checkbox" id="filterEventIncludeUndated" onchange="applyEventFilters()"> รวมกิจกรรมที่ไม่ระบุวันที่ <span id="filterEventUndatedCount"></span></label>
+                    </div>
+                </fieldset>
             </div>
             <div class="event-time-bar">
                 <div data-ui class="event-time-tabs" role="tablist" aria-label="ช่วงเวลาของกิจกรรม">

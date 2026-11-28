@@ -20,6 +20,19 @@
         if (description) { const small = document.createElement('small'); small.textContent = description; a.append(small); }
         return a;
     };
+    function createShortcutGroup(items) {
+        const section = document.createElement('section');
+        section.className = 'desk-create';
+        section.setAttribute('aria-labelledby','desk-create-heading');
+        const title = document.createElement('h2');
+        title.id = 'desk-create-heading';
+        title.textContent = 'เพิ่มข้อมูล';
+        const links = document.createElement('div');
+        links.className = 'desk-create-links';
+        links.append(items);
+        section.append(title,links);
+        return section;
+    }
     function clearWork() {
         document.body.classList.add('work-checking');
         window.CstuProposals?.clear();
@@ -47,13 +60,21 @@
             const selected = new URLSearchParams(location.search);
             const active = selected.get('view') || selected.get('kind') || 'home';
             const entries = [...destinations];
-            if (roles.some(r => ['staff','executive'].includes(r))) entries.push(['ภาพรวมความร่วมมือ','work.html?view=overview#board-section','overview']);
+            const staffOrExecutive = roles.some(r => ['staff','executive'].includes(r));
+            const landing = !selected.has('kind') && !selected.has('view');
+            const staffLanding = landing && staffOrExecutive;
+            if (staffOrExecutive) entries.push(['ภาพรวมความร่วมมือ','work.html?view=overview#board-section','overview']);
             if (auth.managedScopes(session).length) entries.push(['จัดการสิทธิ์ผู้ใช้','work.html?view=roles#board-section','roles']);
             for (const [title,href,key] of entries) {
-                const a = link(title,href); if (active === key) a.setAttribute('aria-current','page'); nav.append(a);
+                const a = link(title,href);
+                if (active === key) a.setAttribute('aria-current','page');
+                nav.append(a);
             }
             const name = session.user.accountType === 'demo' ? '' : (session.user.displayName || '').trim().split(/\s+/u)[0];
-            document.getElementById('work-title').textContent = name ? `สวัสดี ${name} วันนี้เริ่มงานอะไรดี?` : 'วันนี้เริ่มจากงานไหนดี?';
+            document.querySelector('.work-sidebar h2').textContent = staffLanding ? 'เมนูงาน' : 'พื้นที่ทำงาน';
+            const heading = document.getElementById('work-title');
+            if (staffLanding) heading.textContent = name ? `พื้นที่ทำงานของ${name}` : 'พื้นที่ทำงาน';
+            else heading.textContent = name ? `สวัสดี ${name} วันนี้เริ่มงานอะไรดี?` : 'วันนี้เริ่มจากงานไหนดี?';
             document.getElementById('work-role').textContent = [...new Set(roles.map(r => titles[r]).filter(Boolean))].join(' · ');
             const actions = document.getElementById('work-actions');
             if (active === 'home') {
@@ -63,15 +84,31 @@
                 actions.append(board);
             }
             const icons = {partners:'building',activities:'calendar-plus',agreements:'file-signature',exchanges:'globe'};
+            const createLinks = document.createDocumentFragment();
             for (const [kind,config] of Object.entries(window.CstuWork.kinds)) {
                 if (!window.CstuWork.canCreate(session,kind)) continue;
                 const a = link(config.create,`work.html?kind=${kind}&action=create#board-section`,{partners:'บันทึกองค์กรและผู้ติดต่อ',activities:'เชื่อมกิจกรรมกับคู่ความร่วมมือ',agreements:'บันทึกข้อตกลงและระยะเวลา',exchanges:'จัดการโครงการและผู้เข้าร่วม'}[kind]);
-                const icon = document.createElement('i'); icon.className = `fas fa-${icons[kind]}`; icon.setAttribute('aria-hidden','true'); a.prepend(icon); actions.append(a);
+                const icon = document.createElement('i'); icon.className = `fas fa-${icons[kind]}`; icon.setAttribute('aria-hidden','true'); a.prepend(icon); createLinks.append(a);
             }
-            actions.append(link('อ่านผลตอบรับ','work.html?view=feedback#board-section','รวบรวม Comment และ Form Feedback'));
-            document.body.classList.toggle('work-dashboard', !selected.has('kind') && !selected.has('view'));
+            if (staffLanding && createLinks.childElementCount) actions.append(createShortcutGroup(createLinks));
+            else actions.append(createLinks);
+            const feedback = link('อ่านผลตอบรับ','work.html?view=feedback#board-section','รวบรวม Comment และ Form Feedback');
+            if (staffLanding) {
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-comment-dots'; icon.setAttribute('aria-hidden','true');
+                feedback.prepend(icon);
+            }
+            actions.append(feedback);
+            document.body.classList.toggle('work-dashboard', landing);
+            document.body.classList.toggle('staff-workspace', staffOrExecutive);
+            document.body.classList.toggle('staff-landing', staffLanding);
             document.body.classList.toggle('work-proposals', active === 'proposals');
             document.body.classList.remove('work-checking');
+            // Native autofocus can miss a form that opened behind the permission gate.
+            if (staffOrExecutive && document.activeElement === document.body) {
+                const dialog = document.getElementById('record-detail');
+                if (dialog?.open) dialog.focus({preventScroll:true});
+            }
             if (active === 'proposals' || active === 'home') window.CstuProposals?.mount(session, active);
             document.querySelector('.navbar')?.classList.add('header-settled');
             document.querySelector('.page-title h1').textContent = 'ข้อมูลความร่วมมือ';

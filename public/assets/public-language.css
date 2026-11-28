@@ -43,34 +43,58 @@
     .login-header .back-link { margin-inline-start: 0; }
 }
 
-.public-buddhist-hint { display: none; grid-column: 1 / -1; }
+.public-buddhist-hint { display: none; }
 html[lang="en"] .public-buddhist-hint {
     display: block;
+    grid-column: 1 / -1;
     color: #554a4f;
     font-size: .85rem;
 }
+@media (min-width: 768px) {
+    html[lang="en"] .date-filter-row {
+        display: grid;
+        grid-template-columns: [from] minmax(0,180px) [to] minmax(0,180px) [clear-date] auto;
+        gap: 8px;
+    }
+    html[lang="en"] .date-range-field:first-child { grid-area: 1 / from; }
+    html[lang="en"] .date-range-field + .date-range-field { grid-area: 1 / to; }
+    html[lang="en"] .date-clear-btn { grid-area: 1 / clear-date; }
+    html[lang="en"] .buddhist-date-control { width: 100%; }
+    html[lang="en"] .date-filter-row > :is(.public-buddhist-hint, .date-range-error, .undated-toggle) {
+        grid-column: from / -1;
+    }
+}
+
 /* Keep categories and dates on the same control row when notes appear below. */
 @media (min-width: 768px) {
-    :where(html[lang="en"], #sectionEvent) .filter-wrapper.has-filter-controls {
+    #sectionEvent .filter-wrapper.has-filter-controls {
         --date-columns: [from] minmax(0, 180px) [to] minmax(0, 180px) [clear-date] 44px;
         display: grid;
+        align-items: end;
         grid-template-columns: repeat(3, auto) var(--date-columns);
         gap: 8px;
     }
-    :where(html[lang="en"], #sectionEvent) .date-filter-row { display: contents; }
-    :where(html[lang="en"], #sectionEvent) .date-range-field:first-child { grid-area: 1 / from; }
-    :where(html[lang="en"], #sectionEvent) .date-range-field + .date-range-field { grid-area: 1 / to; }
-    :where(html[lang="en"], #sectionEvent) .date-clear-btn { grid-area: 1 / clear-date; }
-    :where(html[lang="en"], #sectionEvent) .buddhist-date-control { width: 100%; }
-    :where(html[lang="en"], #sectionEvent) .date-filter-row > :is(.public-buddhist-hint, .date-range-error, .undated-toggle),
+    #sectionEvent .date-filter-row { display: contents; }
+    #sectionEvent .date-range-field:first-child { grid-area: 1 / from; }
+    #sectionEvent .date-range-field + .date-range-field { grid-area: 1 / to; }
+    #sectionEvent .date-clear-btn { grid-area: 1 / clear-date; }
+    #sectionEvent .buddhist-date-control { width: 100%; }
+    #sectionEvent .date-filter-row > :is(.public-buddhist-hint, .date-range-error, .undated-toggle),
     #sectionEvent .activity-date-notes > .public-buddhist-hint {
         grid-column: from / -1;
     }
     #sectionEvent .undated-toggle { grid-column: 1 / -1; }
 }
+@media (min-width: 1024px) {
+    #sectionEvent .board-date-range { display: contents; }
+    #sectionEvent .has-filter-controls > :is(.filter-caption, .modern-select, .clear-filter-btn) {
+        margin-block-start: 0;
+    }
+}
 @media (768px <= width < 1024px) {
-    :where(html[lang="en"], #sectionEvent) .filter-wrapper.has-filter-controls { grid-template-columns: repeat(3, auto); }
-    :where(html[lang="en"], #sectionEvent) .date-filter-row {
+    #sectionEvent .board-date-range { grid-column: 1 / -1; }
+    #sectionEvent .filter-wrapper.has-filter-controls { grid-template-columns: repeat(3, auto); }
+    #sectionEvent .date-filter-row {
         display: grid;
         grid-column: 1 / -1;
         grid-template-columns: var(--date-columns);
