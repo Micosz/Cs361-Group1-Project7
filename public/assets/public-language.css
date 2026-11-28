@@ -1,16 +1,20 @@
 .public-language {
     display: inline-flex;
     align-items: center;
+    flex: none;
     gap: 2px;
     inline-size: max-content;
     padding: 2px;
-    border: 1px solid var(--tu-red, #c3002f);
+    border: 1px solid #d8bfc2;
     border-radius: 999px;
     background: #fffaf2;
     color: var(--tu-red-hover, #9f0026);
-    font: 600 0.875rem/1.2 'Noto Sans Thai', sans-serif;
+    font: 700 0.8125rem/1.2 'Noto Sans Thai', sans-serif;
 }
 .public-language[hidden] { display: none; }
+body:has(dialog[open], #detailModal[style*='flex']) .navbar > .public-language {
+    visibility: hidden;
+}
 .public-language button {
     appearance: none;
     background: transparent;
@@ -18,16 +22,17 @@
     border-radius: inherit;
     color: inherit;
     font: inherit;
-    padding: 4px 9px;
-    min-height: 32px;
-    min-width: 34px;
+    letter-spacing: 0.035em;
+    padding: 0 4px;
+    min-inline-size: 36px;
+    min-block-size: 32px;
     cursor: pointer;
 }
-.public-language button[aria-pressed="true"] { background: var(--tu-red, #c3002f); color: #fff; }
+.public-language button[aria-pressed="true"] { background: var(--tu-red-hover, #9f0026); color: #fff; }
 .public-language button:focus-visible { outline: 3px solid var(--text-dark, #202020); outline-offset: 2px; }
-.login-header > .public-language { margin-inline-start: auto; }
-.login-header .back-link { margin-inline-start: 0.6rem; }
-.detail-toolbar > .public-language, .manual-header > .public-language { flex: none; }
+@media (pointer: coarse), (max-width: 767px) {
+    .public-language button { min-inline-size: 44px; min-block-size: 44px; }
+}
 @media (max-width: 767px) {
     body:not(.work-home) .navbar:has(> .public-language) {
         grid-template-columns: minmax(0, 1fr) auto auto;
@@ -35,12 +40,6 @@
     }
     body:not(.work-home) .navbar > .public-language { grid-area: 2 / 3; justify-self: end; }
     body:not(.work-home) .navbar:has(> .public-language) .search-wrapper { grid-area: 2 / 1 / 3 / 3; width: 100%; min-width: 0; }
-    .public-language { font-size: 0.8rem; }
-    .public-language button { padding-inline: 6px; }
-    .detail-toolbar:has(.public-language), .manual-header:has(.public-language) { flex-wrap: wrap; gap: 4px; }
-    .detail-toolbar:has(.public-language) .detail-tabs { flex: 1 0 100%; }
-    .login-header { flex-wrap: wrap; gap: 6px; }
-    .login-header .back-link { margin-inline-start: 0; }
 }
 
 .public-buddhist-hint { display: none; }

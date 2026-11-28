@@ -4,6 +4,8 @@
     if (document.body.classList.contains('work-home') || window.parent !== window) return;
     const messages = window.CstuPublicEnglish;
     if (!messages) return;
+    const homeTemplate = document.getElementById('home-language-template');
+    const homeSwitch = homeTemplate?.content.firstElementChild;
     const storageKey = 'cstuhub.public-language';
     const originalText = new WeakMap();
     const attributes = new WeakMap();
@@ -67,28 +69,12 @@
     function pair(el, english) {
         if (el?.firstChild) captureText(el.firstChild, english);
     }
-    function selector() {
-        const group = document.createElement('div');
-        group.className = 'public-language';
-        group.setAttribute('role', 'group');
-        attr(group, 'aria-label', 'ภาษาเว็บไซต์', 'Website language');
-        for (const [code, label] of [['th', 'ไทย'], ['en', 'English']]) {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.lang = code;
-            button.textContent = label;
-            button.dataset.language = code;
-            button.setAttribute('aria-pressed', String(language() === code));
-            button.onclick = () => {
-                if (!publicView) return;
-                preferred = code;
-                try { localStorage.setItem(storageKey, code); } catch { /* Keep this page usable. */ }
-                refresh();
-            };
-            group.append(button);
+    function updateHomeSwitch() {
+        if (!homeSwitch) return;
+        homeSwitch.hidden = !publicView;
+        for (const button of homeSwitch.querySelectorAll('button')) {
+            button.setAttribute('aria-pressed', String(button.dataset.language === language()));
         }
-        group.hidden = !publicView;
-        return group;
     }
     function refresh() {
         document.documentElement.lang = language();
@@ -99,12 +85,7 @@
             }
             for (const [name, copy] of attributes.get(el) || []) attr(el, name, copy.th, copy.en);
         }
-        for (const group of document.querySelectorAll('.public-language')) {
-            group.hidden = !publicView;
-            for (const button of group.querySelectorAll('button')) {
-                button.setAttribute('aria-pressed', String(button.dataset.language === language()));
-            }
-        }
+        updateHomeSwitch();
         window.dispatchEvent(new Event('cstu:language'));
     }
     function setPublic(value) {
@@ -112,12 +93,23 @@
         publicView = value;
         refresh();
     }
-    window.CstuLanguage = { language, translate, capture, pair, attr, live, selector, setPublic };
+    window.CstuLanguage = { language, translate, capture, pair, attr, live, setPublic };
     // Deferred before app renderers. Bind only the server-supplied UI nodes,
     // never traverse a rendered catalogue, a document or submitted comments.
     for (const el of document.querySelectorAll('[data-ui]')) capture(el);
-    const anchor = document.querySelector('.navbar > .manual-trigger, .login-header > .back-link');
-    if (anchor) anchor.before(selector());
+    if (homeSwitch) {
+        attr(homeSwitch, 'aria-label', 'ภาษาเว็บไซต์', 'Website language');
+        for (const button of homeSwitch.querySelectorAll('button')) {
+            button.addEventListener('click', () => {
+                if (!publicView) return;
+                preferred = button.dataset.language;
+                try { localStorage.setItem(storageKey, preferred); } catch { /* Keep this page usable. */ }
+                refresh();
+            });
+        }
+        updateHomeSwitch();
+        homeTemplate.replaceWith(homeSwitch);
+    }
     document.documentElement.lang = language();
     window.addEventListener('pageshow', event => {
         if (event.persisted) { readPreference(); refresh(); }
