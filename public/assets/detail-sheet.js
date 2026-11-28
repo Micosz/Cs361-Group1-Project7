@@ -54,9 +54,8 @@
         });
         buttons[1].hidden = buttons[2].hidden = true;
         details.append(...content);
-        bar.append(tabs);
-        if (ui) bar.append(ui.selector());
-        bar.append(close); main.append(bar, ...panels);
+        bar.append(tabs, close);
+        main.append(bar, ...panels);
         root.append(sidebar, main); root.classList.add('detail-sheet');
         select(0);
         const state = {root, sidebar, details, comments, forms, buttons, select, title, close};

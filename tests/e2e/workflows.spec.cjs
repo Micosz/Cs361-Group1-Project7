@@ -193,9 +193,14 @@ test('MoU period labels cover agreements and signing news without partial counts
   await expect(page.locator('#eventGrid .browse-card-open:visible')).toHaveText(['Signing story (fixture)']);
 });
 test('successful student login returns to public home without storing credentials', async ({page}) => {
-  await fixture(page); await page.goto('/login.html');
+  await fixture(page); await page.goto('/');
+  await page.locator('.navbar').getByRole('button',{name:'EN (English)', exact:true}).press('Space');
+  await page.getByRole('link',{name:'Sign in', exact:true}).click();
+  await expect(page.locator('[data-language]')).toHaveCount(0);
   await page.locator('#student-id').fill('test-account'); await page.locator('#student-password').fill('dummy-password');
   await page.locator('#login-submit').click(); await expect(page).toHaveURL(/index.html/);
+  await expect(page.locator('html')).toHaveAttribute('lang','en');
+  await expect(page.locator('.public-language')).toHaveCount(1);
   await expect(page.locator('.browse-hero-slot #tabExchange')).toBeVisible();
   expect(await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}))).not.toMatch(/dummy-password|test-account/);
 });
@@ -228,7 +233,7 @@ test('student can use Help and Exchange, then log out directly from the Welcome 
   await expect(page.locator('#cstu-manual')).toBeHidden();
 
   const languages = page.locator('.navbar .public-language');
-  await languages.getByRole('button', {name:'English', exact:true}).press('Enter');
+  await languages.getByRole('button', {name:'EN (English)', exact:true}).press('Enter');
   await expect(page.locator('#authNavButtons').getByRole('button', {name:'Logout', exact:true})).toBeVisible();
   const exchange = page.locator('#tabExchange');
   await expect(exchange).toHaveAccessibleName('Exchange');
@@ -265,7 +270,7 @@ test('failed student logout can be retried from the header', async ({page}) => {
   await expect(page.locator('#authNavButtons [role="status"]')).toHaveText('ออกจากระบบไม่สำเร็จ กรุณาลองอีกครั้ง');
   await expect(logout).toBeEnabled();
   await expect(page.locator('#tabExchange')).toBeVisible();
-  await page.locator('.navbar .public-language').getByRole('button', {name:'English', exact:true}).press('Enter');
+  await page.locator('.navbar .public-language').getByRole('button', {name:'EN (English)', exact:true}).press('Enter');
   await expect(page.locator('#authNavButtons [role="status"]')).toHaveText('Could not log out. Try again.');
   await page.locator('#authNavButtons').getByRole('button', {name:'Logout', exact:true}).press('Enter');
   await expect(page.locator('#authNavButtons').getByRole('link', {name:'Sign in', exact:true})).toBeVisible();

@@ -59,7 +59,7 @@
         if(modal)return;
         modal=node('dialog',null,'manual-dialog');modal.id='cstu-manual';modal.setAttribute('aria-labelledby','manual-title');
         const head=node('header',null,'manual-header'), title=uiNode('h2','คู่มือการใช้งาน');title.id='manual-title';
-        const c=uiNode('button','ปิดคู่มือ ×','manual-close');c.type='button';c.onclick=close;head.append(title);if(ui)head.append(ui.selector());head.append(c);
+        const c=uiNode('button','ปิดคู่มือ ×','manual-close');c.type='button';c.onclick=close;head.append(title,c);
         const layout=node('div',null,'manual-layout'), nav=node('nav',null,'manual-sidebar');nav.setAttribute('aria-label','สารบัญคู่มือ');
         const roleLabel=uiNode('label','คู่มือสำหรับ'), role=node('select');role.id='manual-role';roleLabel.append(role);
         const searchLabel=uiNode('label','ค้นหาฟีเจอร์'), search=node('input');search.type='search';search.id='manual-search';search.placeholder='เช่น แนบไฟล์ หรือ Feedback';searchLabel.append(search);
