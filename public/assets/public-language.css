@@ -43,32 +43,32 @@
     .login-header .back-link { margin-inline-start: 0; }
 }
 
-.public-buddhist-hint { display: none; }
+.public-buddhist-hint { display: none; grid-column: 1 / -1; }
 html[lang="en"] .public-buddhist-hint {
     display: block;
-    grid-column: 1 / -1;
     color: #554a4f;
     font-size: .85rem;
 }
+/* Keep categories and dates on the same control row when notes appear below. */
 @media (min-width: 768px) {
-    html[lang="en"] .filter-wrapper.has-filter-controls {
+    :where(html[lang="en"], #sectionEvent) .filter-wrapper.has-filter-controls {
         --date-columns: [from] minmax(0, 180px) [to] minmax(0, 180px) [clear-date] 44px;
         display: grid;
         grid-template-columns: repeat(3, auto) var(--date-columns);
         gap: 8px;
     }
-    html[lang="en"] .date-filter-row { display: contents; }
-    html[lang="en"] .date-range-field:first-child { grid-area: 1 / from; }
-    html[lang="en"] .date-range-field + .date-range-field { grid-area: 1 / to; }
-    html[lang="en"] .date-clear-btn { grid-area: 1 / clear-date; }
-    html[lang="en"] .buddhist-date-control { width: 100%; }
-    html[lang="en"] .date-filter-row > :is(.public-buddhist-hint, .date-range-error, .undated-toggle) {
+    :where(html[lang="en"], #sectionEvent) .date-filter-row { display: contents; }
+    :where(html[lang="en"], #sectionEvent) .date-range-field:first-child { grid-area: 1 / from; }
+    :where(html[lang="en"], #sectionEvent) .date-range-field + .date-range-field { grid-area: 1 / to; }
+    :where(html[lang="en"], #sectionEvent) .date-clear-btn { grid-area: 1 / clear-date; }
+    :where(html[lang="en"], #sectionEvent) .buddhist-date-control { width: 100%; }
+    :where(html[lang="en"], #sectionEvent) .date-filter-row > :is(.public-buddhist-hint, .date-range-error, .undated-toggle) {
         grid-column: from / -1;
     }
 }
 @media (768px <= width < 1024px) {
-    html[lang="en"] .filter-wrapper.has-filter-controls { grid-template-columns: repeat(3, auto); }
-    html[lang="en"] .date-filter-row {
+    :where(html[lang="en"], #sectionEvent) .filter-wrapper.has-filter-controls { grid-template-columns: repeat(3, auto); }
+    :where(html[lang="en"], #sectionEvent) .date-filter-row {
         display: grid;
         grid-column: 1 / -1;
         grid-template-columns: var(--date-columns);
@@ -87,3 +87,17 @@ html[lang="en"] .public-buddhist-hint {
     }
     #sectionEvent .undated-toggle input { flex: none; }
 }
+
+#sectionEvent .undated-toggle {
+    min-height: 44px;
+    width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
+    gap: 8px;
+    padding: 4px 10px;
+    border: 1px solid #ded6ca;
+    border-radius: 10px;
+    font-size: .875rem;
+    line-height: 1.5;
+}
+#sectionEvent .undated-toggle input { width: 18px; height: 18px; }

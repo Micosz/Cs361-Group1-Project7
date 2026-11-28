@@ -320,6 +320,7 @@ for (const width of [320,390,767,768,769,1023,1024,1025,1280]) {
     expect(Math.abs(first.x-original.x)).toBeLessThanOrEqual(1);
     expect(last.x).toBeGreaterThanOrEqual(first.x+first.width);
     expect(Math.abs(last.y-first.y)).toBeLessThanOrEqual(1);
+    expect(toggle.height).toBeGreaterThanOrEqual(44);
     if (width<768) {
       expect(toggle.x).toBeGreaterThanOrEqual(button.x+button.width);
       expect(toggle.y+toggle.height).toBeLessThanOrEqual(button.y+button.height+1);
@@ -335,6 +336,10 @@ for (const width of [320,390,767,768,769,1023,1024,1025,1280]) {
     await language(header(page),'th');
     await expect(end).toHaveValue('29/11/2569');
     await expect(checkbox).toBeChecked();
+    if (width>=1024) {
+      const [category,date] = await Promise.all([page.locator('#filterEvent'),start].map(el=>el.boundingBox()));
+      expect(Math.abs(category.y-date.y)).toBeLessThanOrEqual(1);
+    }
     await clear.press('Enter');
     await expect(start).toHaveValue('');
     await expect(end).toHaveValue('');
