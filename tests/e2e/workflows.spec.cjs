@@ -307,6 +307,44 @@ test('short filtered board keeps category buttons clickable below the mobile hea
   await expect(event).toHaveAttribute('aria-pressed', 'true');
 });
 
+test.describe('Welcome category buttons on a narrow phone', () => {
+  test.use({ viewport: {width:320, height:708}, isMobile:true, hasTouch:true, reducedMotion:'reduce' });
+  for (const role of [null, 'student']) {
+    for (const language of ['th', 'en']) {
+      test(`${role || 'guest'} can read and tap the ${language} categories`, async ({page}) => {
+        await fixture(page, role);
+        await page.goto('/index.html');
+        await page.locator('.navbar [data-language="' + language + '"]').click();
+        const group = page.locator('.browse-hero-slot .browse-tabs');
+        const buttons = group.getByRole('button');
+        await expect(buttons).toHaveCount(role ? 3 : 2);
+        for (const button of await buttons.all()) {
+          const geometry = await button.evaluate(node => {
+            const box = node.getBoundingClientRect();
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            const lines = [...range.getClientRects()];
+            const fits = lines.every(line =>
+              line.left >= box.left - 1 && line.right <= box.right + 1 &&
+              line.top >= box.top - 1 && line.bottom <= box.bottom + 1);
+            return {fits, lines:lines.length, left:box.left, right:box.right, height:box.height, font:parseFloat(getComputedStyle(node).fontSize)};
+          });
+          expect(geometry.fits).toBe(true);
+          expect(geometry.left).toBeGreaterThanOrEqual(0);
+          expect(geometry.right).toBeLessThanOrEqual(320);
+          expect(geometry.height).toBeGreaterThanOrEqual(48);
+          expect(geometry.font).toBeGreaterThanOrEqual(16);
+          if (language === 'en' && !(await button.innerText()).includes(' ')) expect(geometry.lines).toBe(1);
+        }
+        const activity = language === 'th' ? 'กิจกรรมและ MoU' : 'Activities & MoU';
+        await group.getByRole('button', {name:activity, exact:true}).tap();
+        await expect(page.locator('.browse-board-slot #tabEvent')).toHaveAttribute('aria-pressed','true');
+        await expect(page).toHaveURL(/#board-section$/);
+      });
+    }
+  }
+});
+
 test('category buttons keep focus and selection across the desktop scroll scene', async ({page}) => {
   await fixture(page);
   await page.setViewportSize({width:1280,height:800});

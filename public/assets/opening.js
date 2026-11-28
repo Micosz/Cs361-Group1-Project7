@@ -46,7 +46,6 @@
         const boardTabs = boardScene?.querySelector('.tabs');
         const boardContent = boardScene?.querySelector('main');
         const heroSlot = hero.querySelector('.browse-hero-slot');
-        const boardLink = hero.querySelector('.welcome-board-link');
         const boardSlot = heroSlot && boardTabs ? document.createElement('div') : null;
         const header = document.querySelector('.navbar');
         let tabSizeObserver;
@@ -73,7 +72,7 @@
                 if (header) tabSizeObserver.observe(header);
             }
         }
-        const welcomeParts = [...hero.querySelectorAll('.heading-intro, .heading-end, .hero-features, .welcome-board-link')];
+        const welcomeParts = [...hero.querySelectorAll('.heading-intro, .heading-end, .hero-features')];
         const bridge = document.createElement('span');
         bridge.className = 'scene-title-bridge';
         bridge.setAttribute('aria-hidden', 'true');
@@ -199,7 +198,6 @@
             if (settled) {
                 paintScene(heading, { visibility: progress < .86 ? 'visible' : 'hidden' });
                 paintScene(subject, { opacity: progress === 0 || !titleGeometry ? '1' : '0' });
-                if (boardLink) paintScene(boardLink, { visibility: copyExit < 1 ? 'visible' : 'hidden' });
                 welcomeParts.forEach(element => paintScene(element, {
                     opacity: String(1 - copyExit), transform: `translateY(${-24 * copyExit}px)`
                 }));
@@ -297,26 +295,16 @@
         // Own the ordinary anchor scroll so the browser cannot start a competing
         // scroll toward the board while it is still transformed. Keep the same URL.
         on(window, 'cstu:board', () => { finish(); advanceScene(); });
-        function enterBoard(event) {
+        if (boardSlot) on(boardTabs, 'click', event => {
+            if (!event.target.closest('button.tab') || boardTabs.parentElement === boardSlot) return;
             finish();
             if (window.location.hash !== '#board-section') {
                 try { window.history.pushState(null, '', '#board-section'); }
                 catch { /* Some local file previews disallow History API updates. */ }
             }
-            // Keyboard and assistive activation should place the focused control at its destination immediately.
+            // Keyboard and assistive activation should place the focused button at its destination immediately.
             advanceScene(event.detail === 0);
-        }
-        if (boardSlot) {
-            on(boardTabs, 'click', event => {
-                if (event.target.closest('button.tab') && boardTabs.parentElement !== boardSlot) enterBoard(event);
-            });
-            if (boardLink) on(boardLink, 'click', event => {
-                if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                event.preventDefault();
-                boardTabs.querySelector('.tab.active')?.focus({ preventScroll: true });
-                enterBoard(event);
-            });
-        }
+        });
         on(document.querySelector('.search-btn'), 'click', () => {
             if (boardScene && scrollY < boardScene.offsetTop - 92) advanceScene();
         });
