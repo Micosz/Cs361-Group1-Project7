@@ -28,6 +28,34 @@ async function fixture(page, role, failLogin = false) {
   });
   return requests;
 }
+test('record border follows the read dialog through loading and leaves the creation form alone', async ({page}) => {
+  await fixture(page,'staff');
+  const row = {id:'edge-fixture',title:'Sample exchange',scopeId:'demo'};
+  await page.route('**/api/exchanges?*', route => route.fulfill({json:{data:[row],count:1,page:{nextCursor:null}}}));
+  let release;
+  const pending = new Promise(resolve => { release = resolve; });
+  await page.route('**/api/exchanges/edge-fixture', async route => {
+    await pending;
+    await route.fulfill({json:{data:row}});
+  });
+  await page.goto('/work.html?kind=exchanges#board-section');
+  const button = page.locator('.records-list').getByRole('button',{name:row.title});
+  const dialog = page.locator('#record-detail[open]');
+  await button.press('Enter');
+  try {
+    await expect(dialog.locator('#detail-title')).toHaveText('กำลังโหลด');
+    await expect(dialog).toHaveCSS('border-top-color','rgb(128, 128, 128)');
+  } finally { release(); }
+  await expect(dialog.locator('#detail-title')).toHaveText(row.title);
+  await expect(dialog).toHaveCSS('border-top-width','1px');
+  await expect(dialog).toHaveCSS('border-top-color','rgb(128, 128, 128)');
+  await page.keyboard.press('Escape');
+  await expect(button).toBeFocused();
+  await page.goto('/work.html?kind=partners&action=create#board-section');
+  await expect(dialog.locator('.entry-form')).toBeVisible();
+  await expect(dialog).not.toHaveCSS('border-top-color','rgb(128, 128, 128)');
+});
+
 test('public catalog renders, searches, and opens detail in a real browser', async ({page}) => {
   await fixture(page); await page.goto('/index.html');
   await page.locator('#tabCollab').click();
