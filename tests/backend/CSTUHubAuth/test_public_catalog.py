@@ -256,3 +256,78 @@ class PublicCatalogTests(unittest.TestCase):
             queryStringParameters={'scopeId': 'cs-demo'},
             requestContext={'http': {'method': 'GET'}}
         ))['statusCode'])
+
+    def test_legacy_records_without_entity_type_work_in_list_detail_and_info_metric_log(self):
+        import logging
+        from backend.business import dynamo_repository as repo_module
+        table = [
+            # Modern v3 records (with entityType)
+            dict(id='v3-p1', type='company', entityType='partner', name='Modern Partner',
+                 summary='V3 summary', fullDescription='V3 detail',
+                 publication='public', scopeId='cs-demo', version=1),
+            dict(id='v3-a1', type='event', entityType='activity', title='Modern Activity',
+                 summary='V3 act summary', fullDescription='V3 act detail',
+                 partnerId='v3-p1', publication='public', scopeId='cs-demo', version=1),
+            # Legacy records (NO entityType)
+            dict(id='leg-p1', type='company', name='Legacy Partner',
+                 summary='Legacy summary', full_description='Legacy full detail',
+                 location='Bangkok', access_level='public'),
+            dict(id='leg-a1', type='event', title='Legacy Activity',
+                 summary='Legacy act summary', full_description='Legacy act full detail',
+                 partnerId='leg-p1', co_hosts=['Legacy Partner'],
+                 period_date='2025-10-01', visibility='public'),
+            # Non-public / retired legacy rows must stay hidden
+            dict(id='leg-hidden', type='company', name='Hidden Legacy', access_level='internal'),
+            dict(id='leg-retired', type='company', name='Retired Legacy',
+                 access_level='public', source_state='retired'),
+        ]
+        scan_queries = []
+
+        def scan(**query):
+            scan_queries.append(query)
+            return {
+                'Items': [values(row) for row in table],
+                'ConsumedCapacity': {'TableName': query['TableName'], 'CapacityUnits': 4.0},
+            }
+
+        def query(**kwargs):
+            key = kwargs['ExpressionAttributeValues'][':id']['S']
+            matched = [values(row) for row in table if row['id'] == key]
+            return {
+                'Items': matched,
+                'ConsumedCapacity': {'TableName': kwargs['TableName'], 'CapacityUnits': 1.0},
+            }
+
+        self.assertEqual(logging.INFO, repo_module.LOGGER.level)
+        repository = DynamoBusinessRepository(
+            SimpleNamespace(scan=scan, query=query), 'business', None, 'users', 'sessions',
+            partner_table='CSTUHub-Partner'
+        )
+        app = AuthApplication(None, None, None, None, None, repository)
+
+        with self.assertLogs(repo_module.LOGGER, level='INFO') as captured:
+            list_res = app.handle(dict(version='2.0', rawPath='/api/public/records',
+                                       queryStringParameters={'view': 'cards'},
+                                       requestContext={'http': {'method': 'GET'}}))
+            self.assertEqual(200, list_res['statusCode'])
+            cards = json.loads(list_res['body'])
+            self.assertEqual({'v3-p1', 'v3-a1', 'leg-p1', 'leg-a1'}, {r['id'] for r in cards})
+            self.assertIn('attribute_not_exists(#kind)', scan_queries[0]['FilterExpression'])
+            self.assertTrue(all('full_description' not in r for r in cards))
+
+            leg_p_res = app.handle(dict(version='2.0', rawPath='/api/public/partners/leg-p1',
+                                        requestContext={'http': {'method': 'GET'}}))
+            self.assertEqual(200, leg_p_res['statusCode'])
+            self.assertEqual('Legacy full detail', json.loads(leg_p_res['body'])['data']['full_description'])
+
+            leg_a_res = app.handle(dict(version='2.0', rawPath='/api/public/activities/leg-a1',
+                                        requestContext={'http': {'method': 'GET'}}))
+            self.assertEqual(200, leg_a_res['statusCode'])
+            leg_a_data = json.loads(leg_a_res['body'])['data']
+            self.assertEqual('Legacy act full detail', leg_a_data['full_description'])
+            self.assertEqual('Legacy Partner', leg_a_data['partnerName'])
+            self.assertEqual(['Legacy Partner'], leg_a_data['co_hosts'])
+
+        joined_logs = '\n'.join(captured.output)
+        self.assertIn('"metric": "public_catalog_read"', joined_logs)
+        self.assertIn('"metric": "public_record_read"', joined_logs)

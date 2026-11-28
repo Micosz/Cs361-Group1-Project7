@@ -27,6 +27,23 @@ from ..feedback_moderation import (MODERATION_STATES, MODERATOR_ROLES, REPORT_RE
 
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.INFO)
+
+
+def _public_kind(row):
+    """Identify partner/activity rows, including legacy records without entityType."""
+    if not isinstance(row, dict):
+        return None
+    kind = row.get('entityType')
+    if kind in {'partner', 'activity'}:
+        return kind
+    if kind is not None:
+        return None
+    if 'partnerId' in row:
+        return 'activity'
+    if isinstance(row.get('name'), str) and row['name'].strip():
+        return 'partner'
+    return None
 
 
 def _consumed_rcu(result):
@@ -164,6 +181,35 @@ class DynamoBusinessRepository:
             if not cursor:
                 return rows
 
+    def _read_public(self, key, kind, metrics):
+        """Read one active public candidate by key, including legacy rows without entityType."""
+        if self.partner_table and kind in {'partner', 'activity'}:
+            rows, cursor = [], None
+            while True:
+                query = dict(TableName=self.partner_table, ConsistentRead=True,
+                             ReturnConsumedCapacity='TOTAL',
+                             KeyConditionExpression='#id = :id', ExpressionAttributeNames={'#id': 'id'},
+                             ExpressionAttributeValues=values({':id': key}))
+                if cursor:
+                    query['ExclusiveStartKey'] = cursor
+                result = self.client.query(**query)
+                metrics['dynamoCalls'] += 1
+                metrics['consumedRcu'] += _consumed_rcu(result)
+                rows.extend(decode(item) for item in result.get('Items', []))
+                cursor = result.get('LastEvaluatedKey')
+                if not cursor:
+                    break
+            matches = [row for row in rows if _public_kind(row) == kind and row.get('source_state') != 'retired']
+            if len(matches) > 1:
+                raise AuthError('AMBIGUOUS_RECORD', 409)
+            return matches[0] if matches else None
+        result = self.client.get_item(TableName=self.table, Key=values({'id': key}),
+                                      ConsistentRead=True, ReturnConsumedCapacity='TOTAL')
+        metrics['dynamoCalls'] += 1
+        metrics['consumedRcu'] += _consumed_rcu(result)
+        row = decode(result.get('Item'))
+        return row if row and _public_kind(row) == kind and row.get('source_state') != 'retired' else None
+
     def public_catalog(self, *, view='full'):
         # Public reads never reuse editor projections, assignments or child records.
         from ..permissions.projections import public_projection
@@ -174,7 +220,7 @@ class DynamoBusinessRepository:
         while True:
             query = dict(TableName=self._table('partner'), ConsistentRead=True,
                          ReturnConsumedCapacity='TOTAL',
-                         FilterExpression='#kind IN (:partner, :activity)',
+                         FilterExpression='#kind IN (:partner, :activity) OR attribute_not_exists(#kind)',
                          ExpressionAttributeNames={'#kind': 'entityType'},
                          ExpressionAttributeValues=values({':partner': 'partner', ':activity': 'activity'}))
             if cursor:
@@ -191,20 +237,22 @@ class DynamoBusinessRepository:
         # Ambiguous active partner IDs fail closed, including a private/public duplicate.
         partners = {}
         for row in rows:
-            if row.get('entityType') == 'partner':
+            if _public_kind(row) == 'partner':
                 key = row.get('id')
                 if isinstance(key, str) and key:
                     partners[key] = None if key in partners else row
         catalog = []
         card_only = view == 'cards'
         for row in rows:
-            kind = row.get('entityType')
+            kind = _public_kind(row)
+            if kind is None:
+                continue
             if kind == 'partner' and partners.get(row.get('id')) is None:
                 continue
             projected = public_projection(kind, row, partners, card=card_only)
             if projected is not None:
                 projected['visibility'] = 'public'
-                if row.get('legacySource') and kind == 'activity':
+                if kind == 'activity' and (row.get('legacySource') or ('entityType' not in row and 'coHostPartnerIds' not in row)):
                     labels = row.get('co_hosts', [])
                     if isinstance(labels, list) and all(isinstance(label, str) for label in labels):
                         projected['co_hosts'] = list(labels)
@@ -227,12 +275,12 @@ class DynamoBusinessRepository:
             raise AuthError('NOT_FOUND', 404)
         metrics = {'metric': 'public_record_read', 'kind': kind, 'dynamoCalls': 0, 'consumedRcu': 0.0}
         try:
-            row = self._read(key, kind, metrics=metrics)
+            row = self._read_public(key, kind, metrics)
         except AuthError as error:
             if error.code == 'AMBIGUOUS_RECORD':
                 raise AuthError('NOT_FOUND', 404) from None
             raise
-        if not row or row.get('entityType') != kind or row.get('source_state') == 'retired':
+        if not row or _public_kind(row) != kind or row.get('source_state') == 'retired':
             raise AuthError('NOT_FOUND', 404)
         partners = {}
         if kind == 'activity':
@@ -247,19 +295,19 @@ class DynamoBusinessRepository:
                         partner_ids.append(pid)
             for pid in partner_ids:
                 try:
-                    partner_row = self._read(pid, 'partner', metrics=metrics)
+                    partner_row = self._read_public(pid, 'partner', metrics)
                 except AuthError as error:
                     if error.code == 'AMBIGUOUS_RECORD':
                         partners[pid] = None
                         continue
                     raise
-                if partner_row and partner_row.get('entityType') == 'partner' and partner_row.get('source_state') != 'retired':
+                if partner_row and _public_kind(partner_row) == 'partner' and partner_row.get('source_state') != 'retired':
                     partners[pid] = partner_row
         projected = public_projection(kind, row, partners if kind == 'activity' else None, card=False)
         if projected is None:
             raise AuthError('NOT_FOUND', 404)
         projected['visibility'] = 'public'
-        if row.get('legacySource') and kind == 'activity':
+        if kind == 'activity' and (row.get('legacySource') or ('entityType' not in row and 'coHostPartnerIds' not in row)):
             labels = row.get('co_hosts', [])
             if isinstance(labels, list) and all(isinstance(label, str) for label in labels):
                 projected['co_hosts'] = list(labels)

@@ -62,8 +62,9 @@
             return state;
         })();
         if (!options.signal) {
-            refreshPromise = run;
-            run.finally(() => { if (refreshPromise === run) refreshPromise = null; });
+            const tracked = run.finally(() => { if (refreshPromise === tracked) refreshPromise = null; });
+            refreshPromise = tracked;
+            return tracked;
         }
         return run;
     }

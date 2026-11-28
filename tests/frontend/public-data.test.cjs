@@ -121,3 +121,52 @@ test('CstuAuth.refresh deduplicates concurrent startup calls without caching sta
     await context.window.CstuAuth.refresh();
     assert.equal(calls, 2);
 });
+test('CstuAuth.refresh handles 503 failure without unhandledrejection and recovers on retry', async () => {
+    let calls = 0;
+    let fail = true;
+    const csrf = 'b'.repeat(64);
+    const unhandled = [];
+    const onUnhandled = reason => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    try {
+        const context = vm.createContext({
+            AbortController, setTimeout, clearTimeout,
+            Event: class { constructor(type) { this.type = type; } },
+            window: { CSTU_AUTH_CONFIG: { enabled: true }, dispatchEvent() {} },
+            fetch: async () => {
+                calls++;
+                if (fail) {
+                    return {
+                        ok: false, status: 503,
+                        headers: { get: () => 'application/json' },
+                        text: async () => JSON.stringify({ error: { code: 'SESSION_UNAVAILABLE' } })
+                    };
+                }
+                return {
+                    ok: true, status: 200,
+                    headers: { get: () => 'application/json' },
+                    text: async () => JSON.stringify({ user: null, grants: [], capabilities: [], csrfToken: csrf })
+                };
+            }
+        });
+        vm.runInContext(authSource, context);
+        const settled = await Promise.allSettled([
+            context.window.CstuAuth.refresh(),
+            context.window.CstuAuth.refresh()
+        ]);
+        await new Promise(resolve => setTimeout(resolve, 10));
+        assert.equal(calls, 1);
+        assert.equal(settled[0].status, 'rejected');
+        assert.equal(settled[1].status, 'rejected');
+        assert.equal(settled[0].reason.status, 503);
+        assert.equal(unhandled.length, 0);
+
+        // Retry after 503 recovers cleanly with a fresh request.
+        fail = false;
+        const recovered = await context.window.CstuAuth.refresh();
+        assert.equal(calls, 2);
+        assert.equal(recovered.csrfToken, csrf);
+    } finally {
+        process.off('unhandledRejection', onUnhandled);
+    }
+});
