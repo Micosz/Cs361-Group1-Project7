@@ -290,6 +290,94 @@ class FormFeedbackReportTests(unittest.TestCase):
         self.assertEqual({'batchCount': 3, 'responseCount': 8, 'mou1Responses': 3, 'mou2Responses': 2, 'unspecifiedResponses': 3}, first_totals)
         self.assertEqual(first_totals, second_totals)
 
+    def test_overview_agreement_status_filter_aligns_totals_breakdown_and_batches(self):
+        partner, mou1, mou2, activity, exchange = self.setup_v7_partner_and_agreements()
+
+        # Activate MoU 1 ("มีผล") while leaving MoA 2 in "draft" ("ร่าง").
+        self.actor = 'staff'
+        st_res, st_body = self.call(
+            f'/api/agreements/{mou1["id"]}/status',
+            'POST', {'to': 'active'}, version=mou1['version'],
+        )
+        self.assertEqual(200, st_res['statusCode'], st_body)
+
+        act_payload = load_csv_payload(
+            'v7-activity-mou1-feedback.csv',
+            'แบบประเมินกิจกรรม AI Workshop',
+            'participant',
+        )
+        self.actor = 'coordinator'
+        act_res, act_body = self.call(
+            f'/api/activities/{activity["id"]}/form-feedback',
+            'POST', act_payload, key='status-filter-activity-264',
+        )
+        self.assertEqual(201, act_res['statusCode'], act_body)
+
+        # Executive filters by "expired" ("หมดอายุ"): 0 total, 0 breakdown, no source file in batches.
+        self.actor = 'executive'
+        exp_res, exp_body = self.call('/api/overview?status=expired')
+        self.assertEqual(200, exp_res['statusCode'], exp_body)
+        exp_ff = exp_body['data']['formFeedback']
+        self.assertEqual(0, exp_ff['batchCount'])
+        self.assertEqual(0, exp_ff['responseCount'])
+        self.assertEqual([], exp_ff['byAgreement'])
+        self.assertEqual(0, exp_ff['unspecifiedAgreement']['responseCount'])
+        self.assertEqual([], exp_ff['batches'])
+        self.assertEqual({}, exp_ff['bySource'])
+
+        # Executive filters by "active" ("มีผล"): file returns and totals/breakdown all equal 3.
+        act_ov_res, act_ov_body = self.call('/api/overview?status=active')
+        self.assertEqual(200, act_ov_res['statusCode'], act_ov_body)
+        act_ff = act_ov_body['data']['formFeedback']
+        self.assertEqual(1, act_ff['batchCount'])
+        self.assertEqual(3, act_ff['responseCount'])
+        self.assertEqual([mou1['id']], [row['id'] for row in act_ff['byAgreement']])
+        self.assertEqual(3, act_ff['byAgreement'][0]['responseCount'])
+        self.assertEqual(0, act_ff['unspecifiedAgreement']['responseCount'])
+        self.assertEqual(1, len(act_ff['batches']))
+        self.assertEqual('v7-activity-mou1-feedback.csv', act_ff['batches'][0]['fileName'])
+        self.assertEqual({'participant': 3}, act_ff['bySource'])
+
+        # Also verify Exchange feedback under an active MoA appears under status=active and disappears under status=expired.
+        self.actor = 'staff'
+        st2_res, st2_body = self.call(
+            f'/api/agreements/{mou2["id"]}/status',
+            'POST', {'to': 'active'}, version=mou2['version'],
+        )
+        self.assertEqual(200, st2_res['statusCode'], st2_body)
+        upd_ex_res, upd_ex_body = self.call(
+            f'/api/exchanges/{exchange["id"]}',
+            'PATCH', {'endDate': '2027-03-31'}, version=exchange['version'],
+        )
+        self.assertEqual(200, upd_ex_res['statusCode'], upd_ex_body)
+        ex_st_res, ex_st_body = self.call(
+            f'/api/exchanges/{exchange["id"]}/status',
+            'POST', {'to': 'ongoing'}, version=upd_ex_body['data']['version'],
+        )
+        self.assertEqual(200, ex_st_res['statusCode'], ex_st_body)
+        ex_payload = load_csv_payload(
+            'v7-exchange-mou2-feedback.csv',
+            'แบบประเมินโครงการแลกเปลี่ยนวิจัย',
+            'participant',
+        )
+        ex_res, ex_body = self.call(
+            f'/api/exchanges/{exchange["id"]}/form-feedback',
+            'POST', ex_payload, key='status-filter-exchange-264',
+        )
+        self.assertEqual(201, ex_res['statusCode'], ex_body)
+
+        self.actor = 'executive'
+        both_active = self.call('/api/overview?status=active')[1]['data']['formFeedback']
+        self.assertEqual(2, both_active['batchCount'])
+        self.assertEqual(5, both_active['responseCount'])
+        by_agr = {row['id']: row['responseCount'] for row in both_active['byAgreement']}
+        self.assertEqual({mou1['id']: 3, mou2['id']: 2}, by_agr)
+        self.assertEqual(2, len(both_active['batches']))
+        both_expired = self.call('/api/overview?status=expired')[1]['data']['formFeedback']
+        self.assertEqual(0, both_expired['batchCount'])
+        self.assertEqual(0, both_expired['responseCount'])
+        self.assertEqual([], both_expired['batches'])
+
 
 if __name__ == '__main__':
     unittest.main()

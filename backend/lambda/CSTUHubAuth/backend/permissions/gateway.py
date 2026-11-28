@@ -600,7 +600,15 @@ class PermissionGateway:
                              **links})
         feedback.sort(key=lambda row: row.get('date') or '', reverse=True)
 
+        selected_status = query.get('status')
+        filtering_by_agreement = bool(selected_agreement) or ('status' in query)
         form_parents = dict(visible_parents)
+        if selected_status in {'active', 'expired', 'terminated'}:
+            for row in authorized('exchange'):
+                if (in_period('exchange', row)
+                        and related_to_selected_stakeholder('exchange', row)
+                        and row.get('agreementId') in selected_agreement_ids):
+                    form_parents[('exchange', row['id'])] = row
         if include_partner_feedback:
             for row in partners:
                 form_parents[('partner', row['id'])] = row
@@ -614,18 +622,20 @@ class PermissionGateway:
                 created_day = (row.get('createdAt') or '')[:10]
                 if not valid_day(created_day) or (start and created_day < start) or (end and created_day > end):
                     continue
+            valid_agreements = self._parent_agreements(parent, agreement_cache)
+            matched_agreements = [agr for agr in valid_agreements if agr['id'] in agreement_stats]
+            if filtering_by_agreement and not matched_agreements:
+                continue
             item = project(context, 'formFeedback', row, parent)
             links = self._feedback_links(context, parent, partner_cache, agreement_cache)
-            valid_agreements = self._parent_agreements(parent, agreement_cache)
             resp_count = int(item.get('responseCount', 0))
             if not valid_agreements:
                 unspecified_stats['batchCount'] += 1
                 unspecified_stats['responseCount'] += resp_count
             else:
-                for agr in valid_agreements:
-                    if agr['id'] in agreement_stats:
-                        agreement_stats[agr['id']]['batchCount'] += 1
-                        agreement_stats[agr['id']]['responseCount'] += resp_count
+                for agr in matched_agreements:
+                    agreement_stats[agr['id']]['batchCount'] += 1
+                    agreement_stats[agr['id']]['responseCount'] += resp_count
             form_batches.append({
                 'id': item['id'],
                 'formName': item.get('formName', ''),

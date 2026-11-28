@@ -94,10 +94,10 @@ python3 -m unittest discover -s tests/deployment
 > บน Windows ที่ติดตั้ง Python ผ่านตัวติดตั้งแยกหรือ WindowsApps สามารถระบุตัวแปรสภาพแวดล้อม `PYTHON="<path-to-python.exe>"` ก่อนรัน `npm run test:v7-feedback` ได้ทันที
 
 ### ผลรันชุดทดสอบล่าสุด
-- `npm run test:v7-feedback` (`tests/v7-feedback/journey.spec.cjs`): **ผ่าน 1 ข้อ (ครบทุกขั้นตอนย่อยบน Chrome จริง)**
+- `npm run test:v7-feedback` (`tests/v7-feedback/journey.spec.cjs`): **ผ่าน 1 ข้อ (ครบทุกขั้นตอนย่อยบน Chrome จริง รวมตัวกรองสถานะข้อตกลง `หมดอายุ` → `0` และ `มีผล` → แสดงไฟล์และยอดตรงกับ CSV)**
 - `node scripts/run-tests.cjs frontend`: **ผ่าน 44 / 44 ข้อ**
 - `node scripts/run-tests.cjs lambda`: **ผ่าน 9 / 9 ข้อ**
-- `python tests/run-backend.py`: **ผ่าน 273 / 273 ข้อ**
+- `python tests/run-backend.py`: **ผ่าน 274 / 274 ข้อ**
 - `python -m unittest discover -s tests/deployment`: **ผ่าน 21 / 21 ข้อ**
 
 ---

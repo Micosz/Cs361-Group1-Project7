@@ -303,6 +303,38 @@ test('V7 #264 browser journey: import 3 feedback types, verify Overview & permis
         await expect(ffPanel.locator('.overview-form-list > li')).toHaveCount(3);
 
         await captureDesktop(execPage, '05-overview-after-second-import.png', ffPanel);
+
+        // 9. Verify agreement status filter aligns Overview totals, per-agreement breakdown, source file list, and CSV export
+        const statusSelect = execPage.locator('.overview-filters select[name="status"]');
+        const applyBtn = execPage.locator('.overview-filters button[type="submit"]');
+        const exportBtn = execPage.getByRole('button', { name: 'ส่งออกรายงาน CSV' });
+
+        await statusSelect.selectOption('expired');
+        await applyBtn.click();
+        await expect(ffPanel.locator('.overview-panel-total')).toHaveText('รวม 0 ชุด · 0 คำตอบ');
+        await expect(ffPanel.locator('.overview-form-list')).toHaveCount(0);
+        await expect(ffPanel).toContainText('ยังไม่มีผลตอบรับที่นำเข้าจากไฟล์ตามเงื่อนไขที่เลือก');
+        const expDownloadPromise = execPage.waitForEvent('download');
+        await exportBtn.click();
+        const expCsv = await fs.readFile(await (await expDownloadPromise).path(), 'utf8');
+        expect(expCsv).toContain('"Form Feedback","ชุดแบบฟอร์มนำเข้าทั้งหมด","0"');
+        expect(expCsv).toContain('"Form Feedback","จำนวนคำตอบนำเข้าทั้งหมด","0"');
+
+        await statusSelect.selectOption('active');
+        await applyBtn.click();
+        await expect(ffPanel.locator('.overview-panel-total')).toHaveText('รวม 2 ชุด · 5 คำตอบ');
+        await expect(ffPanel.locator('[data-agreement-id="mou-v7-1"] .overview-breakdown-count')).toHaveText('1 ชุด · 3 คำตอบ');
+        await expect(ffPanel.locator('[data-agreement-id="moa-v7-2"] .overview-breakdown-count')).toHaveText('1 ชุด · 2 คำตอบ');
+        await expect(ffPanel.locator('[data-agreement-status="unspecified"] .overview-breakdown-count')).toHaveText('0 ชุด · 0 คำตอบ');
+        await expect(ffPanel.locator('.overview-form-list > li')).toHaveCount(2);
+        const actDownloadPromise = execPage.waitForEvent('download');
+        await exportBtn.click();
+        const actCsv = await fs.readFile(await (await actDownloadPromise).path(), 'utf8');
+        expect(actCsv).toContain('"Form Feedback","ชุดแบบฟอร์มนำเข้าทั้งหมด","2"');
+        expect(actCsv).toContain('"Form Feedback","จำนวนคำตอบนำเข้าทั้งหมด","5"');
+        expect(actCsv).toContain('"ผลตอบรับตามข้อตกลง","MoU ฉบับที่ 1 — ความร่วมมือทางวิชาการและกิจกรรม AI","3"');
+        expect(actCsv).toContain('"ผลตอบรับตามข้อตกลง","MoA ฉบับที่ 2 — โครงการแลกเปลี่ยนวิจัยนักศึกษา","2"');
+        expect(actCsv).toContain('"ผลตอบรับตามข้อตกลง","ยังไม่ระบุข้อตกลง","0"');
     } finally {
         await fx.close();
     }
