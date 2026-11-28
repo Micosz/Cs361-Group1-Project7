@@ -1,0 +1,261 @@
+/* Authenticated Staff / Executive desk. Destinations retain their own layout. */
+body.staff-landing {
+    --desk-line: #ddd9d1;
+    --desk-muted: #635d55;
+    --desk-paper: #fff;
+    background: #faf9f6;
+    color: var(--text-dark);
+}
+
+.staff-landing .work-sidebar {
+    background: transparent;
+    border: 0;
+    border-right: 1px solid var(--desk-line);
+    border-radius: 0;
+    padding: 8px 14px 8px 0;
+}
+.staff-landing .work-sidebar > .work-eyebrow,
+.staff-landing .work-welcome-heading .work-eyebrow { display: none; }
+.staff-landing .work-sidebar h2 {
+    margin: 8px 12px 14px;
+    color: var(--desk-muted);
+    font-size: 14px;
+    line-height: 1.5;
+}
+.staff-landing .work-sidebar nav { gap: 3px; }
+.staff-landing .work-sidebar nav a { color: #49453e; border-radius: var(--radius-control); }
+.staff-landing .work-sidebar nav a[aria-current="page"] {
+    background: #f9e8e9;
+    color: var(--tu-red-hover);
+    box-shadow: inset 3px 0 var(--tu-red);
+    font-weight: 700;
+}
+.staff-landing .work-public-link {
+    color: var(--tu-red-hover);
+    font-family: "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Thai", sans-serif;
+    font-variant-emoji: text;
+}
+.staff-landing .work-sidebar-note { color: var(--desk-muted); }
+
+.staff-landing .work-welcome { margin-inline: 280px 30px; padding-block: 12px 0; }
+.staff-landing .work-welcome-heading {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-block: 4px 18px;
+    margin: 0;
+}
+.staff-landing .work-welcome h1 {
+    margin: 0;
+    font-size: clamp(23px, 2.1vw, 30px);
+    line-height: 1.45;
+    letter-spacing: normal;
+    overflow-wrap: anywhere;
+}
+.staff-landing #work-description { color: var(--desk-muted); font-size: 14px; }
+.staff-landing .work-role {
+    padding: 5px 12px;
+    flex: none;
+    max-width: 40%;
+    border: 1px solid var(--desk-line);
+    background: var(--desk-paper);
+    color: var(--text-dark);
+    font-size: 13px;
+    font-weight: 600;
+}
+.staff-landing .work-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+.staff-landing .work-actions a {
+    position: relative;
+    align-items: center;
+    color: var(--text-dark);
+    transform: none;
+    transition: none;
+    text-decoration: none;
+    box-shadow: none;
+}
+.staff-landing .work-actions a::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border: solid currentColor;
+    border-width: 1.5px 1.5px 0 0;
+    transform: rotate(45deg);
+}
+.staff-landing .work-actions strong { line-height: 1.5; overflow-wrap: anywhere; }
+.staff-landing .work-actions small { color: var(--desk-muted); font-size: 13px; line-height: 1.6; }
+.staff-landing .work-actions i { margin: 0; }
+
+.staff-landing .work-actions #proposal-shortcut {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    gap: 16px;
+    padding: 18px 24px;
+    border: 0;
+    border-radius: var(--radius-card);
+    background: var(--tu-red);
+    color: white;
+}
+.staff-landing #proposal-shortcut i {
+    width: 42px;
+    height: 42px;
+    background: var(--tu-red-hover);
+    color: white;
+    border-radius: var(--radius-card);
+    font-size: 18px;
+}
+.staff-landing #proposal-shortcut strong { font-size: clamp(18px, 1.6vw, 23px); }
+.staff-landing #proposal-shortcut small {
+    justify-self: start;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: var(--tu-yellow);
+    color: var(--text-dark);
+}
+.staff-landing #proposal-shortcut:hover { background: var(--tu-red-hover); }
+
+.staff-landing .desk-create { margin-block: 22px 0; }
+.staff-landing .desk-create h2 { margin: 0 0 8px; font-size: 18px; line-height: 1.5; }
+.staff-landing .desk-create-links {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 4px;
+    border: 1px solid var(--desk-line);
+    border-radius: var(--radius-card);
+    background: var(--desk-paper);
+}
+.staff-landing .desk-create-links a {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 10px;
+    align-content: start;
+    padding: 13px 16px;
+    border: 0;
+    border-radius: 5px;
+    background: var(--desk-paper);
+}
+.staff-landing .desk-create-links a + a::before {
+    content: "";
+    position: absolute;
+    inset: 13px auto 13px -1px;
+    border-left: 1px solid var(--desk-line);
+}
+.staff-landing .desk-create-links i {
+    grid-area: 1 / 1;
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+    border-radius: var(--radius-control);
+    color: var(--tu-red);
+    background: #fbeced;
+}
+.staff-landing .desk-create-links strong,
+.staff-landing .desk-create-links small { grid-column: 1 / -1; }
+.staff-landing .desk-create-links a::after { grid-area: 1 / 2; color: var(--desk-muted); }
+.staff-landing .desk-create-links a:hover { background: #fff8ee; }
+
+.staff-landing .work-actions a[href*="view=feedback"] {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 12px;
+    margin-top: 7px;
+    padding: 10px 14px;
+    min-height: 44px;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: #faf9f6;
+}
+.staff-landing .work-actions a[href*="view=feedback"] i { width: 24px; height: 24px; color: var(--desk-muted); background: none; }
+.staff-landing .work-actions a[href*="view=feedback"] strong { font-size: 14px; }
+.staff-landing .work-actions a[href*="view=feedback"]:hover { background: #f1eee8; }
+.staff-landing .work-actions a:is(:hover, :focus-visible) strong { text-decoration: underline; text-underline-offset: .2em; }
+.staff-landing :is(.work-sidebar, .work-actions) a:focus-visible { outline: 3px solid var(--tu-red); outline-offset: 2px; z-index: 1; }
+
+@media (max-width: 1100px) {
+    .staff-landing .work-welcome { margin-inline-start: 250px; }
+    .staff-landing .desk-create-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .staff-landing .desk-create-links a:nth-child(odd)::before { display: none; }
+    .staff-landing .desk-create-links a:nth-child(n+3) { border-top: 1px solid var(--desk-line); }
+}
+@media (max-width: 760px) {
+    html:has(> body.staff-landing) { scroll-padding-top: 184px; }
+    .staff-landing .work-sidebar { border: 1px solid var(--desk-line); border-radius: var(--radius-card); padding: 6px; }
+    .staff-landing .work-sidebar nav { padding: 5px; scroll-padding-inline: 25%; }
+    .staff-landing .work-public-link { padding: 10px; min-height: 44px; }
+    .staff-landing .work-welcome { margin-inline: 16px; padding-top: 4px; }
+}
+@media (max-width: 580px) {
+    .staff-landing .work-welcome-heading { flex-wrap: wrap; gap: 5px 10px; padding-bottom: 14px; }
+    .staff-landing .work-role { max-width: 100%; }
+    .staff-landing .work-actions #proposal-shortcut { grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; padding: 15px; }
+    .staff-landing #proposal-shortcut i { grid-row: span 2; }
+    .staff-landing #proposal-shortcut small { grid-column: 2; margin-top: 4px; }
+    .staff-landing #proposal-shortcut::after { grid-area: 1 / 3 / span 2; }
+    .staff-landing .desk-create { margin-top: 16px; }
+    .staff-landing .desk-create-links { grid-template-columns: minmax(0, 1fr); }
+    .staff-landing .desk-create-links a { grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 12px; padding: 10px; }
+    .staff-landing .desk-create-links a + a { border-top: 1px solid var(--desk-line); }
+    .staff-landing .desk-create-links a::before { display: none; }
+    .staff-landing .desk-create-links i { grid-area: 1 / 1 / span 2; margin: 0; }
+    .staff-landing .desk-create-links :is(strong, small) { grid-column: 2; }
+    .staff-landing .desk-create-links a::after { grid-area: 1 / 3 / span 2; }
+    .staff-landing .work-actions a[href*="view=feedback"] { grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 10px; }
+    .staff-landing .work-actions a[href*="view=feedback"] i { grid-row: span 2; }
+    .staff-landing .work-actions a[href*="view=feedback"] small { grid-column: 2; }
+    .staff-landing .work-actions a[href*="view=feedback"]::after { grid-area: 1 / 3 / span 2; }
+}
+
+/* A dialog can receive initial focus when its first control opened behind the gate.
+   Center the focus ring on the rounded edge, including while the dialog scales. */
+.staff-workspace dialog:is(.entry-dialog, .entry-frame-dialog):focus-visible {
+    outline: 2px solid #808080;
+    outline-offset: -1px;
+}
+
+/* Keep the outgoing link in place until the authorized destination has a box.
+   Only the destination moves: its own edge clips the colour and contains the form. */
+@media (prefers-reduced-motion: no-preference) {
+    .staff-landing .shortcut-opening { view-transition-name: desk-card; }
+    :root:active-view-transition-type(staff-shortcut)::view-transition { pointer-events: none; }
+    :root:active-view-transition-type(staff-shortcut)::view-transition-group(root) { animation: none; }
+    :root:active-view-transition-type(staff-shortcut)::view-transition-old(root) {
+        z-index: 1;
+        mix-blend-mode: normal;
+        animation: desk-wait 320ms linear both;
+    }
+    :root:active-view-transition-type(staff-shortcut)::view-transition-new(root) {
+        mix-blend-mode: normal;
+        animation: none;
+    }
+    ::view-transition-group(desk-card) { z-index: 2; animation: none; }
+    ::view-transition-old(desk-card) { animation: none; }
+    :root.desk-arriving::view-transition-old(root),
+    .desk-arriving::view-transition-group(desk-card) { animation: desk-leave 120ms ease-out both; }
+
+    .desk-arriving { --desk-duration: 540ms; }
+    .desk-arriving .desk-receiving {
+        transform-origin: top left;
+        animation: desk-receive var(--desk-duration) cubic-bezier(.35,.03,.20,1) both;
+    }
+    .desk-arriving .desk-receiving::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+        pointer-events: none;
+        border-radius: inherit;
+        background: var(--tu-red);
+        animation: desk-tint var(--desk-duration) linear both;
+    }
+    .desk-arriving dialog.desk-receiving::backdrop { backdrop-filter: none; }
+    @keyframes desk-wait { 0%, 72% { opacity: 1; } to { opacity: 0; } }
+    @keyframes desk-leave { from { opacity: 1; } to { opacity: 0; } }
+    @keyframes desk-receive { from { transform: var(--desk-start); } to { transform: none; } }
+    @keyframes desk-tint {
+        0%, 14% { opacity: 1; }
+        42% { opacity: .56; }
+        72% { opacity: .13; }
+        to { opacity: 0; }
+    }
+}
