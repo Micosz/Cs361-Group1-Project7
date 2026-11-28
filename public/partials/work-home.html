@@ -15,46 +15,96 @@
     <div><h2 id="proposal-heading">กระดานข้อเสนอความร่วมมือ</h2><p id="proposal-count" aria-live="polite"></p></div>
     <div class="proposal-tools"><a href="work.html?view=proposals" id="proposal-see-all">ดูกระดานทั้งหมด →</a><button type="button" id="proposal-new">+ สร้างข้อเสนอ</button></div>
   </header>
+  <div id="proposal-queue-tools" class="proposal-tools" hidden>
+    <label>แสดง <select id="proposal-view"><option value="all">ข้อเสนอทั้งหมด</option><option value="review">คิว MoU รอพิจารณา</option></select></label>
+    <label id="proposal-sort-label" hidden>เรียงคิว <select id="proposal-sort"><option value="time">เวลาส่ง · ก่อนมาหลัง</option><option value="interest">จำนวนผู้สนใจ · มากไปน้อย</option></select></label>
+  </div>
   <p id="proposal-status" role="status"></p>
   <div class="proposal-grid" id="proposal-cards"></div>
+
   <dialog id="proposal-dialog" aria-labelledby="proposal-form-title">
     <form id="proposal-form">
-      <h2 id="proposal-form-title">สร้างข้อเสนอความร่วมมือ</h2>
+      <header class="detail-toolbar proposal-dialog-title"><h2 id="proposal-form-title">สร้างข้อเสนอความร่วมมือ</h2></header><p id="proposal-author"></p>
+      <div class="proposal-pair">
+        <label>หลักสูตร / ขอบเขต<select name="scopeId" required></select></label>
+        <label>ประเภทข้อเสนอ<select name="kind"><option value="activity">กิจกรรม</option><option value="exchange">โครงการ Exchange</option><option value="mou">MoU</option></select></label>
+      </div>
       <label>ชื่อข้อเสนอ<input name="title" maxlength="150" required></label>
-      <label>หน่วยงานที่อยากร่วมมือ<input name="partner" maxlength="150" required></label>
-      <label>อยากชวนมาทำอะไร<textarea name="summary" rows="3" maxlength="2000" required></textarea></label>
-      <label>หลักสูตร / ขอบเขต<select name="scopeId" required></select></label>
-      <label>เปิดรับความสนใจถึงวันที่<input name="deadline" type="date" required></label>
-      <p id="proposal-author"></p><p role="status" id="proposal-form-status"></p>
-      <div class="proposal-tools"><button type="button" id="proposal-cancel">ยกเลิก</button><button type="submit" name="mode" value="draft" id="proposal-save-draft" hidden>บันทึกร่าง</button><button type="submit" name="mode" value="open">โพสต์ข้อเสนอ</button></div>
+      <div class="proposal-pair">
+        <label>คู่ความร่วมมือ<select name="partnerMode"><option value="existing">เลือกคู่ความร่วมมือเดิม</option><option value="organization">องค์กรใหม่</option><option value="person">บุคคลใหม่</option></select></label>
+        <label id="proposal-partner-existing">เลือกจาก Collaborator<select name="partnerId"></select></label>
+        <label id="proposal-partner-new" hidden>ชื่อองค์กรหรือบุคคล<input name="partner" maxlength="150"></label>
+      </div>
+      <p id="proposal-partner-status" role="status"></p>
+      <a id="proposal-partner-history" target="_blank" rel="noopener" hidden>ดูประวัติคู่ความร่วมมือ ↗</a>
+      <label>รายละเอียดข้อเสนอ<textarea name="summary" rows="3" maxlength="2000" aria-describedby="proposal-summary-hint" required></textarea><small id="proposal-summary-hint">อยากทำอะไร กับใคร และตอนนี้อยู่ขั้นไหน</small></label>
+      <label>ขั้นที่คุยกับคู่ความร่วมมือ<select name="stage"><option value="idea">อยู่ระหว่างเสนอแนวคิด</option><option value="contacted">คุยกับคู่ความร่วมมือแล้ว</option><option value="planning">กำลังวางแผนร่วมกัน</option></select></label>
+      <details class="proposal-support"><summary>เอกสารหรือลิงก์ประกอบ (ถ้ามี)</summary>
+        <label>ลิงก์ประกอบ<input type="url" name="supportUrl" placeholder="https://"></label>
+        <label>ไฟล์ประกอบ<input type="file" name="supportFile" accept=".pdf,.png,.jpg,.jpeg"></label>
+      </details>
+      <label class="proposal-check"><input type="checkbox" name="hostSelf"> ฉันรับเป็นเจ้าภาพหลัก</label>
+      <label id="proposal-source-label" hidden>วิธีเปิดเรื่อง<select name="source"><option value="board">เปิดชวนบุคลากรบนบอร์ด</option><option value="direct">เตรียมส่งร่าง MoU โดยตรง</option></select></label>
+      <div id="proposal-duration"><label>จำนวนวันที่เปิดรับความสนใจ<input type="number" name="days" min="1" max="365" step="1" value="7" required></label>
+        <p id="proposal-deadline" role="status"></p>
+      </div>
+      <p id="proposal-form-status" role="status"></p>
+      <div class="proposal-tools"><button type="button" id="proposal-cancel">ยกเลิก</button><button type="submit" id="proposal-post">โพสต์ข้อเสนอ</button></div>
     </form>
   </dialog>
+
   <dialog id="proposal-interest-dialog" aria-labelledby="proposal-interest-title">
     <form id="proposal-interest-form">
-      <h2 id="proposal-interest-title">สนใจร่วมดำเนินการ</h2>
-      <p id="proposal-interest-context"></p>
-      <label for="proposal-interest-note">อยากร่วมดำเนินการด้านไหน? <span>(ไม่บังคับ)</span></label>
-      <textarea id="proposal-interest-note" name="note" rows="3" maxlength="500"
-        placeholder="เช่น ช่วยออกแบบหัวข้ออบรม ประสานหน่วยงาน หรือดูแลนักศึกษา"></textarea>
+      <header class="detail-toolbar proposal-dialog-title"><h2 id="proposal-interest-title">สนใจช่วยงาน</h2></header><p id="proposal-interest-context"></p>
+      <label for="proposal-interest-note">คุณอยากช่วยเรื่องไหน? (ข้ามได้)</label>
+      <textarea id="proposal-interest-note" name="note" rows="3" maxlength="500"></textarea>
       <p id="proposal-interest-status" role="status"></p>
       <div class="proposal-tools">
         <button type="button" id="proposal-interest-withdraw" hidden>ถอนความสนใจ</button>
         <button type="button" id="proposal-interest-cancel">ยกเลิก</button>
-        <button type="submit" id="proposal-interest-save">ยืนยันเข้าร่วม</button>
+        <button type="submit" id="proposal-interest-save">บันทึกความสนใจ</button>
       </div>
     </form>
   </dialog>
+
   <dialog id="proposal-flow-dialog" aria-labelledby="proposal-flow-title">
-    <header class="proposal-header"><h2 id="proposal-flow-title">ขั้นตอนข้อเสนอ</h2><button type="button" id="proposal-flow-close" aria-label="ปิดขั้นตอนข้อเสนอ">×</button></header>
-    <p class="proposal-prototype-notice">Flow ต้นแบบสำหรับคุยกับอาจารย์ · ข้อมูลอยู่ในแท็บนี้</p>
-    <ol id="proposal-flow-steps" class="proposal-flow-steps"></ol>
-    <p id="proposal-flow-waiting"></p>
-    <div id="proposal-flow-people"></div>
-    <label for="proposal-flow-note">บันทึกประกอบ <span>(จำเป็นเมื่อส่งกลับแก้ไขหรือยุติข้อเสนอ)</span></label>
-    <textarea id="proposal-flow-note" rows="2" maxlength="500"></textarea>
-    <div id="proposal-flow-actions" class="proposal-tools"></div>
+    <header class="proposal-header detail-toolbar"><div><p id="proposal-detail-kind"></p><h2 id="proposal-flow-title" tabindex="-1">รายละเอียดข้อเสนอ</h2></div><button type="button" id="proposal-flow-close" aria-label="ปิดรายละเอียดข้อเสนอ">ปิด</button></header>
+    <div id="proposal-flow-content">
+      <p id="proposal-flow-waiting"></p>
+      <dl id="proposal-detail-meta" class="proposal-meta"></dl>
+      <p id="proposal-detail-summary" class="proposal-summary"></p>
+      <div id="proposal-flow-support"></div>
+      <details id="proposal-edit" class="proposal-support" hidden><summary>แก้ไขรายละเอียดข้อเสนอ</summary>
+        <form id="proposal-edit-form">
+          <label>ชื่อข้อเสนอ<input name="title" maxlength="150" required></label>
+          <label>รายละเอียดข้อเสนอ<textarea name="summary" rows="3" maxlength="2000" required></textarea></label>
+          <label>ขั้นที่คุยกับคู่ความร่วมมือ<select name="stage"></select></label>
+          <label>ลิงก์ประกอบ (ถ้ามี)<input name="supportLink" type="url" maxlength="1200"></label>
+          <button type="submit">บันทึกรายละเอียด</button>
+        </form>
+      </details>
+      <div id="proposal-flow-people"></div>
+      <div id="proposal-flow-actions" class="proposal-tools"></div>
+      <div id="proposal-draft-panel" hidden>
+        <h3>ร่าง MoU</h3>
+        <form id="proposal-draft-form"><label>ไฟล์ร่าง PDF<input name="draftFile" type="file" accept=".pdf,application/pdf" required></label><button type="submit">แนบร่างฉบับใหม่</button></form>
+        <form id="proposal-submit-form">
+          <label>ร่างที่จะส่ง<select name="revision" required></select></label>
+          <label id="proposal-change-summary" hidden>สรุปสิ่งที่แก้<textarea name="note" rows="2" maxlength="500"></textarea></label>
+          <label class="proposal-check"><input type="checkbox" name="confirmed" required> ยืนยันส่งร่างฉบับที่เลือก</label>
+          <button type="submit" id="proposal-submit-revision">ยืนยันส่งร่างฉบับนี้</button>
+        </form>
+      </div>
+      <div id="proposal-review">
+        <div id="proposal-review-file"></div>
+        <form id="proposal-decision-form" hidden>
+          <label>เหตุผลที่ส่งกลับให้แก้<textarea name="reason" rows="2" maxlength="500"></textarea></label>
+          <div class="proposal-tools"><button type="submit" name="decision" value="approve">อนุมัติ</button><button type="submit" name="decision" value="return" class="proposal-secondary">ส่งกลับให้แก้</button></div>
+        </form>
+      </div>
+      <div id="proposal-destination-panel"></div>
+      <h3>ประวัติการดำเนินการ</h3><ol id="proposal-flow-history"></ol>
+    </div>
     <p id="proposal-flow-status" role="status"></p>
-    <h3>ประวัติการดำเนินการ</h3>
-    <ol id="proposal-flow-history"></ol>
   </dialog>
 </section>

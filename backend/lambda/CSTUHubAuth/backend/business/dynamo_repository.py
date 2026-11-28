@@ -452,7 +452,8 @@ class DynamoBusinessRepository:
             raise AuthError('DOCUMENT_STORAGE_UNAVAILABLE', 503)
         return self.documents.content(document, disposition)
 
-    def mutate(self, kind, action, payload, record, parent, conditions, idempotency_key, upload=None):
+    def mutate(self, kind, action, payload, record, parent, conditions, idempotency_key, upload=None,
+               *, proposal_change=None):
         if action == 'delete' and kind == 'formFeedback':
             return self._delete_form_feedback(record, parent, conditions)
         if action == 'delete' and kind == 'contact':
@@ -599,6 +600,19 @@ class DynamoBusinessRepository:
                 'ConditionExpression': '#v = :v AND #a = :yes AND #i = :yes',
                 'ExpressionAttributeNames': {'#v': 'authzVersion', '#a': 'active', '#i': 'identityVerified'},
                 'ExpressionAttributeValues': values({':v': state.authz_version, ':yes': True})}})
+        if proposal_change is not None:
+            # Link both sides only if the reviewed proposal and all normal business
+            # preconditions still match. A cancelled transaction creates no destination.
+            from ..admission_store import version_condition
+            before, after, guards = proposal_change
+            for guard in guards:
+                guard_kind = guard['entityType']
+                checks.append({'ConditionCheck': dict(TableName=self._table(guard_kind),
+                                                      Key=self._key(guard_kind, guard), **version_condition(guard))})
+            saved['proposalId'] = before['id']
+            after['destination'] = {'kind': kind, 'id': saved['id'], 'title': saved['title']}
+            checks.append({'Put': dict(TableName=self.table, Item=values(after),
+                                       **version_condition(before))})
         put = {'TableName': self._table(kind), 'Item': values(saved)}
         if record and self.partner_table and kind in {'partner','activity'} and record['type'] != saved['type']:
             # A DynamoDB sort-key change is an atomic move, never an extra copy.
@@ -631,7 +645,8 @@ class DynamoBusinessRepository:
             if stored and current is None:
                 self.documents.delete(saved)
             code = getattr(error, 'response', {}).get('Error', {}).get('Code')
-            if code == 'TransactionCanceledException':
+            if (code == 'TransactionCanceledException'
+                    or proposal_change is not None and code == 'TransactionConflictException'):
                 if kind == 'formFeedback' and current is not None:
                     raise AuthError('DUPLICATE_FORM_IMPORT', 409) from None
                 raise AuthError('VERSION_CONFLICT', 409) from None
