@@ -65,6 +65,7 @@ html[lang="en"] .public-buddhist-hint {
     :where(html[lang="en"], #sectionEvent) .date-filter-row > :is(.public-buddhist-hint, .date-range-error, .undated-toggle) {
         grid-column: from / -1;
     }
+    #sectionEvent .undated-toggle { grid-column: 1 / -1; }
 }
 @media (768px <= width < 1024px) {
     :where(html[lang="en"], #sectionEvent) .filter-wrapper.has-filter-controls { grid-template-columns: repeat(3, auto); }
@@ -78,17 +79,19 @@ html[lang="en"] .public-buddhist-hint {
 @media (max-width: 767px) {
     #sectionEvent .date-filter-row {
         grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 44px;
+        grid-template-rows: auto;
     }
+    html[lang="en"] #sectionEvent .date-filter-row { grid-template-rows: auto auto; }
+    /* After the dates and year hint, equal action rows keep Clear in place when the option wraps. */
+    #sectionEvent .date-filter-row:has(.date-range-error[hidden]) { grid-auto-rows: 1fr; }
     #sectionEvent .date-range-field { grid-column: span 2; }
     #sectionEvent .date-clear-btn { grid-column: 1; }
-    #sectionEvent .undated-toggle {
-        grid-column: 2 / -1;
-        align-self: center;
-    }
+    #sectionEvent .undated-toggle { grid-column: 1 / span 3; }
     #sectionEvent .undated-toggle input { flex: none; }
 }
 
 #sectionEvent .undated-toggle {
+    justify-self: start;
     min-height: 44px;
     width: fit-content;
     max-width: 100%;

@@ -315,15 +315,20 @@ for (const width of [320,390,767,768,769,1023,1024,1025,1280]) {
     await expect(page.locator('#filterEventDateEnd')).toHaveValue('2026-11-29');
     const clear = page.locator('#filterEventDateClear');
     const option = page.locator('#filterEventUndated');
+    const offsetFromPanelStart = () => option.evaluate(label => {
+      const panel = label.closest('.filter-wrapper');
+      const contentLeft = panel.getBoundingClientRect().left + panel.clientLeft + parseFloat(getComputedStyle(panel).paddingLeft);
+      return Math.abs(label.getBoundingClientRect().left - contentLeft);
+    });
     await expect(option).toContainText('(7)');
+    expect(await offsetFromPanelStart()).toBeLessThanOrEqual(1);
     const [first,last,button,toggle] = await Promise.all([start,end,clear,option].map(el=>el.boundingBox()));
     expect(Math.abs(first.x-original.x)).toBeLessThanOrEqual(1);
     expect(last.x).toBeGreaterThanOrEqual(first.x+first.width);
     expect(Math.abs(last.y-first.y)).toBeLessThanOrEqual(1);
     expect(toggle.height).toBeGreaterThanOrEqual(44);
     if (width<768) {
-      expect(toggle.x).toBeGreaterThanOrEqual(button.x+button.width);
-      expect(toggle.y+toggle.height).toBeLessThanOrEqual(button.y+button.height+1);
+      expect(toggle.y).toBeGreaterThanOrEqual(button.y+button.height);
       expect(toggle.x+toggle.width).toBeLessThanOrEqual(width);
     } else {
       expect(button.x).toBeGreaterThanOrEqual(last.x+last.width);
@@ -336,6 +341,7 @@ for (const width of [320,390,767,768,769,1023,1024,1025,1280]) {
     await language(header(page),'th');
     await expect(end).toHaveValue('29/11/2569');
     await expect(checkbox).toBeChecked();
+    expect(await offsetFromPanelStart()).toBeLessThanOrEqual(1);
     if (width>=1024) {
       const [category,date] = await Promise.all([page.locator('#filterEvent'),start].map(el=>el.boundingBox()));
       expect(Math.abs(category.y-date.y)).toBeLessThanOrEqual(1);
