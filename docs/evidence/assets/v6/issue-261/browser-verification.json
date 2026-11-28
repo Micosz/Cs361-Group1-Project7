@@ -1,0 +1,168 @@
+{
+  "verifiedAt": "2026-11-28T11:39:39.585Z",
+  "browser": "Chrome/158.0.8127.38",
+  "ac1InitialLoadNetwork": {
+    "passed": true,
+    "allApiCallsOnWelcomeLoad": [
+      "/api/auth/session",
+      "/api/public/records?view=cards"
+    ],
+    "catalogListApiCalls": [
+      "/api/public/records?view=cards"
+    ],
+    "detailApiCallsBeforeClick": [],
+    "sessionApiCallsOnLoad": [
+      "/api/auth/session"
+    ],
+    "renderedPartnerCards": [
+      "KASIKORN Business-Technology Group (KBTG)",
+      "Kansai University",
+      "NECTEC"
+    ]
+  },
+  "ac2FullNameSearchAndSuggestionOpen": {
+    "passed": true,
+    "searchedName": "KASIKORN Business-Technology Group (KBTG)",
+    "suggestionTitles": [
+      "KASIKORN Business-Technology Group (KBTG)"
+    ],
+    "modalTitle": "KASIKORN Business-Technology Group (KBTG)",
+    "onDemandFullDescriptionLoaded": true,
+    "apiCallsTriggered": [
+      "/api/auth/session",
+      "/api/public/partners/partner-kbtg-001",
+      "/api/auth/session",
+      "/api/public/partners/partner-kbtg-001/feedback?limit=20"
+    ]
+  },
+  "ac3FiltersAndOpenFilteredCard": {
+    "passed": true,
+    "partnerFilterType": "university",
+    "expectedPartnerCards": [
+      "Kansai University"
+    ],
+    "actualPartnerCards": [
+      "Kansai University"
+    ],
+    "openedPartnerTitle": "Kansai University",
+    "openedPartnerOnDemandLoaded": true,
+    "activityFilter": {
+      "type": "research",
+      "startDate": "2026-11-01",
+      "endDate": "2026-11-30",
+      "view": "past"
+    },
+    "expectedActivityCards": [
+      "CSTU x KBTG Applied AI Workshop 2026"
+    ],
+    "actualActivityCards": [
+      "CSTU x KBTG Applied AI Workshop 2026"
+    ],
+    "openedActivity": {
+      "dialogTitle": "CSTU x KBTG Applied AI Workshop 2026",
+      "containsFullDescription": true
+    },
+    "apiCallsTriggered": [
+      "/api/auth/session",
+      "/api/public/partners/partner-kansai-001",
+      "/api/auth/session",
+      "/api/public/partners/partner-kansai-001/feedback?limit=20",
+      "/api/public/activities/act-ai-2026",
+      "/api/public/activities/act-ai-2026/admission-rounds",
+      "/api/auth/session",
+      "/api/public/activities/act-ai-2026/feedback?limit=20"
+    ]
+  },
+  "allApiRequestsChronological": [
+    {
+      "method": "GET",
+      "full": "/api/auth/session",
+      "pathname": "/api/auth/session",
+      "phase": "initial-load"
+    },
+    {
+      "method": "GET",
+      "full": "/api/public/records?view=cards",
+      "pathname": "/api/public/records",
+      "phase": "initial-load"
+    },
+    {
+      "method": "GET",
+      "full": "/api/auth/session",
+      "pathname": "/api/auth/session",
+      "phase": "search-suggestion-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/public/partners/partner-kbtg-001",
+      "pathname": "/api/public/partners/partner-kbtg-001",
+      "phase": "search-suggestion-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/auth/session",
+      "pathname": "/api/auth/session",
+      "phase": "search-suggestion-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/public/partners/partner-kbtg-001/feedback?limit=20",
+      "pathname": "/api/public/partners/partner-kbtg-001/feedback",
+      "phase": "search-suggestion-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/auth/session",
+      "pathname": "/api/auth/session",
+      "phase": "search-suggestion-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/auth/session",
+      "pathname": "/api/auth/session",
+      "phase": "filter-and-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/public/partners/partner-kansai-001",
+      "pathname": "/api/public/partners/partner-kansai-001",
+      "phase": "filter-and-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/auth/session",
+      "pathname": "/api/auth/session",
+      "phase": "filter-and-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/public/partners/partner-kansai-001/feedback?limit=20",
+      "pathname": "/api/public/partners/partner-kansai-001/feedback",
+      "phase": "filter-and-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/public/activities/act-ai-2026",
+      "pathname": "/api/public/activities/act-ai-2026",
+      "phase": "filter-and-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/public/activities/act-ai-2026/admission-rounds",
+      "pathname": "/api/public/activities/act-ai-2026/admission-rounds",
+      "phase": "filter-and-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/auth/session",
+      "pathname": "/api/auth/session",
+      "phase": "filter-and-open"
+    },
+    {
+      "method": "GET",
+      "full": "/api/public/activities/act-ai-2026/feedback?limit=20",
+      "pathname": "/api/public/activities/act-ai-2026/feedback",
+      "phase": "filter-and-open"
+    }
+  ]
+}

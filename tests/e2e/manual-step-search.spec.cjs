@@ -15,7 +15,12 @@ async function visit(page, role = 'public') {
     const req = route.request();
     const url = new URL(req.url());
     if (url.origin !== 'http://127.0.0.1:4173' || req.method() !== 'GET') return route.abort();
-    if (url.pathname === '/fetchPartnersData') return route.fulfill({ json: partners });
+    if (url.pathname === '/api/public/records') return route.fulfill({ json: partners });
+    const detailMatch = url.pathname.match(/^\/api\/public\/partners\/([^/]+)$/);
+    if (detailMatch) {
+      const found = partners.find(p => p.id === decodeURIComponent(detailMatch[1]));
+      return found ? route.fulfill({ json: { data: found } }) : route.fulfill({ status: 404, json: {} });
+    }
     if (url.pathname === '/api/auth/session') {
       const isCoordinator = role === 'coordinator';
       return route.fulfill({ json: {
@@ -23,7 +28,6 @@ async function visit(page, role = 'public') {
         grants: isCoordinator ? [{ role, active: true, scopeId: 'fixture-scope' }] : [], capabilities: [], csrfToken: 'a'.repeat(64)
       } });
     }
-    if (url.pathname === '/api/public/records') return route.fulfill({ json: [] });
     if (url.pathname.startsWith('/api/')) return route.fulfill({ json: { data: [], items: [], count: 0, page: { nextCursor: null } } });
     if (url.pathname.startsWith('/resources/manual/')) {
       return route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="180"><rect width="400" height="180" fill="#f3efeb"/><text x="200" y="96" text-anchor="middle" font-size="18" fill="#645761">ภาพประกอบสมมติ</text></svg>' });

@@ -47,21 +47,33 @@
         }
         return data;
     }
+    let refreshPromise = null;
     async function refresh(options = {}) {
         if (!enabled()) return null;
-        // Anonymous state must be bootstrapped again after an expired cookie.
-        try { state = validate(await request('/auth/session', options)); }
-        catch (error) {
-            if (error.status !== 401) { state = null; throw error; }
-            state = validate(await request('/auth/session', options));
+        // Share only a currently in-flight bootstrap call; never cache stale session state.
+        if (!options.signal && refreshPromise) return refreshPromise;
+        const run = (async () => {
+            // Anonymous state must be bootstrapped again after an expired cookie.
+            try { state = validate(await request('/auth/session', options)); }
+            catch (error) {
+                if (error.status !== 401) { state = null; throw error; }
+                state = validate(await request('/auth/session', options));
+            }
+            return state;
+        })();
+        if (!options.signal) {
+            refreshPromise = run;
+            run.finally(() => { if (refreshPromise === run) refreshPromise = null; });
         }
-        return state;
+        return run;
     }
     async function login(username, password, options = {}) {
+        refreshPromise = null;
         await refresh(options);
         state = validate(await request('/auth/login', { ...options, method: 'POST',
             headers: { 'X-CSRF-Token': state.csrfToken },
             body: JSON.stringify({ username, password }) }));
+        refreshPromise = null;
         notify();
         return state;
     }
@@ -98,10 +110,12 @@
             'Idempotency-Key':idempotencyKey}, body:JSON.stringify(body)});
     }
     async function logout() {
+        refreshPromise = null;
         const current = await refresh();
         if (current) await request('/auth/logout', { method: 'POST',
             headers: { 'X-CSRF-Token': current.csrfToken }, body: '{}' });
         state = null;
+        refreshPromise = null;
         notify();
     }
     const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('cstuhub-auth') : null;

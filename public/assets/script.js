@@ -1,11 +1,19 @@
 // Hosting rewrites select the regional API, so moving the site does not send
 // catalog requests back to an old account or Region.
 const API_URL = '/fetchPartnersData';
+const PUBLIC_LIST_URL = '/api/public/records?view=cards';
 
 // Cache only a successful API snapshot for this page; reload to get fresh data.
 let partnersDataCache = null;
 let partnersDataRequest = null;
-window.invalidatePublicData = () => { partnersDataCache = null; partnersDataRequest = null; };
+const publicDetailCache = new Map();
+const publicDetailRequests = new Map();
+window.invalidatePublicData = () => {
+    partnersDataCache = null;
+    partnersDataRequest = null;
+    publicDetailCache.clear();
+    publicDetailRequests.clear();
+};
 
 function isPublicRecord(record) {
     return record.visibility === 'public' || !record.visibility;
@@ -49,33 +57,19 @@ function fetchPartnersData() {
     }
 
     partnersDataRequest = (async () => {
-        // Start both public sources together so the first paint waits for the
-        // slower request only once. The additional source still fails soft.
-        const publishedRequest = window.CSTU_AUTH_CONFIG?.enabled === true
-            ? loadJson('/api/public/records', 8000).then(rows => ({ rows }), error => ({ error }))
-            : null;
-        let rawData = await loadJson(API_URL, 8000);
-        let partialData = false;
-
-        // Merge published business records into the same browse/detail source.
-        // The backend returns only its explicit public projection, without a session.
-        if (publishedRequest) {
-            const published = await publishedRequest;
-            if (published.error) {
-                console.warn('Published records unavailable:', published.error);
-                partialData = true;
-            } else {
-                const combined = new Map(rawData.map(row => [row.id,row]));
-                for (const row of published.rows) if (row.visibility === 'public') combined.set(row.id,{...combined.get(row.id),...row,businessRecord:row.businessRecord !== false});
-                rawData = Array.from(combined.values());
-            }
-        }
+        // Load Welcome cards from a single public list API (#260/#261); full card
+        // descriptions are fetched on demand when the visitor opens a card.
+        const useUnifiedApi = window.CSTU_AUTH_CONFIG?.enabled === true;
+        const listUrl = useUnifiedApi ? PUBLIC_LIST_URL : API_URL;
+        const rawData = await loadJson(listUrl, 8000);
 
         // ใช้เฉพาะรายการที่ระบุว่าเผยแพร่ได้
-        const publicRecords = rawData.filter(item =>
-            item.access_level === 'public' ||
-            item.visibility === 'public'
-        );
+        const publicRecords = rawData
+            .filter(item =>
+                item.access_level === 'public' ||
+                item.visibility === 'public'
+            )
+            .map(item => useUnifiedApi ? { ...item, businessRecord: item.businessRecord !== false } : { ...item });
 
         const partners = publicRecords
             .filter(item => item.name)
@@ -100,26 +94,8 @@ function fetchPartnersData() {
             });
         });
 
-        // Warn when the additional published-record API is unavailable.
-        let notice = document.getElementById('partialDataNotice');
-
-        if (partialData && !notice) {
-            notice = document.createElement('div');
-            notice.id = 'partialDataNotice';
-            notice.setAttribute('role', 'status');
-            notice.style.cssText =
-                'padding:12px 16px;background:#fff4d6;' +
-                'color:#664d03;text-align:center;font-size:14px;';
-
-            document.body.prepend(notice);
-        }
-
-        if (notice) {
-            notice.textContent =
-                'โหลดข้อมูลได้ไม่ครบ กรุณาโหลดหน้าเว็บใหม่เพื่อลองอีกครั้ง';
-            window.CstuLanguage?.capture(notice);
-            notice.hidden = !partialData;
-        }
+        const notice = document.getElementById('partialDataNotice');
+        if (notice) notice.hidden = true;
 
         partnersDataCache = partners;
         return partners;
@@ -131,6 +107,50 @@ function fetchPartnersData() {
     });
 
     return partnersDataRequest;
+}
+
+async function fetchPublicDetail(type, id) {
+    if (window.CSTU_AUTH_CONFIG?.enabled !== true || !id) return null;
+    const collection = type === 'partner' ? 'partners' : 'activities';
+    const cacheKey = `${collection}:${id}`;
+    if (publicDetailCache.has(cacheKey)) return publicDetailCache.get(cacheKey);
+    if (publicDetailRequests.has(cacheKey)) return publicDetailRequests.get(cacheKey);
+
+    const url = `/api/public/${collection}/${encodeURIComponent(id)}`;
+    const req = (async () => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        try {
+            const response = await fetch(url, {
+                cache: 'no-store',
+                signal: controller.signal
+            });
+            if (response.status === 404) {
+                const error = new Error('NOT_FOUND');
+                error.status = 404;
+                throw error;
+            }
+            if (!response.ok) {
+                const error = new Error(`HTTP ${response.status}`);
+                error.status = response.status;
+                throw error;
+            }
+            const payload = await response.json();
+            const detail = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload.data : null;
+            if (!detail || typeof detail !== 'object' || Array.isArray(detail) || detail.id !== id) {
+                return null;
+            }
+            const normalized = { ...detail, businessRecord: detail.businessRecord !== false };
+            publicDetailCache.set(cacheKey, normalized);
+            return normalized;
+        } finally {
+            clearTimeout(timer);
+            publicDetailRequests.delete(cacheKey);
+        }
+    })();
+
+    publicDetailRequests.set(cacheKey, req);
+    return req;
 }
 
 // 1. ดึงข้อมูล Partner ทั้งหมดสำหรับหน้า Browse
@@ -950,11 +970,20 @@ async function openModal(id, type, protectedPartner = null, trigger = null) {
 
         if (type === 'partner') {
             data = await getPublicPartnerById(id);
-            if (!data && protectedPartner) data = {...protectedPartner, businessRecord:true,
-                full_description:protectedPartner.fullDescription, logo_path:protectedPartner.logoPath,
-                website_url:protectedPartner.websiteUrl};
+            if (data) {
+                const detail = await fetchPublicDetail('partner', id);
+                if (detail) data = { ...data, ...detail };
+            } else if (protectedPartner) {
+                data = {...protectedPartner, businessRecord:true,
+                    full_description:protectedPartner.fullDescription, logo_path:protectedPartner.logoPath,
+                    website_url:protectedPartner.websiteUrl};
+            }
         } else if (type === 'activity') {
             data = await getPublicActivityById(id);
+            if (data) {
+                const detail = await fetchPublicDetail('activity', id);
+                if (detail) data = { ...data, ...detail };
+            }
         }
     } catch (error) {
         if (version !== modalRenderVersion) return;

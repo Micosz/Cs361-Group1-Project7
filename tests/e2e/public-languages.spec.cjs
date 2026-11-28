@@ -23,12 +23,16 @@ async function fixture(page, baseURL, role) {
     const request = route.request(), url = new URL(request.url());
     if (url.origin !== new URL(baseURL).origin) return route.abort();
     if (request.method() !== 'GET') { writes.push(url.pathname); return route.abort(); }
-    if (url.pathname === '/fetchPartnersData') return route.fulfill({json:rows});
+    if (url.pathname === '/api/public/records') return route.fulfill({json:rows});
+    const detailMatch = url.pathname.match(/^\/api\/public\/(partners|activities)\/([^/]+)$/);
+    if (detailMatch) {
+      const found = rows.find(r => r.id === decodeURIComponent(detailMatch[2]));
+      return found ? route.fulfill({json:{data:found}}) : route.fulfill({status:404,json:{}});
+    }
     if (url.pathname === '/api/auth/session') return route.fulfill({json:{
       user:role ? {id:'guide-fixture', displayName:'ผู้ทดสอบสมมติ', accountType:'tu'} : null,
       grants:role ? [{role, scopeId:'sample', active:true}] : [], capabilities:[], csrfToken:'a'.repeat(64)
     }});
-    if (url.pathname === '/api/public/records') return route.fulfill({json:[]});
     if (url.pathname === '/api/public/agreements') return route.fulfill({json:result([agreement])});
     if (url.pathname === '/api/public/agreements/agreement') return route.fulfill({json:{data:agreement}});
     if (url.pathname.endsWith('/feedback')) return route.fulfill({json:result([

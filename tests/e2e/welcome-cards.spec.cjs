@@ -19,10 +19,15 @@ async function serveFixture(page, { failFirst = false } = {}) {
     const request = route.request();
     const url = new URL(request.url());
     if (url.origin !== 'http://127.0.0.1:4173' || request.method() !== 'GET') return route.abort();
-    if (url.pathname === '/fetchPartnersData') {
+    if (url.pathname === '/api/public/records') {
       reads++;
       if (failFirst && reads === 1) return route.fulfill({ status: 503, json: {} });
       return route.fulfill({ json: partners });
+    }
+    const detailMatch = url.pathname.match(/^\/api\/public\/partners\/([^/]+)$/);
+    if (detailMatch) {
+      const found = partners.find(p => p.id === decodeURIComponent(detailMatch[1]));
+      return found ? route.fulfill({ json: { data: found } }) : route.fulfill({ status: 404, json: {} });
     }
     if (url.pathname.startsWith('/fixture-logos/')) {
       const index = Number(url.pathname.match(/(\d+)\.svg$/)[1]);
@@ -35,7 +40,6 @@ async function serveFixture(page, { failFirst = false } = {}) {
     if (url.pathname === '/api/auth/session') {
       return route.fulfill({ json: { user: null, grants: [], capabilities: [], csrfToken: 'a'.repeat(64) } });
     }
-    if (url.pathname === '/api/public/records') return route.fulfill({ json: [] });
     if (url.pathname.startsWith('/api/')) return route.fulfill({ json: { data: [], count: 0, page: { nextCursor: null } } });
     return route.continue();
   });

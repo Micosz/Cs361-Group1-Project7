@@ -96,7 +96,7 @@ test('ended view sorts latest first; current view sorts soonest first with undat
     assert.deepEqual(plain(app.sortActivitiesForView(rows.slice(1), 'past').map(row => row.id)), ['b', 'a']);
 });
 
-test('published records are requested alongside the catalogue, not after it', async () => {
+test('Welcome loads partners and activities from a single unified card-list API', async () => {
     const started = [];
     let release;
     const context = vm.createContext({
@@ -106,17 +106,20 @@ test('published records are requested alongside the catalogue, not after it', as
             createElement: () => ({ style: {}, setAttribute() {} }), body: { prepend() {} } },
         fetch: url => {
             started.push(url);
-            const rows = url === '/fetchPartnersData' ? [{ id: 'p1', name: 'One', visibility: 'public' }]
-                : [{ id: 'p2', name: 'Two', visibility: 'public' }];
+            const rows = [
+                { id: 'p1', name: 'One', visibility: 'public' },
+                { id: 'p2', name: 'Two', visibility: 'public' }
+            ];
             const reply = { ok: true, json: async () => rows };
-            return url === '/fetchPartnersData' ? new Promise(resolve => { release = () => resolve(reply); }) : Promise.resolve(reply);
+            return new Promise(resolve => { release = () => resolve(reply); });
         }
     });
     vm.runInContext(source, context);
-    const loading = context.fetchPartnersData();
+    const loading = Promise.all([context.fetchPartnersData(), context.fetchPartnersData()]);
     await new Promise(resolve => setTimeout(resolve, 0));
-    // Both requests are in flight before the first one answers.
-    assert.deepEqual(started.sort(), ['/api/public/records', '/fetchPartnersData']);
+    assert.deepEqual(started, ['/api/public/records?view=cards']);
     release();
-    assert.deepEqual(plain((await loading).map(row => row.id)), ['p1', 'p2']);
+    const [first, second] = await loading;
+    assert.deepEqual(plain(first.map(row => row.id)), ['p1', 'p2']);
+    assert.deepEqual(plain(second.map(row => row.id)), ['p1', 'p2']);
 });
