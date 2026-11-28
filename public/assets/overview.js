@@ -8,6 +8,7 @@
         draft: 'ร่าง', active: 'มีผล', expired: 'หมดอายุ', terminated: 'ยุติ',
         ongoing: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น', cancelled: 'ยกเลิก',
         participant: 'ผู้เข้าร่วม', partner: 'คู่ความร่วมมือ', other: 'อื่น ๆ',
+        agreementId: 'ข้อตกลง', startDate: 'ตั้งแต่วันที่', endDate: 'ถึงวันที่', scopeId: 'ขอบเขต',
         activity: 'กิจกรรม', agreement: 'ข้อตกลง', exchange: 'การแลกเปลี่ยน'
     };
     const text = (tag, value, className) => {
@@ -53,15 +54,24 @@
         label.appendChild(input); return {label, input};
     };
     const countRows = values => Object.entries(values || {}).sort(([a], [b]) => a.localeCompare(b));
-    function csvCell(value) { return '"' + String(value ?? '').replaceAll('"', '""') + '"'; }
+    const enrollmentLabel = 'นักศึกษาที่เข้าร่วม Exchange ครบขั้น (คนไม่ซ้ำ)';
+    const followUpLabel = 'ประเด็นที่ต้องติดตาม (ล่าสุดไม่เกิน 5 รายการ)';
+    function csvCell(value) {
+        const raw = String(value ?? '');
+        const cell = /^[\s]*[=+@-]/.test(raw) ? "'" + raw : raw;
+        return '"' + cell.replaceAll('"', '""') + '"';
+    }
     function exportCsv(data) {
-        const rows = [['หมวด', 'รายการ', 'จำนวน']];
+        const rows = [['หมวด', 'รายการ', 'จำนวน / ค่า']];
         rows.push(['รายงาน', 'บทบาท', labels[data.role] || data.role]);
         for (const [key, value] of Object.entries(data.filters || {})) rows.push(['ตัวกรอง', labels[key] || key, value]);
         rows.push(['ภาพรวม', 'คู่ความร่วมมือ / Stakeholder', data.stakeholders?.count || 0]);
         rows.push(['ภาพรวม', 'กิจกรรม', data.activities?.count || 0]);
         rows.push(['ภาพรวม', 'ข้อตกลง', data.agreements?.count || 0]);
         rows.push(['ภาพรวม', 'การแลกเปลี่ยน', data.exchanges?.count || 0]);
+        rows.push(['ภาพรวม', enrollmentLabel, data.exchanges?.enrolledStudents || 0]);
+        for (const item of data.linkedActivities || []) rows.push(['กิจกรรมในข้อตกลง', item.title, item.date]);
+        for (const item of data.feedback?.followUp || []) rows.push([followUpLabel, item.title, item.improvement]);
         rows.push(['Feedback', 'ทั้งหมด', data.feedback?.count || 0]);
         rows.push(['Feedback', 'มีข้อเสนอแนะเพื่อปรับปรุง', data.feedback?.withImprovement || 0]);
         for (const [type, count] of countRows(data.stakeholders?.byType)) rows.push(['Stakeholder', labels[type] || type, count]);
@@ -72,11 +82,14 @@
         if (data.formFeedback) {
             rows.push(['Form Feedback', 'ชุดแบบฟอร์มนำเข้าทั้งหมด', data.formFeedback.batchCount || 0]);
             rows.push(['Form Feedback', 'จำนวนคำตอบนำเข้าทั้งหมด', data.formFeedback.responseCount || 0]);
-            for (const agr of data.formFeedback.byAgreement || []) {
-                rows.push(['ผลตอบรับตามข้อตกลง', agr.title || agr.id, agr.responseCount || 0]);
+            for (const agr of [...(data.formFeedback.byAgreement || []), data.formFeedback.unspecifiedAgreement].filter(Boolean)) {
+                const name = agr.title || agr.label || agr.id;
+                rows.push(['ผลตอบรับตามข้อตกลง', name, agr.responseCount || 0]);
+                rows.push(['ชุดแบบฟอร์มตามข้อตกลง', name, agr.batchCount || 0]);
+                rows.push(['ความคิดเห็นตามข้อตกลง', name, agr.commentCount || 0]);
             }
-            if (data.formFeedback.unspecifiedAgreement) {
-                rows.push(['ผลตอบรับตามข้อตกลง', data.formFeedback.unspecifiedAgreement.label || 'ยังไม่ระบุข้อตกลง', data.formFeedback.unspecifiedAgreement.responseCount || 0]);
+            for (const batch of data.formFeedback.batches || []) {
+                rows.push(['แบบฟอร์มนำเข้า', batch.formName, batch.responseCount || 0]);
             }
             for (const [source, count] of countRows(data.formFeedback.bySource)) {
                 rows.push(['แหล่งคำตอบแบบฟอร์ม', labels[source] || source, count]);
@@ -102,10 +115,28 @@
         const stakeholderType = select('ประเภท Stakeholder', [['', 'ทั้งหมด'], ...['company','university','government','research_institute','internship'].map(value => [value, labels[value]])], 'stakeholderType');
         const activityType = select('ประเภทกิจกรรม', [['', 'ทั้งหมด'], ...['academic_activity','event','research'].map(value => [value, labels[value]])], 'activityType');
         const status = select('สถานะข้อตกลง / แลกเปลี่ยน', [['', 'ทั้งหมด'], ...['draft','active','expired','terminated','ongoing','completed','cancelled'].map(value => [value, labels[value]])], 'status');
+        const agreement = select('ข้อตกลง MoU / MoA', [['', 'ทุกข้อตกลง']], 'agreementId');
+        let choices = [];
+        function updateChoices() {
+            const previous = agreement.input.value;
+            const options = [['', 'ทุกข้อตกลง'], ...choices.filter(row => !scope.input.value || row.scopeId === scope.input.value)
+                .map(row => [row.id, row.title || row.id])];
+            agreement.input.replaceChildren(...options.map(([value, caption]) => {
+                const option = text('option', caption);
+                option.value = value;
+                return option;
+            }));
+            agreement.input.value = options.some(([value]) => value === previous) ? previous : '';
+        }
+        scope.input.addEventListener('change', () => {
+            agreement.input.value = '';
+            updateChoices();
+            load();
+        });
         const startLabel = text('label', 'ตั้งแต่วันที่'), start = document.createElement('input'); start.type = 'date'; start.name = 'startDate'; start.lang = 'th-TH'; startLabel.appendChild(start);
         const endLabel = text('label', 'ถึงวันที่'), end = document.createElement('input'); end.type = 'date'; end.name = 'endDate'; end.lang = 'th-TH'; endLabel.appendChild(end);
         const dateHint = text('small', 'ช่วงวันที่กรองกิจกรรม ข้อตกลง การแลกเปลี่ยน และ Feedback; ยอด Stakeholder นับตามประเภทที่เลือก', 'overview-filter-hint');
-        for (const field of [scope, stakeholderType, activityType, status]) filters.appendChild(field.label);
+        for (const field of [scope, agreement, stakeholderType, activityType, status]) filters.appendChild(field.label);
         filters.append(startLabel, endLabel, dateHint);
         const actions = text('div', undefined, 'overview-actions');
         const apply = text('button', 'แสดงผล', 'overview-btn-primary'); apply.type = 'submit';
@@ -171,7 +202,8 @@
                     [['คู่ความร่วมมือ / Stakeholder', result.stakeholders?.count, 'users'], ['กิจกรรม', result.activities?.count, 'calendar-days']],
                     [['ข้อตกลง', result.agreements?.count, 'file-lines'], ['การแลกเปลี่ยน', result.exchanges?.count, 'arrow-right-arrow-left']]
                 ];
-                if (isExecutive) groups.push([['Feedback', result.feedback?.count, 'comment-dots']]);
+                groups.push([[enrollmentLabel, result.exchanges?.enrolledStudents, 'users'],
+                    ['ความคิดเห็น', result.feedback?.count, 'comment-dots']]);
                 summary.dataset.groups = groups.length;
                 for (const items of groups) {
                     const group = text('div', undefined, 'overview-metric-group');
@@ -240,6 +272,21 @@
                         text('p', 'ตามจากรายงานกลับไปดูแหล่งที่มาของไฟล์และงานที่เกี่ยวข้องได้ตามสิทธิ์', 'overview-muted'));
                     header.append(badge, copy, text('span', `รวม ${ff.batchCount || 0} ชุด · ${ff.responseCount || 0} คำตอบ`, 'overview-panel-total'));
                     section.appendChild(header);
+                    if (result.filters?.agreementId && result.linkedActivities?.length) {
+                        section.appendChild(text('h4', 'กิจกรรมในข้อตกลง'));
+                        const items = text('ul');
+                        for (const item of result.linkedActivities) items.appendChild(text('li', item.date + ' · ' + item.title));
+                        section.appendChild(items);
+                    }
+                    section.appendChild(text('h4', followUpLabel));
+                    const topics = result.feedback?.followUp || [];
+                    if (topics.length) {
+                        const list = text('ul');
+                        for (const item of topics) list.appendChild(text('li', item.title + ' · ' + item.improvement));
+                        section.appendChild(list);
+                    } else {
+                        section.appendChild(text('p', 'ยังไม่มีข้อเสนอแนะเพื่อปรับปรุงตามตัวกรอง', 'overview-muted'));
+                    }
                     const agrBlock = text('div', undefined, 'overview-agreement-feedback');
                     for (const agr of ff.byAgreement || []) {
                         const row = text('div', undefined, 'overview-breakdown-row');
@@ -247,6 +294,7 @@
                         const labelWrap = text('span', undefined, 'overview-breakdown-label');
                         labelWrap.append(text('span', `${agr.agreementType || 'MoU'}: `), recordLink('agreement', agr.id, agr.title || agr.id));
                         row.append(labelWrap, text('span', `${agr.batchCount || 0} ชุด · ${agr.responseCount || 0} คำตอบ`, 'overview-breakdown-count'));
+                        labelWrap.appendChild(text('small', ' · ' + (agr.commentCount || 0) + ' ความคิดเห็น'));
                         agrBlock.appendChild(row);
                     }
                     const unspec = ff.unspecifiedAgreement || {label: 'ยังไม่ระบุข้อตกลง', batchCount: 0, responseCount: 0};
@@ -254,6 +302,7 @@
                     unspecRow.dataset.agreementStatus = 'unspecified';
                     unspecRow.append(text('span', unspec.label || 'ยังไม่ระบุข้อตกลง', 'overview-breakdown-label'),
                         text('span', `${unspec.batchCount || 0} ชุด · ${unspec.responseCount || 0} คำตอบ`, 'overview-breakdown-count'));
+                    unspecRow.appendChild(text('small', (unspec.commentCount || 0) + ' ความคิดเห็น'));
                     agrBlock.appendChild(unspecRow);
                     section.appendChild(agrBlock);
                     const batches = Array.isArray(ff.batches) ? ff.batches : [];
@@ -384,16 +433,31 @@
                 drawDoughnut(canvas, rows, block, '62%');
             }
         }
+        function selectedQuery() {
+            const query = new URLSearchParams();
+            for (const input of [scope.input, agreement.input, stakeholderType.input, activityType.input, status.input, start, end]) {
+                if (input.value) query.set(input.name, input.value);
+            }
+            return query;
+        }
+        let appliedQuery = '';
+        function syncExport() {
+            if (statusText.dataset.state !== 'ready') return;
+            const changed = selectedQuery().toString() !== appliedQuery;
+            download.disabled = changed;
+            statusText.textContent = changed ? 'กดแสดงผลเพื่อใช้ตัวกรองและส่งออก CSV' : 'แสดงเฉพาะข้อมูลในขอบเขตที่คุณมีสิทธิ์';
+        }
         async function load() {
             const current = ++requestNumber; statusText.dataset.state = 'loading'; statusText.textContent = 'กำลังโหลดข้อมูลสรุป'; download.disabled = true;
-            const query = new URLSearchParams();
-            for (const input of [scope.input, stakeholderType.input, activityType.input, status.input, start, end]) if (input.value) query.set(input.name, input.value);
+            const query = selectedQuery();
             try {
                 const response = await window.CstuAuth.request('/overview' + (query.size ? '?' + query.toString() : ''));
                 if (current !== requestNumber) return;
                 result = response?.data;
                 if (!result || result.role !== role || !result.stakeholders || !result.activities || !result.agreements || !result.exchanges || !result.feedback) throw Error('ข้อมูลสรุปไม่ครบ');
-                drawPane(); statusText.dataset.state = 'ready'; statusText.textContent = 'แสดงเฉพาะข้อมูลในขอบเขตที่คุณมีสิทธิ์'; download.disabled = false;
+                choices = result.availableAgreements || [];
+                updateChoices();
+                drawPane(); statusText.dataset.state = 'ready'; appliedQuery = query.toString(); syncExport();
             } catch (error) {
                 if (current !== requestNumber) return;
                 if (error.status === 401) { location.replace('login.html'); return; }
@@ -402,6 +466,8 @@
                 statusText.dataset.state = 'error'; statusText.textContent = 'ไม่สามารถโหลดภาพรวมได้';
             }
         }
+        filters.addEventListener('input', syncExport);
+        filters.addEventListener('change', syncExport);
         filters.addEventListener('submit', event => { event.preventDefault(); load(); });
         filters.addEventListener('reset', () => setTimeout(load, 0));
         download.onclick = () => { if (result) exportCsv(result); };

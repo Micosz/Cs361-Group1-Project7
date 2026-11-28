@@ -520,19 +520,36 @@ class PermissionGateway:
                 ids = row.get('partnerIds') if isinstance(row.get('partnerIds'), list) else []
             return any(isinstance(item, str) and item in visible_partner_ids for item in ids)
 
-        agreements = [row for row in authorized('agreement')
-                      if ('status' not in query or row.get('status') == query['status'])
-                      and in_period('agreement', row) and related_to_selected_stakeholder('agreement', row)
-                      and (not selected_agreement or row['id'] == selected_agreement)]
-        selected_agreement_ids = {row['id'] for row in agreements}
+        choices = sorted(authorized('agreement'), key=lambda row: (row.get('title') or '', row['id']))
+        candidates = [row for row in choices if (not selected_agreement or row['id'] == selected_agreement)
+                      and in_period('agreement', row) and related_to_selected_stakeholder('agreement', row)]
+        eligible = {(row['scopeId'], row['id']) for row in candidates}
+        status = query.get('status')
+        agreement_matches = {(row['scopeId'], row['id']) for row in candidates
+                             if not status or row.get('status') == status}
+
+        def linked_to(row, agreement_ids, keys):
+            return any((row['scopeId'], key) in keys for key in agreement_ids if isinstance(key, str))
+
         activities = [row for row in authorized('activity')
                       if ('activityType' not in query or row.get('type') == query['activityType'])
                       and in_period('activity', row) and related_to_selected_stakeholder('activity', row)
-                      and (not selected_agreement or any(aid in selected_agreement_ids for aid in (row.get('agreementIds') or [])))]
-        exchanges = [row for row in authorized('exchange')
-                     if ('status' not in query or row.get('status') == query['status'])
-                     and in_period('exchange', row) and related_to_selected_stakeholder('exchange', row)
-                     and (not selected_agreement or row.get('agreementId') in selected_agreement_ids)]
+                      and (not (selected_agreement or status)
+                           or linked_to(row, row.get('agreementIds') or [], agreement_matches))]
+        exchanges = []
+        for row in authorized('exchange'):
+            if not in_period('exchange', row) or not related_to_selected_stakeholder('exchange', row):
+                continue
+            key = (row['scopeId'], row.get('agreementId'))
+            if selected_agreement and key not in eligible:
+                continue
+            if not status or row.get('status') == status or key in agreement_matches:
+                exchanges.append(row)
+        exchange_links = {(row['scopeId'], row.get('agreementId')) for row in exchanges}
+        included_agreements = agreement_matches | exchange_links
+        agreements = [row for row in candidates if (row['scopeId'], row['id']) in included_agreements]
+        from ..admissions import enrolled_student_count
+        enrolled = enrolled_student_count(self.repository, exchanges)
 
         def counts(rows, field):
             result = {}
@@ -577,17 +594,11 @@ class PermissionGateway:
         visible_parents = {(kind, row['id']): row for kind, rows in (
             ('activity', activities), ('exchange', exchanges)) for row in rows}
         include_partner_feedback = not selected_agreement and 'activityType' not in query and 'status' not in query
-        partner_map = {row['id']: row for row in partners} if include_partner_feedback else {}
+        if include_partner_feedback:
+            visible_parents.update({('partner', row['id']): row for row in partners})
         for row in self.repository.list('feedback', context, None):
             parent_kind, parent_id = row.get('parentType'), row.get('parentId')
             if row.get('origin') == 'web' and publicly_hidden(row) and not matching_roles(context, {'scopeId': row.get('scopeId')}) & MODERATOR_ROLES:
-                continue
-            if parent_kind == 'partner':
-                p_row = partner_map.get(parent_id)
-                if (p_row and allowed_roles(context, 'feedback', 'read', row, p_row)
-                        and (not start or (valid_day(row.get('occurredOn')) and row['occurredOn'] >= start))
-                        and (not end or (valid_day(row.get('occurredOn')) and row['occurredOn'] <= end))):
-                    unspecified_stats['commentCount'] += 1
                 continue
             parent = visible_parents.get((parent_kind, parent_id))
             if not parent or not allowed_roles(context, 'feedback', 'read', row, parent):
@@ -609,28 +620,16 @@ class PermissionGateway:
                              'sourceType': item.get('sourceType', ''),
                              'parentType': parent_kind,
                              'parentId': parent_id,
-                             'parentTitle': parent.get('title', ''),
+                             'parentTitle': parent.get('title') or parent.get('name', ''),
                              'comment': item.get('comment', '')[:500],
                              'improvement': item.get('improvement', '')[:500],
                              **links})
         feedback.sort(key=lambda row: row.get('date') or '', reverse=True)
 
-        selected_status = query.get('status')
-        filtering_by_agreement = bool(selected_agreement) or ('status' in query)
-        form_parents = dict(visible_parents)
-        if selected_status in {'active', 'expired', 'terminated'}:
-            for row in authorized('exchange'):
-                if (in_period('exchange', row)
-                        and related_to_selected_stakeholder('exchange', row)
-                        and row.get('agreementId') in selected_agreement_ids):
-                    form_parents[('exchange', row['id'])] = row
-        if include_partner_feedback:
-            for row in partners:
-                form_parents[('partner', row['id'])] = row
         form_batches = []
         for row in self.repository.list('formFeedback', context, None):
             parent_kind, parent_id = row.get('parentType'), row.get('parentId')
-            parent = form_parents.get((parent_kind, parent_id))
+            parent = visible_parents.get((parent_kind, parent_id))
             if not parent or not allowed_roles(context, 'formFeedback', 'read', row, parent):
                 continue
             if parent_kind == 'partner' and (start or end):
@@ -639,8 +638,6 @@ class PermissionGateway:
                     continue
             valid_agreements = self._parent_agreements(parent, agreement_cache)
             matched_agreements = [agr for agr in valid_agreements if agr['id'] in agreement_stats]
-            if filtering_by_agreement and not matched_agreements:
-                continue
             item = project(context, 'formFeedback', row, parent)
             links = self._feedback_links(context, parent, partner_cache, agreement_cache)
             resp_count = int(item.get('responseCount', 0))
@@ -676,18 +673,25 @@ class PermissionGateway:
         result = {
             'role': role,
             'filters': {key: query[key] for key in sorted(query)},
+            'linkedActivities': [{'title': row.get('title', ''), 'date': row.get('periodDate', '')}
+                                 for row in sorted(activities, key=lambda r: (r.get('periodDate') or '', r['id']))]
+                                if selected_agreement else [],
             'availableScopes': scopes,
+            'availableAgreements': [{'id': a['id'], 'title': a.get('title', ''), 'scopeId': a['scopeId']}
+                                    for a in choices],
             'stakeholders': {'count': len(partners), 'byType': counts(partners, 'type')},
             'partners': {'count': len(partners), 'byType': counts(partners, 'type')},
             'activities': {'count': len(activities), 'byType': counts(activities, 'type'),
                            'outcomesRecorded': sum(isinstance(row.get('outcomeSummary'), str) and bool(row['outcomeSummary'].strip()) for row in activities)},
             'agreements': {'count': len(agreements), 'statuses': counts(agreements, 'status')},
-            'exchanges': {'count': len(exchanges), 'statuses': counts(exchanges, 'status'),
+            'exchanges': {'count': len(exchanges), 'enrolledStudents': enrolled, 'statuses': counts(exchanges, 'status'),
                           'outcomesRecorded': sum(isinstance(row.get('outcomeSummary'), str) and bool(row['outcomeSummary'].strip()) for row in exchanges)},
             'outcomes': {'count': len(outcomes), 'records': outcomes[:5]},
             'feedback': {'count': len(feedback), 'bySource': counts(feedback, 'sourceType'),
                          'withImprovement': sum(bool(row.get('improvement')) for row in feedback),
-                         'latest': feedback[:5]},
+                         'latest': feedback[:5],
+                         'followUp': [{'title': row['parentTitle'], 'improvement': row['improvement']}
+                                      for row in feedback if row['improvement']][:5]},
             'formFeedback': {
                 'batchCount': len(form_batches),
                 'responseCount': sum(b['responseCount'] for b in form_batches),

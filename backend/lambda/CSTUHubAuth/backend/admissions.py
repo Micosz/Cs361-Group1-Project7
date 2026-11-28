@@ -46,6 +46,24 @@ def applicant(accounts, user, scope=None):
         raise AuthError('STUDENT_REQUIRED', 403)
 
 
+def enrolled_student_count(repo, exchanges):
+    """Count distinct completed admissions for projects already scoped by the report."""
+    by_scope = {}
+    for project in exchanges:
+        by_scope.setdefault(project['scopeId'], set()).add(project['id'])
+    students = set()
+    for scope, projects in by_scope.items():
+        for admission in indexed(repo, scope + '#' + rounds.ROUND, rounds.ROUND):
+            if admission.get('scopeId') != scope or admission.get('exchangeId') not in projects:
+                continue
+            rid = admission['id']
+            for row in indexed(repo, rid + '#' + rounds.APPLICATION, rounds.APPLICATION):
+                if (row.get('scopeId') == scope and row.get('roundId') == rid
+                        and row.get('enrolledAt') is not None and row.get('studentId')):
+                    students.add(row['studentId'])
+    return len(students)
+
+
 def own_id(round_id, user_id):
     return rounds.identifier('application', round_id, user_id)
 
