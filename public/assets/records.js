@@ -22,7 +22,8 @@
         if (!sentinel.hidden && sentinel.getBoundingClientRect().top < window.innerHeight + 400) loadMore();
     }, {passive:true});
     const status = text => { $('records-status').textContent = text; window.CstuLanguage?.capture($('records-status')); };
-    function showDetailDialog() {
+    function showDetailDialog(reading = false) {
+        dialog.classList.toggle('reading-record', reading);
         if (typeof window.closeModal === 'function') window.closeModal();
         if (!dialog.open) dialog.showModal();
     }
@@ -240,7 +241,7 @@
         $('detail-fields').replaceChildren(content);
         $('detail-actions').replaceChildren();
         window.CstuDetailSheet?.record(record, 'activities');
-        showDetailDialog();
+        showDetailDialog(true);
         window.CstuAdmissions?.activity(content, record.id);
         const feedback = document.createElement('section'); feedback.className = 'feedback-section';
         $('detail-fields').appendChild(feedback);
@@ -268,7 +269,7 @@
         window.CstuDetailSheet?.resetRecord();
         const current = ++detailRevision, page = revision;
         lastTrigger = trigger; $('detail-title').textContent = 'กำลังโหลด'; $('detail-status').textContent = '';
-        $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); showDetailDialog();
+        $('detail-fields').replaceChildren(); $('detail-actions').replaceChildren(); showDetailDialog(true);
         try {
             const fresh = await window.CstuAuth.refresh();
             if (!fresh?.user && resourceKind !== 'agreements') { redirectLogin(); return; }
