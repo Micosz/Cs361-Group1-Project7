@@ -22,6 +22,12 @@ def page(rows, event, service, kind=None):
         supported.add('status')
     if kind in {'activity', 'agreement', 'exchange'}:
         supported.update({'startDate', 'endDate'})
+    # Relationship filters (#263) match the authorized projection, so a caller can
+    # only find links that the same projection would already show them.
+    if kind in {'activity', 'exchange'}:
+        supported.add('agreementId')
+    if kind == 'agreement':
+        supported.add('partnerId')
     if kind in {'feedback', 'formFeedback'}:
         supported.add('parentType')
         if event.get('rawPath', '').startswith('/api/public/'):
@@ -33,6 +39,11 @@ def page(rows, event, service, kind=None):
             raise AuthError('INVALID_QUERY', 422)
     if 'parentType' in query and query['parentType'] not in {'partner', 'activity', 'exchange'}:
         raise AuthError('INVALID_QUERY', 422)
+    for field in ('agreementId', 'partnerId'):
+        value = query.get(field)
+        if field in query and (not isinstance(value, str) or not value
+                               or len(value) > 200 or value != value.strip()):
+            raise AuthError('INVALID_QUERY', 422)
 
     def valid_day(value):
         try:
@@ -52,6 +63,14 @@ def page(rows, event, service, kind=None):
             return False
         if 'parentType' in query and row.get('parentType') != query['parentType']:
             return False
+        if 'agreementId' in query:
+            linked = (row.get('agreementIds') if kind == 'activity' else [row.get('agreementId')])
+            if not isinstance(linked, list) or query['agreementId'] not in linked:
+                return False
+        if 'partnerId' in query:
+            linked = row.get('partnerIds')
+            if not isinstance(linked, list) or query['partnerId'] not in linked:
+                return False
         if not (start or end):
             return True
         if kind == 'activity':
