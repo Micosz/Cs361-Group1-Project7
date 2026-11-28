@@ -23,7 +23,8 @@
     function relatedLink(row) {
         const link = el('a', row.parentTitle || 'เปิดงานที่เกี่ยวข้อง', 'feedback-related-link');
         const kind = {partner:'partners',activity:'activities',agreement:'agreements',exchange:'exchanges'}[row.parentType];
-        link.href = `index.html?kind=${kind}&id=${encodeURIComponent(row.parentId)}#board-section`;
+        const pageName = document.body?.classList?.contains('work-home') ? 'work.html' : 'index.html';
+        link.href = `${pageName}?kind=${kind}&id=${encodeURIComponent(row.parentId)}#board-section`;
         link.onclick = event => {
             if(event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !window.CstuRecords?.openRelated) return;
             event.preventDefault();

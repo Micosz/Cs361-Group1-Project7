@@ -223,7 +223,8 @@
                         const collection = kindCollection[entityType];
                         if (!collection || !id) return text('span', caption || '');
                         const link = text('a', caption || 'เปิดรายการ', 'overview-related-link');
-                        link.href = `index.html?kind=${collection}&id=${encodeURIComponent(id)}#board-section`;
+                        const pageName = document.body?.classList?.contains('work-home') ? 'work.html' : 'index.html';
+                        link.href = `${pageName}?kind=${collection}&id=${encodeURIComponent(id)}#board-section`;
                         link.onclick = event => {
                             if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !window.CstuRecords?.openRelated) return;
                             event.preventDefault();

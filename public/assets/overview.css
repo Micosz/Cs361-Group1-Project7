@@ -667,7 +667,7 @@
     .overview-stakeholder-donut .overview-donut-label strong { font-size: 50px; }
 }
 
-.overview-form-feedback { margin-top: 1rem; }
+.overview-form-feedback { margin-top: 1rem; scroll-margin-top: 96px; }
 .overview-agreement-feedback { margin-top: .5rem; }
 .overview-related-link { color: var(--tu-red, #c3002f); font-weight: 600; text-decoration: none; }
 .overview-related-link:hover { text-decoration: underline; }

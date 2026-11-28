@@ -16,6 +16,7 @@
     "test:e2e": "playwright test",
     "test:proposals": "playwright test --config tests/proposals/playwright.config.cjs",
     "test:exchange-admissions": "playwright test --config tests/exchange-admissions/playwright.config.cjs",
+    "test:v7-feedback": "playwright test --config tests/v7-feedback/playwright.config.cjs",
     "test:ci": "npm test && npm run test:e2e"
   },
   "repository": {
