@@ -363,7 +363,7 @@ for (const width of [320,390,767,768,769,1023,1024,1025,1280]) {
     const undated = Array.from({length:7}, (_,i) => ({
       id:'undated-'+i, title:'Sample workshop '+i, partnerId:'canal', type:'academic_activity', visibility:'public'
     }));
-    await page.route('**/fetchPartnersData', route => route.fulfill({json:[...rows,...undated]}));
+    await page.route('**/api/public/records*', route => route.fulfill({json:[...rows,...undated]}));
     await page.goto('/index.html');
     await page.locator('#tabEvent').click();
     await language(header(page),'en');
