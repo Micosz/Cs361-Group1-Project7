@@ -1,0 +1,204 @@
+{
+  "pricing": {
+    "region": "ap-southeast-1 (Asia Pacific - Singapore)",
+    "referenceDate": "2026-11-28",
+    "freeTierExcluded": true,
+    "sources": {
+      "apiGatewayHttpApi": "https://aws.amazon.com/api-gateway/pricing/",
+      "lambda": "https://aws.amazon.com/lambda/pricing/",
+      "dynamoDbOnDemand": "https://aws.amazon.com/dynamodb/pricing/on-demand/",
+      "amplifyHosting": "https://aws.amazon.com/amplify/pricing/"
+    },
+    "rates": {
+      "apiGatewayHttpPerMillion": 1.25,
+      "lambdaRequestPerMillion": 0.2,
+      "lambdaGbSecond": 1.66667e-05,
+      "dynamoRruPerMillion": 0.1425,
+      "dynamoWruPerMillion": 0.71,
+      "amplifyTransferPerGb": 0.15
+    }
+  },
+  "loadsEvaluated": 1000,
+  "perLoadInputs": {
+    "before": {
+      "apiRequests": 6,
+      "lambdaInvocations": 6,
+      "lambdaBreakdown": [
+        {
+          "function": "fetchPartnersData",
+          "memoryMB": 128,
+          "calls": 1,
+          "estBilledMsPerCall": 118.0
+        },
+        {
+          "function": "CSTUHubAuth (/api/public/records)",
+          "memoryMB": 256,
+          "calls": 1,
+          "estBilledMsPerCall": 120.0
+        },
+        {
+          "function": "CSTUHubAuth (/api/auth/session)",
+          "memoryMB": 256,
+          "calls": 4,
+          "estBilledMsPerCall": 48.0
+        }
+      ],
+      "totalBilledDurationMs": 430.0,
+      "totalGbSeconds": 0.09275,
+      "dynamoCatalogRru": 16.5,
+      "dynamoColdSessionWru": 4.0,
+      "coldTransferKB": 1469.1,
+      "warmTransferKB": 37.4
+    },
+    "after": {
+      "apiRequests": 2,
+      "lambdaInvocations": 2,
+      "lambdaBreakdown": [
+        {
+          "function": "fetchPartnersData",
+          "memoryMB": 128,
+          "calls": 0,
+          "estBilledMsPerCall": 0
+        },
+        {
+          "function": "CSTUHubAuth (/api/public/records?view=cards)",
+          "memoryMB": 256,
+          "calls": 1,
+          "estBilledMsPerCall": 115.0
+        },
+        {
+          "function": "CSTUHubAuth (/api/auth/session)",
+          "memoryMB": 256,
+          "calls": 1,
+          "estBilledMsPerCall": 48.0
+        }
+      ],
+      "totalBilledDurationMs": 163.0,
+      "totalGbSeconds": 0.04075,
+      "dynamoCatalogRru": 11.0,
+      "dynamoColdSessionWru": 1.0,
+      "coldTransferKB": 1457.8,
+      "warmTransferKB": 26.1
+    }
+  },
+  "backendCostPer1000Loads": {
+    "items": [
+      {
+        "service": "API Gateway (HTTP API)",
+        "unit": "requests",
+        "qtyBefore": 6000,
+        "qtyAfter": 2000,
+        "unitPriceUsd": 1.25,
+        "unitDivisor": 1000000,
+        "costBeforeUsd": 0.0075,
+        "costAfterUsd": 0.0025,
+        "diffUsd": -0.005,
+        "diffPct": "-66.7%"
+      },
+      {
+        "service": "AWS Lambda (Requests)",
+        "unit": "invocations",
+        "qtyBefore": 6000,
+        "qtyAfter": 2000,
+        "unitPriceUsd": 0.2,
+        "unitDivisor": 1000000,
+        "costBeforeUsd": 0.0012,
+        "costAfterUsd": 0.0004,
+        "diffUsd": -0.0008,
+        "diffPct": "-66.7%"
+      },
+      {
+        "service": "AWS Lambda (Compute Duration, x86_64)",
+        "unit": "GB-seconds",
+        "qtyBefore": 92.75,
+        "qtyAfter": 40.75,
+        "unitPriceUsd": 1.66667e-05,
+        "unitDivisor": 1.0,
+        "costBeforeUsd": 0.001546,
+        "costAfterUsd": 0.000679,
+        "diffUsd": -0.000867,
+        "diffPct": "-56.1%"
+      },
+      {
+        "service": "DynamoDB On-Demand (Catalog Reads — CSTUHub-Partner)",
+        "unit": "RRU",
+        "qtyBefore": 16500.0,
+        "qtyAfter": 11000.0,
+        "unitPriceUsd": 0.1425,
+        "unitDivisor": 1000000,
+        "costBeforeUsd": 0.002351,
+        "costAfterUsd": 0.001567,
+        "diffUsd": -0.000784,
+        "diffPct": "-33.3%"
+      },
+      {
+        "service": "DynamoDB On-Demand (Cold Session Writes — CSTUHub-Sessions)",
+        "unit": "WRU",
+        "qtyBefore": 4000.0,
+        "qtyAfter": 1000.0,
+        "unitPriceUsd": 0.71,
+        "unitDivisor": 1000000,
+        "costBeforeUsd": 0.00284,
+        "costAfterUsd": 0.00071,
+        "diffUsd": -0.00213,
+        "diffPct": "-75.0%"
+      }
+    ],
+    "totalBeforeUsd": 0.015437,
+    "totalAfterUsd": 0.005856,
+    "diffUsd": -0.009581,
+    "diffPct": "-62.1%"
+  },
+  "fullStackCostPer1000Loads": {
+    "coldCache": {
+      "transferItem": {
+        "service": "AWS Amplify Hosting (Data Transfer — Cold Cache)",
+        "unit": "GB",
+        "qtyBefore": 1.401,
+        "qtyAfter": 1.3903,
+        "unitPriceUsd": 0.15,
+        "unitDivisor": 1.0,
+        "costBeforeUsd": 0.210156,
+        "costAfterUsd": 0.20854,
+        "diffUsd": -0.001616,
+        "diffPct": "-0.8%"
+      },
+      "totalBeforeUsd": 0.225593,
+      "totalAfterUsd": 0.214396,
+      "diffUsd": -0.011197,
+      "diffPct": "-5.0%"
+    },
+    "warmCache": {
+      "transferItem": {
+        "service": "AWS Amplify Hosting (Data Transfer — Warm Cache)",
+        "unit": "GB",
+        "qtyBefore": 0.0357,
+        "qtyAfter": 0.0249,
+        "unitPriceUsd": 0.15,
+        "unitDivisor": 1.0,
+        "costBeforeUsd": 0.00535,
+        "costAfterUsd": 0.003734,
+        "diffUsd": -0.001616,
+        "diffPct": "-30.2%"
+      },
+      "totalBeforeUsd": 0.020787,
+      "totalAfterUsd": 0.00959,
+      "diffUsd": -0.011197,
+      "diffPct": "-53.9%"
+    }
+  },
+  "onDemandDetailSensitivity": {
+    "assumedClickRate": 0.2,
+    "detailClicksPer1000Loads": 200,
+    "addedBackendCostUsd": 0.000356,
+    "afterBackendPlusDetailUsd": 0.006212,
+    "netBackendSavingsVsBeforePct": "-59.8%"
+  },
+  "assumptions": [
+    "Prices are AWS ap-southeast-1 (Singapore) on-demand list prices as of 2026-11-28, excluding AWS Free Tier so marginal unit cost differences remain visible.",
+    "Lambda memory sizes match infra/backend.yaml: CSTUHubAuth = 256 MB (x86_64), fetchPartnersData = 128 MB (x86_64).",
+    "Lambda billed duration uses Warm p50 TTFB from #259 minus ~37 ms baseline Singapore RTT (118 ms fetchPartnersData, 120 ms public/records before, 115 ms public/records?view=cards after, 48 ms auth/session). Replace with CloudWatch REPORT RequestId Billed Duration after PR #306 deploys.",
+    "DynamoDB catalog RRU uses the live 37-item public snapshot (44,335 bytes -> 16.5 RRU before vs 11.0 RRU after); any additional private/retired rows scale both versions proportionally (-33.3% unchanged).",
+    "Cold-visitor anonymous session writes on CSTUHub-Sessions drop from 4 WRU to 1 WRU per load after auth-client.js deduplication and role-menu.js pageshow guard."
+  ]
+}
