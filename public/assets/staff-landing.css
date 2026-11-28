@@ -240,11 +240,13 @@
 }
 
 @media (max-width: 760px) {
+    /* Match the space reserved for the fixed, wrapped search header in work-home.css. */
+    html:has(> body.staff-landing) { scroll-padding-top: 184px; }
     .staff-landing .work-sidebar > .work-eyebrow { display: none; }
     .staff-landing .work-welcome { margin-inline: 16px; padding-top: 4px; }
     .staff-landing .work-welcome-heading { padding-top: 10px; }
     .staff-landing .work-sidebar { padding: 10px; }
-    .staff-landing .work-sidebar nav { padding: 5px; }
+    .staff-landing .work-sidebar nav { padding: 5px; scroll-padding-inline: 25%; }
     .staff-landing .work-public-link { padding: 10px; min-height: 44px; }
 }
 

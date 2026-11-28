@@ -334,6 +334,26 @@ for (const role of ['coordinator','staff','executive']) test(`${role} gets inter
   await expect(page.locator('#work-nav a[aria-current="page"]')).toContainText('Feedback');
   await expect(page.locator('.staff-landing')).toHaveCount(0);
 });
+for (const width of [320, 390]) test(`workspace keyboard focus stays in view at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width, height:844});
+  await fixture(page, 'executive');
+  await page.goto('/work.html');
+  const links = page.locator('.staff-landing :is(.work-sidebar, .work-actions) a');
+  await links.first().focus();
+  const count = await links.count();
+  for (const key of ['Tab', 'Shift+Tab']) {
+    for (let step = 1; step < count; step++) {
+      await page.keyboard.press(key);
+      const current = links.nth(key === 'Tab' ? step : count - 1 - step);
+      await expect(current).toBeFocused();
+      await expect.poll(() => current.evaluate(link => {
+        const box = link.getBoundingClientRect();
+        return link.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+      })).toBe(true);
+    }
+  }
+});
+
 for(const role of [null,'student']) test(`${role || 'anonymous'} direct work URL is redirected`, async ({page}) => {
   await fixture(page, role); await page.goto('/work.html'); await expect(page).toHaveURL(role ? /index.html/ : /login.html/);
 });
