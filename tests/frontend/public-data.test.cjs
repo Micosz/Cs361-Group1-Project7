@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('public/assets/script.js', 'utf8');
+const authSource = fs.readFileSync('public/assets/auth-client.js', 'utf8');
 function harness(fetch, enabled = false) {
     const nodes = new Map();
     const context = vm.createContext({
@@ -16,9 +17,14 @@ function harness(fetch, enabled = false) {
         }
     });
     vm.runInContext(source, context);
-    return { load: () => context.fetchPartnersData(), nodes };
+    return {
+        load: () => context.fetchPartnersData(),
+        detail: (type, id) => context.fetchPublicDetail(type, id),
+        invalidate: () => context.window.invalidatePublicData(),
+        nodes
+    };
 }
-const response = rows => ({ ok: true, json: async () => rows });
+const response = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 test('API failure rejects without static requests; next attempt recovers and caches success', async () => {
     const urls = [];
     let failed = true;
@@ -40,12 +46,170 @@ test('empty API result is successful and does not request a backup', async () =>
     assert.equal((await app.load()).length, 0);
     assert.deepEqual(urls, ['/fetchPartnersData']);
 });
-test('additional API outage labels live results as incomplete', async () => {
+test('Welcome loads a single unified card-list API and fetches full detail only on demand', async () => {
+    const urls = [];
     const app = harness(async url => {
-        if (url === '/api/public/records') throw new Error('unavailable');
-        return response([{ id: 'p1', name: 'Example', visibility: 'public' }]);
+        urls.push(url);
+        if (url === '/api/public/records?view=cards') {
+            return response([
+                { id: 'p1', name: 'Partner One', type: 'company', summary: 'Card summary', visibility: 'public' },
+                { id: 'a1', title: 'Activity One', type: 'event', partnerId: 'p1', partnerName: 'Partner One', visibility: 'public' }
+            ]);
+        }
+        if (url === '/api/public/partners/p1') {
+            return response({ data: { id: 'p1', name: 'Partner One', full_description: 'Loaded on click', website_url: 'https://one.example', visibility: 'public' } });
+        }
+        if (url === '/api/public/activities/a1') {
+            return response({ error: { code: 'NOT_FOUND' } }, 404);
+        }
+        throw new Error('Unexpected URL: ' + url);
     }, true);
-    assert.equal((await app.load()).length, 1);
-    assert.equal(app.nodes.get('partialDataNotice').hidden, false);
-    assert.match(app.nodes.get('partialDataNotice').textContent, /โหลดข้อมูลได้ไม่ครบ/);
+    const partners = await app.load();
+    assert.equal(partners.length, 1);
+    assert.equal(partners[0].collaborations.length, 1);
+    // Strictly one list API call; no /fetchPartnersData and no detail call on initial load.
+    assert.deepEqual(urls, ['/api/public/records?view=cards']);
+
+    // Opening a card fetches detail once and caches it until invalidated.
+    const detail = await app.detail('partner', 'p1');
+    assert.equal(detail.full_description, 'Loaded on click');
+    assert.equal(detail.website_url, 'https://one.example');
+    await app.detail('partner', 'p1');
+    assert.deepEqual(urls, ['/api/public/records?view=cards', '/api/public/partners/p1']);
+
+    // Unpublished record detail rejects with 404 rather than silently returning stale content.
+    await assert.rejects(app.detail('activity', 'a1'), err => err.status === 404);
+
+    // Invalidating public data clears both list and detail caches.
+    app.invalidate();
+    await app.detail('partner', 'p1');
+    assert.equal(urls.filter(u => u === '/api/public/partners/p1').length, 2);
+});
+test('date filter matches partners by verified host/co-host IDs and never leaks similarly named partners', async () => {
+    const controls = new Map([
+        ['filterCollab', { value: 'all' }],
+        ['filterCollabDate', { value: '2026-07-03' }],
+        ['filterCollabDateEnd', { value: '2026-07-03' }]
+    ]);
+    const context = vm.createContext({
+        AbortController, setTimeout, clearTimeout, Intl,
+        console: { warn() {}, error() {} },
+        window: { CSTU_AUTH_CONFIG: { enabled: true }, addEventListener() {} },
+        document: {
+            addEventListener() {},
+            getElementById: id => controls.get(id),
+            createElement: () => ({ style: {}, setAttribute() {} }),
+            body: { prepend() {} }
+        },
+        fetch: async url => {
+            assert.equal(url, '/api/public/records?view=cards');
+            return response([
+                { id: 'river', name: 'ศูนย์สายน้ำ', type: 'research_institute', visibility: 'public' },
+                { id: 'river-north', name: 'ศูนย์สายน้ำเหนือ', type: 'research_institute', visibility: 'public' },
+                // Legacy-style payload with primary host name repeated in co_hosts and no coHostPartnerIds.
+                { id: 'act-july3', title: 'งานวันที่ 3 ก.ค.', partnerId: 'river', partnerName: 'ศูนย์สายน้ำ',
+                  co_hosts: ['ศูนย์สายน้ำ'], period_date: '2026-07-03', visibility: 'public' },
+                // Activity with verified coHostPartnerIds links both partners on its own date.
+                { id: 'act-july10', title: 'งานร่วมวันที่ 10 ก.ค.', partnerId: 'river', partnerName: 'ศูนย์สายน้ำ',
+                  coHostPartnerIds: ['river-north'], co_hosts: ['ศูนย์สายน้ำเหนือ'], period_date: '2026-07-10', visibility: 'public' }
+            ]);
+        }
+    });
+    vm.runInContext(source, context);
+    const partners = await context.fetchPartnersData();
+
+    // July 3: only 'ศูนย์สายน้ำ' owns the activity; 'ศูนย์สายน้ำเหนือ' must NOT match via name substring.
+    const july3 = context.filterBrowseRecords(partners, 'name', 'filterCollab', '');
+    assert.deepEqual(july3.map(p => p.id), ['river']);
+
+    // July 10: verified coHostPartnerIds includes both host and co-host.
+    controls.get('filterCollabDate').value = '2026-07-10';
+    controls.get('filterCollabDateEnd').value = '2026-07-10';
+    const july10 = context.filterBrowseRecords(partners, 'name', 'filterCollab', '');
+    assert.deepEqual(july10.map(p => p.id), ['river', 'river-north']);
+});
+test('CstuAuth.refresh deduplicates concurrent startup calls without caching stale sessions', async () => {
+    let calls = 0;
+    let releaseFirst;
+    const csrf = 'a'.repeat(64);
+    const context = vm.createContext({
+        AbortController, setTimeout, clearTimeout,
+        Event: class { constructor(type) { this.type = type; } },
+        window: { CSTU_AUTH_CONFIG: { enabled: true }, dispatchEvent() {} },
+        fetch: async url => {
+            calls++;
+            assert.equal(url, '/api/auth/session');
+            if (calls === 1) await new Promise(resolve => { releaseFirst = resolve; });
+            return {
+                ok: true, status: 200,
+                headers: { get: () => 'application/json' },
+                text: async () => JSON.stringify({ user: null, grants: [], capabilities: [], csrfToken: csrf })
+            };
+        }
+    });
+    vm.runInContext(authSource, context);
+    const simultaneous = Promise.all([
+        context.window.CstuAuth.refresh(),
+        context.window.CstuAuth.refresh(),
+        context.window.CstuAuth.refresh(),
+        context.window.CstuAuth.refresh()
+    ]);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(calls, 1);
+    releaseFirst();
+    const results = await simultaneous;
+    assert.equal(results.length, 4);
+    assert.equal(results[0].csrfToken, csrf);
+    // Subsequent refresh after completion still hits the server freshly.
+    await context.window.CstuAuth.refresh();
+    assert.equal(calls, 2);
+});
+test('CstuAuth.refresh handles 503 failure without unhandledrejection and recovers on retry', async () => {
+    let calls = 0;
+    let fail = true;
+    const csrf = 'b'.repeat(64);
+    const unhandled = [];
+    const onUnhandled = reason => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    try {
+        const context = vm.createContext({
+            AbortController, setTimeout, clearTimeout,
+            Event: class { constructor(type) { this.type = type; } },
+            window: { CSTU_AUTH_CONFIG: { enabled: true }, dispatchEvent() {} },
+            fetch: async () => {
+                calls++;
+                if (fail) {
+                    return {
+                        ok: false, status: 503,
+                        headers: { get: () => 'application/json' },
+                        text: async () => JSON.stringify({ error: { code: 'SESSION_UNAVAILABLE' } })
+                    };
+                }
+                return {
+                    ok: true, status: 200,
+                    headers: { get: () => 'application/json' },
+                    text: async () => JSON.stringify({ user: null, grants: [], capabilities: [], csrfToken: csrf })
+                };
+            }
+        });
+        vm.runInContext(authSource, context);
+        const settled = await Promise.allSettled([
+            context.window.CstuAuth.refresh(),
+            context.window.CstuAuth.refresh()
+        ]);
+        await new Promise(resolve => setTimeout(resolve, 10));
+        assert.equal(calls, 1);
+        assert.equal(settled[0].status, 'rejected');
+        assert.equal(settled[1].status, 'rejected');
+        assert.equal(settled[0].reason.status, 503);
+        assert.equal(unhandled.length, 0);
+
+        // Retry after 503 recovers cleanly with a fresh request.
+        fail = false;
+        const recovered = await context.window.CstuAuth.refresh();
+        assert.equal(calls, 2);
+        assert.equal(recovered.csrfToken, csrf);
+    } finally {
+        process.off('unhandledRejection', onUnhandled);
+    }
 });

@@ -39,9 +39,13 @@ async function visit(page) {
     if (url.origin !== 'http://127.0.0.1:4173') return route.abort();
     if (request.method() !== 'GET') { writes.push(request.method() + ' ' + url.pathname); return route.abort(); }
     if (url.pathname === '/fetchPartnersData' || url.pathname.startsWith('/api/')) reads.push(url.pathname + url.search);
-    if (url.pathname === '/fetchPartnersData') return route.fulfill({json:[...organizations,...activities]});
+    if (url.pathname === '/api/public/records') return route.fulfill({json:[...organizations,...activities]});
+    const detailMatch = url.pathname.match(/^\/api\/public\/(partners|activities)\/([^/]+)$/);
+    if (detailMatch) {
+      const found = [...organizations,...activities].find(r => r.id === decodeURIComponent(detailMatch[2]));
+      return found ? route.fulfill({json:{data:found}}) : route.fulfill({status:404,json:{}});
+    }
     if (url.pathname === '/api/auth/session') return route.fulfill({json:{user:null,grants:[],capabilities:[],csrfToken:'a'.repeat(64)}});
-    if (url.pathname === '/api/public/records') return route.fulfill({json:[]});
     if (url.pathname === '/api/public/agreements') {
       const from = url.searchParams.get('startDate'), to = url.searchParams.get('endDate'), q = url.searchParams.get('q') || '';
       const data = agreements.filter(row => row.title.includes(q) && (!from || row.endDate >= from) && (!to || row.startDate <= to));

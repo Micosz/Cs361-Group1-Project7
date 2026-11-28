@@ -82,11 +82,17 @@ AGREEMENT_PUBLIC = {'id', 'entityType', 'title', 'agreementType', 'startDate', '
 PUBLIC_FIELDS = {
     'agreement': AGREEMENT_PUBLIC,
     'partner': {'id', 'name', 'type', 'summary', 'full_description', 'location', 'website_url', 'logo_path'},
-    'activity': {'id', 'title', 'type', 'summary', 'full_description', 'partnerId', 'period', 'period_date', 'image_path', 'visibility'},
+    'activity': {'id', 'title', 'type', 'summary', 'full_description', 'partnerId', 'period', 'period_date',
+                 'period_end_date', 'date_precision', 'image_path', 'visibility'},
+}
+PUBLIC_CARD_FIELDS = {
+    'partner': {'id', 'name', 'type', 'summary', 'location', 'logo_path'},
+    'activity': {'id', 'title', 'type', 'summary', 'partnerId', 'period', 'period_date',
+                 'period_end_date', 'date_precision', 'image_path', 'visibility'},
 }
 ALIASES = {'fullDescription': 'full_description', 'websiteUrl': 'website_url',
            'logoPath': 'logo_path', 'periodText': 'period', 'periodDate': 'period_date',
-           'imagePath': 'image_path'}
+           'periodEndDate': 'period_end_date', 'imagePath': 'image_path'}
 
 
 def published(record):
@@ -96,7 +102,7 @@ def published(record):
     return bool(flags) and all(v == 'public' for v in flags)
 
 
-def public_projection(kind, record, partners=None):
+def public_projection(kind, record, partners=None, *, card=False):
     if kind == 'agreement' and record.get('publication') != 'public':
         return None
     if kind not in PUBLIC_FIELDS or not published(record):
@@ -105,7 +111,8 @@ def public_projection(kind, record, partners=None):
     for source, target in ALIASES.items():
         if source in record:
             normalized[target] = record[source]
-    result = pick(normalized, PUBLIC_FIELDS[kind])
+    allowed_fields = PUBLIC_CARD_FIELDS[kind] if card and kind in PUBLIC_CARD_FIELDS else PUBLIC_FIELDS[kind]
+    result = pick(normalized, allowed_fields)
     if kind == 'activity':
         try:
             links = public_links(record, get_record=lambda kind, key: (partners or {}).get(key))
@@ -116,6 +123,8 @@ def public_projection(kind, record, partners=None):
         result['partnerName'] = links['partner']['name']
         result['visibility'] = 'public'
         result['co_hosts'] = [item['name'] for item in links['coHosts']]
+        if links['coHosts']:
+            result['coHostPartnerIds'] = [item['id'] for item in links['coHosts']]
         tags = record.get('activity_tags')
         if isinstance(tags, list) and tags == ['mou']:
             result['activity_tags'] = list(tags)

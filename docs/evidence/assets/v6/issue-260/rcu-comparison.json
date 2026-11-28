@@ -1,0 +1,95 @@
+{
+  "origin": "https://main.d1d0za87xu48iv.amplifyapp.com",
+  "datasetSummary": {
+    "totalPublicItems": 37,
+    "partners": 20,
+    "activities": 17,
+    "activitiesWithCoHosts": 0,
+    "coHostSamples": [],
+    "estimatedDynamoTableBytesPublicRows": 44335,
+    "note": "Public-row floor from live CSTUHub-Partner snapshot; any additional private/retired items in AWS table scale both Before (1.5x) and After (1.0x) proportionally, keeping the -50% Scan count and -33.3% catalog RCU reduction exact."
+  },
+  "ac1Parity": {
+    "passed": true,
+    "partnersMatched": 20,
+    "activitiesMatched": 17,
+    "coHostActivitiesMatched": 0,
+    "cardViewOmitsDetailFields": true
+  },
+  "ac2Unpublish": {
+    "passed": true,
+    "unpublishedActivityId": "activity-11e17216b97a",
+    "activityRemovedFromCardList": true,
+    "activityDetailStatus": 404,
+    "unpublishedPartnerId": "partner-agicafet-001",
+    "partnerRemovedFromCardList": true,
+    "partnerDetailStatus": 404,
+    "remainingPublicRecordsAfterUnpublishingBoth": 35
+  },
+  "ac3DynamoComparisonPerWelcomeLoad": {
+    "before": {
+      "apiRequestsForCatalog": 2,
+      "endpoints": [
+        {
+          "endpoint": "GET /fetchPartnersData",
+          "dynamoOp": "Scan (Eventually Consistent)",
+          "dynamoCalls": 1,
+          "rcu": 5.5,
+          "rawJsonBytes": 44743
+        },
+        {
+          "endpoint": "GET /api/public/records",
+          "dynamoOp": "Scan (ConsistentRead=True)",
+          "dynamoCalls": 1,
+          "rcu": 11.0,
+          "rawJsonBytes": 36297
+        }
+      ],
+      "totalCatalogDynamoCalls": 2,
+      "totalCatalogRcu": 16.5,
+      "totalCatalogJsonBytes": 81040
+    },
+    "after": {
+      "apiRequestsForCatalog": 1,
+      "endpoints": [
+        {
+          "endpoint": "GET /api/public/records?view=cards",
+          "dynamoOp": "Scan (ConsistentRead=True, ReturnConsumedCapacity=TOTAL)",
+          "dynamoCalls": 1,
+          "rcu": 11.0,
+          "rawJsonBytes": 17301
+        }
+      ],
+      "totalCatalogDynamoCalls": 1,
+      "totalCatalogRcu": 11.0,
+      "totalCatalogJsonBytes": 17301,
+      "backwardsCompatibleFullListJsonBytes": 36576
+    },
+    "delta": {
+      "catalogApiCallsDiff": -1,
+      "catalogApiCallsPct": "-50.0%",
+      "catalogDynamoCallsDiff": -1,
+      "catalogDynamoCallsPct": "-50.0%",
+      "catalogRcuDiff": -5.5,
+      "catalogRcuPct": "-33.3%",
+      "catalogJsonBytesDiff": -63739,
+      "catalogJsonBytesPct": "-78.7%"
+    },
+    "onDemandCardDetail": {
+      "partnerDetail": {
+        "endpoint": "GET /api/public/partners/partner-agicafet-001",
+        "metric": "public_record_read",
+        "kind": "partner",
+        "dynamoCalls": 1,
+        "consumedRcu": 1.0
+      },
+      "activityDetail": {
+        "endpoint": "GET /api/public/activities/activity-11e17216b97a",
+        "metric": "public_record_read",
+        "kind": "activity",
+        "dynamoCalls": 2,
+        "consumedRcu": 2.0
+      }
+    }
+  }
+}
