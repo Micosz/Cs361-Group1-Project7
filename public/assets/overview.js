@@ -8,7 +8,7 @@
         draft: 'ร่าง', active: 'มีผล', expired: 'หมดอายุ', terminated: 'ยุติ',
         ongoing: 'กำลังดำเนินการ', completed: 'เสร็จสิ้น', cancelled: 'ยกเลิก',
         participant: 'ผู้เข้าร่วม', partner: 'คู่ความร่วมมือ', other: 'อื่น ๆ',
-        activity: 'กิจกรรม', exchange: 'การแลกเปลี่ยน'
+        activity: 'กิจกรรม', agreement: 'ข้อตกลง', exchange: 'การแลกเปลี่ยน'
     };
     const text = (tag, value, className) => {
         const item = document.createElement(tag);
@@ -69,6 +69,19 @@
         for (const [status, count] of countRows(data.agreements?.statuses)) rows.push(['สถานะข้อตกลง', labels[status] || status, count]);
         for (const [status, count] of countRows(data.exchanges?.statuses)) rows.push(['สถานะแลกเปลี่ยน', labels[status] || status, count]);
         for (const [source, count] of countRows(data.feedback?.bySource)) rows.push(['แหล่ง Feedback', labels[source] || source, count]);
+        if (data.formFeedback) {
+            rows.push(['Form Feedback', 'ชุดแบบฟอร์มนำเข้าทั้งหมด', data.formFeedback.batchCount || 0]);
+            rows.push(['Form Feedback', 'จำนวนคำตอบนำเข้าทั้งหมด', data.formFeedback.responseCount || 0]);
+            for (const agr of data.formFeedback.byAgreement || []) {
+                rows.push(['ผลตอบรับตามข้อตกลง', agr.title || agr.id, agr.responseCount || 0]);
+            }
+            if (data.formFeedback.unspecifiedAgreement) {
+                rows.push(['ผลตอบรับตามข้อตกลง', data.formFeedback.unspecifiedAgreement.label || 'ยังไม่ระบุข้อตกลง', data.formFeedback.unspecifiedAgreement.responseCount || 0]);
+            }
+            for (const [source, count] of countRows(data.formFeedback.bySource)) {
+                rows.push(['แหล่งคำตอบแบบฟอร์ม', labels[source] || source, count]);
+            }
+        }
         const content = '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n');
         const url = URL.createObjectURL(new Blob([content], {type: 'text/csv;charset=utf-8'}));
         const link = document.createElement('a'); link.href = url; link.download = 'cstuhub-overview.csv';
@@ -203,6 +216,130 @@
                     drawDoughnut(canvas, rows.map(([st, count]) => ({label: labels[st] || st, count, color: statusColors[st] || '#8990a6'})), block);
                 }
                 pane.appendChild(grid);
+                if (result.formFeedback && typeof result.formFeedback === 'object') {
+                    const ff = result.formFeedback;
+                    const kindCollection = {partner: 'partners', activity: 'activities', agreement: 'agreements', exchange: 'exchanges'};
+                    const recordLink = (entityType, id, caption) => {
+                        const collection = kindCollection[entityType];
+                        if (!collection || !id) return text('span', caption || '');
+                        const link = text('a', caption || 'เปิดรายการ', 'overview-related-link');
+                        const pageName = document.body?.classList?.contains('work-home') ? 'work.html' : 'index.html';
+                        link.href = `${pageName}?kind=${collection}&id=${encodeURIComponent(id)}#board-section`;
+                        link.onclick = event => {
+                            if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !window.CstuRecords?.openRelated) return;
+                            event.preventDefault();
+                            window.CstuRecords.openRelated(collection, id, link);
+                        };
+                        return link;
+                    };
+                    const section = text('section', undefined, 'overview-panel overview-form-feedback');
+                    const header = text('div', undefined, 'overview-panel-heading');
+                    const badge = text('span', undefined, 'overview-panel-icon'); badge.appendChild(icon('comment-dots'));
+                    const copy = text('div', undefined, 'overview-panel-title');
+                    copy.append(text('h3', 'ผลตอบรับจากไฟล์และความเชื่อมโยงข้อตกลง'),
+                        text('p', 'ตามจากรายงานกลับไปดูแหล่งที่มาของไฟล์และงานที่เกี่ยวข้องได้ตามสิทธิ์', 'overview-muted'));
+                    header.append(badge, copy, text('span', `รวม ${ff.batchCount || 0} ชุด · ${ff.responseCount || 0} คำตอบ`, 'overview-panel-total'));
+                    section.appendChild(header);
+                    const agrBlock = text('div', undefined, 'overview-agreement-feedback');
+                    for (const agr of ff.byAgreement || []) {
+                        const row = text('div', undefined, 'overview-breakdown-row');
+                        row.dataset.agreementId = agr.id;
+                        const labelWrap = text('span', undefined, 'overview-breakdown-label');
+                        labelWrap.append(text('span', `${agr.agreementType || 'MoU'}: `), recordLink('agreement', agr.id, agr.title || agr.id));
+                        row.append(labelWrap, text('span', `${agr.batchCount || 0} ชุด · ${agr.responseCount || 0} คำตอบ`, 'overview-breakdown-count'));
+                        agrBlock.appendChild(row);
+                    }
+                    const unspec = ff.unspecifiedAgreement || {label: 'ยังไม่ระบุข้อตกลง', batchCount: 0, responseCount: 0};
+                    const unspecRow = text('div', undefined, 'overview-breakdown-row overview-unspecified-row');
+                    unspecRow.dataset.agreementStatus = 'unspecified';
+                    unspecRow.append(text('span', unspec.label || 'ยังไม่ระบุข้อตกลง', 'overview-breakdown-label'),
+                        text('span', `${unspec.batchCount || 0} ชุด · ${unspec.responseCount || 0} คำตอบ`, 'overview-breakdown-count'));
+                    agrBlock.appendChild(unspecRow);
+                    section.appendChild(agrBlock);
+                    const batches = Array.isArray(ff.batches) ? ff.batches : [];
+                    if (!batches.length) {
+                        section.appendChild(text('p', 'ยังไม่มีผลตอบรับที่นำเข้าจากไฟล์ตามเงื่อนไขที่เลือก', 'overview-empty'));
+                    } else {
+                        const list = text('ul', undefined, 'overview-latest-list overview-form-list');
+                        for (const batch of batches) {
+                            const li = document.createElement('li');
+                            li.dataset.batchId = batch.id || '';
+                            const metaParts = [
+                                labels[batch.sourceType] || batch.sourceType || 'แบบฟอร์ม',
+                                `${batch.responseCount || 0} คำตอบ`,
+                                batch.fileName ? `ไฟล์ ${batch.fileName}` : '',
+                                batch.sheetName ? `ชีต ${batch.sheetName}` : '',
+                                batch.importedByName ? `นำเข้าโดย ${batch.importedByName}` : ''
+                            ].filter(Boolean);
+                            li.appendChild(text('p', metaParts.join(' · '), 'overview-muted'));
+                            const formTitle = text('p', undefined, 'overview-form-title');
+                            formTitle.appendChild(text('strong', batch.formName || 'แบบฟอร์มนำเข้า'));
+                            li.appendChild(formTitle);
+                            const related = text('p', undefined, 'overview-form-related');
+                            related.append(text('span', `เกี่ยวกับ${labels[batch.parentType] ? ' (' + labels[batch.parentType] + ')' : ''}: `),
+                                recordLink(batch.parentType, batch.parentId, batch.parentTitle || 'เปิดงานที่เกี่ยวข้อง'));
+                            const partners = Array.isArray(batch.relatedPartners) ? batch.relatedPartners.filter(p => p?.id && p?.name) : [];
+                            if (partners.length) {
+                                related.appendChild(text('span', ' · คู่ความร่วมมือ '));
+                                partners.forEach((p, idx) => {
+                                    if (idx) related.appendChild(text('span', ', '));
+                                    related.appendChild(recordLink('partner', p.id, p.name));
+                                });
+                            }
+                            const agreements = Array.isArray(batch.relatedAgreements) ? batch.relatedAgreements.filter(a => a?.id && a?.title) : [];
+                            if (agreements.length) {
+                                related.appendChild(text('span', ' · ข้อตกลง '));
+                                agreements.forEach((a, idx) => {
+                                    if (idx) related.appendChild(text('span', ', '));
+                                    related.appendChild(recordLink('agreement', a.id, a.title));
+                                });
+                            } else if (batch.agreementStatus === 'unspecified' || batch.agreementLabel === 'ยังไม่ระบุข้อตกลง') {
+                                related.appendChild(text('span', ' · ยังไม่ระบุข้อตกลง', 'overview-unspecified-tag'));
+                            }
+                            li.appendChild(related);
+                            const sourceBtn = text('button', 'ดูแหล่งที่มาและคำตอบ', 'overview-read-source');
+                            sourceBtn.type = 'button';
+                            sourceBtn.setAttribute('aria-expanded', 'false');
+                            const detailBox = text('div', undefined, 'overview-source-detail');
+                            detailBox.hidden = true;
+                            let runId = 0;
+                            sourceBtn.onclick = async () => {
+                                const run = ++runId;
+                                const opening = detailBox.hidden;
+                                detailBox.hidden = !opening;
+                                sourceBtn.setAttribute('aria-expanded', String(opening));
+                                sourceBtn.textContent = opening ? 'ซ่อนคำตอบ' : 'ดูแหล่งที่มาและคำตอบ';
+                                detailBox.replaceChildren();
+                                if (!opening) return;
+                                detailBox.appendChild(text('p', 'กำลังโหลดคำตอบจากไฟล์', 'overview-muted'));
+                                const collection = kindCollection[batch.parentType];
+                                try {
+                                    if (!collection) throw Error('INVALID_PARENT');
+                                    const res = await window.CstuAuth.request(`/${collection}/${encodeURIComponent(batch.parentId)}/form-feedback/${encodeURIComponent(batch.id)}`);
+                                    if (run !== runId || !root.isConnected) return;
+                                    const detail = res?.data || {};
+                                    detailBox.replaceChildren(text('p', `แหล่งที่มา: ไฟล์ ${detail.fileName || batch.fileName} · ชีต ${detail.sheetName || batch.sheetName} · นำเข้าโดย ${detail.importedByName || detail.createdBy || 'ไม่ระบุ'}`, 'overview-muted'));
+                                    if (window.CstuFormFeedback?.responseList) {
+                                        window.CstuFormFeedback.responseList(detailBox, detail);
+                                    } else if (Array.isArray(detail.rows)) {
+                                        for (const r of detail.rows) {
+                                            detailBox.appendChild(text('p', (detail.columns || []).map((q, i) => r.answers?.[i] ? `${q}: ${r.answers[i]}` : '').filter(Boolean).join(' · ')));
+                                        }
+                                    }
+                                } catch (err) {
+                                    if (run === runId && root.isConnected) {
+                                        detailBox.replaceChildren(text('p', err?.status === 403 || err?.status === 404
+                                            ? 'คุณไม่มีสิทธิ์อ่านคำตอบของรายการนี้' : 'โหลดคำตอบไม่สำเร็จ กรุณาลองใหม่', 'overview-muted'));
+                                    }
+                                }
+                            };
+                            li.append(sourceBtn, detailBox);
+                            list.appendChild(li);
+                        }
+                        section.appendChild(list);
+                    }
+                    pane.appendChild(section);
+                }
             } else if (activeTab === 'stakeholders') {
                 const block = text('section', undefined, 'overview-panel overview-stakeholders');
                 const values = result.stakeholders?.byType || {};

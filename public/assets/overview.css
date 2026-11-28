@@ -666,3 +666,19 @@
     .overview-donut.overview-stakeholder-donut { width: min(100%, 280px); }
     .overview-stakeholder-donut .overview-donut-label strong { font-size: 50px; }
 }
+
+.overview-form-feedback { margin-top: 1rem; scroll-margin-top: 96px; }
+.overview-agreement-feedback { margin-top: .5rem; }
+.overview-related-link { color: var(--tu-red, #c3002f); font-weight: 600; text-decoration: none; }
+.overview-related-link:hover { text-decoration: underline; }
+.overview-unspecified-tag { color: #6b5e63; font-weight: 600; }
+#home-records .overview-form-feedback button.overview-read-source,
+.overview-dashboard .overview-form-feedback button.overview-read-source {
+    display: inline-flex; align-items: center; min-height: 36px; margin-top: .6rem; padding: .4rem .95rem;
+    border: 1px solid #ddccd2; border-radius: 999px; background: #fffdfb; color: #a7002b;
+    font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer;
+}
+#home-records .overview-form-feedback button.overview-read-source:hover,
+.overview-dashboard .overview-form-feedback button.overview-read-source:hover { background: #fff0f3; }
+.overview-source-detail { margin-top: .75rem; padding-left: .9rem; border-left: 2px solid #eadde2; }
+.overview-source-detail[hidden] { display: none !important; }

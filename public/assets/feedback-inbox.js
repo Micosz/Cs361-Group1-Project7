@@ -22,8 +22,9 @@
     };
     function relatedLink(row) {
         const link = el('a', row.parentTitle || 'เปิดงานที่เกี่ยวข้อง', 'feedback-related-link');
-        const kind = {partner:'partners',activity:'activities',exchange:'exchanges'}[row.parentType];
-        link.href = `index.html?kind=${kind}&id=${encodeURIComponent(row.parentId)}#board-section`;
+        const kind = {partner:'partners',activity:'activities',agreement:'agreements',exchange:'exchanges'}[row.parentType];
+        const pageName = document.body?.classList?.contains('work-home') ? 'work.html' : 'index.html';
+        link.href = `${pageName}?kind=${kind}&id=${encodeURIComponent(row.parentId)}#board-section`;
         link.onclick = event => {
             if(event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !window.CstuRecords?.openRelated) return;
             event.preventDefault();
@@ -34,7 +35,7 @@
     function relatedWork(row) {
         const line = el('p', undefined, 'feedback-inbox-related');
         line.append(el('span', 'เกี่ยวกับ '), relatedLink(row));
-        const partners = row.parentType === 'activity' && Array.isArray(row.relatedPartners)
+        const partners = ['activity', 'exchange'].includes(row.parentType) && Array.isArray(row.relatedPartners)
             ? row.relatedPartners.filter(partner => partner?.id && partner?.name) : [];
         if (partners.length) {
             line.append(el('span', ' · คู่ความร่วมมือ '));
@@ -42,6 +43,17 @@
                 if (index) line.append(el('span', ', '));
                 line.append(relatedLink({parentType:'partner', parentId:partner.id, parentTitle:partner.name}));
             });
+        }
+        const agreements = Array.isArray(row.relatedAgreements)
+            ? row.relatedAgreements.filter(agr => agr?.id && agr?.title) : [];
+        if (agreements.length) {
+            line.append(el('span', ' · ข้อตกลง '));
+            agreements.forEach((agr, index) => {
+                if (index) line.append(el('span', ', '));
+                line.append(relatedLink({parentType:'agreement', parentId:agr.id, parentTitle:agr.title}));
+            });
+        } else if (row.agreementStatus === 'unspecified' || row.agreementLabel === 'ยังไม่ระบุข้อตกลง') {
+            line.append(el('span', ' · ยังไม่ระบุข้อตกลง'));
         }
         return line;
     }
@@ -82,8 +94,9 @@
             const avatar=el('span',undefined,'feedback-inbox-avatar'); avatar.append(icon('file-lines'));
             const body=el('div',undefined,'feedback-inbox-body');
             const meta=el('p',`${sources[row.sourceType]||'ผู้ตอบแบบฟอร์ม'} · ${dateLabel(row.createdAt)} · ${row.responseCount} คำตอบ`,'feedback-inbox-meta');
+            const provenance=[row.fileName?`ไฟล์ ${row.fileName}`:'',row.sheetName?`ชีต ${row.sheetName}`:'',`นำเข้าโดย ${row.importedByName||'ไม่ระบุ'}`].filter(Boolean).join(' · ');
             body.append(meta,el('h3',row.formName),relatedWork(row),
-                el('p',`นำเข้าโดย ${row.importedByName||'ไม่ระบุ'}`,'feedback-inbox-meta'));
+                el('p',provenance,'feedback-inbox-meta'));
             const toggle=el('button','อ่านคำตอบ','feedback-read-button'); toggle.type='button'; toggle.setAttribute('aria-expanded','false');
             const detail=el('div',undefined,'feedback-form-detail'); detail.hidden=true;
             let detailRequest=0;
