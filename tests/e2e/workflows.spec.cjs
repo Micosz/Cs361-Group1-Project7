@@ -412,6 +412,28 @@ test.describe('workspace shortcut motion', () => {
     });
   }
 
+  test('partner dialog keeps a single focus ring when it opens before the workspace gate',async ({page}) => {
+    await fixture(page,'staff');
+    await page.goto('/index.html');
+    const link = page.locator('#work-actions a[href*="kind=partners"]');
+    await expect(link).toBeVisible();
+    const dialog = page.locator('#record-detail[open]');
+    // Reproduce the load order which requires the workspace to focus the dialog itself.
+    await page.route('**/assets/role-home.js*',async route => {
+      await dialog.waitFor({state:'attached'});
+      await route.continue();
+    },{times:1});
+    await link.press('Enter');
+    await expect(dialog).toBeFocused();
+    await expect(dialog).toHaveCSS('outline-style','solid');
+    await expect(dialog).toHaveCSS('outline-width','2px');
+    await expect(dialog).toHaveCSS('outline-offset','-1px');
+    await page.keyboard.press('Tab');
+    await expect(dialog.locator(':focus-visible')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+  });
+
   for (const [role,motion] of [['staff','reduce'],['coordinator','no-preference']]) {
     test(`${role} opens the partner form directly with ${motion}`,async ({page}) => {
       await page.emulateMedia({reducedMotion:motion});

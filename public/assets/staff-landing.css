@@ -206,6 +206,13 @@ body.staff-landing {
     .staff-landing .work-actions a[href*="view=feedback"]::after { grid-area: 1 / 3 / span 2; }
 }
 
+/* A dialog can receive initial focus when its first control opened behind the gate.
+   Center the focus ring on the rounded edge, including while the dialog scales. */
+.staff-workspace dialog:is(.entry-dialog, .entry-frame-dialog):focus-visible {
+    outline: 2px solid var(--text-dark);
+    outline-offset: -1px;
+}
+
 /* Keep the outgoing link in place until the authorized destination has a box.
    Only the destination moves: its own edge clips the colour and contains the form. */
 @media (prefers-reduced-motion: no-preference) {

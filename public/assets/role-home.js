@@ -100,6 +100,7 @@
             }
             actions.append(feedback);
             document.body.classList.toggle('work-dashboard', landing);
+            document.body.classList.toggle('staff-workspace', staffOrExecutive);
             document.body.classList.toggle('staff-landing', staffLanding);
             document.body.classList.toggle('work-proposals', active === 'proposals');
             document.body.classList.remove('work-checking');
