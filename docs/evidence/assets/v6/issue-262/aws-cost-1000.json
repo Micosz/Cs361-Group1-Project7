@@ -18,6 +18,12 @@
       "amplifyTransferPerGb": 0.15
     }
   },
+  "commits": {
+    "before": "58a40f8e122930ab7c31e88e40fbe0a5f0a52bbd",
+    "beforeLiveIndexSha256": "c6264114fd92",
+    "after": "6d407dc4ad7103fdc24adda9b7dac6d098638703",
+    "afterLiveIndexSha256": "77935eaa021c"
+  },
   "loadsEvaluated": 1000,
   "perLoadInputs": {
     "before": {
@@ -28,27 +34,30 @@
           "function": "fetchPartnersData",
           "memoryMB": 128,
           "calls": 1,
-          "estBilledMsPerCall": 118.0
+          "estBilledMsPerCall": 116.3
         },
         {
           "function": "CSTUHubAuth (/api/public/records)",
           "memoryMB": 256,
           "calls": 1,
-          "estBilledMsPerCall": 120.0
+          "estBilledMsPerCall": 116.0
         },
         {
           "function": "CSTUHubAuth (/api/auth/session)",
           "memoryMB": 256,
           "calls": 4,
-          "estBilledMsPerCall": 48.0
+          "estBilledMsPerCall": 46.4
         }
       ],
-      "totalBilledDurationMs": 430.0,
-      "totalGbSeconds": 0.09275,
+      "totalBilledDurationMs": 417.9,
+      "totalGbSeconds": 0.08994,
       "dynamoCatalogRru": 16.5,
       "dynamoColdSessionWru": 4.0,
-      "coldTransferKB": 1469.1,
-      "warmTransferKB": 37.4
+      "apiWireBytesCold": 15004,
+      "apiWireBytesWarm": 14585,
+      "coldTransferFullLoadP95KB": 2112.8,
+      "coldTransferP50KB": 1469.1,
+      "warmTransferP50KB": 37.4
     },
     "after": {
       "apiRequests": 2,
@@ -64,21 +73,24 @@
           "function": "CSTUHubAuth (/api/public/records?view=cards)",
           "memoryMB": 256,
           "calls": 1,
-          "estBilledMsPerCall": 115.0
+          "estBilledMsPerCall": 133.2
         },
         {
           "function": "CSTUHubAuth (/api/auth/session)",
           "memoryMB": 256,
           "calls": 1,
-          "estBilledMsPerCall": 48.0
+          "estBilledMsPerCall": 43.4
         }
       ],
-      "totalBilledDurationMs": 163.0,
-      "totalGbSeconds": 0.04075,
+      "totalBilledDurationMs": 176.6,
+      "totalGbSeconds": 0.04415,
       "dynamoCatalogRru": 11.0,
       "dynamoColdSessionWru": 1.0,
-      "coldTransferKB": 1457.8,
-      "warmTransferKB": 26.1
+      "apiWireBytesCold": 4384,
+      "apiWireBytesWarm": 4295,
+      "coldTransferFullLoadP95KB": 2104.9,
+      "coldTransferP50KB": 1175.5,
+      "warmTransferP50KB": 27.3
     }
   },
   "backendCostPer1000Loads": {
@@ -110,14 +122,14 @@
       {
         "service": "AWS Lambda (Compute Duration, x86_64)",
         "unit": "GB-seconds",
-        "qtyBefore": 92.75,
-        "qtyAfter": 40.75,
+        "qtyBefore": 89.9375,
+        "qtyAfter": 44.15,
         "unitPriceUsd": 1.66667e-05,
         "unitDivisor": 1.0,
-        "costBeforeUsd": 0.001546,
-        "costAfterUsd": 0.000679,
-        "diffUsd": -0.000867,
-        "diffPct": "-56.1%"
+        "costBeforeUsd": 0.001499,
+        "costAfterUsd": 0.000736,
+        "diffUsd": -0.000763,
+        "diffPct": "-50.9%"
       },
       {
         "service": "DynamoDB On-Demand (Catalog Reads — CSTUHub-Partner)",
@@ -144,61 +156,63 @@
         "diffPct": "-75.0%"
       }
     ],
-    "totalBeforeUsd": 0.015437,
-    "totalAfterUsd": 0.005856,
-    "diffUsd": -0.009581,
-    "diffPct": "-62.1%"
+    "totalBeforeUsd": 0.01539,
+    "totalAfterUsd": 0.005913,
+    "diffUsd": -0.009477,
+    "diffPct": "-61.6%"
   },
   "fullStackCostPer1000Loads": {
     "coldCache": {
       "transferItem": {
-        "service": "AWS Amplify Hosting (Data Transfer — Cold Cache)",
+        "service": "AWS Amplify Hosting (Data Transfer — Cold Cache Full Load p95)",
         "unit": "GB",
-        "qtyBefore": 1.401,
-        "qtyAfter": 1.3903,
+        "qtyBefore": 2.0149,
+        "qtyAfter": 2.0074,
         "unitPriceUsd": 0.15,
         "unitDivisor": 1.0,
-        "costBeforeUsd": 0.210156,
-        "costAfterUsd": 0.20854,
-        "diffUsd": -0.001616,
-        "diffPct": "-0.8%"
+        "costBeforeUsd": 0.302238,
+        "costAfterUsd": 0.301108,
+        "diffUsd": -0.00113,
+        "diffPct": "-0.4%"
       },
-      "totalBeforeUsd": 0.225593,
-      "totalAfterUsd": 0.214396,
-      "diffUsd": -0.011197,
-      "diffPct": "-5.0%"
+      "totalBeforeUsd": 0.317628,
+      "totalAfterUsd": 0.307021,
+      "diffUsd": -0.010607,
+      "diffPct": "-3.3%"
     },
     "warmCache": {
       "transferItem": {
-        "service": "AWS Amplify Hosting (Data Transfer — Warm Cache)",
+        "service": "AWS Amplify Hosting (Data Transfer — Warm Cache p50)",
         "unit": "GB",
         "qtyBefore": 0.0357,
-        "qtyAfter": 0.0249,
+        "qtyAfter": 0.026,
         "unitPriceUsd": 0.15,
         "unitDivisor": 1.0,
         "costBeforeUsd": 0.00535,
-        "costAfterUsd": 0.003734,
-        "diffUsd": -0.001616,
-        "diffPct": "-30.2%"
+        "costAfterUsd": 0.003905,
+        "diffUsd": -0.001445,
+        "diffPct": "-27.0%"
       },
-      "totalBeforeUsd": 0.020787,
-      "totalAfterUsd": 0.00959,
-      "diffUsd": -0.011197,
-      "diffPct": "-53.9%"
+      "totalBeforeUsd": 0.02074,
+      "totalAfterUsd": 0.009818,
+      "diffUsd": -0.010922,
+      "diffPct": "-52.7%"
     }
   },
   "onDemandDetailSensitivity": {
     "assumedClickRate": 0.2,
     "detailClicksPer1000Loads": 200,
     "addedBackendCostUsd": 0.000356,
-    "afterBackendPlusDetailUsd": 0.006212,
-    "netBackendSavingsVsBeforePct": "-59.8%"
+    "afterBackendPlusDetailUsd": 0.006269,
+    "netBackendSavingsVsBeforePct": "-59.3%"
   },
   "assumptions": [
     "Prices are AWS ap-southeast-1 (Singapore) on-demand list prices as of 2026-11-28, excluding AWS Free Tier so marginal unit cost differences remain visible.",
+    "Before (58a40f8) and After (6d407dc) API counts, transfer sizes, and Warm TTFB are read directly from live AWS Singapore #259 measurements (baseline-58a40f8.json and after-6d407dc.json).",
     "Lambda memory sizes match infra/backend.yaml: CSTUHubAuth = 256 MB (x86_64), fetchPartnersData = 128 MB (x86_64).",
-    "Lambda billed duration uses Warm p50 TTFB from #259 minus ~37 ms baseline Singapore RTT (118 ms fetchPartnersData, 120 ms public/records before, 115 ms public/records?view=cards after, 48 ms auth/session). Replace with CloudWatch REPORT RequestId Billed Duration after PR #306 deploys.",
+    "Lambda billed duration is derived consistently from live Warm p50 TTFB minus ~37.0 ms Thailand-Singapore RTT (116.3 ms fetchPartnersData, 116.0 ms public/records before, 46.4 ms auth/session before; 133.2 ms public/records?view=cards after, 43.4 ms auth/session after). Pass CLI override flags if replacing with CloudWatch REPORT RequestId Billed Duration.",
     "DynamoDB catalog RRU uses the live 37-item public snapshot (44,335 bytes -> 16.5 RRU before vs 11.0 RRU after); any additional private/retired rows scale both versions proportionally (-33.3% unchanged).",
-    "Cold-visitor anonymous session writes on CSTUHub-Sessions drop from 4 WRU to 1 WRU per load after auth-client.js deduplication and role-menu.js pageshow guard."
+    "Cold-visitor anonymous session writes on CSTUHub-Sessions drop from 4 WRU to 1 WRU per load, verified live in after-6d407dc.json (1 GET /api/auth/session per load across all 29 runs).",
+    "Amplify Cold Cache transfer uses measured full-load Cold p95 (2,112.8 KB -> 2,104.9 KB) rather than Cold p50 (1,469.1 -> 1,175.5 KB) so lazy-image timing differences do not inflate Cold transfer savings; Warm Cache uses measured Warm p50 (37.4 KB -> 27.3 KB, matching the -10.05 KB compressed API reduction)."
   ]
 }
