@@ -108,6 +108,60 @@ for (const width of [320, 390, 1280]) {
       expect(writes).toEqual([]);
     });
 
+    test('activity filter labels, dates and both time descriptions follow the selected language', async ({page, baseURL}) => {
+      await fixture(page, baseURL);
+      await page.goto('/index.html');
+      // A returning browser can still have Thai-only renderers and the old date dictionary at these URLs.
+      const scripts = await page.locator('script[src]').evaluateAll(nodes => nodes.map(node => node.src));
+      for (const oldURL of ['/assets/script.js?v=clear-result-focus', '/assets/filter-presentation.js?v=5', '/assets/public-english.js']) {
+        expect(scripts).not.toContain(new URL(oldURL, baseURL).href);
+      }
+      await page.locator('#tabEvent').click();
+      const board = page.locator('#sectionEvent');
+      const type = board.locator('#filterEvent');
+      const from = board.locator('#filterEventDateDisplay');
+      const to = board.locator('#filterEventDateEndDisplay');
+      const titles = board.locator('#eventGrid .browse-card-open:visible');
+      const copy = {
+        th: ['ตัวกรอง', 'วัน/เดือน/พ.ศ.', 'กิจกรรมที่กำลังจะมาถึงหรือยังดำเนินอยู่ รวมรายการที่แหล่งข้อมูลยังไม่ระบุวันที่',
+          'กิจกรรมที่สิ้นสุดแล้วยังเก็บไว้เป็นประวัติความร่วมมือ ไม่ถูกลบออกจากระบบ'],
+        en: ['Filters', 'DD/MM/YYYY', 'Upcoming and ongoing activities, including records without a confirmed date.',
+          'Completed activities are kept in the partnership history.']
+      };
+
+      await type.selectOption('academic_activity');
+      for (const code of ['th', 'en', 'th']) {
+        await language(header(page), code);
+        const [caption, placeholder, current, past] = copy[code];
+        await expect(board.locator('.filter-caption')).toHaveText(caption);
+        for (const field of [from, to]) {
+          await expect(field).toHaveAttribute('placeholder', placeholder);
+          if (code === 'en') await expect(field).toHaveAccessibleDescription('Use a Buddhist Era year (e.g. 2569 for 2026).');
+        }
+        if (code === 'en') {
+          await from.fill('31/02/2569'); await from.press('Tab');
+          await expect(from).toHaveJSProperty('validationMessage', 'Enter a valid date as DD/MM/YYYY using a Buddhist Era year, for example 17/08/2563.');
+          await from.fill('๒๕๑๑๒๕๖๙'); await from.press('Tab');
+          await to.fill('26112569'); await to.press('Tab');
+        }
+        for (const [tab, hint, title] of [['#eventTimeCurrent', current, today], ['#eventTimePast', past, earlier]]) {
+          await board.locator(tab).click();
+          await expect(board.locator('#eventTimeHint')).toHaveText(hint);
+          await expect(titles).toHaveText([title]);
+        }
+      }
+
+      await expect(type).toHaveValue('academic_activity');
+      await expect(from).toHaveValue('25/11/2569');
+      await expect(to).toHaveValue('26/11/2569');
+      await expect(board.locator('#filterEventDate')).toHaveValue('2026-11-25');
+      await expect(board.locator('#filterEventDateEnd')).toHaveValue('2026-11-26');
+      await to.fill('25112569'); await to.press('Tab');
+      await expect(titles).toHaveText([earlier]);
+      await board.locator('#eventTimeCurrent').click();
+      await expect(titles).toHaveCount(0);
+    });
+
     test('public record, comments and guide retain original content, draft and selection', async ({page, baseURL}) => {
       const writes = await fixture(page, baseURL);
       await page.goto('/index.html');
