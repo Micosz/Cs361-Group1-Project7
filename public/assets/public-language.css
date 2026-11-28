@@ -52,7 +52,7 @@ html[lang="en"] .public-buddhist-hint {
 }
 @media (min-width: 768px) {
     html[lang="en"] .filter-wrapper.has-filter-controls {
-        --date-columns: [from] minmax(0, 180px) [to] minmax(0, 180px) [clear-date] auto;
+        --date-columns: [from] minmax(0, 180px) [to] minmax(0, 180px) [clear-date] 44px;
         display: grid;
         grid-template-columns: repeat(3, auto) var(--date-columns);
         gap: 8px;
@@ -73,4 +73,17 @@ html[lang="en"] .public-buddhist-hint {
         grid-column: 1 / -1;
         grid-template-columns: var(--date-columns);
     }
+}
+
+@media (max-width: 767px) {
+    #sectionEvent .date-filter-row {
+        grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 44px;
+    }
+    #sectionEvent .date-range-field { grid-column: span 2; }
+    #sectionEvent .date-clear-btn { grid-column: 1; }
+    #sectionEvent .undated-toggle {
+        grid-column: 2 / -1;
+        align-self: center;
+    }
+    #sectionEvent .undated-toggle input { flex: none; }
 }
