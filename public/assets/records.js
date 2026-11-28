@@ -254,6 +254,7 @@
             const actions = document.createElement('div'); actions.className = 'detail-record-actions';
             $('detail-fields').appendChild(actions);
             mountDetailActions(fresh,latest,'activities',current,page,actions);
+            window.CstuWork.addProposalLink?.($('detail-actions'), latest);
             mountFormFeedback(latest, 'activities', fresh, $('detail-fields'));
             if (window.CstuWork.roles(fresh, latest.scopeId).some(role => ['staff','coordinator','executive'].includes(role))) {
                 const internal = document.createElement('section'); feedback.append(internal);
@@ -309,6 +310,7 @@
             }
             const actions = document.createElement('div'); actions.className = 'detail-record-actions';
             mountDetailActions(fresh, record, resourceKind, current, page, actions);
+            window.CstuWork.addProposalLink?.($('detail-actions'), record);
             if (['agreements','exchanges'].includes(resourceKind) && window.DocumentComponent
                     && !(resourceKind === 'agreements' && !record.scopeId)) {
                 const docs = document.createElement('section'); $('detail-fields').appendChild(docs);

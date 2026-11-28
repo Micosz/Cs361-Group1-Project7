@@ -319,6 +319,11 @@ class PermissionGateway:
 
     def _project(self, context, kind, record, parent=None):
         data = project(context, kind, record, parent)
+        if kind in {'activity', 'exchange', 'agreement'} and record.get('proposalId'):
+            from ..proposal_destinations import visible_source
+            source_id = visible_source(self.repository, context, record)
+            if source_id:
+                data['proposalId'] = source_id
         if kind == 'activity':
             try:
                 from .policy import can_reference

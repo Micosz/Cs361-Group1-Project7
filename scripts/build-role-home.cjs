@@ -8,11 +8,13 @@ page = page.replace('<title data-ui>กระดานข้อมูล | CSTUH
  .replace('<body>', '<body class="work-home work-checking">')
  .replace(/    <div class="hero-scroll">[\s\S]*?(?=    <div class="board-scene">)/, '')
  .replace(/    <script src="assets\/(opening|constellation|header-motion)\.js[^>]*><\/script>\n/g, '')
- .replace('</head>', '<link rel="stylesheet" href="assets/work-home.css?v=workflow-1">\n</head>');
+ .replace('</head>', '<link rel="stylesheet" href="assets/work-home.css?v=proposal-workflow-2">\n</head>');
 page = page.replace('    <script src="assets/role-home.js?v=browse-shortcuts" defer></script>', [
  '    <script src="assets/proposal-avatars.js?v=1" defer></script>',
- '    <script src="assets/proposal-flow.js?v=1" defer></script>',
- '    <script src="assets/proposal-board.js?v=workflow-1" defer></script>',
+ '    <script src="assets/proposal-editor.js?v=2" defer></script>',
+ '    <script src="assets/proposal-destination.js?v=2" defer></script>',
+ '    <script src="assets/proposal-flow.js?v=2" defer></script>',
+ '    <script src="assets/proposal-board.js?v=2" defer></script>',
  '    <script src="assets/role-home.js?v=proposal-board-1" defer></script>'
 ].join('\n'));
 page = page.replace('assets/records.js?v=role-home-1','assets/records.js?v=proposal-board-1');

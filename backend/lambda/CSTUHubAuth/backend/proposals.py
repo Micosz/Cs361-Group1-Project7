@@ -1,11 +1,10 @@
-"""Internal proposal board. An interest is voluntary, scoped, and belongs to the session user."""
+"""Compatibility with the original date-only board and its embedded volunteer roster."""
 from datetime import date, datetime, timedelta, timezone
 import hashlib
 import re
 
-from .auth.require_session import require_session
 from .auth.session_service import AuthError, token_hash
-from .http_api import headers, response, session_cookie
+from .http_api import headers, session_cookie
 from .permissions.gateway import body, WriteConditions
 from .permissions.transactions import transaction_checks, values
 
@@ -13,31 +12,28 @@ BANGKOK = timezone(timedelta(hours=7))
 INTERNAL = {'coordinator', 'staff', 'executive'}
 
 
-def present(row, uid):
-    people = []
-    for member_id, stored in row['members'].items():
-        # Existing members used a display-name string.
-        member = {'name':stored, 'note':''} if isinstance(stored,str) else stored
-        people.append({'name':member['name'], 'note':member.get('note',''),
-                       'mine':member_id == uid})
-    people.sort(key=lambda person: person['name'])
-    own = next((person for person in people if person['mine']), None)
-    return {**{key: row[key] for key in ('id', 'scopeId', 'title', 'partner', 'summary',
-                                         'deadline', 'createdAt', 'creator')},
-            'participants':people, 'interested':[p['name'] for p in people],
-            'mine':own is not None, 'myNote':own['note'] if own else ''}
+def closes_epoch(row):
+    # The original board accepted offers through the whole printed Bangkok date.
+    after = date.fromisoformat(row['deadline']) + timedelta(days=1)
+    return int(datetime.combine(after, datetime.min.time(), tzinfo=BANGKOK).timestamp())
 
 
+def original_member(uid, stored):
+    if stored is None:
+        return None
+    person = {'name': stored} if isinstance(stored, str) else stored
+    return dict(userId=uid, name=person['name'], note=person.get('note', ''), interested=True)
 
-def commit(repo, actor, session_hash, scope, write, now):
+
+def commit(repo, actor, session_hash, scope, writes, now):
     conditions = WriteConditions(actor.user_id, actor.authz_version, session_hash,
                                  None, None, None, None, scope)
     checks = transaction_checks(conditions, user_table=repo.users, session_table=repo.sessions,
                                 business_table=repo.table, now=int(now.timestamp()))
     try:
-        repo.client.transact_write_items(TransactItems=[*checks, write])
+        repo.client.transact_write_items(TransactItems=[*checks, *writes])
     except Exception as exc:
-        if getattr(exc, 'response', {}).get('Error', {}).get('Code') == 'TransactionCanceledException':
+        if getattr(exc, 'response', {}).get('Error', {}).get('Code') in {'TransactionCanceledException', 'TransactionConflictException'}:
             raise AuthError('VERSION_CONFLICT', 409) from None
         raise
 
@@ -80,8 +76,8 @@ def create(event, repo, user, scopes, now):
                members={}, createdAt=now.isoformat())
     try:
         commit(repo, user, token_hash(session_cookie(event)), payload['scopeId'],
-               {'Put': {'TableName':repo.table, 'Item': values(row),
-                        'ConditionExpression':'attribute_not_exists(id)'}}, now)
+               [{'Put': {'TableName':repo.table, 'Item': values(row),
+                        'ConditionExpression':'attribute_not_exists(id)'}}], now)
     except AuthError as exc:
         existing = repo.get('proposal', key)
         if exc.code == 'VERSION_CONFLICT' and existing:
@@ -90,58 +86,23 @@ def create(event, repo, user, scopes, now):
     return row
 
 
-def interest(event, repo, user, scopes, key, now):
-    row = repo.get('proposal', key)
-    if not row or row['scopeId'] not in scopes:
-        raise AuthError('NOT_FOUND', 404)
-    payload = body(event)
-    if ('interested' not in payload or set(payload) - {'interested','note'}
-            or type(payload['interested']) is not bool):
-        raise AuthError('INVALID_FIELDS', 422)
-    note = payload.get('note','')
-    if not isinstance(note,str) or len(note) > 500:
-        raise AuthError('INVALID_FIELDS', 422)
-    if row['deadline'] < now.date().isoformat():
-        raise AuthError('PROPOSAL_CLOSED', 409)
-    names = {'#kind':'entityType', '#scope':'scopeId', '#people':'members',
-             '#uid':user.user_id, '#until':'deadline'}
-    args = {':kind':'proposal', ':scope':row['scopeId'], ':today':now.date().isoformat()}
-    condition = '#kind = :kind AND #scope = :scope AND #until >= :today'
-    update = 'REMOVE #people.#uid'
-    if payload['interested']:
-        args[':person'] = {'name':user.display_name or 'ผู้ใช้งานภายใน', 'note':note.strip()}
-        args[':cap'] = 500
-        condition += ' AND (attribute_exists(#people.#uid) OR size(#people) < :cap)'
-        update = 'SET #people.#uid = :person'
-    commit(repo, user, token_hash(session_cookie(event)), row['scopeId'],
-           {'Update': {'TableName':repo.table, 'Key':values({'id':key}),
-                       'UpdateExpression':update, 'ConditionExpression':condition,
-                       'ExpressionAttributeNames':names, 'ExpressionAttributeValues':values(args)}}, now)
-    return repo.get('proposal', key)
-
-
-def handle(event, sessions, repo, interest_id):
-    ctx = require_session(event, sessions)
-    scopes = {g['scopeId'] for g in ctx.user.permissions()[0] if g['role'] in INTERNAL}
-    if not scopes:
-        raise AuthError('FORBIDDEN', 403)
-    if not repo:
-        raise AuthError('PERMISSION_UNAVAILABLE', 503)
-    if event.get('queryStringParameters'):
-        raise AuthError('INVALID_QUERY', 422)
-    method = event['requestContext']['http']['method']
+def save_interest(event, repo, ctx, row, new, changes):
+    """Keep original embedded names; subsequent offers use the same independent records as new boards."""
     now = datetime.fromtimestamp(repo.clock(), BANGKOK)
-    uid = ctx.user.user_id
-    status = 200
-    if method == 'GET' and not interest_id:
-        rows = sorted((row for row in repo.list('proposal', ctx) if row['scopeId'] in scopes),
-                      key=lambda r: (r['createdAt'], r['id']), reverse=True)
-        data = [present(row, uid) for row in rows]
-    elif method == 'POST' and not interest_id:
-        data, status = present(create(event, repo, ctx.user, scopes, now), uid), 201
-    elif method == 'PUT' and interest_id:
-        data = present(interest(event, repo, ctx.user, scopes, interest_id, now), uid)
-    else:
-        raise AuthError('METHOD_NOT_ALLOWED', 405)
-    require_session(event, sessions)
-    return response(status, {'data':data})
+    if now.timestamp() >= closes_epoch(row):
+        raise AuthError('PROPOSAL_CLOSED', 409)
+    names = {'#v': 'version', '#k': 'entityType', '#s': 'scopeId', '#m': 'members', '#until': 'deadline'}
+    args = {':k': 'proposal', ':s': row['scopeId'], ':members': row['members'], ':until': row['deadline']}
+    check = 'attribute_not_exists(#v)'
+    if 'version' in row:
+        check = '#v = :v'
+        args[':v'] = row['version']
+    check += ' AND #k = :k AND #s = :s AND #m = :members AND #until = :until'
+    parent = dict(TableName=repo.table, Item=values(new), ConditionExpression=check,
+                  ExpressionAttributeNames=names, ExpressionAttributeValues=values(args))
+    from .admission_store import version_condition
+    writes = [{'Put': parent}]
+    for old, updated in changes:
+        guard = version_condition(old) if old else {'ConditionExpression': 'attribute_not_exists(id)'}
+        writes.append({'Put': dict(TableName=repo.table, Item=values(updated), **guard)})
+    commit(repo, ctx.user, token_hash(session_cookie(event)), row['scopeId'], writes, now)
