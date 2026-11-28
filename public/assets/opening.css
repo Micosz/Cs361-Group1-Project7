@@ -238,13 +238,16 @@
     border-color: #ddd5cb;
 }
 .browse-tabs:not(.browse-at-board) .tab { color: #59414a; }
+.browse-hero-slot .browse-tabs .tab,
+.browse-tabs:has(#tabExchange[hidden]) .tab {
+    font-size: clamp(1rem, .85rem + .45vw, 1.2rem);
+    white-space: normal;
+}
 .browse-hero-slot .browse-tabs .tab {
     min-height: 50px;
     padding: 7px clamp(12px, 1.25vw, 18px);
-    font-size: clamp(1rem, .85rem + .45vw, 1.2rem);
     font-weight: 700;
     line-height: 1.45;
-    white-space: normal;
 }
 .browse-hero-slot .browse-tabs .tab:focus-visible { outline-width: 3px; }
 .browse-tabs:not(.browse-at-board) .tab.active { color: #fff; }

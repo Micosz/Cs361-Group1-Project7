@@ -339,6 +339,11 @@ test.describe('Welcome category buttons on a narrow phone', () => {
         const activity = language === 'th' ? 'กิจกรรมและ MoU' : 'Activities & MoU';
         await group.getByRole('button', {name:activity, exact:true}).tap();
         await expect(page.locator('.browse-board-slot #tabEvent')).toHaveAttribute('aria-pressed','true');
+        if (!role) {
+          for (const button of await page.locator('.browse-board-slot').getByRole('button').all()) {
+            await expect(button).toHaveCSS('font-size', '16px');
+          }
+        }
         await expect(page).toHaveURL(/#board-section$/);
       });
     }
@@ -355,6 +360,14 @@ test('category buttons keep focus and selection across the desktop scroll scene'
   await page.keyboard.press('Space');
   await expect(page.locator('.browse-board-slot #tabEvent')).toBeFocused();
   await expect(event).toHaveAttribute('aria-pressed','true');
+  await expect(event).toHaveCSS('font-size', '18px');
+  await expect(page.locator('#tabCollab')).toHaveCSS('font-size', '18px');
+  await page.evaluate(() => window.scrollTo({top:window.scrollY / 2, behavior:'instant'}));
+  const floating = page.locator('.browse-tabs.browse-floating');
+  await expect(floating.locator('#tabEvent')).toBeFocused();
+  await expect(floating.locator('#tabEvent')).toHaveCSS('font-size', '18px');
+  await expect(floating.locator('#tabCollab')).toHaveCSS('font-size', '18px');
+  await expect(floating.locator('.tab-indicator')).toHaveCSS('background-color', 'rgb(166, 0, 42)');
   await page.evaluate(() => window.scrollTo({top:0,behavior:'instant'}));
   await expect(page.locator('.browse-hero-slot #tabEvent')).toBeFocused();
   await expect(event).toHaveAttribute('aria-pressed','true');
