@@ -232,17 +232,24 @@
     flex-wrap: nowrap; width: max-content; max-width: 100%; margin: 0;
     background: #171b20; border-color: #171b20;
 }
-/* Welcome uses the warm page palette with compact, touch-friendly controls. */
+/* The Welcome and floating selectors share the warm palette. */
 .browse-tabs:not(.browse-at-board) {
     background: #fffaf2;
     border-color: #ddd5cb;
 }
 .browse-tabs:not(.browse-at-board) .tab { color: #59414a; }
-.browse-hero-slot .browse-tabs .tab {
-    min-height: 49px;
-    padding: 8px 14px;
-    font-size: .75rem;
+.browse-hero-slot .browse-tabs .tab,
+.browse-tabs:has(#tabExchange[hidden]) .tab {
+    font-size: clamp(1rem, .85rem + .45vw, 1.2rem);
+    white-space: normal;
 }
+.browse-hero-slot .browse-tabs .tab {
+    min-height: 50px;
+    padding: 7px clamp(12px, 1.25vw, 18px);
+    font-weight: 700;
+    line-height: 1.45;
+}
+.browse-hero-slot .browse-tabs .tab:focus-visible { outline-width: 3px; }
 .browse-tabs:not(.browse-at-board) .tab.active { color: #fff; }
 .browse-tabs:not(.browse-at-board) .tab.active,
 .browse-tabs:not(.browse-at-board) .tab-indicator { background: #a6002a; }
@@ -263,8 +270,11 @@ body:not(.feedback-inbox-view) .board-scene:has(.browse-board-slot) { min-height
         min-height: calc(100svh - var(--browse-header-inset, 0px));
     }
     .browse-tabs .tab { flex: 1 1 auto; padding-inline: clamp(6px, 2.5vw, 16px); }
-}
-
-@media (max-width: 767px) {
-    .browse-hero-slot .browse-tabs .tab { min-height: 48px; }
+    .browse-hero-slot .browse-tabs { width: min(100%, 30rem); }
+    .browse-hero-slot .browse-tabs .tab {
+        flex: 1 1 0;
+        padding-inline: 2px;
+    }
+    /* Give the longer public category label room when there are just two buttons. */
+    .browse-hero-slot .browse-tabs:has(#tabExchange[hidden]) #tabEvent { flex-grow: 1.25; }
 }
