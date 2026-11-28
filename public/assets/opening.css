@@ -238,26 +238,19 @@
     border-color: #ddd5cb;
 }
 .browse-tabs:not(.browse-at-board) .tab { color: #59414a; }
-.browse-hero-slot .browse-tabs { gap: 4px; }
 .browse-hero-slot .browse-tabs .tab {
-    min-height: 58px;
-    padding: .5em clamp(12px, 1.8vw, 28px);
-    font-size: clamp(1.0625rem, .9rem + .9vw, 1.6rem);
-    font-weight: 800;
+    min-height: 50px;
+    padding: 7px clamp(12px, 1.25vw, 18px);
+    font-size: clamp(1rem, .85rem + .45vw, 1.2rem);
+    font-weight: 700;
     line-height: 1.45;
     white-space: normal;
-}
-.browse-hero-slot .browse-tabs .tab:not(.active) {
-    color: var(--tu-red-hover);
-    box-shadow: inset 0 0 0 1px #d5b6ba;
 }
 .browse-hero-slot .browse-tabs .tab:focus-visible { outline-width: 3px; }
 .browse-tabs:not(.browse-at-board) .tab.active { color: #fff; }
 .browse-tabs:not(.browse-at-board) .tab.active,
 .browse-tabs:not(.browse-at-board) .tab-indicator { background: #a6002a; }
 .browse-tabs:not(.browse-at-board).has-indicator .tab.active { background: transparent; }
-.browse-hero-slot .browse-tabs .tab-indicator,
-.browse-hero-slot .browse-tabs:not(.has-indicator) .tab.active { background: var(--tu-red); }
 .browse-tabs:not(.browse-at-board) .tab:not(.active):hover { color: #772439; background: #f6e8df; }
 .browse-tabs.browse-at-board { background: #fff; border-color: #ddd5cb; }
 .browse-tabs .tab:focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
@@ -277,7 +270,6 @@ body:not(.feedback-inbox-view) .board-scene:has(.browse-board-slot) { min-height
     .browse-hero-slot .browse-tabs { width: min(100%, 30rem); }
     .browse-hero-slot .browse-tabs .tab {
         flex: 1 1 0;
-        min-height: 54px;
         padding-inline: 2px;
     }
     /* Give the longer public category label room when there are just two buttons. */
