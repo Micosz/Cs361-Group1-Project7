@@ -354,6 +354,48 @@ for (const width of [320, 390]) test(`workspace keyboard focus stays in view at 
   }
 });
 
+test.describe('workspace shortcut motion', () => {
+  test.use({hasTouch:true});
+  for (const [role, width, motion, input] of [
+    ['staff', 390, 'no-preference', 'tap'],
+    ['executive', 1440, 'no-preference', 'keyboard'],
+    ['staff', 390, 'reduce', 'keyboard'],
+    ['coordinator', 1440, 'no-preference', 'click']
+  ]) test(`${role} opens a shortcut with ${input} at ${width}px (${motion})`, async ({page}) => {
+    await page.setViewportSize({width, height:900});
+    await page.emulateMedia({reducedMotion:motion});
+    await fixture(page, role);
+    await page.addInitScript(() => {
+      window.addEventListener('pagereveal', async ({viewTransition}) => {
+        if (viewTransition) await viewTransition.ready;
+        window.shortcutAnimations = document.getAnimations().map(animation => animation.animationName);
+      });
+    });
+    await page.goto('/index.html');
+    const shortcut = page.locator('#work-actions a[href*="kind=partners"]');
+    await expect(shortcut).toBeVisible();
+    expect(await page.evaluate(() => window.shortcutAnimations)).not.toContain('desk-expand');
+    if (input === 'tap') await shortcut.tap();
+    else if (input === 'keyboard') await shortcut.press('Enter');
+    else await shortcut.click();
+    const dialog = page.locator('#record-detail');
+    await expect(dialog).toBeVisible();
+    await expect(page).toHaveURL(/work\.html\?kind=partners/);
+    if (role !== 'coordinator' && motion === 'no-preference') {
+      await expect.poll(() => page.evaluate(() => window.shortcutAnimations)).toEqual(
+        expect.arrayContaining(['desk-expand','desk-enlarge-title','desk-wash'])
+      );
+    } else {
+      await expect.poll(() => page.evaluate(() => Array.isArray(window.shortcutAnimations))).toBe(true);
+      expect(await page.evaluate(() => window.shortcutAnimations)).not.toContain('desk-expand');
+    }
+    await expect.poll(() => dialog.evaluate(el => el.contains(document.activeElement))).toBe(true);
+    await page.goBack();
+    await expect(shortcut).toBeVisible();
+    await expect(page.locator('.shortcut-opening')).toHaveCount(0);
+  });
+});
+
 for(const role of [null,'student']) test(`${role || 'anonymous'} direct work URL is redirected`, async ({page}) => {
   await fixture(page, role); await page.goto('/work.html'); await expect(page).toHaveURL(role ? /index.html/ : /login.html/);
 });

@@ -257,3 +257,81 @@
     .staff-landing .work-actions a[href*="view=feedback"] small { grid-column: 1; }
     .staff-landing .work-actions a[href*="view=feedback"]::after { grid-column: 2; }
 }
+
+/* The browser owns the navigation, snapshots and their lifetime, including Back. */
+@media (prefers-reduced-motion: no-preference) {
+    .staff-landing .work-actions:has(.shortcut-opening) { view-transition-name: desk-actions; }
+    .staff-landing .shortcut-opening { view-transition-name: desk-card; }
+    .staff-landing .shortcut-opening :is(i, small),
+    .staff-landing .shortcut-opening::after { visibility: hidden; }
+    .staff-landing .work-actions a.shortcut-opening strong { view-transition-name: desk-title; text-decoration: none; }
+
+    :root:active-view-transition-type(staff-shortcut)::view-transition-group(*) {
+        animation-duration: 440ms;
+        animation-timing-function: cubic-bezier(.65, 0, .45, 1);
+    }
+
+    :root:active-view-transition-type(staff-shortcut)::view-transition-group(root) { z-index: 0; }
+
+    :root:active-view-transition-type(staff-shortcut)::view-transition-old(root) {
+        mix-blend-mode: normal;
+        z-index: 1;
+        animation: desk-hold 440ms both;
+    }
+
+    :root:active-view-transition-type(staff-shortcut)::view-transition-new(root) { animation: none; }
+
+    ::view-transition-group(desk-actions) { z-index: 1; background: #fffdf8; animation-name: desk-hold; }
+    ::view-transition-old(desk-actions) { animation: desk-wash 440ms both; }
+
+    ::view-transition-group(desk-card) {
+        z-index: 2;
+        overflow: clip;
+        border-radius: var(--radius-card);
+        background: #3f1427;
+        animation-name: desk-expand;
+    }
+
+    ::view-transition-old(desk-card) {
+        height: 100%;
+        object-fit: cover;
+        animation: desk-ink 440ms both;
+    }
+
+    ::view-transition-group(desk-title) {
+        z-index: 3;
+        transform-origin: top left;
+        animation-name: desk-enlarge-title;
+    }
+
+    ::view-transition-old(desk-title) {
+        animation: desk-title-ink 440ms both;
+    }
+
+    @keyframes desk-hold {
+        0%, 79% { opacity: 1; }
+        to { opacity: 0; }
+    }
+    @keyframes desk-wash {
+        0% { opacity: 1; }
+        60%, 100% { opacity: .06; }
+    }
+    @keyframes desk-ink {
+        0% { opacity: 1; }
+        65%, 100% { opacity: 0; }
+    }
+    @keyframes desk-title-ink {
+        0% { filter: none; }
+        50%, 100% { filter: brightness(0) invert(1); }
+    }
+    @keyframes desk-expand {
+        75%, 100% { transform: translate(6vw, 16vh); width: 88vw; height: 60vh; }
+        85% { opacity: 1; }
+        to { opacity: 0; }
+    }
+    @keyframes desk-enlarge-title {
+        75%, 100% { transform: translate(12vw, 38vh) scale(1.5); }
+        85% { opacity: 1; }
+        to { opacity: 0; }
+    }
+}
