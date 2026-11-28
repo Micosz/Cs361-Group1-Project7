@@ -72,7 +72,9 @@ def page(rows, event, service, kind=None):
     def searchable(row):
         if kind in {'feedback', 'formFeedback'}:
             return ' '.join(str(row.get(field, '')) for field in
-                            ('comment', 'improvement', 'sourceType', 'parentTitle', 'formName', 'importedByName')).casefold()
+                            ('comment', 'improvement', 'sourceType', 'parentTitle',
+                             'formName', 'fileName', 'sheetName', 'importedByName',
+                             'agreementLabel')).casefold()
         return str(row.get('name', row.get('title', ''))).casefold()
     rows = sorted((r for r in rows if needle in searchable(r)),
                   key=lambda r: r['id'])

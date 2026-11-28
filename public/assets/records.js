@@ -330,7 +330,7 @@
     }
     // Read a related record in place (e.g. from the Feedback Inbox) without changing the current view.
     async function openRelated(resourceKind, id, trigger = null) {
-        if (!['partners','activities','exchanges'].includes(resourceKind) || typeof id !== 'string' || !id) return false;
+        if (!['partners','activities','agreements','exchanges'].includes(resourceKind) || typeof id !== 'string' || !id) return false;
         await detail({id}, trigger, resourceKind);
         return true;
     }

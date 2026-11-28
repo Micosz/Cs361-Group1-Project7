@@ -89,8 +89,11 @@
             const header = node('div', 'form-batch-header');
             const toggle = button('', 'form-batch-toggle'); toggle.setAttribute('aria-expanded', 'false');
             const info = node('span', 'form-batch-info');
+            const agreementNote = row.agreementStatus === 'unspecified'
+                ? (row.agreementLabel || 'ยังไม่ระบุข้อตกลง')
+                : row.agreementLabel ? 'ข้อตกลง: ' + row.agreementLabel : '';
             info.append(node('strong', 'form-batch-title', row.formName),
-                node('span', 'form-muted', ['นำเข้า ' + date(row.createdAt), sources[row.sourceType], row.responseCount + ' คำตอบ'].join(' · ')));
+                node('span', 'form-muted', ['นำเข้า ' + date(row.createdAt), sources[row.sourceType], row.responseCount + ' คำตอบ', agreementNote].filter(Boolean).join(' · ')));
             const arrow = icon('chevron-down'); toggle.append(info, arrow);
             const content = node('div', 'form-batch-content'); content.id = 'form-content-' + row.id; content.hidden = true;
             toggle.setAttribute('aria-controls', content.id);

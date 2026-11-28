@@ -25,6 +25,7 @@ from ..relationships.activity_links import internal_links, LinkError
 COLLECTIONS = {'partners': 'partner', 'activities': 'activity',
                'agreements': 'agreement', 'exchanges': 'exchange'}
 NESTED = {'contacts': 'contact', 'history': 'history', 'documents': 'document', 'feedback': 'feedback', 'form-feedback': 'formFeedback'}
+UNSPECIFIED_AGREEMENT = 'ยังไม่ระบุข้อตกลง'
 
 
 @dataclass(frozen=True)
@@ -118,30 +119,95 @@ class PermissionGateway:
 
     Feature adapters must not call writes/streams before these methods authorize.
     """
-    def _feedback_partners(self, context, activity, cache):
-        """Expose only readable, same-scope partner labels; never copy feedback."""
-        if not allowed_roles(context, 'activity', 'read', activity):
+    def _feedback_partners(self, context, parent, cache):
+        """Expose only readable/referenceable same-scope partner labels; never copy feedback."""
+        if not parent or parent.get('entityType') not in {'activity', 'exchange'}:
             return []
-        cohosts = activity.get('coHostPartnerIds', [])
-        keys = [activity.get('partnerId'), *(cohosts if isinstance(cohosts, list) else [])]
+        if not allowed_roles(context, parent['entityType'], 'read', parent):
+            return []
+        from .policy import can_reference
+        if parent['entityType'] == 'activity':
+            cohosts = parent.get('coHostPartnerIds', [])
+            keys = [parent.get('partnerId'), *(cohosts if isinstance(cohosts, list) else [])]
+        else:
+            pids = parent.get('partnerIds', [])
+            keys = list(pids) if isinstance(pids, list) else []
         labels, seen = [], set()
         for key in keys:
             if not isinstance(key, str) or not key or key in seen:
                 continue
             seen.add(key)
-            cache_key = (activity.get('scopeId'), key)
+            cache_key = (parent.get('scopeId'), key)
             if cache_key not in cache:
                 partner = self.repository.get('partner', key)
                 label = None
                 if (partner and partner.get('entityType') == 'partner'
-                        and partner.get('scopeId') == activity.get('scopeId')
-                        and allowed_roles(context, 'partner', 'read', partner)
+                        and partner.get('source_state') != 'retired'
+                        and partner.get('scopeId') == parent.get('scopeId')
                         and isinstance(partner.get('name'), str) and partner['name'].strip()):
-                    label = {'id': key, 'name': partner['name']}
+                    label = partner
                 cache[cache_key] = label
-            if cache[cache_key] is not None:
-                labels.append(cache[cache_key])
+            partner = cache[cache_key]
+            if partner is not None and can_reference(context, partner, parent.get('scopeId')):
+                labels.append({'id': key, 'name': partner['name']})
         return labels
+
+    def _parent_agreements(self, parent, cache):
+        """Return valid same-scope Agreement rows linked to parent; partner-only is always empty."""
+        if not parent or parent.get('entityType') == 'partner':
+            return []
+        if parent.get('entityType') == 'activity':
+            raw = parent.get('agreementIds', [])
+            keys = raw if isinstance(raw, list) else []
+        elif parent.get('entityType') == 'exchange':
+            agr_id = parent.get('agreementId')
+            keys = [agr_id] if isinstance(agr_id, str) and agr_id else []
+        else:
+            return []
+        agreements, seen = [], set()
+        for key in keys:
+            if not isinstance(key, str) or not key or key in seen:
+                continue
+            seen.add(key)
+            cache_key = (parent.get('scopeId'), key)
+            if cache_key not in cache:
+                agr = self.repository.get('agreement', key)
+                valid = None
+                if (agr and agr.get('entityType') == 'agreement'
+                        and agr.get('source_state') != 'retired'
+                        and agr.get('scopeId') == parent.get('scopeId')
+                        and isinstance(agr.get('title'), str) and agr['title'].strip()):
+                    valid = agr
+                cache[cache_key] = valid
+            if cache[cache_key] is not None:
+                agreements.append(cache[cache_key])
+        return agreements
+
+    def _feedback_links(self, context, parent, partner_cache, agreement_cache):
+        """Resolve authorized related work, partner, and agreement provenance for feedback."""
+        parent_readable = bool(parent and allowed_roles(context, parent.get('entityType'), 'read', parent))
+        related_partners = self._feedback_partners(context, parent, partner_cache)
+        valid_agreements = self._parent_agreements(parent, agreement_cache)
+        if not valid_agreements:
+            return {
+                'canReadParent': parent_readable,
+                'relatedPartners': related_partners,
+                'relatedAgreements': [],
+                'agreementStatus': 'unspecified',
+                'agreementLabel': UNSPECIFIED_AGREEMENT,
+            }
+        related_agreements = [
+            {'id': agr['id'], 'title': agr['title'], 'agreementType': agr.get('agreementType', 'MoU')}
+            for agr in valid_agreements
+            if parent_readable and allowed_roles(context, 'agreement', 'read', agr)
+        ]
+        return {
+            'canReadParent': parent_readable,
+            'relatedPartners': related_partners,
+            'relatedAgreements': related_agreements,
+            'agreementStatus': 'linked',
+            'agreementLabel': ', '.join(item['title'] for item in related_agreements),
+        }
 
     def __init__(self, service, repository):
         self.service, self.repository = service, repository
@@ -224,7 +290,7 @@ class PermissionGateway:
                     data = self._project(context, kind, record, parent)
                     return self._response(event, data)
                 rows = []
-                partner_labels = {}
+                partner_labels, agreement_rows = {}, {}
                 for row in self.repository.list(kind, context, parent):
                     row_parent = parent
                     if special == 'inbox':
@@ -238,14 +304,13 @@ class PermissionGateway:
                         continue  # Hidden pending review; kept for moderators, never deleted.
                     if mine and not self._participant(context, row if kind == 'exchange' else parent):
                         continue
-                    projected = self._project(context, kind, row, row_parent)
+                    projected = self._project(context, kind, row, row_parent, partner_labels, agreement_rows)
                     if kind == 'feedback' and parent is not None and hasattr(self.repository, 'public_reaction_choice'):
                         projected['myReaction'] = self.repository.public_reaction_choice(row['id'], token_hash(session_cookie(event)))
                     if special == 'inbox':
                         projected.pop('respondentName', None)
                         projected['parentTitle'] = row_parent.get('title') or row_parent.get('name', '')
-                        if row_parent.get('entityType') == 'activity':
-                            projected['relatedPartners'] = self._feedback_partners(context, row_parent, partner_labels)
+                        projected.update(self._feedback_links(context, row_parent, partner_labels, agreement_rows))
                     if kind == 'formFeedback':
                         projected.pop('rows', None)
                         projected.pop('columns', None)
@@ -317,8 +382,15 @@ class PermissionGateway:
         except Exception:
             return error_response('PERMISSION_UNAVAILABLE', 503, event)
 
-    def _project(self, context, kind, record, parent=None):
+    def _project(self, context, kind, record, parent=None, partner_cache=None, agreement_cache=None):
         data = project(context, kind, record, parent)
+        if kind == 'formFeedback' and parent is not None:
+            data['parentTitle'] = parent.get('title') or parent.get('name', '')
+            data.update(self._feedback_links(
+                context, parent,
+                partner_cache if partner_cache is not None else {},
+                agreement_cache if agreement_cache is not None else {},
+            ))
         if kind in {'activity', 'exchange', 'agreement'} and record.get('proposalId'):
             from ..proposal_destinations import visible_source
             source_id = visible_source(self.repository, context, record)
@@ -357,7 +429,7 @@ class PermissionGateway:
         if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
             raise AuthError('METHOD_NOT_ALLOWED', 405)
         query = event.get('queryStringParameters') or {}
-        supported = {'scopeId', 'stakeholderType', 'activityType', 'status', 'startDate', 'endDate'}
+        supported = {'scopeId', 'stakeholderType', 'activityType', 'status', 'startDate', 'endDate', 'agreementId'}
         if not isinstance(query, dict) or set(query) - supported:
             raise AuthError('INVALID_QUERY', 422)
         context = require_session(event, self.service)
@@ -391,6 +463,11 @@ class PermissionGateway:
                 raise AuthError('INVALID_QUERY', 422)
         if 'status' in query and (not isinstance(query['status'], str) or not query['status'] or len(query['status']) > 64):
             raise AuthError('INVALID_QUERY', 422)
+        if 'agreementId' in query and (not isinstance(query['agreementId'], str)
+                or not query['agreementId'] or len(query['agreementId']) > 200
+                or query['agreementId'] != query['agreementId'].strip()):
+            raise AuthError('INVALID_QUERY', 422)
+        selected_agreement = query.get('agreementId')
         for key in ('startDate', 'endDate'):
             if key in query and not valid_day(query[key]):
                 raise AuthError('INVALID_QUERY', 422)
@@ -428,15 +505,19 @@ class PermissionGateway:
                 ids = row.get('partnerIds') if isinstance(row.get('partnerIds'), list) else []
             return any(isinstance(item, str) and item in visible_partner_ids for item in ids)
 
-        activities = [row for row in authorized('activity')
-                      if ('activityType' not in query or row.get('type') == query['activityType'])
-                      and in_period('activity', row) and related_to_selected_stakeholder('activity', row)]
         agreements = [row for row in authorized('agreement')
                       if ('status' not in query or row.get('status') == query['status'])
-                      and in_period('agreement', row) and related_to_selected_stakeholder('agreement', row)]
+                      and in_period('agreement', row) and related_to_selected_stakeholder('agreement', row)
+                      and (not selected_agreement or row['id'] == selected_agreement)]
+        selected_agreement_ids = {row['id'] for row in agreements}
+        activities = [row for row in authorized('activity')
+                      if ('activityType' not in query or row.get('type') == query['activityType'])
+                      and in_period('activity', row) and related_to_selected_stakeholder('activity', row)
+                      and (not selected_agreement or any(aid in selected_agreement_ids for aid in (row.get('agreementIds') or [])))]
         exchanges = [row for row in authorized('exchange')
                      if ('status' not in query or row.get('status') == query['status'])
-                     and in_period('exchange', row) and related_to_selected_stakeholder('exchange', row)]
+                     and in_period('exchange', row) and related_to_selected_stakeholder('exchange', row)
+                     and (not selected_agreement or row.get('agreementId') in selected_agreement_ids)]
 
         def counts(rows, field):
             result = {}
@@ -457,11 +538,42 @@ class PermissionGateway:
                                      'date': row.get(date_field, ''), 'summary': summary.strip()[:500]})
         outcomes.sort(key=lambda row: row.get('date') or '', reverse=True)
 
+        partner_cache, agreement_cache = {}, {}
+        agreement_stats = {
+            row['id']: {
+                'id': row['id'],
+                'title': row.get('title', ''),
+                'agreementType': row.get('agreementType', 'MoU'),
+                'status': row.get('status', 'draft'),
+                'batchCount': 0,
+                'responseCount': 0,
+                'commentCount': 0,
+            }
+            for row in sorted(agreements, key=lambda r: (r.get('title') or '', r['id']))
+        }
+        unspecified_stats = {
+            'label': UNSPECIFIED_AGREEMENT,
+            'batchCount': 0,
+            'responseCount': 0,
+            'commentCount': 0,
+        }
+
         feedback = []
         visible_parents = {(kind, row['id']): row for kind, rows in (
             ('activity', activities), ('exchange', exchanges)) for row in rows}
+        include_partner_feedback = not selected_agreement and 'activityType' not in query and 'status' not in query
+        partner_map = {row['id']: row for row in partners} if include_partner_feedback else {}
         for row in self.repository.list('feedback', context, None):
             parent_kind, parent_id = row.get('parentType'), row.get('parentId')
+            if row.get('origin') == 'web' and publicly_hidden(row) and not matching_roles(context, {'scopeId': row.get('scopeId')}) & MODERATOR_ROLES:
+                continue
+            if parent_kind == 'partner':
+                p_row = partner_map.get(parent_id)
+                if (p_row and allowed_roles(context, 'feedback', 'read', row, p_row)
+                        and (not start or (valid_day(row.get('occurredOn')) and row['occurredOn'] >= start))
+                        and (not end or (valid_day(row.get('occurredOn')) and row['occurredOn'] <= end))):
+                    unspecified_stats['commentCount'] += 1
+                continue
             parent = visible_parents.get((parent_kind, parent_id))
             if not parent or not allowed_roles(context, 'feedback', 'read', row, parent):
                 continue
@@ -470,13 +582,71 @@ class PermissionGateway:
             if end and (not valid_day(row.get('occurredOn')) or row['occurredOn'] > end):
                 continue
             item = project(context, 'feedback', row, parent)
+            links = self._feedback_links(context, parent, partner_cache, agreement_cache)
+            valid_agreements = self._parent_agreements(parent, agreement_cache)
+            if not valid_agreements:
+                unspecified_stats['commentCount'] += 1
+            else:
+                for agr in valid_agreements:
+                    if agr['id'] in agreement_stats:
+                        agreement_stats[agr['id']]['commentCount'] += 1
             feedback.append({'date': item.get('occurredOn', ''),
                              'sourceType': item.get('sourceType', ''),
                              'parentType': parent_kind,
+                             'parentId': parent_id,
                              'parentTitle': parent.get('title', ''),
                              'comment': item.get('comment', '')[:500],
-                             'improvement': item.get('improvement', '')[:500]})
+                             'improvement': item.get('improvement', '')[:500],
+                             **links})
         feedback.sort(key=lambda row: row.get('date') or '', reverse=True)
+
+        form_parents = dict(visible_parents)
+        if include_partner_feedback:
+            for row in partners:
+                form_parents[('partner', row['id'])] = row
+        form_batches = []
+        for row in self.repository.list('formFeedback', context, None):
+            parent_kind, parent_id = row.get('parentType'), row.get('parentId')
+            parent = form_parents.get((parent_kind, parent_id))
+            if not parent or not allowed_roles(context, 'formFeedback', 'read', row, parent):
+                continue
+            if parent_kind == 'partner' and (start or end):
+                created_day = (row.get('createdAt') or '')[:10]
+                if not valid_day(created_day) or (start and created_day < start) or (end and created_day > end):
+                    continue
+            item = project(context, 'formFeedback', row, parent)
+            links = self._feedback_links(context, parent, partner_cache, agreement_cache)
+            valid_agreements = self._parent_agreements(parent, agreement_cache)
+            resp_count = int(item.get('responseCount', 0))
+            if not valid_agreements:
+                unspecified_stats['batchCount'] += 1
+                unspecified_stats['responseCount'] += resp_count
+            else:
+                for agr in valid_agreements:
+                    if agr['id'] in agreement_stats:
+                        agreement_stats[agr['id']]['batchCount'] += 1
+                        agreement_stats[agr['id']]['responseCount'] += resp_count
+            form_batches.append({
+                'id': item['id'],
+                'formName': item.get('formName', ''),
+                'sourceType': item.get('sourceType', ''),
+                'fileName': item.get('fileName', ''),
+                'sheetName': item.get('sheetName', ''),
+                'importedByName': item.get('importedByName', ''),
+                'createdAt': item.get('createdAt', ''),
+                'responseCount': resp_count,
+                'parentType': parent_kind,
+                'parentId': parent_id,
+                'parentTitle': parent.get('title') or parent.get('name', ''),
+                **links,
+            })
+        form_batches.sort(key=lambda r: r['id'])
+        form_batches.sort(key=lambda r: r.get('createdAt') or '', reverse=True)
+        form_by_source = {}
+        for batch in form_batches:
+            src = batch.get('sourceType')
+            if isinstance(src, str) and src:
+                form_by_source[src] = form_by_source.get(src, 0) + batch['responseCount']
 
         result = {
             'role': role,
@@ -493,6 +663,14 @@ class PermissionGateway:
             'feedback': {'count': len(feedback), 'bySource': counts(feedback, 'sourceType'),
                          'withImprovement': sum(bool(row.get('improvement')) for row in feedback),
                          'latest': feedback[:5]},
+            'formFeedback': {
+                'batchCount': len(form_batches),
+                'responseCount': sum(b['responseCount'] for b in form_batches),
+                'bySource': form_by_source,
+                'unspecifiedAgreement': unspecified_stats,
+                'byAgreement': list(agreement_stats.values()),
+                'batches': form_batches,
+            },
         }
         return self._response(event, result)
 
