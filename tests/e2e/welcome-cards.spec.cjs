@@ -71,18 +71,54 @@ async function pointAtCard(page, card) {
   return { x, y };
 }
 
-async function tabTo(page, card) {
+async function tabTo(page, control) {
   for (let step = 0; step < 30; step++) {
     await page.keyboard.press('Tab');
-    if (await card.evaluate(node => document.activeElement === node)) return;
+    if (await control.evaluate(node => document.activeElement === node)) return;
   }
-  throw new Error('Tab did not reach the Welcome card');
+  throw new Error('Tab did not reach the Welcome control');
 }
 
 for (const motion of ['no-preference', 'reduce']) {
   for (const [width, height, touch] of [[320, 707, true], [390, 844, true], [1280, 800, false]]) {
     test.describe(width + 'px ' + motion, () => {
       test.use({ viewport: { width, height }, hasTouch: touch, isMobile: touch, reducedMotion: motion });
+      for (const [lang, name] of [['th', 'กระดานข้อมูล'], ['en', 'Information Board']]) {
+        test('the ' + lang + ' board link opens the selected category and keeps its filter', async ({page}) => {
+          await serveFixture(page);
+          await ready(page);
+          const languageButton = page.locator('.navbar button[data-language="' + lang + '"]');
+          await languageButton.press('Enter');
+          const link = page.locator('.hero-content').getByRole('link', {name, exact:true});
+          await expect(link).toHaveAttribute('href', '#board-section');
+          const box = await link.boundingBox();
+          expect(box.height).toBeGreaterThanOrEqual(48);
+          expect(box.x).toBeGreaterThanOrEqual(0);
+          expect(box.x + box.width).toBeLessThanOrEqual(width);
+
+          if (touch) await link.tap(); else await link.click();
+          await expect(page).toHaveURL(/#board-section$/);
+          await expect(page.locator('.browse-board-slot #tabCollab')).toBeFocused();
+          const historyLength = await page.evaluate(() => history.length);
+          await page.locator('#tabEvent').click();
+          await page.locator('#filterEvent').selectOption('academic_activity');
+          await page.evaluate(() => window.scrollTo({top:0, behavior:'instant'}));
+          await expect(page.locator('.browse-hero-slot #tabEvent')).toHaveAttribute('aria-pressed','true');
+          if (touch) {
+            await link.tap();
+          } else {
+            await languageButton.focus();
+            await tabTo(page, link);
+            await expect(link).toHaveCSS('outline-style', 'solid');
+            await page.keyboard.press('Enter');
+          }
+          await expect(page.locator('.browse-board-slot #tabEvent')).toBeFocused();
+          await expect(page.locator('#filterEvent')).toHaveValue('academic_activity');
+          await expect(page).toHaveURL(/#board-section$/);
+          expect(await page.evaluate(() => history.length)).toBe(historyLength);
+        });
+      }
+
       const activations = touch ? [['tap', width === 320 ? 0 : 1]] : [['mouse', 0], ['Enter', 1], ['Space', 2]];
       for (const [action, index] of activations) {
         test(action + ' opens the organization read twenty seconds earlier', async ({ page }) => {

@@ -226,6 +226,45 @@
     .orbit-tile { width: 160px; height: 132px; padding: 18px; border-radius: 22px; }
 }
 
+/* The Welcome link opens the current Information Board category. */
+.welcome-board-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .75em;
+    max-inline-size: 100%;
+    min-block-size: 54px;
+    margin-block-end: 10px;
+    padding: .36em .52em .36em 1em;
+    border: 2px solid var(--tu-red);
+    border-radius: 16px;
+    background: var(--tu-red);
+    color: #fff;
+    font-size: clamp(1.375rem, 1.125rem + .75vw, 1.75rem);
+    font-weight: 800;
+    line-height: 1.45;
+    text-decoration: none;
+}
+.welcome-board-link > [aria-hidden] {
+    display: grid;
+    place-items: center;
+    flex: none;
+    inline-size: 1.5em;
+    block-size: 1.5em;
+    border-radius: 50%;
+    background: var(--tu-yellow);
+    color: var(--text-dark);
+    line-height: 1;
+}
+.welcome-board-link:focus-visible {
+    outline: 3px solid var(--text-dark);
+    outline-offset: 4px;
+}
+@media (hover: hover) {
+    .welcome-board-link:hover { background: var(--tu-red-hover); border-color: var(--tu-red-hover); }
+}
+.welcome-board-link:active { background: var(--tu-red-hover); border-color: var(--tu-red-hover); }
+
 /* The public page shares its category buttons between these two spaces. */
 .browse-slot { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 58px; }
 .browse-tabs.tabs {
