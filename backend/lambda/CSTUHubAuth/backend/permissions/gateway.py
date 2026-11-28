@@ -225,7 +225,22 @@ class PermissionGateway:
                     return self._response(event, data)
                 rows = []
                 partner_labels = {}
+                # #263: an agreement filter only matches work in the agreement's own
+                # scope, and only when this user may read that agreement.
+                linked_agreement = None
+                wanted = query.get('agreementId')
+                if (kind in {'activity', 'exchange'} and not parent_kind and isinstance(wanted, str)
+                        and wanted and len(wanted) <= 200 and wanted == wanted.strip()):
+                    # Malformed values skip the lookup; page() rejects them with 422.
+                    candidate = self.repository.get('agreement', wanted)
+                    if (candidate and candidate.get('entityType') == 'agreement'
+                            and allowed_roles(context, 'agreement', 'read', candidate)):
+                        linked_agreement = candidate
+                    else:
+                        linked_agreement = False
                 for row in self.repository.list(kind, context, parent):
+                    if linked_agreement is False or (linked_agreement and row.get('scopeId') != linked_agreement.get('scopeId')):
+                        continue
                     row_parent = parent
                     if special == 'inbox':
                         row_parent = self.repository.get(row.get('parentType'), row.get('parentId'))
