@@ -206,112 +206,49 @@ body.staff-landing {
     .staff-landing .work-actions a[href*="view=feedback"]::after { grid-area: 1 / 3 / span 2; }
 }
 
-/* The browser owns the navigation, snapshots and their lifetime, including Back. */
+/* Keep the outgoing link in place until the authorized destination has a box.
+   Only the destination moves: its own edge clips the colour and contains the form. */
 @media (prefers-reduced-motion: no-preference) {
-    .staff-landing .work-actions:has(.shortcut-opening) { view-transition-name: desk-actions; }
     .staff-landing .shortcut-opening { view-transition-name: desk-card; }
-    .staff-landing .shortcut-opening :is(i, small),
-    .staff-landing .shortcut-opening::after { visibility: hidden; }
-    .staff-landing .work-actions a.shortcut-opening strong { view-transition-name: desk-title; text-decoration: none; }
-
-    :root { --desk-duration: 660ms; }
     :root:active-view-transition-type(staff-shortcut)::view-transition { pointer-events: none; }
-
-    :root:active-view-transition-type(staff-shortcut)::view-transition-group(*) {
-        animation-duration: var(--desk-duration);
-        animation-timing-function: cubic-bezier(.65, 0, .45, 1);
-    }
-
-    :root:active-view-transition-type(staff-shortcut)::view-transition-group(root) { z-index: 0; }
-
-    /* Keep the incoming frame on top when Chromium releases the outgoing snapshot. */
-    :where(:root:has(body.work-home))::view-transition-old(root) { opacity: 0; animation: none; }
-    :where(:root:has(body.work-home))::view-transition-new(root) { opacity: 1; animation: none; }
-    /* Let the native backdrop supply its tint while the snapshots blend. Blur resumes on the live dialog. */
-    :root:active-view-transition-type(staff-shortcut) #record-detail::backdrop { backdrop-filter: none; }
+    :root:active-view-transition-type(staff-shortcut)::view-transition-group(root) { animation: none; }
     :root:active-view-transition-type(staff-shortcut)::view-transition-old(root) {
+        z-index: 1;
         mix-blend-mode: normal;
-        animation: desk-depart var(--desk-duration) both;
+        animation: desk-wait 320ms linear both;
     }
-
     :root:active-view-transition-type(staff-shortcut)::view-transition-new(root) {
         mix-blend-mode: normal;
-        z-index: 1;
-        animation: desk-arrive var(--desk-duration) both;
+        animation: none;
     }
+    ::view-transition-group(desk-card) { z-index: 2; animation: none; }
+    ::view-transition-old(desk-card) { animation: none; }
+    :root.desk-arriving::view-transition-old(root),
+    .desk-arriving::view-transition-group(desk-card) { animation: desk-leave 120ms ease-out both; }
 
-    ::view-transition-group(desk-actions) { z-index: 1; background: #fffdf8; animation-name: desk-release; }
-    ::view-transition-old(desk-actions) { animation: desk-wash var(--desk-duration) both; }
-
-    ::view-transition-group(desk-card) {
-        z-index: 2;
-        overflow: clip;
-        border-radius: var(--radius-card);
-        background: #fffdf9;
-        animation-name: desk-expand, desk-reveal;
-    }
-
-    /* Fade the solid red image pair over the form's paper colour without repainting the field. */
-    ::view-transition-image-pair(desk-card) {
-        background: var(--tu-red);
-        animation: desk-surface var(--desk-duration) both;
-    }
-
-    ::view-transition-old(desk-card) {
-        height: 100%;
-        object-fit: cover;
-        animation: desk-ink var(--desk-duration) both;
-    }
-
-    ::view-transition-group(desk-title) {
-        z-index: 3;
+    .desk-arriving { --desk-duration: 540ms; }
+    .desk-arriving .desk-receiving {
         transform-origin: top left;
-        animation-name: desk-enlarge-title;
+        animation: desk-receive var(--desk-duration) cubic-bezier(.35,.03,.20,1) both;
     }
-
-    ::view-transition-old(desk-title) {
-        animation: desk-title-ink var(--desk-duration) both;
+    .desk-arriving .desk-receiving::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+        pointer-events: none;
+        border-radius: inherit;
+        background: var(--tu-red);
+        animation: desk-tint var(--desk-duration) linear both;
     }
-
-    /* The destination stays live below the outgoing snapshots, including the native dialog. */
-    @keyframes desk-depart {
-        0%, 85% { opacity: 1; }
+    .desk-arriving dialog.desk-receiving::backdrop { backdrop-filter: none; }
+    @keyframes desk-wait { 0%, 72% { opacity: 1; } to { opacity: 0; } }
+    @keyframes desk-leave { from { opacity: 1; } to { opacity: 0; } }
+    @keyframes desk-receive { from { transform: var(--desk-start); } to { transform: none; } }
+    @keyframes desk-tint {
+        0%, 14% { opacity: 1; }
+        42% { opacity: .56; }
+        72% { opacity: .13; }
         to { opacity: 0; }
-    }
-    @keyframes desk-arrive {
-        0%, 30% { opacity: 0; animation-timing-function: linear; }
-        90%, 100% { opacity: 1; }
-    }
-    @keyframes desk-release {
-        0%, 38% { opacity: 1; animation-timing-function: ease-in-out; }
-        90%, 100% { opacity: 0; }
-    }
-    @keyframes desk-wash {
-        from { opacity: 1; }
-        40%, 100% { opacity: .06; }
-    }
-    @keyframes desk-ink {
-        from { opacity: 1; }
-        38%, 100% { opacity: 0; }
-    }
-    @keyframes desk-title-ink {
-        from { filter: none; }
-        34%, 100% { filter: brightness(0) invert(1); }
-    }
-    @keyframes desk-expand {
-        50%, 100% { transform: translate(6vw, 16vh); width: 88vw; height: 60vh; }
-    }
-    @keyframes desk-surface {
-        0%, 35% { opacity: 1; animation-timing-function: linear; }
-        94%, 100% { opacity: 0; }
-    }
-    @keyframes desk-reveal {
-        0%, 42% { opacity: 1; animation-timing-function: linear; }
-        to { opacity: 0; }
-    }
-    @keyframes desk-enlarge-title {
-        42% { opacity: 1; }
-        50%, 100% { transform: translate(12vw, 38vh) scale(1.5); }
-        74%, 100% { opacity: 0; }
     }
 }

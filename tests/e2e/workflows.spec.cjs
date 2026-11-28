@@ -356,79 +356,79 @@ for (const width of [320, 390]) test(`workspace keyboard focus stays in view at 
 
 test.describe('workspace shortcut motion', () => {
   test.use({hasTouch:true});
-  test('the red surface and the real partner form overlap during the handoff', async ({page}) => {
-    await page.emulateMedia({reducedMotion:'no-preference'});
-    await fixture(page,'staff');
-    await page.addInitScript(() => {
-      window.addEventListener('pagereveal', async ({viewTransition}) => {
-        if (!viewTransition) return;
-        await viewTransition.ready;
-        const animations = document.getAnimations().filter(a => a.animationName?.startsWith('desk-'));
-        if (!animations.length) return;
-        for (const animation of animations) animation.pause();
-        window.deskAnimations = animations;
+  const shortcuts = [
+    ['proposals','#proposal-board'],
+    ['partners','#record-detail'],
+    ['activities','.entry-frame-dialog'],
+    ['agreements','.agreement-dialog'],
+    ['exchanges','.entry-frame-dialog'],
+    ['feedback','#home-records']
+  ];
+  for (const [role,width] of [['staff',390],['executive',1280]]) {
+    for (const [route,selector] of shortcuts) test(`${role} shortcut grows into the real ${route} surface at ${width}px`,async ({page}) => {
+      await page.setViewportSize({width,height:800});
+      await page.emulateMedia({reducedMotion:'no-preference'});
+      await fixture(page,role);
+      await page.addInitScript(() => {
+        document.addEventListener('animationstart',event => {
+          if (event.animationName !== 'desk-receive') return;
+          const animations = event.target.getAnimations({subtree:true}).filter(a => ['desk-receive','desk-tint'].includes(a.animationName));
+          animations.forEach(a => a.pause());
+          window.measureDesk = fraction => {
+            animations.forEach(a => { a.currentTime = fraction * a.effect.getTiming().duration; });
+            const {x,y,width,height} = event.target.getBoundingClientRect();
+            return {x,y,width,height,tint:Number(getComputedStyle(event.target,'::after').opacity)};
+          };
+          window.finishDesk = () => animations.forEach(a => a.finish());
+        });
       });
-    });
-    await page.goto('/index.html');
-    await page.getByRole('region',{name:'เพิ่มข้อมูล'}).getByRole('link',{name:/เพิ่มคู่ความร่วมมือ/}).click();
-    await expect(page.locator('#record-detail .entry-form')).toBeVisible();
-    await page.waitForFunction(() => window.deskAnimations?.length);
-    const sample = fraction => page.evaluate(fraction => {
-      for (const animation of window.deskAnimations) {
-        animation.currentTime = fraction * animation.effect.getComputedTiming().duration;
+      await page.goto('/index.html');
+      const link = page.locator(`#work-actions a[href*="=${route}"]`);
+      await link.scrollIntoViewIfNeeded();
+      const source = await link.boundingBox();
+      if (role === 'staff') await link.tap();
+      else await link.press('Enter');
+      const surface = page.locator(selector);
+      await expect(surface).toBeVisible();
+      await page.waitForFunction(() => typeof window.measureDesk === 'function');
+      const [first,middle,last] = await page.evaluate(() => [0,.5,.999].map(window.measureDesk));
+      expect(first.tint).toBeGreaterThan(middle.tint);
+      expect(middle.tint).toBeGreaterThan(last.tint);
+      await page.evaluate(() => window.finishDesk());
+      await expect(surface).not.toHaveClass(/desk-receiving/);
+      const destination = await surface.boundingBox();
+      for (const key of ['x','y','width','height']) {
+        expect(Math.abs(first[key] - source[key]),'source '+key).toBeLessThan(2);
+        expect(Math.abs(last[key] - destination[key]),'destination '+key).toBeLessThan(2);
+        expect(middle[key]).toBeGreaterThanOrEqual(Math.min(first[key],last[key]) - 1);
+        expect(middle[key]).toBeLessThanOrEqual(Math.max(first[key],last[key]) + 1);
       }
-      const opacity = pseudo => Number(getComputedStyle(document.documentElement,pseudo).opacity);
-      return [opacity('::view-transition-image-pair(desk-card)'), opacity('::view-transition-new(root)')];
-    },fraction);
-    const [early,mid,late] = [await sample(.5),await sample(.67),await sample(.84)];
-    expect(early[0]).toBeGreaterThan(mid[0]);
-    expect(mid[0]).toBeGreaterThan(late[0]);
-    expect(mid[0]).toBeGreaterThan(0);
-    expect(mid[1]).toBeLessThan(1);
-    expect(early[1]).toBeLessThan(mid[1]);
-    expect(mid[1]).toBeLessThan(late[1]);
-    await page.evaluate(() => window.deskAnimations.forEach(animation => animation.finish()));
-    await page.locator('#record-detail').getByRole('textbox',{name:/^ชื่อ/}).fill('ตัวอย่าง');
-  });
-  for (const [role, width, motion, input] of [
-    ['staff', 390, 'no-preference', 'tap'],
-    ['executive', 1440, 'no-preference', 'keyboard'],
-    ['staff', 390, 'reduce', 'keyboard'],
-    ['coordinator', 1440, 'no-preference', 'click']
-  ]) test(`${role} opens a shortcut with ${input} at ${width}px (${motion})`, async ({page}) => {
-    await page.setViewportSize({width, height:900});
-    await page.emulateMedia({reducedMotion:motion});
-    await fixture(page, role);
-    await page.addInitScript(() => {
-      window.addEventListener('pagereveal', async ({viewTransition}) => {
-        if (viewTransition) await viewTransition.ready;
-        window.shortcutAnimations = document.getAnimations().map(animation => animation.animationName);
-      });
+      if (selector.includes('dialog') || selector === '#record-detail') {
+        await expect.poll(() => surface.evaluate(el => el.contains(document.activeElement))).toBe(true);
+      }
+      await page.goBack();
+      await expect(link).toBeVisible();
+      await expect(page.locator('.desk-receiving, .shortcut-opening')).toHaveCount(0);
     });
-    await page.goto('/index.html');
-    const shortcut = page.locator('#work-actions a[href*="kind=partners"]');
-    await expect(shortcut).toBeVisible();
-    await expect.poll(() => page.evaluate(() => Array.isArray(window.shortcutAnimations))).toBe(true);
-    expect(await page.evaluate(() => window.shortcutAnimations)).not.toContain('desk-expand');
-    if (input === 'tap') await shortcut.tap();
-    else if (input === 'keyboard') await shortcut.press('Enter');
-    else await shortcut.click();
-    const dialog = page.locator('#record-detail');
-    await expect(dialog).toBeVisible();
-    await expect(page).toHaveURL(/work\.html\?kind=partners/);
-    if (role !== 'coordinator' && motion === 'no-preference') {
-      await expect.poll(() => page.evaluate(() => window.shortcutAnimations)).toEqual(
-        expect.arrayContaining(['desk-expand','desk-enlarge-title','desk-wash','desk-arrive','desk-surface','desk-reveal'])
-      );
-    } else {
-      await expect.poll(() => page.evaluate(() => Array.isArray(window.shortcutAnimations))).toBe(true);
-      expect(await page.evaluate(() => window.shortcutAnimations)).not.toContain('desk-expand');
-    }
-    await expect.poll(() => dialog.evaluate(el => el.contains(document.activeElement))).toBe(true);
-    await page.goBack();
-    await expect(shortcut).toBeVisible();
-    await expect(page.locator('.shortcut-opening')).toHaveCount(0);
-  });
+  }
+
+  for (const [role,motion] of [['staff','reduce'],['coordinator','no-preference']]) {
+    test(`${role} opens the partner form directly with ${motion}`,async ({page}) => {
+      await page.emulateMedia({reducedMotion:motion});
+      await fixture(page,role);
+      await page.addInitScript(() => {
+        window.deskMotion = false;
+        document.addEventListener('animationstart',event => {
+          if (event.animationName === 'desk-receive') window.deskMotion = true;
+        });
+      });
+      await page.goto('/index.html');
+      await page.locator('#work-actions a[href*="kind=partners"]').press('Enter');
+      await expect(page.locator('#record-detail .entry-form')).toBeVisible();
+      await page.locator('#record-detail').getByRole('textbox',{name:/^ชื่อ/}).fill('ตัวอย่าง');
+      expect(await page.evaluate(() => window.deskMotion)).toBe(false);
+    });
+  }
 });
 
 for(const role of [null,'student']) test(`${role || 'anonymous'} direct work URL is redirected`, async ({page}) => {
