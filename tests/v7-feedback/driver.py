@@ -141,6 +141,37 @@ class V7FeedbackFixture:
 
         self.db.scan = scan
 
+    def seed_term(self):
+        """Synthetic term from docs/evidence/v7-expected-results.md, isolated per test."""
+        self.now = 1805587200  # 2027-03-21 UTC, when Staff imports the responses.
+        rows = self.db.rows
+        base = rows['act-v7-mou1']
+        base['periodDate'] = '2026-12-10'
+        for key, title, day in [('act-term-talk', 'เวทีแลกเปลี่ยนผลงาน', '2027-02-15'),
+                                ('act-outside-term', 'กิจกรรมก่อนเปิดเทอม', '2026-06-20')]:
+            rows[key] = dict(base, id=key, title=title, periodDate=day)
+        exchange = rows['ex-v7-moa2']
+        exchange.update(startDate='2027-01-05', endDate='2027-03-20')
+        for rid, students in [('round-term', [('student-a', True), ('student-b', True), ('student-pending', False)]),
+                              ('round-repeat', [('student-a', True)])]:
+            rows[rid] = dict(id=rid, scopeId=SCOPE, scopeEntity=SCOPE + '#exchangeRound', entityType='exchangeRound',
+                             exchangeId=exchange['id'], version=1)
+            for student, enrolled in students:
+                key = rid + '-' + student
+                rows[key] = dict(id=key, scopeId=SCOPE, scopeEntity=rid + '#exchangeApplication',
+                                 entityType='exchangeApplication', roundId=rid, studentId=student, version=1,
+                                 decision='passed', publishedAt=1798502400, studentName='ชื่อผู้สมัครจำลองสำหรับตรวจการแสดงผล')
+                if enrolled:
+                    rows[key].update(confirmedAt=1798588800, partnerAcceptedAt=1798675200, enrolledAt=1798675200)
+        for key, kind, parent, day, topic in [
+            ('comment-term', 'activity', base['id'], '2026-12-11', 'ส่งกำหนดการอบรมให้ผู้เข้าร่วมล่วงหน้า'),
+            ('comment-partner', 'partner', 'partner-v7-demo', '2027-01-10', 'นัดทบทวนความร่วมมือประจำปี')]:
+            rows[key] = dict(id=key, scopeId=SCOPE, scopeEntity=SCOPE + '#feedback', entityType='feedback',
+                             parentType=kind, parentId=parent, occurredOn=day, sourceType='partner', version=1,
+                             comment='ความคิดเห็นจากชุดสาธิต', improvement=topic,
+                             respondentName='ชื่อผู้ตอบจำลองสำหรับตรวจการแสดงผล')
+        return True
+
     def login(self, client, username):
         user = self.app.sessions.users.get(self.ids[username])
         self.cookies[client] = self.app.sessions._issue(user).token
@@ -186,6 +217,8 @@ for line in sys.stdin:
         op = cmd['op']
         if op == 'login':
             res = fixture.login(cmd['client'], cmd['user'])
+        elif op == 'seed_term':
+            res = fixture.seed_term()
         elif op == 'catalog':
             res = fixture.catalog
         elif op == 'clock':

@@ -290,6 +290,28 @@ class FormFeedbackReportTests(unittest.TestCase):
         self.assertEqual({'batchCount': 3, 'responseCount': 8, 'mou1Responses': 3, 'mou2Responses': 2, 'unspecifiedResponses': 3}, first_totals)
         self.assertEqual(first_totals, second_totals)
 
+    def test_count_enrolled_once_across_projects_and_rounds_and_exclude_pending_partner(self):
+        from backend.admissions import enrolled_student_count
+        scope = 'cs-demo'
+        store = self.repository.client.rows
+        for key, project_id, states in [
+            ('round-one', 'project-one', [('one', True), ('two', True), ('waiting', False)]),
+            ('round-two', 'project-two', [('one', True), ('three', True)]),
+            ('round-other', 'unselected', [('other', True)])]:
+            store[key] = dict(id=key, entityType='exchangeRound', scopeId=scope,
+                              scopeEntity=scope + '#exchangeRound', exchangeId=project_id)
+            for uid, enrolled in states:
+                aid = key + uid
+                row = dict(id=aid, entityType='exchangeApplication', roundId=key, scopeId=scope,
+                           scopeEntity=key + '#exchangeApplication', studentId=uid, confirmedAt=10)
+                if enrolled:
+                    row['enrolledAt'] = 20
+                store[aid] = row
+        projects = [dict(id=key, scopeId=scope) for key in ['project-one', 'project-two']]
+        self.assertEqual(2, enrolled_student_count(self.repository, projects[:1]))
+        self.assertEqual(3, enrolled_student_count(self.repository, projects))
+        self.assertEqual(0, enrolled_student_count(self.repository, []))
+
     def test_overview_agreement_status_filter_aligns_totals_breakdown_and_batches(self):
         partner, mou1, mou2, activity, exchange = self.setup_v7_partner_and_agreements()
 
@@ -373,6 +395,13 @@ class FormFeedbackReportTests(unittest.TestCase):
         by_agr = {row['id']: row['responseCount'] for row in both_active['byAgreement']}
         self.assertEqual({mou1['id']: 3, mou2['id']: 2}, by_agr)
         self.assertEqual(2, len(both_active['batches']))
+        ongoing = self.call('/api/overview?status=ongoing')[1]['data']
+        self.assertEqual(1, ongoing['exchanges']['count'])
+        self.assertEqual(2, ongoing['formFeedback']['responseCount'])
+        self.assertEqual([mou2['id']], [row['id'] for row in ongoing['formFeedback']['byAgreement']])
+        self.assertEqual([ex_body['data']['id']],
+                         [row['id'] for row in ongoing['formFeedback']['batches']])
+        self.assertEqual(0, self.call('/api/overview?status=completed')[1]['data']['formFeedback']['responseCount'])
         both_expired = self.call('/api/overview?status=expired')[1]['data']['formFeedback']
         self.assertEqual(0, both_expired['batchCount'])
         self.assertEqual(0, both_expired['responseCount'])
