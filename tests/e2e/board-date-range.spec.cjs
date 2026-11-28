@@ -75,13 +75,14 @@ for (const width of [320,390,1280]) {
   test.describe('board date ranges at ' + width + 'px', () => {
     test.use({viewport:{width,height:width === 320 ? 707 : width === 390 ? 844 : 800}, isMobile:width < 500, hasTouch:width < 500});
 
-    test('groups, visible captions and field names identify both ranges without clipping', async ({page}) => {
+    test('date ranges keep accessible group names and show only the bound labels without clipping', async ({page}) => {
       await visit(page);
       const names = new Set();
       for (const {prefix,tab,legend} of groups) {
         await page.locator(tab).click();
         const group = page.getByRole('group', {name:legend,exact:true});
         await expect(group).toBeVisible();
+        await expect(group.locator('legend')).toBeHidden();
         for (const [suffix,side] of sides) {
           const id = prefix + suffix;
           const field = group.getByRole('textbox', {name:side + ' ' + legend,exact:true});
@@ -90,6 +91,7 @@ for (const width of [320,390,1280]) {
           await expect(field).toHaveAttribute('id', id + 'Display');
           await expect(group.locator('#' + id + 'Label')).toHaveAttribute('for', id + 'Display');
           await expect(group.locator('#' + id + 'Label')).toHaveText(side);
+          await expect(group.locator('#' + id + 'Label')).toBeVisible();
           await expect(picker).toHaveAttribute('title',buttonName);
           const source = page.locator('#' + id);
           await source.evaluate(date => { date.showPicker = function() { this.dataset.activated = 'yes'; }; });
@@ -101,7 +103,7 @@ for (const width of [320,390,1280]) {
         const fits = await group.evaluate(group => {
           const bounds = group.getBoundingClientRect();
           if (bounds.left < -1 || bounds.right > document.documentElement.clientWidth + 1) return false;
-          return [...group.querySelectorAll('legend,.date-range-field > label')].every(el => {
+          return [...group.querySelectorAll('.date-range-field > label')].every(el => {
             const box = el.getBoundingClientRect(), range = document.createRange();
             range.selectNodeContents(el.lastChild);
             return [...range.getClientRects()].every(r => r.left >= box.left-1 && r.right <= box.right+1 && r.top >= box.top-1 && r.bottom <= box.bottom+1);
@@ -129,6 +131,7 @@ for (const width of [320,390,1280]) {
               ? 'Dates of activities involving the organization' : 'Activity dates or agreement period';
             const group = page.getByRole('group',{name:heading,exact:true});
             await expect(group).toBeVisible();
+            await expect(group.locator('legend')).toBeHidden();
             const labels = lang==='th' ? ['เริ่มต้น (ตั้งแต่)','สิ้นสุด (ถึง)'] : ['Start (from)','End (to)'];
             for (const [index,field] of fields.entries()) {
               const name = labels[index]+' '+heading;

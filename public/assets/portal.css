@@ -170,12 +170,11 @@ body { background: var(--portal-paper); }
 }
 
 .board-date-range { min-inline-size: 0; max-width: 100%; margin: 0; padding: 0; border: 0; }
-.board-date-range legend { padding: 0; color: #514840; font-size: .8125rem; font-weight: 600; line-height: 1.6; }
 @media (min-width: 1024px) {
     .filter-wrapper.has-filter-controls { align-items: flex-start; }
-    /* Align category controls with the inputs below the legend and field labels. */
+    /* Align the category controls with the date inputs below their labels. */
     .has-filter-controls > :is(.filter-caption, .modern-select, .clear-filter-btn) {
-        margin-block-start: calc(.8125rem * 3.3 + 4px);
+        margin-block-start: calc(.8125rem * 1.7 + 4px);
     }
 }
 @media (max-width: 767px) {
