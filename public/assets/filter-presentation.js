@@ -29,7 +29,16 @@
                 hint.className = 'public-buddhist-hint';
                 hint.lang = 'en';
                 hint.textContent = 'Use a Buddhist Era year (e.g. 2569 for 2026).';
-                document.getElementById(`${id}DateEnd`)?.closest('.date-range-field')?.after(hint);
+                const undated = wrapper.querySelector('#filterEventUndated');
+                if (undated) {
+                    const notes = document.createElement('div');
+                    notes.className = 'activity-date-notes';
+                    undated.before(notes);
+                    notes.append(undated, hint);
+                    cleanups.push(() => notes.replaceWith(undated));
+                } else {
+                    document.getElementById(`${id}DateEnd`)?.closest('.date-range-field')?.after(hint);
+                }
                 cleanups.push(() => hint.remove());
             }
             ['Date', 'DateEnd'].forEach(suffix => {
