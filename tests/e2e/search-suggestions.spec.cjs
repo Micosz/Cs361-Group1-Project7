@@ -24,11 +24,15 @@ async function openFixture(page) {
     const request = route.request();
     const url = new URL(request.url());
     if (url.origin !== 'http://127.0.0.1:4173' || request.method() !== 'GET') return route.abort();
-    if (url.pathname === '/fetchPartnersData') return route.fulfill({ json: catalogue });
+    if (url.pathname === '/api/public/records') return route.fulfill({ json: catalogue });
+    const detailMatch = url.pathname.match(/^\/api\/public\/(partners|activities)\/([^/]+)$/);
+    if (detailMatch) {
+      const found = catalogue.find(r => r.id === decodeURIComponent(detailMatch[2]));
+      return found ? route.fulfill({ json: { data: found } }) : route.fulfill({ status: 404, json: {} });
+    }
     if (url.pathname === '/api/auth/session') {
       return route.fulfill({ json: { user: null, grants: [], capabilities: [], csrfToken: 'a'.repeat(64) } });
     }
-    if (url.pathname === '/api/public/records') return route.fulfill({ json: [] });
     if (url.pathname.startsWith('/api/')) {
       return route.fulfill({ json: { data: [], count: 0, page: { nextCursor: null } } });
     }
@@ -114,7 +118,7 @@ for (const { width, height, touch } of [
       const gate = new Promise(resolve => { releaseOlder = resolve; });
       let reportOlder;
       const olderRequest = new Promise(resolve => { reportOlder = resolve; });
-      await page.route('**/fetchPartnersData', async route => {
+      await page.route('**/api/public/records*', async route => {
         if (reportOlder) {
           reportOlder(route.request());
           reportOlder = null;

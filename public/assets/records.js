@@ -187,6 +187,10 @@
                 const history = document.createElement('section'); container.appendChild(history);
                 window.PartnerHistory.mount(history,record,fresh);
             }
+            if (window.CstuAgreementLinks) {
+                const agreements = document.createElement('section'); container.appendChild(agreements);
+                window.CstuAgreementLinks.partnerAgreements(agreements, record, {identity: fresh});
+            }
         } catch { /* Public details remain readable if management is unavailable. */ }
     }
     function mountDetailActions(fresh, record, resourceKind, current, page, target = $('detail-actions')) {
@@ -297,6 +301,11 @@
                 if (resourceKind === 'agreements' && publicAgreements(resourceKind, fresh)) window.CstuLanguage?.capture(dt);
                 $('detail-fields').append(dt,dd);
             }
+            }
+            if (resourceKind === 'agreements' && record.scopeId && window.CstuAgreementLinks
+                    && window.CstuWork.roles(fresh, record.scopeId).some(role => ['staff','coordinator','executive'].includes(role))) {
+                const links = document.createElement('section'); $('detail-fields').appendChild(links);
+                window.CstuAgreementLinks.agreementWork(links, record, {identity: fresh});
             }
             if (resourceKind === 'exchanges' && window.CstuWork.canEdit(fresh, record)) {
                 window.CstuAdmissionsManagement?.mount($('detail-fields'), record.id);

@@ -9,9 +9,6 @@ async function fixture(page, role, failLogin = false) {
     const req=route.request(), url=new URL(req.url());
     // No browser request can reach AWS, TU authentication or third-party services.
     if(url.origin !== 'http://127.0.0.1:4173') return route.abort();
-    if(url.pathname === '/fetchPartnersData') return route.fulfill({json:[
-      {id:'p1',name:'Alpha University',type:'university',visibility:'public',description:'Alpha collaboration'},
-      {id:'p2',name:'Beta Company',type:'company',visibility:'public',description:'Beta collaboration'}]});
     if(!url.pathname.startsWith('/api/')) return route.continue();
     requests.push({path:url.pathname,method:req.method(),headers:req.headers(),body:req.postDataJSON()});
     if(url.pathname === '/api/auth/session') return route.fulfill({json:session()});
@@ -20,7 +17,16 @@ async function fixture(page, role, failLogin = false) {
       signedIn=true; return route.fulfill({json:session()});
     }
     if(url.pathname === '/api/auth/logout') {signedIn=false; return route.fulfill({json:{}});}
-    if(url.pathname === '/api/public/records') return route.fulfill({json:[]});
+    const defaultCatalog = [
+      {id:'p1',name:'Alpha University',type:'university',visibility:'public',description:'Alpha collaboration'},
+      {id:'p2',name:'Beta Company',type:'company',visibility:'public',description:'Beta collaboration'}
+    ];
+    if(url.pathname === '/api/public/records') return route.fulfill({json:defaultCatalog});
+    const detailMatch = url.pathname.match(/^\/api\/public\/(partners|activities)\/([^/]+)$/);
+    if(detailMatch) {
+      const found = defaultCatalog.find(r => r.id === decodeURIComponent(detailMatch[2]));
+      return route.fulfill({json:{data:found || {id:decodeURIComponent(detailMatch[2])}}});
+    }
     if(url.pathname === '/api/me/exchanges') return route.fulfill({json:{
       data:[{id:'fixture-exchange',title:'โครงการแลกเปลี่ยนตัวอย่างที่เข้าร่วม'}], count:1, page:{nextCursor:null}
     }});
@@ -74,7 +80,7 @@ test('public catalog renders, searches, and opens detail in a real browser', asy
 async function publicDetailFixture(page) {
   await fixture(page);
   const partner='มหาวิทยาลัยคลองกลาง (สมมติ)', activity='กิจกรรมคลองกลาง · วันสมมติ';
-  await page.route('**/fetchPartnersData', route => route.fulfill({json:[
+  await page.route('**/api/public/records*', route => route.fulfill({json:[
     {id:'sample-host', name:partner, type:'university', visibility:'public', summary:'ตัวอย่างสำหรับทดสอบ'},
     {id:'sample-company', name:'บริษัทสมมติ', type:'company', visibility:'public'},
     {id:'sample-event', title:activity, partnerId:'sample-host', type:'research', visibility:'public', summary:'ตัวอย่างสำหรับทดสอบ'}
@@ -166,7 +172,7 @@ test('invalid login shows feedback, clears password, and sends CSRF', async ({pa
 test('MoU period labels cover agreements and signing news without partial counts', async ({page}) => {
   await fixture(page);
   await page.clock.setFixedTime(new Date('2026-07-01T12:00:00+07:00'));
-  await page.route('http://127.0.0.1:4173/fetchPartnersData', route => route.fulfill({json:[
+  await page.route('http://127.0.0.1:4173/api/public/records*', route => route.fulfill({json:[
     {id:'host',name:'Fixture University',type:'university',visibility:'public'},
     {id:'story',partnerId:'host',title:'Signing story (fixture)',type:'academic_activity',activity_tags:['mou'],period_date:'2026-06-20',visibility:'public'}
   ]}));
@@ -306,7 +312,7 @@ test('the Student shortcut follows active grants and preserves role management a
 
 test('short filtered board keeps category buttons clickable below the mobile header', async ({page}) => {
   await fixture(page);
-  await page.route('**/fetchPartnersData', route => route.fulfill({json:[
+  await page.route('**/api/public/records*', route => route.fulfill({json:[
     {id:'p1', name:'Alpha University', type:'university', summary:'Fixture partner summary', visibility:'public'},
     {id:'p2', name:'Beta Company', type:'company', visibility:'public'},
   ]}));
@@ -583,7 +589,7 @@ test('public feedback validates category, retries with the same key and renders 
 
 test('clearing the search from empty results keeps dates, type and activity view', async ({page}) => {
   await fixture(page);
-  await page.route('**/fetchPartnersData', route => route.fulfill({json:[
+  await page.route('**/api/public/records*', route => route.fulfill({json:[
     {id:'p1', name:'Fixture University', type:'university', visibility:'public'},
     {id:'p2', name:'Fixture Company', type:'company', visibility:'public'},
     {id:'a1', title:'Research workshop (วันสมมติ)', type:'research', visibility:'public',
@@ -624,7 +630,7 @@ test('clearing the search from empty results keeps dates, type and activity view
 test('clearing a search leaves the activity filter visible below the mobile header', async ({page}) => {
   await page.setViewportSize({width:320,height:707});
   await fixture(page);
-  await page.route('**/fetchPartnersData', route => route.fulfill({json:[
+  await page.route('**/api/public/records*', route => route.fulfill({json:[
     {id:'p1',name:'ชมรมตัวอย่าง',type:'university',visibility:'public'},
     {id:'a1',title:'วงวิจัยตัวอย่าง · วันสมมติ',type:'research',visibility:'public',
       partnerId:'p1',period_date:'2020-06-15'},

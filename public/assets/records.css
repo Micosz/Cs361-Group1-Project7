@@ -577,3 +577,25 @@ html:has(#detailModal[style*="display: flex"]), body:has(#detailModal[style*="di
     background: #f1f5f9;
     color: #1e293b;
 }
+
+/* #263 Partner <-> Agreement <-> Activity/Exchange links */
+.agreement-links {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color, #dedede);
+}
+.agreement-links h3 { font-size: 1.1rem; margin: 0 0 0.5rem; }
+.agreement-links h4 { font-size: 1rem; margin: 0.75rem 0 0.35rem; }
+.agreement-links-status, .agreement-links-empty, .agreement-links-meta { color: var(--text-gray, #595959); }
+.agreement-links-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+.agreement-links-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.6rem; }
+.agreement-links-type {
+    font-size: 0.75rem; font-weight: 600; padding: 1px 6px; border-radius: 4px;
+    background: #f1f5f9; color: #334155;
+}
+.agreement-link-button {
+    background: none; border: 0; padding: 0; font: inherit; font-weight: 600;
+    color: var(--tu-red, #C3002F); text-decoration: underline; cursor: pointer; text-align: left;
+}
+.agreement-link-button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.agreement-links-partners, .agreement-links-responsible { margin: 0 0 0.5rem; }

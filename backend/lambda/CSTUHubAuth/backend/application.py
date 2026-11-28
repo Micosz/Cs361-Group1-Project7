@@ -57,6 +57,9 @@ class AuthApplication:
             public_feedback = re.fullmatch(r'/api/public/(partners|activities)/([^/]+)/feedback', path)
             if public_feedback:
                 return self.public_feedback(event, public_feedback[1], public_feedback[2])
+            public_detail = re.fullmatch(r'/api/public/(partners|activities)/([^/]+)', path)
+            if public_detail:
+                return self.public_detail(event, public_detail[1], public_detail[2])
             if path == '/api/selection-partners':
                 return self.selection_partners(event)
             if path == '/api/selection-users':
@@ -101,11 +104,26 @@ class AuthApplication:
     def public_catalog(self, event):
         if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
             raise AuthError('METHOD_NOT_ALLOWED', 405)
-        if event.get('queryStringParameters'):
+        query = event.get('queryStringParameters') or {}
+        if set(query) - {'view'}:
+            raise AuthError('INVALID_QUERY', 422)
+        view = query.get('view', 'full')
+        if view not in {'full', 'cards'}:
             raise AuthError('INVALID_QUERY', 422)
         if self.repository is None or not hasattr(self.repository, 'public_catalog'):
             raise AuthError('PERMISSION_UNAVAILABLE', 503)
-        return response(200, self.repository.public_catalog())
+        rows = self.repository.public_catalog(view='cards') if view == 'cards' else self.repository.public_catalog()
+        return response(200, rows)
+
+    def public_detail(self, event, collection, key):
+        if event.get('requestContext', {}).get('http', {}).get('method') != 'GET':
+            raise AuthError('METHOD_NOT_ALLOWED', 405)
+        if event.get('queryStringParameters'):
+            raise AuthError('INVALID_QUERY', 422)
+        if self.repository is None or not hasattr(self.repository, 'public_record'):
+            raise AuthError('PERMISSION_UNAVAILABLE', 503)
+        kind = 'partner' if collection == 'partners' else 'activity'
+        return response(200, {'data': self.repository.public_record(kind, key)})
 
     def public_feedback(self, event, collection, key):
         """Public web comments only; internal feedback keeps its scoped routes."""
