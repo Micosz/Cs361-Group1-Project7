@@ -62,7 +62,8 @@ html[lang="en"] .public-buddhist-hint {
     :where(html[lang="en"], #sectionEvent) .date-range-field + .date-range-field { grid-area: 1 / to; }
     :where(html[lang="en"], #sectionEvent) .date-clear-btn { grid-area: 1 / clear-date; }
     :where(html[lang="en"], #sectionEvent) .buddhist-date-control { width: 100%; }
-    :where(html[lang="en"], #sectionEvent) .date-filter-row > :is(.public-buddhist-hint, .date-range-error, .undated-toggle) {
+    :where(html[lang="en"], #sectionEvent) .date-filter-row > :is(.public-buddhist-hint, .date-range-error, .undated-toggle),
+    #sectionEvent .activity-date-notes > .public-buddhist-hint {
         grid-column: from / -1;
     }
     #sectionEvent .undated-toggle { grid-column: 1 / -1; }
@@ -104,3 +105,40 @@ html[lang="en"] .public-buddhist-hint {
     line-height: 1.5;
 }
 #sectionEvent .undated-toggle input { width: 18px; height: 18px; }
+
+/* In the stacked layout the year hint precedes Clear and the checkbox. */
+.activity-date-notes { display: contents; }
+html[lang="en"] #sectionEvent .date-clear-btn { order: 1; }
+html[lang="en"] #sectionEvent .date-range-error { order: 2; }
+html[lang="en"] #sectionEvent .undated-toggle { order: 3; }
+
+html[lang="en"] #sectionEvent { container: activity-board / inline-size; }
+@container activity-board (min-width: 30em) {
+    html[lang="en"] .activity-date-notes:has(> .undated-toggle:not([hidden])) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 14px;
+        grid-column: 1 / -1;
+        order: 3;
+        min-width: 0;
+        contain: inline-size;
+    }
+    .activity-date-notes > .public-buddhist-hint { flex: 1 1 12em; overflow-wrap: anywhere; }
+    html[lang="en"] #sectionEvent .activity-date-notes .undated-toggle {
+        flex: 0 1 auto;
+        order: 0;
+    }
+    @media (max-width: 767px) {
+        /* Keep Clear in its original row when the hint moves below it. */
+        html[lang="en"] #sectionEvent .date-filter-row:has(.undated-toggle:not([hidden])) {
+            grid-auto-rows: auto;
+        }
+        html[lang="en"] #sectionEvent .date-filter-row:has(.undated-toggle:not([hidden]))::before {
+            content: "";
+            grid-area: 2 / 1 / auto / -1;
+            font-size: .85rem;
+            block-size: 1lh;
+        }
+    }
+}

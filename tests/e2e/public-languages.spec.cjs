@@ -327,6 +327,23 @@ for (const width of [320,390,767,768,769,1023,1024,1025,1280]) {
     expect(last.x).toBeGreaterThanOrEqual(first.x+first.width);
     expect(Math.abs(last.y-first.y)).toBeLessThanOrEqual(1);
     expect(toggle.height).toBeGreaterThanOrEqual(44);
+    const hint = page.locator('#filterEventBuddhistHint');
+    await expect(start).toHaveAccessibleDescription(await hint.innerText());
+    await expect(end).toHaveAccessibleDescription(await hint.innerText());
+    const help = await hint.boundingBox();
+    if (width>=512) {
+      expect(help.x).toBeGreaterThanOrEqual(toggle.x+toggle.width+8);
+      expect(Math.abs(help.y+help.height/2 - (toggle.y+toggle.height/2))).toBeLessThanOrEqual(1);
+    } else {
+      expect(help.y+help.height).toBeLessThanOrEqual(button.y);
+    }
+    if (width===767) {
+      const largerText = await page.addStyleTag({content:'html { font-size: 200% !important; }'});
+      const [note,reset,choice] = await Promise.all([hint,clear,option].map(el=>el.boundingBox()));
+      expect(note.y+note.height).toBeLessThanOrEqual(reset.y);
+      expect(reset.y+reset.height).toBeLessThanOrEqual(choice.y);
+      await largerText.evaluate(style=>style.remove());
+    }
     if (width<768) {
       expect(toggle.y).toBeGreaterThanOrEqual(button.y+button.height);
       expect(toggle.x+toggle.width).toBeLessThanOrEqual(width);
