@@ -351,3 +351,80 @@ test('visitors can change language when preference storage is unavailable', asyn
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang','th');
 });
+
+for (const width of [320,390,767,768,769,1023,1024,1025,1280]) {
+  test('activity date controls keep their positions and undated option at ' + width, async ({page,baseURL}) => {
+    await page.setViewportSize({width,height:850});
+    await fixture(page,baseURL);
+    const undated = Array.from({length:7}, (_,i) => ({
+      id:'undated-'+i, title:'Sample workshop '+i, partnerId:'canal', type:'academic_activity', visibility:'public'
+    }));
+    await page.route('**/fetchPartnersData', route => route.fulfill({json:[...rows,...undated]}));
+    await page.goto('/index.html');
+    await page.locator('#tabEvent').click();
+    await language(header(page),'en');
+    const start = page.locator('#filterEventDateDisplay');
+    const end = page.locator('#filterEventDateEndDisplay');
+    const original = await start.boundingBox();
+    await start.fill('18112569');
+    await start.press('Tab');
+    await expect(page.locator('#filterEventDate')).toHaveValue('2026-11-18');
+    await end.fill('29112569');
+    await end.press('Tab');
+    await expect(page.locator('#filterEventDateEnd')).toHaveValue('2026-11-29');
+    const clear = page.locator('#filterEventDateClear');
+    const option = page.locator('#filterEventUndated');
+    const offsetFromPanelStart = () => option.evaluate(label => {
+      const panel = label.closest('.filter-wrapper');
+      const contentLeft = panel.getBoundingClientRect().left + panel.clientLeft + parseFloat(getComputedStyle(panel).paddingLeft);
+      return Math.abs(label.getBoundingClientRect().left - contentLeft);
+    });
+    await expect(option).toContainText('(7)');
+    expect(await offsetFromPanelStart()).toBeLessThanOrEqual(1);
+    const [first,last,button,toggle] = await Promise.all([start,end,clear,option].map(el=>el.boundingBox()));
+    expect(Math.abs(first.x-original.x)).toBeLessThanOrEqual(1);
+    expect(last.x).toBeGreaterThanOrEqual(first.x+first.width);
+    expect(Math.abs(last.y-first.y)).toBeLessThanOrEqual(1);
+    expect(toggle.height).toBeGreaterThanOrEqual(44);
+    const hint = page.locator('#filterEventBuddhistHint');
+    await expect(start).toHaveAccessibleDescription(await hint.innerText());
+    await expect(end).toHaveAccessibleDescription(await hint.innerText());
+    const help = await hint.boundingBox();
+    if (width>=512) {
+      expect(help.x).toBeGreaterThanOrEqual(toggle.x+toggle.width+8);
+      expect(Math.abs(help.y+help.height/2 - (toggle.y+toggle.height/2))).toBeLessThanOrEqual(1);
+    } else {
+      expect(help.y+help.height).toBeLessThanOrEqual(button.y);
+    }
+    if (width===767) {
+      const largerText = await page.addStyleTag({content:'html { font-size: 200% !important; }'});
+      const [note,reset,choice] = await Promise.all([hint,clear,option].map(el=>el.boundingBox()));
+      expect(note.y+note.height).toBeLessThanOrEqual(reset.y);
+      expect(reset.y+reset.height).toBeLessThanOrEqual(choice.y);
+      await largerText.evaluate(style=>style.remove());
+    }
+    if (width<768) {
+      expect(toggle.y).toBeGreaterThanOrEqual(button.y+button.height);
+      expect(toggle.x+toggle.width).toBeLessThanOrEqual(width);
+    } else {
+      expect(button.x).toBeGreaterThanOrEqual(last.x+last.width);
+    }
+    const checkbox = option.getByRole('checkbox');
+    await checkbox.focus();
+    await checkbox.press('Space');
+    await expect(checkbox).toBeChecked();
+    await expect(page.locator('#eventGrid .browse-card-open').filter({hasText:'Sample workshop'})).toHaveCount(7);
+    await language(header(page),'th');
+    await expect(end).toHaveValue('29/11/2569');
+    await expect(checkbox).toBeChecked();
+    expect(await offsetFromPanelStart()).toBeLessThanOrEqual(1);
+    if (width>=1024) {
+      const [category,date] = await Promise.all([page.locator('#filterEvent'),start].map(el=>el.boundingBox()));
+      expect(Math.abs(category.y-date.y)).toBeLessThanOrEqual(1);
+    }
+    await clear.press('Enter');
+    await expect(start).toHaveValue('');
+    await expect(end).toHaveValue('');
+    await expect(option).toBeHidden();
+  });
+}
