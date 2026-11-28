@@ -216,7 +216,7 @@
     logout.onclick = () => publicLogout(logout, status);
     window.addEventListener('authchange', refresh);
     window.addEventListener('focus', refresh);
-    window.addEventListener('pageshow', refresh);
+    window.addEventListener('pageshow', event => { if (event.persisted) refresh(); });
     window.addEventListener('pagehide', finishClose);
     refresh();
 })();

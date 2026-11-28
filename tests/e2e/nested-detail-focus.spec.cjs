@@ -20,9 +20,13 @@ async function visit(page, kind) {
       writes.push(request.method() + ' ' + url.pathname);
       return route.abort();
     }
-    if (url.pathname === '/fetchPartnersData') return route.fulfill({json:rows});
+    if (url.pathname === '/api/public/records') return route.fulfill({json:rows});
+    const detailMatch = url.pathname.match(/^\/api\/public\/(partners|activities)\/([^/]+)$/);
+    if (detailMatch) {
+      const found = rows.find(r => r.id === decodeURIComponent(detailMatch[2]));
+      return found ? route.fulfill({json:{data:found}}) : route.fulfill({status:404, json:{}});
+    }
     if (url.pathname === '/api/auth/session') return route.fulfill({json:{user:null, grants:[], capabilities:[], csrfToken:'a'.repeat(64)}});
-    if (url.pathname === '/api/public/records') return route.fulfill({json:[]});
     if (url.pathname === '/api/public/agreements' || url.pathname.endsWith('/feedback')) {
       return route.fulfill({json:{data:[], count:0, page:{nextCursor:null}}});
     }
